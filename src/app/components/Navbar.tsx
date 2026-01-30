@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Headphones } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { Button } from "./ui/Button";
+// 1. Ensure imports are present
+import { useAuth } from "@/app/lib/AuthContext";
+import { signOut } from "@/app/lib/auth";
 
 const navLinks = [
     { name: "Explore DJs", href: "/explore" },
@@ -17,6 +20,9 @@ export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
+    
+    // 2. Add auth hook
+    const { user, loading } = useAuth();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -58,14 +64,33 @@ export function Navbar() {
                     ))}
                 </div>
 
-                {/* Desktop Auth */}
-                <div className="hidden md:flex items-center gap-3">
-                    <Link href="/login">
-                        <Button variant="ghost" size="sm">Login</Button>
-                    </Link>
-                    <Link href="/signup">
-                        <Button size="sm">Sign Up</Button>
-                    </Link>
+                {/* Desktop Auth - 3. Replaced logic with requested pattern */}
+                <div className="hidden md:flex items-center gap-4 text-white font-bold text-sm">
+                    {!loading && !user && (
+                        <>
+                            <a href="/auth/login" className="hover:text-violet-400">Login</a>
+                            <a href="/auth/signup" className="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200 transition-colors">Sign Up</a>
+                        </>
+                    )}
+
+                    {!loading && user && (
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-green-400">
+                        {user.email}
+                        </span>
+
+                        <button
+                        className="text-sm text-red-400 hover:text-red-300"
+                        onClick={async () => {
+                            await signOut();
+                            window.location.href = "/";
+                        }}
+                        >
+                        Logout
+                        </button>
+                    </div>
+                    )}
+
                 </div>
 
                 {/* Mobile Toggle */}
@@ -96,10 +121,10 @@ export function Navbar() {
                         ))}
                         <hr className="border-zinc-800" />
                         <div className="flex flex-col gap-3">
-                            <Link href="/login" onClick={() => setIsOpen(false)}>
+                            <Link href="/auth/login" onClick={() => setIsOpen(false)}>
                                 <Button variant="outline" className="w-full">Login</Button>
                             </Link>
-                            <Link href="/signup" onClick={() => setIsOpen(false)}>
+                            <Link href="/auth/signup" onClick={() => setIsOpen(false)}>
                                 <Button className="w-full">Sign Up</Button>
                             </Link>
                         </div>

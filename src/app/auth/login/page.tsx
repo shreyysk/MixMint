@@ -1,12 +1,27 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Headphones, Mail, Lock, Music } from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { motion } from "framer-motion";
+import { signIn } from "@/app/lib/auth";
 
 export default function LoginPage() {
+    // 1. Add state for email and password
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    // 2. The requested handler logic
+    const handleLogin = async () => {
+        try {
+            await signIn(email, password);
+            alert("Login successful");
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0B0B0F] flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
             {/* Background elements */}
@@ -43,6 +58,9 @@ export default function LoginPage() {
                                     id="email"
                                     name="email"
                                     type="email"
+                                    // Connected state
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="name@example.com"
                                     className="block w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all font-medium"
                                 />
@@ -68,6 +86,9 @@ export default function LoginPage() {
                                     id="password"
                                     name="password"
                                     type="password"
+                                    // Connected state
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     className="block w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all font-medium"
                                 />
@@ -75,7 +96,12 @@ export default function LoginPage() {
                         </div>
 
                         <div>
-                            <Button type="button" className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]">
+                            {/* Connected logic to onClick */}
+                            <Button 
+                                type="button" 
+                                onClick={handleLogin}
+                                className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]"
+                            >
                                 Login to Account
                             </Button>
                         </div>

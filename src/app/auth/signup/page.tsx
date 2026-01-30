@@ -1,12 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Headphones, Mail, Lock, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { motion } from "framer-motion";
+import { signUp } from "@/app/lib/auth"; // Import added
 
 export default function SignupPage() {
+    // 1. Add state for name, email, password
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    // 2. The requested handler logic
+    const handleSignup = async () => {
+        try {
+            await signUp(email, password, name);
+            alert("Signup successful. You can now log in.");
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0B0B0F] flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
             {/* Background elements */}
@@ -30,6 +46,7 @@ export default function SignupPage() {
                 className="sm:mx-auto sm:w-full sm:max-w-md"
             >
                 <div className="bg-zinc-900/40 border border-zinc-800 py-10 px-8 shadow-2xl rounded-[2.5rem] backdrop-blur-xl">
+                    {/* Form prevents default to keep button click logic isolated */}
                     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                         <div>
                             <label htmlFor="name" className="block text-xs font-black text-zinc-500 uppercase tracking-widest mb-3 ml-1">
@@ -43,6 +60,9 @@ export default function SignupPage() {
                                     id="name"
                                     name="name"
                                     type="text"
+                                    // Connected state
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
                                     placeholder="Arjun Singh"
                                     className="block w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all font-medium"
                                 />
@@ -61,6 +81,9 @@ export default function SignupPage() {
                                     id="email"
                                     name="email"
                                     type="email"
+                                    // Connected state
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="name@example.com"
                                     className="block w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all font-medium"
                                 />
@@ -79,6 +102,9 @@ export default function SignupPage() {
                                     id="password"
                                     name="password"
                                     type="password"
+                                    // Connected state
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Create a strong password"
                                     className="block w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all font-medium"
                                 />
@@ -86,7 +112,12 @@ export default function SignupPage() {
                         </div>
 
                         <div className="pt-2">
-                            <Button type="button" className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]">
+                            {/* Connected logic to onClick */}
+                            <Button 
+                                type="button" 
+                                onClick={handleSignup}
+                                className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]"
+                            >
                                 Create Account
                             </Button>
                         </div>
