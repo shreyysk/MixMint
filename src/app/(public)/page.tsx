@@ -20,12 +20,12 @@ import { Footer } from "@/app/components/Footer";
 import { motion } from "framer-motion";
 
 const MOCK_DJS = [
-  { name: "DJ Anish", genre: "Techno", image: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb1?q=80&w=400&h=500&auto=format&fit=crop" },
-  { name: "Sasha Vane", genre: "Deep House", image: "https://images.unsplash.com/photo-1594623121614-2909ac590859?q=80&w=400&h=500&auto=format&fit=crop" },
-  { name: "Arjun Pulse", genre: "Indo House", image: "https://images.unsplash.com/photo-1598387993281-cecf8368375d?q=80&w=400&h=500&auto=format&fit=crop" },
-  { name: "Mira Moon", genre: "Melodic Techno", image: "https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?q=80&w=400&h=500&auto=format&fit=crop" },
-  { name: "Rohan Rex", genre: "PsyTrance", image: "https://images.unsplash.com/photo-1514525253361-b83f8b9627c5?q=80&w=400&h=500&auto=format&fit=crop" },
-  { name: "Neon Flux", genre: "Cyberpunk", image: "https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "DJ Anish", slug: "dj-anish", genre: ["Techno", "House"], image: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb1?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "Sasha Vane", slug: "sasha-vane", genre: ["Deep House", "EDM"], image: "https://images.unsplash.com/photo-1594623121614-2909ac590859?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "Arjun Pulse", slug: "arjun-pulse", genre: ["Indo House", "Bollywood Remix"], image: "https://images.unsplash.com/photo-1598387993281-cecf8368375d?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "Mira Moon", slug: "mira-moon", genre: ["Melodic Techno"], image: "https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "Rohan Rex", slug: "rohan-rex", genre: ["PsyTrance", "Techno"], image: "https://images.unsplash.com/photo-1514525253361-b83f8b9627c5?q=80&w=400&h=500&auto=format&fit=crop" },
+  { name: "Neon Flux", slug: "neon-flux", genre: ["Cyberpunk", "Industrial"], image: "https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=400&h=500&auto=format&fit=crop" },
 ];
 
 const FEATURES = [
