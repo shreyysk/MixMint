@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Footer } from "@/app/components/Footer";
 import { Button } from "@/app/components/ui/Button";
 import { Check, Zap, TrendingUp, Crown, Info } from "lucide-react";
 import { cn } from "@/app/lib/utils";
@@ -59,8 +58,8 @@ const plans = [
 
 export default function PricingPage() {
     return (
-        <div className="pt-32 min-h-screen flex flex-col bg-[#0B0B0F]">
-            <main className="flex-grow px-6 md:px-12 pb-24">
+        <div className="pb-24">
+            <div className="px-6 md:px-12">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-20">
@@ -152,8 +151,7 @@ export default function PricingPage() {
                         </div>
                     </div>
                 </div>
-            </main>
-            <Footer />
+            </div>
         </div>
     );
 }

@@ -3,13 +3,12 @@
 import React from "react";
 import { MOCK_DJS } from "@/app/lib/mock-djs";
 import { DJCard } from "@/app/components/ui/DJCard";
-import { Footer } from "@/app/components/Footer";
 import { Search, Filter } from "lucide-react";
 
 export default function ExplorePage() {
     return (
-        <div className="pt-32 min-h-screen flex flex-col">
-            <main className="flex-grow px-6 md:px-12 pb-24">
+        <div className="pb-24">
+            <div className="px-6 md:px-12">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
@@ -32,7 +31,7 @@ export default function ExplorePage() {
                                     className="bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 w-full md:w-64 transition-all"
                                 />
                             </div>
-                            <button className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-violet-500/30 transition-all">
+                            <button className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-violet-500/30 transition-all shrink-0">
                                 <Filter size={20} />
                             </button>
                         </div>
@@ -51,8 +50,7 @@ export default function ExplorePage() {
                         ))}
                     </div>
                 </div>
-            </main>
-            <Footer />
+            </div>
         </div>
     );
 }

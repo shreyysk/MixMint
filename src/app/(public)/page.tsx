@@ -16,7 +16,6 @@ import {
 import { cn } from "@/app/lib/utils";
 import { Button } from "@/app/components/ui/Button";
 import { DJCard } from "@/app/components/ui/DJCard";
-import { Footer } from "@/app/components/Footer";
 import { motion } from "framer-motion";
 
 const MOCK_DJS = [
@@ -44,9 +43,9 @@ const STEPS = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col gap-32">
+    <div className="flex flex-col gap-24 md:gap-40 pb-24">
       {/* 1. Hero Section */}
-      <section className="relative pt-40 pb-20 px-6 md:px-12 overflow-hidden min-h-[90vh] flex items-center">
+      <section className="relative pb-20 px-6 md:px-12 overflow-hidden min-h-[70vh] flex items-center">
         {/* Abstract Background Glows */}
         <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-violet-600/10 blur-[150px] rounded-full -z-10" />
         <div className="absolute bottom-[10%] left-[-5%] w-[400px] h-[400px] bg-purple-600/5 blur-[120px] rounded-full -z-10" />
@@ -169,8 +168,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

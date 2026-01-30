@@ -14,17 +14,35 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.max-container {
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 .glass {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .text-violet-gradient {
   background: linear-gradient(to right, #a78bfa, #7c3aed);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.page-pt {
+  padding-top: 6rem;
+  /* Adjust based on navbar height */
+}
+
+@media (min-width: 768px) {
+  .page-pt {
+    padding-top: 8rem;
+  }
 }
