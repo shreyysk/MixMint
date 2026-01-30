@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+:root {
+  --background: #0B0B0F;
+  --foreground: #ffffff;
+  --accent: #7c3aed;
+  /* violet-600 */
+  --accent-foreground: #ffffff;
+}
+
 body {
-  background-color: #0b0b0f;
-  color: white;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-violet-gradient {
+  background: linear-gradient(to right, #a78bfa, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
