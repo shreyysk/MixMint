@@ -51,7 +51,12 @@ export async function POST(req: Request) {
       })
     );
 
-    return NextResponse.json({ fileKey });
+    // 🔁 REPLACED return logic here
+    return NextResponse.json({
+      fileKey,
+      fileName: file.name,
+      contentType: file.type,
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

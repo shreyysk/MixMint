@@ -22,6 +22,7 @@ export default function UploadTest() {
       return;
     }
 
+    // 1. Upload File
     const fd = new FormData();
     fd.append("file", file);
 
@@ -34,7 +35,37 @@ export default function UploadTest() {
     });
 
     const data = await res.json();
-    alert(JSON.stringify(data));
+
+    if (!res.ok) {
+      alert("Upload failed: " + JSON.stringify(data));
+      return;
+    }
+
+    // 2. Save Track Metadata (Chained Request)
+    try {
+      const trackRes = await fetch("/api/tracks", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: file.name,
+          price: 99,
+          youtube_url: "",
+          file_key: data.fileKey,
+        }),
+      });
+
+      if (trackRes.ok) {
+        alert("Success! File uploaded and track created.");
+      } else {
+        const errorData = await trackRes.json();
+        alert("File uploaded, but track creation failed: " + JSON.stringify(errorData));
+      }
+    } catch (err: any) {
+      alert("Error creating track: " + err.message);
+    }
   };
 
   return (
@@ -44,7 +75,7 @@ export default function UploadTest() {
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
       <button className="ml-4 bg-purple-600 px-3 py-1" onClick={upload}>
-        Upload
+        Upload & Create Track
       </button>
     </div>
   );
