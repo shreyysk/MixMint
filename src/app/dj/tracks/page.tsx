@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { useAuth } from "@/app/lib/AuthContext";
 import RequireRole from "@/app/components/RequireRole";
+import { downloadContent } from "@/app/lib/download";
 
 type Track = {
   id: string;
@@ -86,6 +87,12 @@ export default function DJTracksPage() {
                 Uploaded on{" "}
                 {new Date(track.created_at).toLocaleDateString()}
               </p>
+              <button
+                onClick={() => downloadContent(track.id, "track")}
+                className="bg-purple-600 px-4 py-2 rounded"
+                >
+                Download
+                </button>
             </div>
           ))}
       </div>
