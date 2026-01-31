@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabaseServer } from "@/app/lib/supabaseServer";
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   }
 
   const token = authHeader.replace("Bearer ", "");
-  const { data: userData } = await supabase.auth.getUser(token);
+  const { data: userData } = await supabaseServer.auth.getUser(token);
 
   if (!userData?.user) {
     return NextResponse.json({ error: "Invalid user" }, { status: 401 });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
   const { title, price, youtube_url, file_key } = body;
 
-  const { data: dj } = await supabase
+  const { data: dj } = await supabaseServer
     .from("dj_profiles")
     .select("id")
     .eq("user_id", userData.user.id)
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not a DJ" }, { status: 403 });
   }
 
-  const { error } = await supabase.from("tracks").insert({
+  const { error } = await supabaseServer.from("tracks").insert({
     dj_id: dj.id,
     title,
     price,
