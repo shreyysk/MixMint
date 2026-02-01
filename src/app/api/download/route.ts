@@ -18,32 +18,23 @@ export async function GET(req: Request) {
       req.headers.get("x-real-ip") ||
       "unknown";
 
-    // Fetch token record
-    const { data: tokenRow } = await supabaseServer
+    // --- STEP 2 & 3: VALIDATE TOKEN ---
+    const { data: tokenRow, error } = await supabaseServer
       .from("download_tokens")
       .select("*")
       .eq("token", token)
-      .limit(1)
+      .eq("is_used", false) // Ensure it's unused
+      .gt("expires_at", new Date().toISOString()) // Ensure it hasn't expired
       .single();
 
-    if (!tokenRow) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    }
-
-    // Expiry check
-    if (new Date(tokenRow.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Token expired" }, { status: 403 });
-    }
-
-    // Attempt limit
-    if (tokenRow.attempts >= tokenRow.max_attempts) {
+    if (error || !tokenRow) {
       return NextResponse.json(
-        { error: "Download limit exceeded" },
+        { error: "Download token already used or expired" },
         { status: 403 }
       );
     }
 
-    // IP lock
+    // IP lock (Security layer)
     if (tokenRow.ip_address && tokenRow.ip_address !== ip) {
       return NextResponse.json(
         { error: "IP mismatch" },
@@ -51,57 +42,105 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch content metadata
-    const { data: track } = await supabaseServer
-      .from("tracks")
-      .select("file_key, title")
-      .eq("id", tokenRow.content_id)
-      .single();
+    // --- HANDLE TRACK DOWNLOADS ---
+    if (tokenRow.content_type === "track") {
+      const { data: track } = await supabaseServer
+        .from("tracks")
+        .select("file_key, title")
+        .eq("id", tokenRow.content_id)
+        .single();
 
-    if (!track) {
-      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+      if (!track) {
+        return NextResponse.json({ error: "Content not found" }, { status: 404 });
+      }
+
+      // Get file from R2
+      const object = await r2.send(new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: track.file_key,
+      }));
+
+      // Mark token used
+      await supabaseServer
+        .from("download_tokens")
+        .update({ is_used: true })
+        .eq("id", tokenRow.id);
+
+      // Return file stream
+      return new Response(object.Body as any, {
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${track.title}"`,
+        },
+      });
     }
 
-    if (tokenRow.is_used) {
-    return NextResponse.json(
-        { error: "Download token already used" },
-        { status: 403 }
-    );
+    // --- HANDLE ZIP DOWNLOADS (PHASE 3.3) ---
+    if (tokenRow.content_type === "zip") {
+      const { data: album } = await supabaseServer
+        .from("album_packs")
+        .select("file_key, dj_id, title")
+        .eq("id", tokenRow.content_id)
+        .single();
+
+      if (!album) {
+        return NextResponse.json({ error: "Album not found" }, { status: 404 });
+      }
+
+      // Get ZIP from R2
+      const object = await r2.send(new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: album.file_key,
+      }));
+
+      // Mark token used (critical security step)
+      await supabaseServer
+        .from("download_tokens")
+        .update({ is_used: true })
+        .eq("id", tokenRow.id);
+
+      // Increment ZIP quota if subscription-based (not purchase)
+      // Check if this was a subscription download
+      const { data: purchase } = await supabaseServer
+        .from("purchases")
+        .select("id")
+        .eq("user_id", tokenRow.user_id)
+        .eq("content_type", "zip")
+        .eq("content_id", tokenRow.content_id)
+        .single();
+
+      // If no purchase found, this was a subscription download → increment quota
+      if (!purchase) {
+        const { data: sub } = await supabaseServer
+          .from("dj_subscriptions")
+          .select("zip_used")
+          .eq("user_id", tokenRow.user_id)
+          .eq("dj_id", album.dj_id)
+          .gt("expires_at", new Date().toISOString())
+          .single();
+
+        if (sub) {
+          await supabaseServer
+            .from("dj_subscriptions")
+            .update({ zip_used: (sub.zip_used || 0) + 1 })
+            .eq("user_id", tokenRow.user_id)
+            .eq("dj_id", album.dj_id);
+        }
+      }
+
+      // Return ZIP stream
+      return new Response(object.Body as any, {
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Disposition": `attachment; filename="${album.title || 'album'}.zip"`,
+        },
+      });
     }
 
-    // Update token usage
-    const { error: updateError } = await supabaseServer
-    .from("download_tokens")
-    .update({
-        attempts: tokenRow.attempts + 1,
-        ip_address: tokenRow.ip_address ?? ip,
-        is_used: tokenRow.attempts + 1 >= tokenRow.max_attempts,
-    })
-    .eq("id", tokenRow.id)
-    .eq("attempts", tokenRow.attempts); // optimistic lock
+    return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
 
-    if (updateError) {
-    return NextResponse.json(
-        { error: "Download token already used or expired" },
-        { status: 403 }
-    );
-    }
-
-    // Stream from R2
-    const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME!,
-      Key: track.file_key,
-    });
-
-    const object = await r2.send(command);
-
-    return new Response(object.Body as any, {
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${track.title}"`,
-      },
-    });
   } catch (err: any) {
+    console.error("Download Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

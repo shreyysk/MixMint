@@ -26,15 +26,24 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Not a DJ" }, { status: 403 });
     }
 
-    const { data: tracks, error } = await supabaseServer
+    const { data: tracks, error: tracksError } = await supabaseServer
         .from("tracks")
         .select("id, title, price, created_at")
         .eq("dj_id", dj.id)
         .order("created_at", { ascending: false });
 
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+    const { data: albumPacks, error: albumsError } = await supabaseServer
+        .from("album_packs")
+        .select("id, title, price, created_at, description")
+        .eq("dj_id", dj.id)
+        .order("created_at", { ascending: false });
+
+    if (tracksError || albumsError) {
+        return NextResponse.json({ error: tracksError?.message || albumsError?.message }, { status: 400 });
     }
 
-    return NextResponse.json({ tracks });
+    return NextResponse.json({
+        tracks: tracks || [],
+        albumPacks: albumPacks || []
+    });
 }

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { r2 } from "@/app/lib/r2Client";
-import { supabase } from "@/app/lib/supabaseClient";
+import { r2 } from "@/app/lib/r2";
+import { supabaseServer } from "@/app/lib/supabaseServer";
 
+/**
+ * POST /api/upload
+ * 
+ * General file uploader for DJs and Admins.
+ * Standardized with MixMint platform metadata and storage isolation.
+ */
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -11,20 +17,20 @@ export async function POST(req: Request) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
 
-    if (!userData?.user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseServer
       .from("profiles")
       .select("role")
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profile?.role !== "dj" && profile?.role !== "admin") {
-      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+      return NextResponse.json({ error: "Unprivileged role" }, { status: 403 });
     }
 
     const formData = await req.formData();
@@ -34,30 +40,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const allowed = ["audio/mpeg", "audio/wav", "application/zip"];
-    if (!allowed.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
-    }
+    // Standardized extensions check
+    const fileName = file.name;
+    const fileExt = fileName.split(".").pop()?.toLowerCase();
+    const isZip = ["zip", "rar", "7z"].includes(fileExt || "");
+    const folder = isZip ? "zips" : "tracks";
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileKey = `uploads/${userData.user.id}/${Date.now()}-${file.name}`;
+    const timestamp = Date.now();
+    const fileKey = `${folder}/${user.id}/${timestamp}-${fileName}`;
+
+    // MANDATORY MIXMINT METADATA
+    const metadata = {
+      "x-platform": "MixMint",
+      "x-platform-url": "https://mixmint.site",
+      "x-upload-source": "MixMint DJ Upload",
+      "x-dj-id": user.id,
+      "x-uploaded-at": new Date().toISOString(),
+    };
 
     await r2.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME!,
         Key: fileKey,
         Body: buffer,
-        ContentType: file.type,
+        ContentType: file.type || "application/octet-stream",
+        Metadata: metadata,
       })
     );
 
-    // 🔁 REPLACED return logic here
     return NextResponse.json({
+      success: true,
       fileKey,
       fileName: file.name,
       contentType: file.type,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[GENERAL_UPLOAD_ERROR]:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
