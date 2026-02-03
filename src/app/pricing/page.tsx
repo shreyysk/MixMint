@@ -10,10 +10,10 @@ const plans = [
     {
         name: "Basic",
         price: "₹99",
-        tagline: "For the causal listener",
+        tagline: "For the casual listener",
         icon: Zap,
         color: "text-zinc-400",
-        bg: "bg-zinc-900/50",
+        iconBg: "from-zinc-600/20 to-zinc-600/5",
         features: [
             "3 High-Quality Downloads / mo",
             "Standard Community Access",
@@ -27,7 +27,7 @@ const plans = [
         tagline: "For the dedicated fan",
         icon: TrendingUp,
         color: "text-violet-400",
-        bg: "bg-violet-900/10",
+        iconBg: "from-violet-600/20 to-violet-600/5",
         border: "border-violet-500/30",
         popular: true,
         features: [
@@ -40,11 +40,11 @@ const plans = [
     },
     {
         name: "Super",
-        price: "399",
+        price: "₹399",
         tagline: "For the ultimate supporter",
         icon: Crown,
         color: "text-amber-400",
-        bg: "bg-amber-900/10",
+        iconBg: "from-amber-600/20 to-amber-600/5",
         border: "border-amber-500/30",
         features: [
             "Unlimited HQ Downloads",
@@ -58,72 +58,88 @@ const plans = [
 
 export default function PricingPage() {
     return (
-        <div className="pb-24">
+        <div className="min-h-screen pb-24">
             <div className="px-6 md:px-12">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
-                    <div className="text-center mb-20">
+                    <div className="text-center mb-16 pt-4">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8"
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium mb-6"
                         >
                             Transparent Pricing
                         </motion.div>
-                        <h1 className="text-5xl md:text-7xl font-black text-white uppercase italic tracking-tighter mb-6">
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-4xl md:text-5xl font-bold text-white mb-4"
+                        >
                             Simple, <span className="text-violet-gradient">DJ-First</span> Pricing
-                        </h1>
-                        <p className="text-zinc-500 font-bold max-w-2xl mx-auto text-lg leading-relaxed">
-                            MixMint is built on ownership. No streaming royalties here — <span className="text-zinc-300">just secure downloads and direct artist support.</span>
-                        </p>
+                        </motion.h1>
+                        <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-zinc-500 max-w-2xl mx-auto"
+                        >
+                            MixMint is built on ownership. No streaming royalties here — just secure downloads and direct artist support.
+                        </motion.p>
                     </div>
 
                     {/* Pricing Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
                         {plans.map((plan, i) => (
                             <motion.div
                                 key={plan.name}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
+                                transition={{ delay: i * 0.1 + 0.2 }}
                                 className={cn(
-                                    "relative p-8 rounded-[2.5rem] border flex flex-col transition-all hover:scale-[1.02] duration-300",
-                                    plan.border || "border-zinc-800",
-                                    plan.bg
+                                    "relative p-8 rounded-2xl bg-zinc-900/50 border flex flex-col transition-all duration-300 hover:bg-zinc-900/70",
+                                    plan.border || "border-zinc-800/60",
+                                    plan.popular && "ring-1 ring-violet-500/20"
                                 )}
                             >
                                 {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(124,58,237,0.5)]">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-violet-600 text-white text-xs font-medium shadow-lg shadow-violet-600/20">
                                         Most Popular
                                     </div>
                                 )}
 
-                                <div className="mb-10 text-center">
-                                    <div className={cn("inline-flex p-4 rounded-2xl bg-black/40 border border-zinc-800 mb-6", plan.color)}>
-                                        <plan.icon size={32} />
+                                <div className="mb-8 text-center">
+                                    <div className={cn(
+                                        "inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br items-center justify-center mb-5",
+                                        plan.iconBg
+                                    )}>
+                                        <plan.icon className={plan.color} size={24} />
                                     </div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">{plan.name}</h3>
-                                    <p className="text-zinc-500 text-sm font-bold italic mb-6">{plan.tagline}</p>
+                                    <h3 className="text-lg font-semibold text-white mb-1">{plan.name}</h3>
+                                    <p className="text-zinc-500 text-sm mb-5">{plan.tagline}</p>
                                     <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-4xl font-black text-white italic tracking-tighter">{plan.price}</span>
-                                        <span className="text-zinc-600 text-sm font-black uppercase">/ month</span>
+                                        <span className="text-4xl font-bold text-white">{plan.price}</span>
+                                        <span className="text-zinc-500 text-sm">/ month</span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 mb-10 flex-grow">
+                                <div className="space-y-3 mb-8 flex-grow">
                                     {plan.features.map((feature) => (
                                         <div key={feature} className="flex items-start gap-3">
-                                            <div className={cn("mt-1 p-0.5 rounded-full bg-zinc-900 border border-zinc-800", plan.popular ? "text-violet-400" : "text-zinc-600")}>
+                                            <div className={cn(
+                                                "mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0",
+                                                plan.popular ? "bg-violet-600/10 text-violet-400" : "bg-zinc-800 text-zinc-500"
+                                            )}>
                                                 <Check size={12} />
                                             </div>
-                                            <span className="text-sm text-zinc-400 font-bold leading-tight">{feature}</span>
+                                            <span className="text-sm text-zinc-400 leading-tight">{feature}</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 <Button
                                     variant={plan.popular ? "primary" : "outline"}
-                                    className={cn("w-full h-14 rounded-2xl", plan.popular ? "bg-violet-600 hover:bg-violet-700" : "border-zinc-800")}
+                                    className="w-full"
                                 >
                                     Choose {plan.name}
                                 </Button>
@@ -132,24 +148,36 @@ export default function PricingPage() {
                     </div>
 
                     {/* Info Section */}
-                    <div className="max-w-4xl mx-auto p-8 md:p-12 rounded-[3rem] bg-zinc-900/30 border border-zinc-800 text-center md:text-left">
-                        <div className="flex flex-col md:flex-row items-center gap-10">
-                            <div className="shrink-0 w-20 h-20 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center">
-                                <Info className="text-violet-500" size={32} />
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="max-w-4xl mx-auto p-8 md:p-10 rounded-2xl bg-zinc-900/40 border border-zinc-800/60"
+                    >
+                        <div className="flex flex-col md:flex-row items-start gap-8">
+                            <div className="shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600/20 to-violet-600/5 flex items-center justify-center">
+                                <Info className="text-violet-400" size={24} />
                             </div>
                             <div>
-                                <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">How it works</h4>
-                                <p className="text-zinc-500 font-bold leading-relaxed mb-6">
-                                    MixMint isn't like Spotify or Apple Music. When you subscribe or buy a track, you're getting <span className="text-white italic">permanent access</span> to high-fidelity audio files. Secure downloads ensure that even if you're offline at a gig or in the desert, your music is always yours.
+                                <h4 className="text-xl font-semibold text-white mb-3">How it works</h4>
+                                <p className="text-zinc-400 leading-relaxed mb-6">
+                                    MixMint isn't like Spotify or Apple Music. When you subscribe or buy a track, you're getting{" "}
+                                    <span className="text-white">permanent access</span> to high-fidelity audio files. Secure downloads ensure that even if you're offline at a gig or in the desert, your music is always yours.
                                 </p>
-                                <div className="flex flex-wrap gap-8 text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">
-                                    <span className="flex items-center gap-2"><Check size={14} className="text-violet-500" /> Secure Downloads</span>
-                                    <span className="flex items-center gap-2"><Check size={14} className="text-violet-500" /> No Streaming Noise</span>
-                                    <span className="flex items-center gap-2"><Check size={14} className="text-violet-500" /> Direct Support</span>
+                                <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
+                                    <span className="flex items-center gap-2">
+                                        <Check size={16} className="text-violet-400" /> Secure Downloads
+                                    </span>
+                                    <span className="flex items-center gap-2">
+                                        <Check size={16} className="text-violet-400" /> No Streaming Noise
+                                    </span>
+                                    <span className="flex items-center gap-2">
+                                        <Check size={16} className="text-violet-400" /> Direct Support
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </div>
