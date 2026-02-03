@@ -12,8 +12,9 @@ import { signOut } from "@/app/lib/auth";
 
 const navLinks = [
     { name: "Explore DJs", href: "/explore" },
+    { name: "Tracks", href: "/tracks" },
+    { name: "Albums", href: "/albums" },
     { name: "Pricing", href: "/pricing" },
-    { name: "Become a DJ", href: "/become-dj" },
 ];
 
 export function Navbar() {
