@@ -3,56 +3,67 @@ import { Headphones, Twitter, Instagram, Github } from "lucide-react";
 
 export function Footer() {
     return (
-        <footer className="bg-black border-t border-zinc-900 py-16 px-6 md:px-12">
+        <footer className="bg-zinc-950 border-t border-zinc-900/80 py-16 px-6 md:px-12">
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left">
+                {/* Brand Column */}
                 <div className="col-span-1 md:col-span-1 flex flex-col items-center md:items-start">
-                    <Link href="/" className="flex items-center gap-2 mb-6 group">
-                        <div className="w-8 h-8 bg-violet-600 rounded flex items-center justify-center">
-                            <Headphones className="text-white" size={18} />
+                    <Link href="/" className="flex items-center gap-2.5 mb-6 group">
+                        <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center">
+                            <Headphones className="text-white" size={16} />
                         </div>
-                        <span className="text-lg font-black tracking-tighter text-white uppercase italic">MixMint</span>
+                        <span className="text-base font-bold tracking-tight text-white">MixMint</span>
                     </Link>
                     <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-                        MixMint — Home of DJ Releases. No streaming, just pure audio ownership.
+                        Home of DJ Releases. No streaming, just pure audio ownership.
                     </p>
-                    <div className="flex gap-4">
-                        <Twitter className="text-zinc-600 hover:text-white cursor-pointer transition-colors" size={20} />
-                        <Instagram className="text-zinc-600 hover:text-white cursor-pointer transition-colors" size={20} />
-                        <Github className="text-zinc-600 hover:text-white cursor-pointer transition-colors" size={20} />
+                    <div className="flex gap-3">
+                        <a href="#" className="w-9 h-9 rounded-lg bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-600 transition-all">
+                            <Twitter size={16} />
+                        </a>
+                        <a href="#" className="w-9 h-9 rounded-lg bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-600 transition-all">
+                            <Instagram size={16} />
+                        </a>
+                        <a href="#" className="w-9 h-9 rounded-lg bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-600 transition-all">
+                            <Github size={16} />
+                        </a>
                     </div>
                 </div>
 
+                {/* Music Links */}
                 <div>
-                    <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-6">Music</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-bold">
-                        <li><Link href="/explore" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Explore DJs</Link></li>
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Latest Drops</Link></li>
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Genres</Link></li>
+                    <h4 className="text-white font-semibold text-sm mb-6">Music</h4>
+                    <ul className="space-y-3 text-sm">
+                        <li><Link href="/explore" className="text-zinc-500 hover:text-violet-400 transition-colors">Explore DJs</Link></li>
+                        <li><Link href="/tracks" className="text-zinc-500 hover:text-violet-400 transition-colors">Browse Tracks</Link></li>
+                        <li><Link href="/albums" className="text-zinc-500 hover:text-violet-400 transition-colors">Album Packs</Link></li>
                     </ul>
                 </div>
 
+                {/* Platform Links */}
                 <div>
-                    <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-6">Platform</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-bold">
-                        <li><Link href="/pricing" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Pricing</Link></li>
-                        <li><Link href="/become-dj" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Become a DJ</Link></li>
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Artist Tools</Link></li>
+                    <h4 className="text-white font-semibold text-sm mb-6">Platform</h4>
+                    <ul className="space-y-3 text-sm">
+                        <li><Link href="/pricing" className="text-zinc-500 hover:text-violet-400 transition-colors">Pricing</Link></li>
+                        <li><Link href="/dj/apply" className="text-zinc-500 hover:text-violet-400 transition-colors">Become a DJ</Link></li>
+                        <li><Link href="/dashboard" className="text-zinc-500 hover:text-violet-400 transition-colors">Dashboard</Link></li>
                     </ul>
                 </div>
 
+                {/* Legal Links */}
                 <div>
-                    <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-6">Legal</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-bold">
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Privacy Policy</Link></li>
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Terms</Link></li>
-                        <li><Link href="#" className="hover:text-violet-500 transition-colors uppercase tracking-tight">Copyright</Link></li>
+                    <h4 className="text-white font-semibold text-sm mb-6">Legal</h4>
+                    <ul className="space-y-3 text-sm">
+                        <li><Link href="#" className="text-zinc-500 hover:text-violet-400 transition-colors">Privacy Policy</Link></li>
+                        <li><Link href="#" className="text-zinc-500 hover:text-violet-400 transition-colors">Terms of Service</Link></li>
+                        <li><Link href="#" className="text-zinc-500 hover:text-violet-400 transition-colors">Copyright</Link></li>
                     </ul>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-zinc-600 uppercase tracking-widest font-black">
-                <p>&copy; 2024 MixMint — Demo UI Only</p>
-                <p>Built for the nightlife</p>
+            {/* Bottom Bar */}
+            <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-zinc-800/60 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-zinc-600">
+                <p>&copy; 2024 MixMint. All rights reserved.</p>
+                <p className="text-zinc-700">Built for the nightlife</p>
             </div>
         </footer>
     );
