@@ -6,7 +6,7 @@ import { supabase } from "@/app/lib/supabaseClient";
 import { TrackCard } from "@/app/components/ui/TrackCard";
 import { AlbumCard } from "@/app/components/ui/AlbumCard";
 import { Button } from "@/app/components/ui/Button";
-import { Loader2, Music, Package, Users } from "lucide-react";
+import { Loader2, Music, Package, Users, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -56,7 +56,6 @@ export default function DJProfilePage() {
       setLoading(true);
       setError(null);
 
-      // 1. Fetch DJ Profile
       const { data: djData, error: djError } = await supabase
         .from("dj_profiles")
         .select("*")
@@ -69,7 +68,6 @@ export default function DJProfilePage() {
 
       setDJ(djData);
 
-      // 2. Fetch Tracks (using dj_profile.id)
       const { data: tracksData } = await supabase
         .from("tracks")
         .select("id, title, price, youtube_url")
@@ -79,7 +77,6 @@ export default function DJProfilePage() {
 
       setTracks(tracksData || []);
 
-      // 3. Fetch Albums (using profile.user_id due to schema inconsistency)
       const { data: albumsData } = await supabase
         .from("album_packs")
         .select("id, title, description, price, file_size")
@@ -101,8 +98,10 @@ export default function DJProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="loading-state">
         <div className="text-center">
-          <Loader2 className="animate-spin text-violet-500 mx-auto mb-4" size={48} />
-          <p className="text-zinc-500 font-bold">Loading DJ profile...</p>
+          <div className="w-16 h-16 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-6">
+            <Loader2 className="animate-spin text-violet-400" size={28} />
+          </div>
+          <p className="text-zinc-500">Loading DJ profile...</p>
         </div>
       </div>
     );
@@ -113,11 +112,11 @@ export default function DJProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" data-testid="error-state">
         <div className="text-center max-w-md">
-          <div className="w-24 h-24 rounded-full bg-red-900/20 border border-red-800/50 flex items-center justify-center mx-auto mb-6">
-            <Music className="text-red-500" size={32} />
+          <div className="w-20 h-20 rounded-2xl bg-red-900/10 border border-red-800/30 flex items-center justify-center mx-auto mb-6">
+            <Music className="text-red-400" size={32} />
           </div>
-          <h1 className="text-3xl font-black text-white uppercase mb-2">DJ Not Found</h1>
-          <p className="text-zinc-500 font-bold mb-6">{error || "This DJ profile doesn't exist or hasn't been approved."}</p>
+          <h1 className="text-2xl font-bold text-white mb-3">DJ Not Found</h1>
+          <p className="text-zinc-500 mb-6">{error || "This DJ profile doesn't exist or hasn't been approved."}</p>
           <Link href="/explore">
             <Button>Explore All DJs</Button>
           </Link>
@@ -127,47 +126,51 @@ export default function DJProfilePage() {
   }
 
   return (
-    <div className="pb-24" data-testid="dj-profile-page">
+    <div className="min-h-screen pb-24" data-testid="dj-profile-page">
       {/* Hero Banner */}
       <div
-        className="relative h-[400px] bg-gradient-to-b from-zinc-900 to-black"
+        className="relative h-[350px] md:h-[400px]"
         style={{
           backgroundImage: dj.banner_url ? `url(${dj.banner_url})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/80 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-8">
+        {/* Content */}
+        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-10">
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <h1 className="text-5xl md:text-7xl font-black text-white uppercase italic tracking-tighter mb-4">
-                {dj.dj_name}
-              </h1>
-              
+              {/* Genres */}
               {dj.genres && dj.genres.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {dj.genres.filter(g => g).map((genre, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 rounded-full bg-violet-600/20 border border-violet-500/30 text-violet-400 text-xs font-black uppercase tracking-wider"
+                      className="px-3 py-1 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-xs font-medium"
                     >
                       {genre}
                     </span>
                   ))}
                 </div>
               )}
+              
+              {/* DJ Name */}
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
+                {dj.dj_name}
+              </h1>
             </motion.div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-6 md:px-12 mt-12">
+      <div className="px-6 md:px-12 mt-10">
         <div className="max-w-7xl mx-auto">
           
           {/* Bio Section */}
@@ -177,8 +180,8 @@ export default function DJProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-16"
             >
-              <div className="p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800">
-                <h2 className="text-xl font-black text-white uppercase italic tracking-tight mb-4">About</h2>
+              <div className="p-6 md:p-8 rounded-2xl bg-zinc-900/50 border border-zinc-800/60">
+                <h2 className="text-lg font-semibold text-white mb-3">About</h2>
                 <p className="text-zinc-400 leading-relaxed">{dj.bio}</p>
               </div>
             </motion.div>
@@ -192,16 +195,16 @@ export default function DJProfilePage() {
               transition={{ delay: 0.1 }}
               className="mb-16"
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <Music className="text-violet-500" size={28} />
-                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
-                    Tracks ({tracks.length})
-                  </h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center">
+                  <Music className="text-violet-400" size={18} />
                 </div>
+                <h2 className="text-2xl font-bold text-white">
+                  Tracks <span className="text-zinc-500 text-lg font-normal">({tracks.length})</span>
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="tracks-section">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" data-testid="tracks-section">
                 {tracks.map((track) => (
                   <TrackCard
                     key={track.id}
@@ -225,16 +228,16 @@ export default function DJProfilePage() {
               transition={{ delay: 0.2 }}
               className="mb-16"
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <Package className="text-amber-500" size={28} />
-                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
-                    Album Packs ({albums.length})
-                  </h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-amber-600/10 border border-amber-500/20 flex items-center justify-center">
+                  <Package className="text-amber-400" size={18} />
                 </div>
+                <h2 className="text-2xl font-bold text-white">
+                  Album Packs <span className="text-zinc-500 text-lg font-normal">({albums.length})</span>
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="albums-section">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" data-testid="albums-section">
                 {albums.map((album) => (
                   <AlbumCard
                     key={album.id}
@@ -253,11 +256,17 @@ export default function DJProfilePage() {
 
           {/* Empty State */}
           {tracks.length === 0 && albums.length === 0 && (
-            <div className="text-center py-24">
-              <Music className="text-zinc-700 mx-auto mb-4" size={64} />
-              <h3 className="text-2xl font-black text-white uppercase mb-2">No Content Yet</h3>
-              <p className="text-zinc-500 font-bold">This DJ hasn't uploaded any tracks or albums yet.</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-20"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-center mx-auto mb-6">
+                <Music className="text-zinc-600" size={32} />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">No Content Yet</h3>
+              <p className="text-zinc-500">This DJ hasn't uploaded any tracks or albums yet.</p>
+            </motion.div>
           )}
 
           {/* Subscribe CTA */}
@@ -265,20 +274,30 @@ export default function DJProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 text-center"
+            className="relative p-8 md:p-12 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 overflow-hidden"
           >
-            <Users className="text-white/80 mx-auto mb-4" size={48} />
-            <h3 className="text-3xl font-black text-white uppercase italic tracking-tight mb-4">
-              Subscribe to {dj.dj_name}
-            </h3>
-            <p className="text-white/80 font-bold mb-6 max-w-xl mx-auto">
-              Get monthly access to tracks and exclusive content with a DJ subscription.
-            </p>
-            <Link href="/pricing">
-              <Button size="lg" className="bg-white text-violet-700 hover:bg-zinc-100 px-12">
-                View Plans
-              </Button>
-            </Link>
+            {/* Background Glow */}
+            <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-white/10 blur-[80px] rounded-full pointer-events-none" />
+            
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-5 mx-auto md:mx-0">
+                  <Users className="text-white" size={24} />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                  Subscribe to {dj.dj_name}
+                </h3>
+                <p className="text-white/70 max-w-md">
+                  Get monthly access to tracks and exclusive content with a DJ subscription.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button size="lg" className="bg-white text-violet-700 hover:bg-zinc-100 px-8 shrink-0">
+                  View Plans
+                  <ArrowRight size={18} />
+                </Button>
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>
