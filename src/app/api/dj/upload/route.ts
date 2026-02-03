@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "@/app/lib/r2";
 import { supabaseServer } from "@/app/lib/supabaseServer";
+import { getDJStoragePath } from "@/app/lib/djStorage";
+import { requireAuth } from "@/app/lib/requireAuth";
+import { requireDJ } from "@/app/lib/requireDJ";
 
 /**
  * GET /api/dj/upload
@@ -21,29 +24,25 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         /* ─────────────────────────────────────────────────────────────
-           1. AUTHENTICATION & AUTHORIZATION
+           1. AUTHENTICATION & AUTHORIZATION (PHASE H1)
         ───────────────────────────────────────────────────────────── */
-        const authHeader = req.headers.get("authorization");
-        if (!authHeader) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const user = await requireAuth();
+        await requireDJ(user.id);
 
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
-
-        if (authError || !user) {
-            return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-        }
-
-        // 1b. Verify DJ role in core profiles first
+        // Fetch profile for additional metadata (fullname) and activation
         const { data: coreProfile, error: coreError } = await supabaseServer
             .from("profiles")
-            .select("role")
+            .select("role, full_name")
             .eq("id", user.id)
             .single();
 
-        if (coreError || !coreProfile || (coreProfile.role !== "dj" && coreProfile.role !== "admin")) {
-            return NextResponse.json({ error: "DJ access required" }, { status: 403 });
+        if (coreError || !coreProfile) {
+            return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+        }
+
+        // Validate full_name exists (required for storage path)
+        if (!coreProfile.full_name) {
+            return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
         }
 
         // 1c. Self-Healing DJ Profile activation
@@ -89,8 +88,8 @@ export async function POST(req: Request) {
         const description = formData.get("description") as string | null;
         const contentTypeParam = formData.get("content_type") as string;
 
-        if (!file) {
-            return NextResponse.json({ error: "No file provided" }, { status: 400 });
+        if (!file || !(file instanceof File)) {
+            return NextResponse.json({ error: "No file provided or invalid file input" }, { status: 400 });
         }
 
         if (!title || isNaN(price)) {
@@ -152,8 +151,13 @@ export async function POST(req: Request) {
         ───────────────────────────────────────────────────────────── */
         const buffer = Buffer.from(await file.arrayBuffer());
         const timestamp = Date.now();
-        // Path: zips/<dj_id>/<timestamp>-<filename> OR tracks/<dj_id>/<timestamp>-<filename>
-        const fileKey = `${folder}/${user.id}/${timestamp}-${fileName}`;
+        // NEW PATH FORMAT: <dj_slug>_<dj_id>/tracks|albums/<timestamp>-<filename>
+        const fileKey = getDJStoragePath(
+            coreProfile.full_name,
+            user.id,
+            isZip ? "albums" : "tracks",
+            fileName
+        );
 
         // Debug logging to track duplicate uploads
         const uploadId = `${timestamp}-${Math.random().toString(36).substring(7)}`;
@@ -217,6 +221,13 @@ export async function POST(req: Request) {
         });
 
     } catch (err: any) {
+        if (err.message === "UNAUTHORIZED") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (err.message === "FORBIDDEN") {
+            return NextResponse.json({ error: "DJ access required" }, { status: 403 });
+        }
+
         console.error("[DJ_UPLOAD_ERROR]:", err);
         return NextResponse.json(
             { error: err.message || "Internal server error" },

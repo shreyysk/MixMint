@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "@/app/lib/r2";
 import { supabaseServer } from "@/app/lib/supabaseServer";
+import { getDJStoragePath } from "@/app/lib/djStorage";
+import { requireAuth } from "@/app/lib/requireAuth";
 
 /**
  * POST /api/upload
@@ -11,21 +13,11 @@ import { supabaseServer } from "@/app/lib/supabaseServer";
  */
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-    }
+    const user = await requireAuth();
 
     const { data: profile } = await supabaseServer
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single();
 
@@ -33,11 +25,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unprivileged role" }, { status: 403 });
     }
 
+    if (!profile?.full_name) {
+      return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: "No file provided or invalid file input" }, { status: 400 });
     }
 
     // Standardized extensions check
@@ -47,8 +43,13 @@ export async function POST(req: Request) {
     const folder = isZip ? "zips" : "tracks";
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const timestamp = Date.now();
-    const fileKey = `${folder}/${user.id}/${timestamp}-${fileName}`;
+    // NEW PATH FORMAT: <dj_slug>_<dj_id>/tracks|albums/<timestamp>-<filename>
+    const fileKey = getDJStoragePath(
+      profile.full_name,
+      user.id,
+      isZip ? "albums" : "tracks",
+      fileName
+    );
 
     // MANDATORY MIXMINT METADATA
     const metadata = {
@@ -76,7 +77,10 @@ export async function POST(req: Request) {
       contentType: file.type,
     });
   } catch (err: any) {
+    if (err.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("[GENERAL_UPLOAD_ERROR]:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

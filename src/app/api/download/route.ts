@@ -42,7 +42,12 @@ export async function GET(req: Request) {
       );
     }
 
-    // --- HANDLE TRACK DOWNLOADS ---
+    // --- FETCH METADATA & STREAM FILE (PHASE H3) ---
+    let fileKey = "";
+    let fileName = "download";
+    let contentType = "application/octet-stream";
+    let djId = "";
+
     if (tokenRow.content_type === "track") {
       const { data: track } = await supabaseServer
         .from("tracks")
@@ -50,57 +55,39 @@ export async function GET(req: Request) {
         .eq("id", tokenRow.content_id)
         .single();
 
-      if (!track) {
-        return NextResponse.json({ error: "Content not found" }, { status: 404 });
-      }
-
-      // Get file from R2
-      const object = await r2.send(new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
-        Key: track.file_key,
-      }));
-
-      // Mark token used
-      await supabaseServer
-        .from("download_tokens")
-        .update({ is_used: true })
-        .eq("id", tokenRow.id);
-
-      // Return file stream
-      return new Response(object.Body as any, {
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "Content-Disposition": `attachment; filename="${track.title}"`,
-        },
-      });
-    }
-
-    // --- HANDLE ZIP DOWNLOADS (PHASE 3.3) ---
-    if (tokenRow.content_type === "zip") {
+      if (!track) throw new Error("CONTENT_NOT_FOUND");
+      fileKey = track.file_key;
+      fileName = track.title;
+    } else if (tokenRow.content_type === "zip") {
       const { data: album } = await supabaseServer
         .from("album_packs")
         .select("file_key, dj_id, title")
         .eq("id", tokenRow.content_id)
         .single();
 
-      if (!album) {
-        return NextResponse.json({ error: "Album not found" }, { status: 404 });
-      }
+      if (!album) throw new Error("CONTENT_NOT_FOUND");
+      fileKey = album.file_key;
+      fileName = `${album.title || "album"}.zip`;
+      contentType = "application/zip";
+      djId = album.dj_id;
+    } else {
+      throw new Error("INVALID_CONTENT_TYPE");
+    }
 
-      // Get ZIP from R2
-      const object = await r2.send(new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
-        Key: album.file_key,
-      }));
+    // 1️⃣ Initialize R2 stream first
+    const object = await r2.send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: fileKey,
+    }));
 
-      // Mark token used (critical security step)
-      await supabaseServer
-        .from("download_tokens")
-        .update({ is_used: true })
-        .eq("id", tokenRow.id);
+    // 2️⃣ ATOMIC UPDATE: Mark token used only after stream is ready
+    await supabaseServer
+      .from("download_tokens")
+      .update({ is_used: true })
+      .eq("id", tokenRow.id);
 
-      // Increment ZIP quota if subscription-based (not purchase)
-      // Check if this was a subscription download
+    // 3️⃣ QUOTA INCREMENT (Subscription-based ZIPs only)
+    if (tokenRow.content_type === "zip") {
       const { data: purchase } = await supabaseServer
         .from("purchases")
         .select("id")
@@ -109,13 +96,12 @@ export async function GET(req: Request) {
         .eq("content_id", tokenRow.content_id)
         .single();
 
-      // If no purchase found, this was a subscription download → increment quota
       if (!purchase) {
         const { data: sub } = await supabaseServer
           .from("dj_subscriptions")
           .select("zip_used")
           .eq("user_id", tokenRow.user_id)
-          .eq("dj_id", album.dj_id)
+          .eq("dj_id", djId)
           .gt("expires_at", new Date().toISOString())
           .single();
 
@@ -124,23 +110,24 @@ export async function GET(req: Request) {
             .from("dj_subscriptions")
             .update({ zip_used: (sub.zip_used || 0) + 1 })
             .eq("user_id", tokenRow.user_id)
-            .eq("dj_id", album.dj_id);
+            .eq("dj_id", djId);
         }
       }
-
-      // Return ZIP stream
-      return new Response(object.Body as any, {
-        headers: {
-          "Content-Type": "application/zip",
-          "Content-Disposition": `attachment; filename="${album.title || 'album'}.zip"`,
-        },
-      });
     }
 
-    return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
+    // 4️⃣ Return stream
+    return new Response(object.Body as any, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+      },
+    });
 
   } catch (err: any) {
+    if (err.message === "CONTENT_NOT_FOUND") {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
     console.error("Download Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

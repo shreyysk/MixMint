@@ -1,23 +1,11 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseServer } from "@/app/lib/supabaseServer";
+import { requireAuth } from "@/app/lib/requireAuth";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const tokenValue = authHeader.replace("Bearer ", "");
-
-    // Verify user via Supabase auth
-    const { data: userData, error: authError } =
-      await supabaseServer.auth.getUser(tokenValue);
-
-    if (authError || !userData?.user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-    }
+    const user = await requireAuth();
 
     const body = await req.json();
     const { content_id, content_type } = body;
@@ -46,7 +34,7 @@ export async function POST(req: Request) {
       const { data: purchases } = await supabaseServer
         .from("purchases")
         .select("id")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", user.id)
         .eq("content_id", content_id)
         .eq("content_type", "track")
         .limit(1);
@@ -58,7 +46,7 @@ export async function POST(req: Request) {
         const { data: subscription } = await supabaseServer
           .from("dj_subscriptions")
           .select("*")
-          .eq("user_id", userData.user.id)
+          .eq("user_id", user.id)
           .eq("dj_id", track.dj_id)
           .gt("expires_at", new Date().toISOString())
           .limit(1)
@@ -101,7 +89,7 @@ export async function POST(req: Request) {
       const { data: purchase } = await supabaseServer
         .from("purchases")
         .select("id")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", user.id)
         .eq("content_type", "zip")
         .eq("content_id", album.id)
         .single();
@@ -113,7 +101,7 @@ export async function POST(req: Request) {
         const { data: sub } = await supabaseServer
           .from("dj_subscriptions")
           .select("*")
-          .eq("user_id", userData.user.id)
+          .eq("user_id", user.id)
           .eq("dj_id", album.dj_id)
           .gt("expires_at", new Date().toISOString())
           .single();
@@ -148,7 +136,7 @@ export async function POST(req: Request) {
     const { error: insertError } = await supabaseServer
       .from("download_tokens")
       .insert({
-        user_id: userData.user.id,
+        user_id: user.id,
         content_id,
         content_type,
         token: downloadToken,
@@ -164,6 +152,9 @@ export async function POST(req: Request) {
       expires_at: expiresAt,
     });
   } catch (err: any) {
+    if (err.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

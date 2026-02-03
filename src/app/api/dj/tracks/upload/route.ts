@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { r2 } from "@/app/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getDJStoragePath } from "@/app/lib/djStorage";
+import { requireAuth } from "@/app/lib/requireAuth";
+import { requireDJ } from "@/app/lib/requireDJ";
 
 /**
  * GET /api/dj/tracks/upload
@@ -19,20 +22,11 @@ export async function GET() {
  */
 export async function POST(req: Request) {
   try {
-    // 1. AUTHENTICATION & ROLE CHECK
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // 1. AUTHENTICATION & ROLE CHECK (PHASE H1)
+    const user = await requireAuth();
+    await requireDJ(user.id);
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseServer.auth.getUser(token);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify DJ profile and approval status
+    // Verify DJ profile status for approval
     const { data: djProfile, error: profileError } = await supabaseServer
       .from("dj_profiles")
       .select("id, status")
@@ -40,25 +34,30 @@ export async function POST(req: Request) {
       .single();
 
     if (profileError || !djProfile) {
-      return NextResponse.json(
-        { error: "DJ profile not found" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "DJ profile not found" }, { status: 403 });
     }
 
     if (djProfile.status !== "approved") {
-      return NextResponse.json(
-        { error: "Your DJ account is pending approval" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Your DJ account is pending approval" }, { status: 403 });
+    }
+
+    // Fetch DJ full_name from profiles for storage path
+    const { data: coreProfile, error: coreError } = await supabaseServer
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+
+    if (coreError || !coreProfile || !coreProfile.full_name) {
+      return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
     }
 
     // 2. FILE VALIDATION
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: "No file uploaded or invalid file input" }, { status: 400 });
     }
 
     // MIME type check
@@ -93,9 +92,13 @@ export async function POST(req: Request) {
 
     // 4. STORAGE LOGIC
     const fileName = file.name;
-    const timestamp = Date.now();
-    // Path: tracks/{user_id}/{timestamp}-{filename}
-    const fileKey = `tracks/${user.id}/${timestamp}-${fileName}`;
+    // NEW PATH FORMAT: <dj_slug>_<dj_id>/tracks/<timestamp>-<filename>
+    const fileKey = getDJStoragePath(
+      coreProfile.full_name,
+      user.id,
+      "tracks",
+      fileName
+    );
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // 5. MANDATORY MIXMINT METADATA
@@ -133,6 +136,13 @@ export async function POST(req: Request) {
     });
 
   } catch (err: any) {
+    if (err.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "DJ access required" }, { status: 403 });
+    }
+
     console.error("[DJ_UPLOAD_ERROR]:", err);
     return NextResponse.json(
       { error: err.message || "Internal server error" },
