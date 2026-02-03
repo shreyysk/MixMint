@@ -187,9 +187,9 @@ export default function TrackDetailPage() {
   const isFree = track.price === 0;
 
   return (
-    <div className="pb-24" data-testid="track-detail-page">
+    <div className="min-h-screen pb-24" data-testid="track-detail-page">
       <div className="px-6 md:px-12">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto pt-8">
           
           {/* Back Button */}
           <motion.div
