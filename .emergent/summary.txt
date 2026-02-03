@@ -1,0 +1,190 @@
+<analysis>**original_problem_statement:**
+You are a senior SaaS engineer and UI architect for a production-grade SaaS called MixMint. Your job is to improve, harden, and extend the existing codebase incrementally. The project is a DJ-first platform for secure music sales and subscriptions, not a streaming service.
+
+**PRODUCT REQUIREMENTS (MIXMINT PRD SUMMARY):**
+- **Core Concept:** A DJ-first platform for securely selling music downloads (tracks, album ZIPs) and offering per-DJ subscriptions. It is NOT a streaming service.
+- **User Roles:** User/Fan, DJ, Admin.
+- **Key Features:**
+    - Secure, token-based downloads (expiring, IP-locked).
+    - Per-DJ subscription plans with download quotas.
+    - Direct purchases of tracks and albums.
+    - Track previews via YouTube embeds.
+    - DJ storefronts with custom branding.
+    - Admin panel for approvals, monitoring, and content moderation.
+    - Future features: Fan uploads, points/referrals, custom domains.
+- **Tech Stack:** Next.js (App Router), Supabase (Postgres), Cloudflare R2, Razorpay (Payments), Resend (Emails).
+- **Critical Rule:** Backend is security-first and token-gated. Improve incrementally. Frontend can be redesigned freely but must consume existing APIs.
+
+**User's preferred language**: English
+
+**what currently exists?**
+The project is a full-stack Next.js application with a Supabase backend and Cloudflare R2 for storage. The foundational work is complete, including a secure environment setup with user-provided credentials for Supabase, R2, Razorpay (test mode), and Resend.
+
+Key completed items include:
+- A non-breaking schema migration to standardize the foreign key on the  table.
+- A  table in the database, controlled by a new Admin dashboard, which allows for dynamic configuration of the active payment gateway (Razorpay vs. PhonePe), pricing rules, and feature flags.
+- A robust payment abstraction layer that currently uses Razorpay for creating and verifying payments for tracks, albums, and subscriptions. The system is ready to integrate PhonePe when credentials are provided.
+- Integration with Resend for sending transactional emails upon successful purchases and subscriptions.
+- Seeding of mock data (DJs, tracks, albums) to facilitate comprehensive testing, along with scripts to seed and clean this data.
+- Critical bugs related to data loading on the Explore page (fixed via RLS policy updates) and layout issues on detail pages have been resolved.
+
+The application is functionally stable and ready for a full UI/UX redesign to align with the product's premium brand identity.
+
+**Last working item**:
+    - Last item agent was working: The agent began Batch 1 of a comprehensive UI/UX redesign. The immediate task was to redesign the  component, which involved two main actions: 1) Enforcing the critical UX rule to remove price displays from all listing cards, and 2) Applying a new, premium visual design to the card. The agent was in the process of analyzing the existing  file.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? screenshot tool
+    - User Testing Done: N
+
+**All Pending/In progress Issue list**:
+  - No outstanding bugs. The agent has resolved all identified critical issues (RLS data fetching, detail page layout). The current focus is on planned redesign tasks.
+
+**In progress Task List**:
+  - Task 1: UI/UX Redesign - Batch 1 (P0)
+     - Where to resume: Continue with the redesign of the  component located at . The next step is to modify this file to remove the price display and apply new Tailwind CSS classes for the updated design. Following that, the  component should be similarly redesigned.
+     - What will be achieved with this? This will bring the content listing cards in line with the premium SaaS visual identity and enforce the non-negotiable pricing visibility rules, improving both UX and brand consistency.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? frontend
+     - Blocked on something: None
+
+**Upcoming and Future Tasks**
+Upcoming Tasks:
+    - **UI Redesign Batch 2 (P1):** Implement the new Typography and Button systems across the application.
+    - **UI Redesign Batch 3 (P2):** Final polish, including spacing, colors, micro-interactions, loading/empty states, and overall visual consistency.
+    - **Integrate PhonePe (P1):** Fully enable the PhonePe payment provider once the user provides the necessary API keys.
+
+Future Tasks:
+    - **User Dashboard Features (P2):** Enhance the user dashboard with views for download history, points balance, and referral stats.
+    - **DJ Dashboard Features (P2):** Build out the DJ dashboard with earnings analytics and payout information.
+    - **Fan Uploads (P3):** Implement the feature allowing DJs to offer exclusive content to Super subscribers.
+    - **Points & Referrals (P3):** Build the backend and frontend for the points and referral system.
+    - **Custom Domains (P3):** Implement the custom domain add-on for DJs.
+
+**Completed work in this session**
+- List of all completed tasks with file and method name:
+  - **Environment & Setup:**
+    - Configured  with Supabase, R2, Razorpay (test), and Resend credentials.
+    - Installed all dependencies via yarn install v1.22.22
+[1/4] Resolving packages...
+success Already up-to-date.
+Done in 0.23s..
+  - **Backend Hardening & Monetization (Batch 3):**
+    - Performed a non-breaking schema migration on  to add  ().
+    - Created  table for admin controls ().
+    - Built a payment abstraction layer () with Razorpay active and PhonePe stubbed.
+    - Implemented secure payment APIs (, ) and deprecated old, insecure routes.
+    - Integrated Resend for purchase/subscription confirmation emails ().
+  - **Frontend Development & Bug Fixes:**
+    - Created core frontend pages: , , , , , .
+    - Created a functional Admin Dashboard for system settings ().
+    - Integrated Razorpay checkout flow on the frontend ().
+    - **Fixed P0 Bug:** Resolved No DJs Found error on the  page by creating and applying public read-access RLS policies ().
+    - **Fixed P0 Bug:** Corrected layout and visibility issues on the Track and Album detail pages.
+  - **Testing:**
+    - Seeded and cleaned mock data for comprehensive testing (, ).
+    - Created detailed testing documentation ().
+
+**Earlier issues found/mentioned but not fixed**
+   - None. All identified issues have been addressed and resolved in this session.
+
+**Known issue recurrence from previous fork**
+  - None.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Framework:** Next.js 16 (App Router)
+- **Database:** Supabase (PostgreSQL) with Row-Level Security (RLS) for data access control.
+- **Authentication:** Supabase Auth (JWT-based).
+- **Storage:** Cloudflare R2 for private file storage.
+- **File Access:** Secure, token-based download system (single-use, expiring tokens).
+- **Payments:** Abstracted payment provider architecture, currently using Razorpay in test mode. Webhook verification for security.
+- **Styling:** Tailwind CSS.
+- **Deployment:** Full-stack serverless functions on Vercel.
+
+**key DB schema**
+  - **profiles:** {id, role, full_name}
+  - **dj_profiles:** {id, user_id, dj_name, slug, status}
+  - **tracks:** {id, dj_id (->dj_profiles.id), title, price, file_key}
+  - **album_packs:** {id, dj_id (->profiles.id - legacy), dj_profile_id (->dj_profiles.id - new), title, price}
+  - **system_settings:** {key, value} - Stores admin settings like payment gateway, pricing rules.
+  - **download_tokens:** {token, file_key, user_id, expires_at}
+
+**changes in tech stack**
+  -  npm package was added for payment processing.
+  -  npm package was added for email notifications.
+
+**All files of reference**
+- : Contains all SQL scripts for database changes.  was critical for fixing the DJ listing bug.
+- : The payment provider factory, central to the payment system.
+- : The UI for the new admin settings panel.
+- : The client-side logic for initiating the Razorpay payment flow.
+- : The secure backend endpoint that verifies payment and grants access to content.
+- : A detailed guide with credentials and steps for manually testing all core features.
+
+**Areas that need refactoring**:
+  - The  table contains a legacy  column. While a new  column has been added and is in use, the old column should be scheduled for removal in a future, dedicated backend-cleanup batch to finalize the schema standardization.
+
+**key api endpoints**
+- : Initiates a payment order for a piece of content.
+- : Verifies a completed payment and creates the corresponding purchase/subscription record in the database.
+- : Generates a secure, single-use token for downloading a purchased or free file.
+- : The endpoint that serves the file if a valid token is provided.
+- , : Fetches track data.
+- : Fetches DJ profile data (now works for anonymous users).
+
+**Critical Info for New Agent**
+- **You are in a UI/UX Redesign phase.** Your primary goal is visual polish. Do NOT add new features or modify backend logic.
+- **Follow the Batch plan.** You are to start with Batch 1 of the redesign: 1. Enforce pricing rules on cards, 2. Redesign , 3. Redesign . Do not proceed to other tasks until this batch is complete and approved.
+- **Pricing Visibility is a CRITICAL, NON-NEGOTIABLE RULE.** Prices must ONLY be displayed on detail pages (e.g., ) and the DJ subscription section. They must be REMOVED from all listing cards (, ).
+- The application is configured to use Razorpay in **TEST mode**. Use the test card details from  for testing payments.
+- An admin dashboard exists at  to control the active payment gateway and other system settings.
+- All initial critical bugs (data loading, page layouts) have been fixed. The foundation is stable for you to build the new UI upon.
+
+**documents and test reports created in this job**
+  - /app/migrations/001_album_packs_consistency.sql
+  - /app/migrations/002_system_settings.sql
+  - /app/migrations/003_public_read_access.sql
+  - /app/TESTING_CHECKLIST.md
+  - /app/MANUAL_TESTING_GUIDE.md
+  - /app/MOCK_DATA_SUMMARY.md
+
+**Last 10 User Messages and any pending HUMAN messages** 
+ 1. **User:** Approved BATCH 3 and requested mock data for testing.
+ 2. **Agent:** Confirmed completion of BATCH 3, announced creation of mock data and testing guides.
+ 3. **User:** Asked for specific steps on how to start testing.
+ 4. **Agent:** Provided a detailed, step-by-step testing guide with credentials and expected outcomes.
+ 5. **User:** Requested the agent to test everything itself and transition to a UI/UX designer persona for a full redesign.
+ 6. **Agent:** Acknowledged the new persona, performed automated testing, identified a data loading bug on the Explore page, and proposed a fix.
+ 7. **User:** Approved proceeding with critical fixes (layout, server stability) and secondary UI polish.
+ 8. **Agent:** Confirmed P0 UI/UX polish was complete, including layout fixes and data cleanup, and requested the next steps.
+ 9. **User:** Approved the P0 fixes and formally requested the agent to begin a **full UI redesign**, starting with a proposal for the first 5-10 tasks.
+ 10. **Agent:** Provided a detailed 10-task UI redesign proposal, prioritizing critical pricing rule enforcement and card redesigns.
+ 11. **User:** Approved the redesign plan and instructed the agent to proceed with **Batch 1 (Tasks 1-3) only**, and then stop for review.
+
+**Project Health Check:**
+- **Broken:** No features are currently broken. Critical bugs related to data fetching and layout have been resolved.
+- **Mocked:** The actual files in Cloudflare R2 are placeholders. The download flow will generate a valid token, but the final file download will fail (this is expected for testing). The payment system is in test mode.
+
+**3rd Party Integrations**
+- **Supabase (Auth & Database):** Integrated and using user-provided keys.
+- **Cloudflare R2 (Storage):** Integrated and using user-provided keys.
+- **Razorpay (Payments):** Integrated and using user-provided TEST keys.
+- **Resend (Emails):** Integrated and using user-provided keys.
+
+**Testing status**
+  - Testing agent used after significant changes: NO (Agent used screenshot tool and manual verification scripts).
+  - Troubleshoot agent used after agent stuck in loop: NO
+  - Test files created: [, , ]
+  - Known regressions: None.
+
+**Credentials to test flow:**
+- **Test User:**  / 
+- **Test Admin:** Update the test user's role to 'admin' via Supabase SQL Editor.
+- **Razorpay Test Card:** Number: , CVV: , Expiry: .
+- A full list of test DJ accounts is available in .
+
+**What agent forgot to execute**
+- The agent has followed the user's batched approach and has not overlooked any explicit instructions. The plan for future work is clearly defined.</analysis>
