@@ -2,9 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { Music, Download, Play } from "lucide-react";
+import { Music, Download, Play, ArrowUpRight } from "lucide-react";
 import { cn } from "@/app/lib/utils";
-import { Button } from "./Button";
 
 interface TrackCardProps {
   id: string;
@@ -21,7 +20,6 @@ interface TrackCardProps {
 export function TrackCard({
   id,
   title,
-  price,
   djName,
   djSlug,
   youtubeUrl,
@@ -30,79 +28,69 @@ export function TrackCard({
   className,
 }: TrackCardProps) {
   return (
-    <div
+    <Link
+      href={`/track/${id}`}
       className={cn(
-        "group relative p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-violet-500/30 transition-all duration-300",
+        "group relative block overflow-hidden rounded-2xl bg-zinc-900/60 border border-zinc-800/60 hover:border-violet-500/40 transition-all duration-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.15)]",
         className
       )}
       data-testid={`track-card-${id}`}
     >
-      {/* Icon Badge */}
-      <div className="w-14 h-14 rounded-xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-        <Music className="text-violet-500" size={24} />
-      </div>
-
-      {/* Track Info */}
-      <div className="mb-4">
-        <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2 line-clamp-1">
-          {title}
-        </h3>
-        
-        {djName && djSlug && (
-          <Link 
-            href={`/dj/${djSlug}`}
-            className="text-sm text-zinc-500 hover:text-violet-400 transition-colors font-bold"
-          >
-            by {djName}
-          </Link>
-        )}
-      </div>
-
-      {/* Price & Actions */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-col">
-          <span className="text-2xl font-black text-white italic">₹{price}</span>
-          <span className="text-[10px] text-zinc-600 font-black uppercase tracking-wider">per track</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {youtubeUrl && (
-            <Link href={`/track/${id}`}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2"
-                data-testid={`track-preview-${id}`}
-              >
+      {/* Background Gradient on Hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-600/0 via-transparent to-indigo-600/0 group-hover:from-violet-600/5 group-hover:to-indigo-600/5 transition-all duration-500" />
+      
+      {/* Content */}
+      <div className="relative p-6">
+        {/* Top Row: Icon + Actions */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600/20 to-violet-600/5 border border-violet-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+            <Music className="text-violet-400" size={20} />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {youtubeUrl && (
+              <div className="w-8 h-8 rounded-lg bg-zinc-800/80 flex items-center justify-center text-zinc-500 group-hover:text-violet-400 transition-colors">
                 <Play size={14} />
-                Preview
-              </Button>
-            </Link>
-          )}
-
-          {isPurchased ? (
-            <Button
-              size="sm"
-              onClick={() => onDownload?.(id)}
-              className="gap-2 bg-green-600 hover:bg-green-700"
-              data-testid={`track-download-${id}`}
-            >
-              <Download size={14} />
-              Download
-            </Button>
-          ) : (
-            <Link href={`/track/${id}`}>
-              <Button
-                size="sm"
-                className="gap-2"
-                data-testid={`track-buy-${id}`}
+              </div>
+            )}
+            {isPurchased && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onDownload?.(id);
+                }}
+                className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 hover:bg-emerald-600/30 transition-colors"
+                data-testid={`track-download-${id}`}
               >
-                Buy Now
-              </Button>
-            </Link>
+                <Download size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Track Info */}
+        <div className="space-y-2 mb-6">
+          <h3 className="text-base font-bold text-white leading-tight line-clamp-2 group-hover:text-violet-100 transition-colors">
+            {title}
+          </h3>
+          
+          {djName && djSlug && (
+            <p className="text-sm text-zinc-500 font-medium">
+              by <span className="text-zinc-400 group-hover:text-violet-300 transition-colors">{djName}</span>
+            </p>
           )}
         </div>
+
+        {/* Bottom CTA */}
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50">
+          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            {isPurchased ? "Owned" : "View Details"}
+          </span>
+          <div className="w-8 h-8 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:bg-violet-600 group-hover:text-white group-hover:scale-110 transition-all duration-300">
+            <ArrowUpRight size={14} />
+          </div>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
