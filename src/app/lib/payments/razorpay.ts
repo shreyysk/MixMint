@@ -140,7 +140,7 @@ export class RazorpayProvider implements PaymentProviderInterface {
         status,
         orderId: payment.order_id,
         paymentId: payment.id,
-        amount: payment.amount,
+        amount: Number(payment.amount),
         method: payment.method,
         errorCode: payment.error_code,
         errorDescription: payment.error_description,
