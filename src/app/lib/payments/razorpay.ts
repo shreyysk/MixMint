@@ -51,7 +51,7 @@ export class RazorpayProvider implements PaymentProviderInterface {
 
       return {
         orderId: order.id,
-        amount: order.amount,
+        amount: Number(order.amount),
         currency: order.currency,
         keyId: this.keyId, // For frontend Razorpay checkout
       };
