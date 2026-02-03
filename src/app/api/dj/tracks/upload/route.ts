@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { r2 } from "@/app/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getDJStoragePath } from "@/app/lib/djStorage";
 import { requireAuth } from "@/app/lib/requireAuth";
 import { requireDJ } from "@/app/lib/requireDJ";
+import { ok, fail } from "@/app/lib/apiResponse";
 
 /**
  * GET /api/dj/tracks/upload
  * Returns a status message for browser verification.
  */
 export async function GET() {
-  return NextResponse.json({ message: "DJ Tracks Upload API is active. Use POST to upload audio files." });
+  return ok({ message: "DJ Tracks Upload API is active. Use POST to upload audio files." });
 }
 
 /**
@@ -34,11 +34,11 @@ export async function POST(req: Request) {
       .single();
 
     if (profileError || !djProfile) {
-      return NextResponse.json({ error: "DJ profile not found" }, { status: 403 });
+      return fail("DJ profile not found", 403);
     }
 
     if (djProfile.status !== "approved") {
-      return NextResponse.json({ error: "Your DJ account is pending approval" }, { status: 403 });
+      return fail("Your DJ account is pending approval", 403);
     }
 
     // Fetch DJ full_name from profiles for storage path
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       .single();
 
     if (coreError || !coreProfile || !coreProfile.full_name) {
-      return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
+      return fail("Profile incomplete: full_name required", 400);
     }
 
     // 2. FILE VALIDATION
@@ -57,25 +57,19 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File;
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: "No file uploaded or invalid file input" }, { status: 400 });
+      return fail("No file uploaded or invalid file input", 400);
     }
 
     // MIME type check
     const allowedTypes = ["audio/mpeg", "audio/wav", "audio/flac"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Only MP3, WAV, FLAC allowed" },
-        { status: 400 }
-      );
+      return fail("Only MP3, WAV, FLAC allowed", 400);
     }
 
     // Size check (50MB)
     const MAX_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: "File too large (max 50MB)" },
-        { status: 400 }
-      );
+      return fail("File too large (max 50MB)", 400);
     }
 
     // 3. REMAINING FORM DATA
@@ -84,10 +78,7 @@ export async function POST(req: Request) {
     const contentType = (formData.get("content_type") as "track" | "zip") || "track";
 
     if (!title || isNaN(price)) {
-      return NextResponse.json(
-        { error: "Missing required fields (title/price)" },
-        { status: 400 }
-      );
+      return fail("Missing required fields (title/price)", 400);
     }
 
     // 4. STORAGE LOGIC
@@ -129,7 +120,7 @@ export async function POST(req: Request) {
 
     if (dbError) throw dbError;
 
-    return NextResponse.json({
+    return ok({
       success: true,
       fileKey,
       type: contentType,
@@ -137,16 +128,13 @@ export async function POST(req: Request) {
 
   } catch (err: any) {
     if (err.message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return fail("Unauthorized", 401);
     }
     if (err.message === "FORBIDDEN") {
-      return NextResponse.json({ error: "DJ access required" }, { status: 403 });
+      return fail("DJ access required", 403);
     }
 
-    console.error("[DJ_UPLOAD_ERROR]:", err);
-    return NextResponse.json(
-      { error: err.message || "Internal server error" },
-      { status: 500 }
-    );
+    console.error("[TRACK_UPLOAD_ERROR]:", err);
+    return fail(err.message || "Internal server error", 500);
   }
 }

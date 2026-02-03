@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "@/app/lib/r2";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { getDJStoragePath } from "@/app/lib/djStorage";
 import { requireAuth } from "@/app/lib/requireAuth";
+import { ok, fail } from "@/app/lib/apiResponse";
 
 /**
  * POST /api/upload
@@ -22,18 +22,18 @@ export async function POST(req: Request) {
       .single();
 
     if (profile?.role !== "dj" && profile?.role !== "admin") {
-      return NextResponse.json({ error: "Unprivileged role" }, { status: 403 });
+      return fail("Unprivileged role", 403);
     }
 
     if (!profile?.full_name) {
-      return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
+      return fail("Profile incomplete: full_name required", 400);
     }
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: "No file provided or invalid file input" }, { status: 400 });
+      return fail("No file provided or invalid file input", 400);
     }
 
     // Standardized extensions check
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       })
     );
 
-    return NextResponse.json({
+    return ok({
       success: true,
       fileKey,
       fileName: file.name,
@@ -78,9 +78,9 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     if (err.message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return fail("Unauthorized", 401);
     }
     console.error("[GENERAL_UPLOAD_ERROR]:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+    return fail(err.message || "Internal server error", 500);
   }
 }

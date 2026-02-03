@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { r2 } from "@/app/lib/r2";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { ok, fail } from "@/app/lib/apiResponse";
 
 export async function GET(req: Request) {
   try {
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     const token = searchParams.get("token");
 
     if (!token) {
-      return NextResponse.json({ error: "Token required" }, { status: 400 });
+      return fail("Token required", 400);
     }
 
     // Get client IP
@@ -28,18 +28,12 @@ export async function GET(req: Request) {
       .single();
 
     if (error || !tokenRow) {
-      return NextResponse.json(
-        { error: "Download token already used or expired" },
-        { status: 403 }
-      );
+      return fail("Download token already used or expired", 403);
     }
 
     // IP lock (Security layer)
     if (tokenRow.ip_address && tokenRow.ip_address !== ip) {
-      return NextResponse.json(
-        { error: "IP mismatch" },
-        { status: 403 }
-      );
+      return fail("IP mismatch", 403);
     }
 
     // --- FETCH METADATA & STREAM FILE (PHASE H3) ---
@@ -47,17 +41,19 @@ export async function GET(req: Request) {
     let fileName = "download";
     let contentType = "application/octet-stream";
     let djId = "";
+    let accessSource = tokenRow.access_source;
 
     if (tokenRow.content_type === "track") {
       const { data: track } = await supabaseServer
         .from("tracks")
-        .select("file_key, title")
+        .select("file_key, title, dj_id") // Added dj_id here
         .eq("id", tokenRow.content_id)
         .single();
 
       if (!track) throw new Error("CONTENT_NOT_FOUND");
       fileKey = track.file_key;
       fileName = track.title;
+      djId = track.dj_id; // Set djId for tracks
     } else if (tokenRow.content_type === "zip") {
       const { data: album } = await supabaseServer
         .from("album_packs")
@@ -86,20 +82,27 @@ export async function GET(req: Request) {
       .update({ is_used: true })
       .eq("id", tokenRow.id);
 
-    // 3️⃣ QUOTA INCREMENT (Subscription-based ZIPs only)
-    if (tokenRow.content_type === "zip") {
-      const { data: purchase } = await supabaseServer
-        .from("purchases")
-        .select("id")
-        .eq("user_id", tokenRow.user_id)
-        .eq("content_type", "zip")
-        .eq("content_id", tokenRow.content_id)
-        .single();
-
-      if (!purchase) {
+    // 3️⃣ QUOTA INCREMENT (Subscription-based downloads only)
+    if (accessSource === "subscription") {
+      if (tokenRow.content_type === "track") {
         const { data: sub } = await supabaseServer
           .from("dj_subscriptions")
-          .select("zip_used")
+          .select("id, tracks_used")
+          .eq("user_id", tokenRow.user_id)
+          .eq("dj_id", djId)
+          .gt("expires_at", new Date().toISOString())
+          .single();
+
+        if (sub) {
+          await supabaseServer
+            .from("dj_subscriptions")
+            .update({ tracks_used: (sub.tracks_used || 0) + 1 })
+            .eq("id", sub.id);
+        }
+      } else if (tokenRow.content_type === "zip") {
+        const { data: sub } = await supabaseServer
+          .from("dj_subscriptions")
+          .select("id, zip_used")
           .eq("user_id", tokenRow.user_id)
           .eq("dj_id", djId)
           .gt("expires_at", new Date().toISOString())
@@ -109,8 +112,7 @@ export async function GET(req: Request) {
           await supabaseServer
             .from("dj_subscriptions")
             .update({ zip_used: (sub.zip_used || 0) + 1 })
-            .eq("user_id", tokenRow.user_id)
-            .eq("dj_id", djId);
+            .eq("id", sub.id);
         }
       }
     }
@@ -125,9 +127,9 @@ export async function GET(req: Request) {
 
   } catch (err: any) {
     if (err.message === "CONTENT_NOT_FOUND") {
-      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+      return fail("Content not found", 404);
     }
-    console.error("Download Error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+    console.error("[DOWNLOAD_ERROR]", err);
+    return fail(err.message || "Internal server error", 500);
   }
 }

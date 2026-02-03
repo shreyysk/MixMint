@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { requireAuth } from "@/app/lib/requireAuth";
+import { ok, fail } from "@/app/lib/apiResponse";
 
 export async function POST(req: Request) {
   try {
@@ -11,15 +11,13 @@ export async function POST(req: Request) {
     const { content_id, content_type } = body;
 
     if (!content_id || !content_type) {
-      return NextResponse.json(
-        { error: "content_id and content_type required" },
-        { status: 400 }
-      );
+      return fail("content_id and content_type required", 400);
     }
 
-    // Enforce ownership/access for tracks
+    let access_source: "purchase" | "subscription" | null = null;
+    let djId = "";
+
     if (content_type === "track") {
-      // 1. We need the DJ ID to check subscriptions later
       const { data: track, error: trackError } = await supabaseServer
         .from("tracks")
         .select("dj_id")
@@ -27,10 +25,11 @@ export async function POST(req: Request) {
         .single();
 
       if (trackError || !track) {
-        return NextResponse.json({ error: "Track not found" }, { status: 404 });
+        return fail("Track not found", 404);
       }
+      djId = track.dj_id;
 
-      // 2. Check Purchase first
+      // 1. Check Purchase first
       const { data: purchases } = await supabaseServer
         .from("purchases")
         .select("id")
@@ -39,10 +38,10 @@ export async function POST(req: Request) {
         .eq("content_type", "track")
         .limit(1);
 
-      const isPurchased = purchases && purchases.length > 0;
-
-      // 3. If NOT purchased, check Subscription
-      if (!isPurchased) {
+      if (purchases && purchases.length > 0) {
+        access_source = "purchase";
+      } else {
+        // 2. If NOT purchased, check Subscription
         const { data: subscription } = await supabaseServer
           .from("dj_subscriptions")
           .select("*")
@@ -52,40 +51,23 @@ export async function POST(req: Request) {
           .limit(1)
           .single();
 
-        if (!subscription) {
-          return NextResponse.json(
-            { error: "Access denied. Purchase this track or subscribe to the DJ." },
-            { status: 403 }
-          );
+        if (subscription && subscription.tracks_used < subscription.track_quota) {
+          access_source = "subscription";
         }
-
-        if (subscription.tracks_used >= subscription.track_quota) {
-          return NextResponse.json(
-            { error: "Subscription track quota exhausted" },
-            { status: 403 }
-          );
-        }
-
-        await supabaseServer
-          .from("dj_subscriptions")
-          .update({ tracks_used: subscription.tracks_used + 1 })
-          .eq("id", subscription.id);
       }
-    }
-
-    // Enforce ownership/access for ZIPs (PHASE 3.3)
-    if (content_type === "zip") {
+    } else if (content_type === "zip") {
       const { data: album, error: albumError } = await supabaseServer
         .from("album_packs")
-        .select("id, dj_id, price")
+        .select("id, dj_id")
         .eq("id", content_id)
         .single();
 
       if (albumError || !album) {
-        return NextResponse.json({ error: "Album not found" }, { status: 404 });
+        return fail("Album not found", 404);
       }
+      djId = album.dj_id;
 
-      // 1️⃣ Check purchase
+      // 1. Check Purchase first
       const { data: purchase } = await supabaseServer
         .from("purchases")
         .select("id")
@@ -94,10 +76,10 @@ export async function POST(req: Request) {
         .eq("content_id", album.id)
         .single();
 
-      let allowed = !!purchase;
-
-      // 2️⃣ If not purchased → check subscription ZIP quota
-      if (!allowed) {
+      if (purchase) {
+        access_source = "purchase";
+      } else {
+        // 2. If not purchased -> check subscription ZIP quota
         const { data: sub } = await supabaseServer
           .from("dj_subscriptions")
           .select("*")
@@ -106,25 +88,14 @@ export async function POST(req: Request) {
           .gt("expires_at", new Date().toISOString())
           .single();
 
-        if (!sub || sub.zip_used >= sub.zip_quota) {
-          return NextResponse.json(
-            { error: "ZIP quota exceeded or no subscription" },
-            { status: 403 }
-          );
+        if (sub && sub.zip_used < sub.zip_quota) {
+          access_source = "subscription";
         }
-
-        allowed = true;
       }
+    }
 
-      if (!allowed) {
-        return NextResponse.json(
-          { error: "Access denied" },
-          { status: 403 }
-        );
-      }
-
-      // ✅ Token will be created below
-      // 📌 We do NOT increment zip_used yet - happens after successful download
+    if (!access_source) {
+      return fail("Access denied. Purchase this content or subscribe to the DJ.", 403);
     }
 
     // Generate secure token
@@ -141,20 +112,22 @@ export async function POST(req: Request) {
         content_type,
         token: downloadToken,
         expires_at: expiresAt,
+        access_source, // persisted guard (B1.2)
       });
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return fail(insertError.message, 500);
     }
 
-    return NextResponse.json({
+    return ok({
       token: downloadToken,
       expires_at: expiresAt,
     });
   } catch (err: any) {
     if (err.message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return fail("Unauthorized", 401);
     }
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[DOWNLOAD_TOKEN_ERROR]", err);
+    return fail(err.message, 500);
   }
 }

@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "@/app/lib/r2";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { getDJStoragePath } from "@/app/lib/djStorage";
 import { requireAuth } from "@/app/lib/requireAuth";
 import { requireDJ } from "@/app/lib/requireDJ";
+import { ok, fail } from "@/app/lib/apiResponse";
 
 /**
  * GET /api/dj/upload
  * Returns a status message for browser verification.
  */
 export async function GET() {
-    return NextResponse.json({ message: "Unified DJ Upload API is active. Use POST to upload tracks or album packs." });
+    return ok({ message: "Unified DJ Upload API is active. Use POST to upload tracks or album packs." });
 }
 
 /**
@@ -37,12 +37,12 @@ export async function POST(req: Request) {
             .single();
 
         if (coreError || !coreProfile) {
-            return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+            return fail("Profile not found", 404);
         }
 
         // Validate full_name exists (required for storage path)
         if (!coreProfile.full_name) {
-            return NextResponse.json({ error: "Profile incomplete: full_name required" }, { status: 400 });
+            return fail("Profile incomplete: full_name required", 400);
         }
 
         // 1c. Self-Healing DJ Profile activation
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
                 .single();
 
             if (activateErr || !activated) {
-                return NextResponse.json({ error: "Failed to activate DJ profile" }, { status: 500 });
+                return fail("Failed to activate DJ profile", 500);
             }
             finalDjProfileId = activated.id;
         }
@@ -89,14 +89,11 @@ export async function POST(req: Request) {
         const contentTypeParam = formData.get("content_type") as string;
 
         if (!file || !(file instanceof File)) {
-            return NextResponse.json({ error: "No file provided or invalid file input" }, { status: 400 });
+            return fail("No file provided or invalid file input", 400);
         }
 
         if (!title || isNaN(price)) {
-            return NextResponse.json(
-                { error: "Missing title or price" },
-                { status: 400 }
-            );
+            return fail("Missing title or price", 400);
         }
 
         /* ─────────────────────────────────────────────────────────────
@@ -122,28 +119,19 @@ export async function POST(req: Request) {
             ];
 
             if (!allowedZipTypes.includes(file.type)) {
-                return NextResponse.json(
-                    { error: `Invalid MIME type for ZIP: ${file.type}. Only ZIP/RAR/7Z allowed.` },
-                    { status: 400 }
-                );
+                return fail(`Invalid MIME type for ZIP: ${file.type}. Only ZIP/RAR/7Z allowed.`, 400);
             }
 
             // ZIP size limit: 500MB
             const MAX_ZIP_SIZE = 500 * 1024 * 1024;
             if (file.size > MAX_ZIP_SIZE) {
-                return NextResponse.json(
-                    { error: "ZIP too large (max 500MB)" },
-                    { status: 400 }
-                );
+                return fail("ZIP too large (max 500MB)", 400);
             }
         }
 
         // Strict validation for extension mismatch
         if (contentTypeParam === "zip" && !allowedZipExt.includes(fileExt || "")) {
-            return NextResponse.json(
-                { error: "Only ZIP, RAR, or 7Z files are allowed for album packs" },
-                { status: 400 }
-            );
+            return fail("Only ZIP, RAR, or 7Z files are allowed for album packs", 400);
         }
 
         /* ─────────────────────────────────────────────────────────────
@@ -214,7 +202,7 @@ export async function POST(req: Request) {
             if (dbError) throw dbError;
         }
 
-        return NextResponse.json({
+        return ok({
             success: true,
             fileKey,
             message: `${isZip ? "Album pack" : "Track"} uploaded successfully`,
@@ -222,16 +210,13 @@ export async function POST(req: Request) {
 
     } catch (err: any) {
         if (err.message === "UNAUTHORIZED") {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return fail("Unauthorized", 401);
         }
         if (err.message === "FORBIDDEN") {
-            return NextResponse.json({ error: "DJ access required" }, { status: 403 });
+            return fail("DJ access required", 403);
         }
 
         console.error("[DJ_UPLOAD_ERROR]:", err);
-        return NextResponse.json(
-            { error: err.message || "Internal server error" },
-            { status: 500 }
-        );
+        return fail(err.message || "Internal server error", 500);
     }
 }
