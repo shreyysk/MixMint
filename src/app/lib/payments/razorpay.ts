@@ -142,8 +142,8 @@ export class RazorpayProvider implements PaymentProviderInterface {
         paymentId: payment.id,
         amount: Number(payment.amount),
         method: payment.method,
-        errorCode: payment.error_code,
-        errorDescription: payment.error_description,
+        errorCode: payment.error_code ?? undefined,
+        errorDescription: payment.error_description ?? undefined,
       };
     } catch (error: any) {
       console.error("[RAZORPAY_STATUS_ERROR]", error);
