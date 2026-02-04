@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { useAuth } from "@/app/lib/AuthContext";
 import { TrackCard } from "@/app/components/ui/TrackCard";
+import { TrackCardSkeleton } from "@/app/components/ui/TrackCardSkeleton";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import { ErrorBanner } from "@/app/components/ui/ErrorBanner";
 import { Loader2, Music, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -24,9 +27,11 @@ export default function TracksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
+    setMounted(true);
     loadTracks();
   }, []);
 
@@ -55,8 +60,8 @@ export default function TracksPage() {
 
       const transformedData = (data || []).map((track: any) => ({
         ...track,
-        dj_profile: Array.isArray(track.dj_profiles) 
-          ? track.dj_profiles[0] 
+        dj_profile: Array.isArray(track.dj_profiles)
+          ? track.dj_profiles[0]
           : track.dj_profiles
       }));
 
@@ -78,7 +83,7 @@ export default function TracksPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert("Please log in to download");
         return;
@@ -86,13 +91,13 @@ export default function TracksPage() {
 
       const res = await fetch("/api/download-token", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}` 
+          "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          content_id: trackId, 
-          content_type: "track" 
+        body: JSON.stringify({
+          content_id: trackId,
+          content_type: "track"
         }),
       });
 
@@ -126,8 +131,8 @@ export default function TracksPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={mounted ? { opacity: 0, y: 20 } : false}
+            animate={mounted ? { opacity: 1, y: 0 } : {}}
             className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12"
           >
             <div>
@@ -155,56 +160,60 @@ export default function TracksPage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-32" data-testid="loading-state">
-              <div className="w-16 h-16 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center mb-6">
-                <Loader2 className="animate-spin text-violet-400" size={28} />
-              </div>
-              <p className="text-zinc-500">Loading tracks...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" data-testid="loading-state">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TrackCardSkeleton key={i} />
+              ))}
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 rounded-2xl bg-red-900/10 border border-red-800/30 text-center max-w-md mx-auto" 
+            <motion.div
+              initial={mounted ? { opacity: 0, scale: 0.95 } : false}
+              animate={mounted ? { opacity: 1, scale: 1 } : {}}
               data-testid="error-state"
             >
-              <p className="text-red-400 font-medium mb-2">Failed to load tracks</p>
-              <p className="text-red-500/60 text-sm mb-4">{error}</p>
-              <button
-                onClick={loadTracks}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-white font-medium text-sm transition-colors"
-              >
-                Try Again
-              </button>
+              <ErrorBanner
+                title="Failed to load tracks"
+                message={error}
+                action={{
+                  label: "Try Again",
+                  onClick: loadTracks
+                }}
+                variant="error"
+              />
             </motion.div>
           )}
 
           {/* Empty State */}
           {!loading && !error && filteredTracks.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-32" 
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               data-testid="empty-state"
             >
-              <div className="w-20 h-20 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-center mx-auto mb-6">
-                <Music className="text-zinc-600" size={32} />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No Tracks Found</h3>
-              <p className="text-zinc-500">
-                {searchQuery ? `No results for "${searchQuery}"` : "No tracks available yet. Check back soon!"}
-              </p>
+              <EmptyState
+                icon={<Music size={40} />}
+                title="No Tracks Found"
+                description={
+                  searchQuery
+                    ? `No results for "${searchQuery}". Try a different search term.`
+                    : "No tracks available yet. Check back soon for fresh releases!"
+                }
+                action={{
+                  label: "Explore DJs",
+                  href: "/explore"
+                }}
+              />
             </motion.div>
           )}
 
           {/* Tracks Grid */}
           {!loading && !error && filteredTracks.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={mounted ? { opacity: 0 } : false}
+              animate={mounted ? { opacity: 1 } : {}}
               transition={{ delay: 0.1 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
               data-testid="tracks-grid"

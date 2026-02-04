@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     if (content_type === "track") {
       const { data: track, error: trackError } = await supabaseServer
         .from("tracks")
-        .select("dj_id")
+        .select("dj_id, is_fan_only")
         .eq("id", content_id)
         .single();
 
@@ -51,14 +51,21 @@ export async function POST(req: Request) {
           .limit(1)
           .single();
 
-        if (subscription && subscription.tracks_used < subscription.track_quota) {
-          access_source = "subscription";
+        if (subscription) {
+          if (track.is_fan_only) {
+            // Must be SUPER and have fan quota
+            if (subscription.plan === "super" && subscription.fan_uploads_used < subscription.fan_upload_quota) {
+              access_source = "subscription";
+            }
+          } else if (subscription.tracks_used < subscription.track_quota) {
+            access_source = "subscription";
+          }
         }
       }
     } else if (content_type === "zip") {
       const { data: album, error: albumError } = await supabaseServer
         .from("album_packs")
-        .select("id, dj_id")
+        .select("id, dj_id, is_fan_only")
         .eq("id", content_id)
         .single();
 
@@ -88,8 +95,14 @@ export async function POST(req: Request) {
           .gt("expires_at", new Date().toISOString())
           .single();
 
-        if (sub && sub.zip_used < sub.zip_quota) {
-          access_source = "subscription";
+        if (sub) {
+          if (album.is_fan_only) {
+            if (sub.plan === "super" && sub.fan_uploads_used < sub.fan_upload_quota) {
+              access_source = "subscription";
+            }
+          } else if (sub.zip_used < sub.zip_quota) {
+            access_source = "subscription";
+          }
         }
       }
     }

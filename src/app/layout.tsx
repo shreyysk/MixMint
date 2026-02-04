@@ -4,6 +4,7 @@ import "./styles/globals.css";
 import { Navbar } from "@/app/components/Navbar";
 import { Footer } from "@/app/components/Footer";
 import { AuthProvider } from "@/app/lib/AuthContext";
+import { ReferralTracker } from "@/app/components/rewards/ReferralTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <ReferralTracker />
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow page-pt">

@@ -30,13 +30,15 @@ export async function GET(req: Request) {
         .from("tracks")
         .select("id, title, price, created_at")
         .eq("dj_id", dj.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
     const { data: albumPacks, error: albumsError } = await supabaseServer
         .from("album_packs")
         .select("id, title, price, created_at, description")
         .eq("dj_id", dj.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
     if (tracksError || albumsError) {
         return NextResponse.json({ error: tracksError?.message || albumsError?.message }, { status: 400 });

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { useAuth } from "@/app/lib/AuthContext";
 import { AlbumCard } from "@/app/components/ui/AlbumCard";
+import { AlbumCardSkeleton } from "@/app/components/ui/AlbumCardSkeleton";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import { ErrorBanner } from "@/app/components/ui/ErrorBanner";
 import { Loader2, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,9 +28,11 @@ export default function AlbumsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
+    setMounted(true);
     loadAlbums();
   }, []);
 
@@ -45,7 +50,7 @@ export default function AlbumsPage() {
 
       if (albumsData && albumsData.length > 0) {
         const djIds = [...new Set(albumsData.map(a => a.dj_id))];
-        
+
         const { data: djProfiles } = await supabase
           .from("dj_profiles")
           .select("user_id, dj_name, slug")
@@ -78,7 +83,7 @@ export default function AlbumsPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert("Please log in to download");
         return;
@@ -86,13 +91,13 @@ export default function AlbumsPage() {
 
       const res = await fetch("/api/download-token", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}` 
+          "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          content_id: albumId, 
-          content_type: "zip" 
+        body: JSON.stringify({
+          content_id: albumId,
+          content_type: "zip"
         }),
       });
 
@@ -127,8 +132,8 @@ export default function AlbumsPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={mounted ? { opacity: 0, y: 20 } : false}
+            animate={mounted ? { opacity: 1, y: 0 } : {}}
             className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12"
           >
             <div>
@@ -156,56 +161,60 @@ export default function AlbumsPage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-32" data-testid="loading-state">
-              <div className="w-16 h-16 rounded-2xl bg-amber-600/10 border border-amber-500/20 flex items-center justify-center mb-6">
-                <Loader2 className="animate-spin text-amber-400" size={28} />
-              </div>
-              <p className="text-zinc-500">Loading album packs...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" data-testid="loading-state">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <AlbumCardSkeleton key={i} />
+              ))}
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 rounded-2xl bg-red-900/10 border border-red-800/30 text-center max-w-md mx-auto" 
+            <motion.div
+              initial={mounted ? { opacity: 0, scale: 0.95 } : false}
+              animate={mounted ? { opacity: 1, scale: 1 } : {}}
               data-testid="error-state"
             >
-              <p className="text-red-400 font-medium mb-2">Failed to load albums</p>
-              <p className="text-red-500/60 text-sm mb-4">{error}</p>
-              <button
-                onClick={loadAlbums}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-white font-medium text-sm transition-colors"
-              >
-                Try Again
-              </button>
+              <ErrorBanner
+                title="Failed to load albums"
+                message={error}
+                action={{
+                  label: "Try Again",
+                  onClick: loadAlbums
+                }}
+                variant="error"
+              />
             </motion.div>
           )}
 
           {/* Empty State */}
           {!loading && !error && filteredAlbums.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-32" 
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               data-testid="empty-state"
             >
-              <div className="w-20 h-20 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-center mx-auto mb-6">
-                <Package className="text-zinc-600" size={32} />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No Album Packs Found</h3>
-              <p className="text-zinc-500">
-                {searchQuery ? `No results for "${searchQuery}"` : "No album packs available yet. Check back soon!"}
-              </p>
+              <EmptyState
+                icon={<Package size={40} />}
+                title="No Album Packs Found"
+                description={
+                  searchQuery
+                    ? `No results for "${searchQuery}". Try a different search term.`
+                    : "No album packs available yet. Check back soon for exclusive content!"
+                }
+                action={{
+                  label: "Browse Tracks",
+                  href: "/tracks"
+                }}
+              />
             </motion.div>
           )}
 
           {/* Albums Grid */}
           {!loading && !error && filteredAlbums.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={mounted ? { opacity: 0 } : false}
+              animate={mounted ? { opacity: 1 } : {}}
               transition={{ delay: 0.1 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
               data-testid="albums-grid"

@@ -1,6 +1,32 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-family-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Colors - Background */
+  --color-background: #09090B;
+  --color-background-subtle: #0F0F12;
+  --color-foreground: #FAFAFA;
+  --color-foreground-muted: #A1A1AA;
+
+  /* Colors - Brand */
+  --color-accent: #8B5CF6;
+  --color-accent-hover: #A78BFA;
+  --color-accent-muted: rgba(139, 92, 246, 0.15);
+
+  /* Colors - Secondary */
+  --color-accent-amber: #F59E0B;
+  --color-accent-amber-muted: rgba(245, 158, 11, 0.15);
+
+  /* Colors - Surface */
+  --color-surface: rgba(24, 24, 27, 0.6);
+  --color-surface-hover: rgba(39, 39, 42, 0.6);
+  --color-border: rgba(63, 63, 70, 0.5);
+  --color-border-hover: rgba(82, 82, 91, 0.6);
+}
+
 
 :root {
   /* Core Colors */
@@ -8,16 +34,16 @@
   --background-subtle: #0F0F12;
   --foreground: #FAFAFA;
   --foreground-muted: #A1A1AA;
-  
+
   /* Brand Colors */
   --accent: #8B5CF6;
   --accent-hover: #A78BFA;
   --accent-muted: rgba(139, 92, 246, 0.15);
-  
+
   /* Secondary Accent */
   --accent-amber: #F59E0B;
   --accent-amber-muted: rgba(245, 158, 11, 0.15);
-  
+
   /* Surface Colors */
   --surface: rgba(24, 24, 27, 0.6);
   --surface-hover: rgba(39, 39, 42, 0.6);
@@ -40,7 +66,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: 
+  background-image:
     radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(245, 158, 11, 0.02) 0%, transparent 50%);
   pointer-events: none;
@@ -106,23 +132,33 @@ html {
 
 /* Card Hover Animation Helper */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 /* Loading Skeleton */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(39, 39, 42, 0.6) 0%,
-    rgba(63, 63, 70, 0.4) 50%,
-    rgba(39, 39, 42, 0.6) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(39, 39, 42, 0.6) 0%,
+      rgba(63, 63, 70, 0.4) 50%,
+      rgba(39, 39, 42, 0.6) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

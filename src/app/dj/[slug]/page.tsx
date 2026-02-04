@@ -4,7 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClient";
 import { TrackCard } from "@/app/components/ui/TrackCard";
+import { TrackCardSkeleton } from "@/app/components/ui/TrackCardSkeleton";
 import { AlbumCard } from "@/app/components/ui/AlbumCard";
+import { AlbumCardSkeleton } from "@/app/components/ui/AlbumCardSkeleton";
 import { Button } from "@/app/components/ui/Button";
 import { Loader2, Music, Package, Users, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -44,8 +46,10 @@ export default function DJProfilePage() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (slug) {
       loadDJProfile();
     }
@@ -138,13 +142,13 @@ export default function DJProfilePage() {
       >
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/80 to-transparent" />
-        
+
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-10">
           <div className="max-w-7xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={mounted ? { opacity: 0, y: 30 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
             >
               {/* Genres */}
               {dj.genres && dj.genres.length > 0 && (
@@ -159,7 +163,7 @@ export default function DJProfilePage() {
                   ))}
                 </div>
               )}
-              
+
               {/* DJ Name */}
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
                 {dj.dj_name}
@@ -172,12 +176,12 @@ export default function DJProfilePage() {
       {/* Content */}
       <div className="px-6 md:px-12 mt-10">
         <div className="max-w-7xl mx-auto">
-          
+
           {/* Bio Section */}
           {dj.bio && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               className="mb-16"
             >
               <div className="p-6 md:p-8 rounded-2xl bg-zinc-900/50 border border-zinc-800/60">
@@ -190,8 +194,8 @@ export default function DJProfilePage() {
           {/* Tracks Section */}
           {tracks.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.1 }}
               className="mb-16"
             >
@@ -223,8 +227,8 @@ export default function DJProfilePage() {
           {/* Albums Section */}
           {albums.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.2 }}
               className="mb-16"
             >
@@ -256,9 +260,9 @@ export default function DJProfilePage() {
 
           {/* Empty State */}
           {tracks.length === 0 && albums.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               className="text-center py-20"
             >
               <div className="w-20 h-20 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-center mx-auto mb-6">
@@ -271,14 +275,14 @@ export default function DJProfilePage() {
 
           {/* Subscribe CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={mounted ? { opacity: 0, y: 20 } : false}
+            animate={mounted ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3 }}
             className="relative p-8 md:p-12 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 overflow-hidden"
           >
             {/* Background Glow */}
             <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-white/10 blur-[80px] rounded-full pointer-events-none" />
-            
+
             <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
                 <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-5 mx-auto md:mx-0">

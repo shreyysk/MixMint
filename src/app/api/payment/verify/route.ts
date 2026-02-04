@@ -5,16 +5,29 @@ import { getPaymentProvider } from "@/app/lib/payments";
 import { sendPurchaseEmail, sendSubscriptionEmail } from "@/app/lib/email";
 import { ok, fail } from "@/app/lib/apiResponse";
 import { SUBSCRIPTION_PLANS } from "@/app/lib/subscriptionPlans";
+import { handlePurchasePoints } from "@/app/lib/rewards";
+import { logger } from "@/app/lib/logger";
+import { checkRateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { calculateRevenueSplit } from "@/app/lib/monetization";
 
 export async function POST(req: Request) {
+  let user: any = null;
   try {
-    const user = await requireAuth();
+    user = await requireAuth();
     const body = await req.json();
+
+    // --- RATE LIMITING ---
+    const ip = getClientIp(req);
+    const rl = await checkRateLimit("payment_verify", ip, 15, 3600); // 15 attempts per hour
+    if (!rl.success) {
+      logger.alert("PAYMENT", "ATTACK_WARNING: High frequency payment verification from single IP", { ip });
+      return fail("Too many payment verification attempts. Please wait an hour.", 429, "PAYMENT");
+    }
 
     const { orderId, paymentId, signature, content_type, content_id, plan } = body;
 
     if (!orderId || !paymentId || !signature) {
-      return fail("orderId, paymentId, and signature are required", 400);
+      return fail("orderId, paymentId, and signature are required", 400, "PAYMENT");
     }
 
     // Get payment provider
@@ -28,23 +41,37 @@ export async function POST(req: Request) {
     });
 
     if (!isValid) {
-      console.error(`[PAYMENT_VERIFICATION_FAILED] User: ${user.email} | Payment: ${paymentId}`);
-      return fail("Payment verification failed. Invalid signature.", 403);
+      logger.error("PAYMENT", "Payment verification failed", { user: user.email, paymentId });
+      return fail("Payment verification failed. Invalid signature.", 403, "PAYMENT");
     }
 
-    console.log(`[PAYMENT_VERIFIED] User: ${user.email} | Payment: ${paymentId}`);
+    logger.info("PAYMENT", "Payment verified", { user: user.email, paymentId });
 
     // Get payment status to confirm amount
     const paymentStatus = await paymentProvider.getPaymentStatus(paymentId);
 
     if (paymentStatus.status !== "success") {
-      return fail("Payment not successful", 400);
+      return fail("Payment not successful", 400, "PAYMENT");
     }
 
     const amountPaid = paymentStatus.amount / 100; // Convert paise to rupees
 
     // Process based on content type
     if (content_type === "track" || content_type === "zip") {
+      // Get DJ ID for split
+      const contentTable = content_type === "track" ? "tracks" : "album_packs";
+      const { data: item } = await supabaseServer
+        .from(contentTable)
+        .select("dj_id")
+        .eq("id", content_id)
+        .single();
+
+      const purchaseDjId = item?.dj_id;
+      if (purchaseDjId) {
+        const split = await calculateRevenueSplit(purchaseDjId, amountPaid);
+        logger.info("PAYMENT", "Purchase revenue split detail", { ...split, djId: purchaseDjId });
+      }
+
       // Create purchase record
       const { error: purchaseError } = await supabaseServer
         .from("purchases")
@@ -55,11 +82,12 @@ export async function POST(req: Request) {
           price: amountPaid,
           payment_id: paymentId,
           payment_order_id: orderId,
+          seller_id: purchaseDjId, // Track who got the money
         });
 
       if (purchaseError) {
-        console.error("[PURCHASE_INSERT_ERROR]", purchaseError);
-        return fail("Failed to record purchase", 500);
+        logger.error("PAYMENT", "Purchase record failed", purchaseError, { user: user.id, paymentId });
+        return fail("Failed to record purchase", 500, "PAYMENT");
       }
 
       // Send email (non-blocking)
@@ -101,11 +129,14 @@ export async function POST(req: Request) {
           });
         }
       } catch (emailError) {
-        console.error("[EMAIL_ERROR]", emailError);
+        logger.error("PAYMENT", "Post-purchase email failed", emailError, { user: user.email });
         // Don't fail the purchase if email fails
       }
 
-      console.log(`[PURCHASE_COMPLETE] User: ${user.email} | ${content_type}: ${content_id} | ₹${amountPaid}`);
+      logger.info("PAYMENT", "Purchase complete", { user: user.email, content_id, amountPaid });
+
+      // Award points and handle referrals (non-blocking)
+      handlePurchasePoints(user.id, amountPaid);
 
       return ok({
         success: true,
@@ -121,8 +152,12 @@ export async function POST(req: Request) {
 
       const planConfig = SUBSCRIPTION_PLANS[plan as keyof typeof SUBSCRIPTION_PLANS];
       if (!planConfig) {
-        return fail("Invalid plan", 400);
+        return fail("Invalid plan", 400, "PAYMENT");
       }
+
+      // Monetization split check
+      const split = await calculateRevenueSplit(content_id, amountPaid);
+      logger.info("PAYMENT", "Subscription revenue split detail", { ...split, djId: content_id });
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + planConfig.duration_days);
@@ -143,8 +178,8 @@ export async function POST(req: Request) {
         });
 
       if (subError) {
-        console.error("[SUBSCRIPTION_INSERT_ERROR]", subError);
-        return fail("Failed to create subscription", 500);
+        logger.error("PAYMENT", "Subscription record failed", subError, { user: user.id, paymentId });
+        return fail("Failed to create subscription", 500, "PAYMENT");
       }
 
       // Send email (non-blocking)
@@ -176,7 +211,10 @@ export async function POST(req: Request) {
         console.error("[EMAIL_ERROR]", emailError);
       }
 
-      console.log(`[SUBSCRIPTION_COMPLETE] User: ${user.email} | DJ: ${content_id} | Plan: ${plan} | ₹${amountPaid}`);
+      logger.info("PAYMENT", "Subscription complete", { user: user.email, dj_id: content_id, plan, amountPaid });
+
+      // Award points and handle referrals (non-blocking)
+      handlePurchasePoints(user.id, amountPaid);
 
       return ok({
         success: true,
@@ -186,13 +224,20 @@ export async function POST(req: Request) {
       });
     }
 
-    return fail("Invalid content_type", 400);
+    return fail("Invalid content_type", 400, "PAYMENT");
 
   } catch (err: any) {
     if (err.message === "UNAUTHORIZED") {
-      return fail("Unauthorized", 401);
+      return fail("Unauthorized", 401, "PAYMENT");
     }
-    console.error("[PAYMENT_VERIFY_ERROR]", err);
-    return fail(err.message || "Payment verification failed", 500);
+
+    // CRITICAL ALERT: Log this so developers know immediately
+    logger.alert("PAYMENT", "CRITICAL: Payment verification failed catastrophically", {
+      error: err.message,
+      user: user?.email,
+      paymentId: req.headers.get("x-razorpay-payment-id") || "unknown"
+    });
+
+    return fail(err.message || "Payment verification failed", 500, "PAYMENT");
   }
 }

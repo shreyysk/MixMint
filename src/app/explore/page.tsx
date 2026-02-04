@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { DJCard } from "@/app/components/ui/DJCard";
+import { DJCardSkeleton } from "@/app/components/ui/DJCardSkeleton";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import { ErrorBanner } from "@/app/components/ui/ErrorBanner";
 import { Search, Loader2, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -22,8 +25,10 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     loadDJs();
   }, []);
 
@@ -66,8 +71,8 @@ export default function ExplorePage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={mounted ? { opacity: 0, y: 20 } : false}
+            animate={mounted ? { opacity: 1, y: 0 } : {}}
             className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12"
           >
             <div>
@@ -95,56 +100,56 @@ export default function ExplorePage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-32" data-testid="loading-state">
-              <div className="w-16 h-16 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center mb-6">
-                <Loader2 className="animate-spin text-violet-400" size={28} />
-              </div>
-              <p className="text-zinc-500">Loading artists...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="loading-state">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <DJCardSkeleton key={i} />
+              ))}
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 rounded-2xl bg-red-900/10 border border-red-800/30 text-center max-w-md mx-auto" 
+            <motion.div
+              initial={mounted ? { opacity: 0, scale: 0.95 } : false}
+              animate={mounted ? { opacity: 1, scale: 1 } : {}}
               data-testid="error-state"
             >
-              <p className="text-red-400 font-medium mb-2">Failed to load DJs</p>
-              <p className="text-red-500/60 text-sm mb-4">{error}</p>
-              <button
-                onClick={loadDJs}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-white font-medium text-sm transition-colors"
-              >
-                Try Again
-              </button>
+              <ErrorBanner
+                title="Failed to load DJs"
+                message={error}
+                action={{
+                  label: "Try Again",
+                  onClick: loadDJs
+                }}
+                variant="error"
+              />
             </motion.div>
           )}
 
           {/* Empty State */}
           {!loading && !error && filteredDJs.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-32" 
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
               data-testid="empty-state"
             >
-              <div className="w-20 h-20 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-center mx-auto mb-6">
-                <Users className="text-zinc-600" size={32} />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No DJs Found</h3>
-              <p className="text-zinc-500">
-                {searchQuery ? `No results for "${searchQuery}"` : "No approved DJs yet. Check back soon!"}
-              </p>
+              <EmptyState
+                icon={<Users size={40} />}
+                title="No DJs Found"
+                description={
+                  searchQuery
+                    ? `No results for "${searchQuery}". Try a different search term.`
+                    : "No approved DJs yet. Check back soon for amazing DJ content!"
+                }
+              />
             </motion.div>
           )}
 
           {/* DJ Grid */}
           {!loading && !error && filteredDJs.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={mounted ? { opacity: 0 } : false}
+              animate={mounted ? { opacity: 1 } : {}}
               transition={{ delay: 0.1 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               data-testid="dj-grid"
