@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/lib/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
+import { useParams } from "next/navigation";
 
 interface Album {
     id: string;
@@ -14,7 +15,9 @@ interface Album {
     created_at: string;
 }
 
-export default function AlbumDetailPage({ params }: { params: { id: string } }) {
+export default function AlbumDetailPage() {
+    const params = useParams();
+    const albumId = params?.id as string;
     const { user } = useAuth();
     const [album, setAlbum] = useState<Album | null>(null);
     const [loading, setLoading] = useState(true);
@@ -25,7 +28,7 @@ export default function AlbumDetailPage({ params }: { params: { id: string } }) 
             const { data, error } = await supabase
                 .from("album_packs")
                 .select("*")
-                .eq("id", params.id)
+                .eq("id", albumId)
                 .single();
 
             if (!error && data) {
@@ -34,8 +37,10 @@ export default function AlbumDetailPage({ params }: { params: { id: string } }) 
             setLoading(false);
         };
 
-        fetchAlbum();
-    }, [params.id]);
+        if (albumId) {
+            fetchAlbum();
+        }
+    }, [albumId]);
 
     async function downloadZip(albumId: string) {
         if (!user) {

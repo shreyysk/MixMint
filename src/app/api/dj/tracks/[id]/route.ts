@@ -1,18 +1,19 @@
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { requireAuth } from "@/app/lib/requireAuth";
 import { ok, fail } from "@/app/lib/apiResponse";
+import { NextRequest } from "next/server";
 
 /**
  * PATCH /api/dj/tracks/[id]
  * Update track metadata
  */
 export async function PATCH(
-    req: Request,
-    { params }: { params: { id: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await requireAuth();
-        const { id } = params;
+        const { id } = await params;
         const body = await req.json();
         const { title, price, youtube_url } = body;
 
@@ -48,12 +49,12 @@ export async function PATCH(
  * Delete a track
  */
 export async function DELETE(
-    req: Request,
-    { params }: { params: { id: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await requireAuth();
-        const { id } = params;
+        const { id } = await params;
 
         // Get DJ profile
         const { data: djProfile } = await supabaseServer
