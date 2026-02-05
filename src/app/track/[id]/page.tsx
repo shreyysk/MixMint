@@ -322,7 +322,7 @@ export default function TrackDetailPage() {
                       ) : (
                         <>
                           <Download size={20} />
-                          Download - ₹{track.price}
+                          Buy Track - ₹{track.price}
                         </>
                       )}
                     </Button>
