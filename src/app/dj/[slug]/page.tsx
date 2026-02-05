@@ -214,7 +214,6 @@ export default function DJProfilePage() {
                     key={track.id}
                     id={track.id}
                     title={track.title}
-                    price={track.price}
                     djName={dj.dj_name}
                     djSlug={dj.slug}
                     youtubeUrl={track.youtube_url}
@@ -248,7 +247,6 @@ export default function DJProfilePage() {
                     id={album.id}
                     title={album.title}
                     description={album.description}
-                    price={album.price}
                     fileSize={album.file_size}
                     djName={dj.dj_name}
                     djSlug={dj.slug}

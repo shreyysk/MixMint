@@ -9,7 +9,7 @@ interface AlbumCardProps {
   id: string;
   title: string;
   description?: string | null;
-  price: number;
+  price?: number;
   fileSize: number;
   djName?: string;
   djSlug?: string;
@@ -23,6 +23,7 @@ export function AlbumCard({
   title,
   description,
   fileSize,
+  price,
   djName,
   djSlug,
   onDownload,

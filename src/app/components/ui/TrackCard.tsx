@@ -8,7 +8,7 @@ import { cn } from "@/app/lib/utils";
 interface TrackCardProps {
   id: string;
   title: string;
-  price: number;
+  price?: number;
   djName?: string;
   djSlug?: string;
   youtubeUrl?: string | null;
@@ -20,6 +20,7 @@ interface TrackCardProps {
 export function TrackCard({
   id,
   title,
+  price,
   djName,
   djSlug,
   youtubeUrl,

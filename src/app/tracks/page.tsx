@@ -223,7 +223,6 @@ export default function TracksPage() {
                   key={track.id}
                   id={track.id}
                   title={track.title}
-                  price={track.price}
                   djName={track.dj_profile?.dj_name}
                   djSlug={track.dj_profile?.slug}
                   youtubeUrl={track.youtube_url}

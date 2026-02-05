@@ -225,7 +225,6 @@ export default function AlbumsPage() {
                   id={album.id}
                   title={album.title}
                   description={album.description}
-                  price={album.price}
                   fileSize={album.file_size}
                   djName={album.dj_profile?.dj_name}
                   djSlug={album.dj_profile?.slug}
