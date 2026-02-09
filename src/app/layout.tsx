@@ -1,48 +1,40 @@
-import type { Metadata } from "next";
-import { Inter, Fira_Code } from "next/font/google";
-import "./styles/globals.css";
-import { Navbar } from "@/app/components/Navbar";
-import { Footer } from "@/app/components/Footer";
-import { AuthProvider } from "@/app/lib/AuthContext";
-import { ReferralTracker } from "@/app/components/rewards/ReferralTracker";
+import './globals.css'
+import type { Metadata } from 'next'
+import { Inter, Space_Grotesk as Space_Grotesk_Font } from 'next/font/google'
+import PreviewBar from './components/PreviewBar'
+import { PlayerProvider } from './context/PlayerContext'
+import { SearchProvider } from './context/SearchContext'
+import { UserProvider } from './context/UserContext'
+import Footer from './components/Footer'
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const firaCode = Fira_Code({
-  variable: "--font-fira-code",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const spaceGrotesk = Space_Grotesk_Font({ subsets: ['latin'], variable: '--font-space-grotesk' })
 
 export const metadata: Metadata = {
-  title: "MixMint — Home of DJ Releases",
-  description: "Buy tracks, subscribe to DJs, and access exclusive drops.",
-};
+  title: 'MixMint - Home of DJ Releases',
+  description: 'A high-security, DJ-first monetization SaaS.',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${inter.variable} ${firaCode.variable} antialiased`}
-      >
-        <AuthProvider>
-          <ReferralTracker />
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-grow page-pt">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </AuthProvider>
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans flex flex-col min-h-screen`}>
+        <UserProvider>
+          <SearchProvider>
+            <PlayerProvider>
+              <div className="flex-grow relative pb-20"> {/* Changed to flex-grow */}
+                {children}
+                <PreviewBar />
+              </div>
+              <Footer />
+            </PlayerProvider>
+          </SearchProvider>
+        </UserProvider>
       </body>
     </html>
-  );
+  )
 }

@@ -1,12 +1,12 @@
 
 "use client";
 
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "../../../lib/supabaseClient";
 import { useEffect, useState } from "react";
-import { Button } from "@/app/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/app/components/ui/Card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/Avatar";
-import RequireRole from "@/app/components/RequireRole";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card";
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/Avatar";
+import RequireRole from "../../components/RequireRole";
 
 interface DJRequest {
     id: string;

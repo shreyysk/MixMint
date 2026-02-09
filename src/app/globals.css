@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-mint-studio text-slate-900;
+  }
+
+  .dark body {
+    @apply bg-mint-dark text-mint-studio;
+  }
+}

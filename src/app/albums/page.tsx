@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import { AlbumCard } from "@/app/components/ui/AlbumCard";
-import { AlbumCardSkeleton } from "@/app/components/ui/AlbumCardSkeleton";
-import { EmptyState } from "@/app/components/ui/EmptyState";
-import { ErrorBanner } from "@/app/components/ui/ErrorBanner";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../lib/AuthContext";
+import { AlbumCard } from "../components/ui/AlbumCard";
+import { AlbumCardSkeleton } from "../components/ui/AlbumCardSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorBanner } from "../components/ui/ErrorBanner";
 import { Loader2, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
