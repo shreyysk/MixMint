@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/app/lib/requireAuth";
 import { supabaseServer } from "@/app/lib/supabaseServer";
@@ -9,7 +10,7 @@ export async function POST(req: Request) {
     const user = await requireAuth();
     const body = await req.json();
 
-    const { content_type, content_id, plan } = body;
+    const { content_type, content_id, plan, points_to_redeem } = body;
 
     if (!content_type || !content_id) {
       return fail("content_type and content_id are required", 400);
@@ -84,6 +85,29 @@ export async function POST(req: Request) {
       description = `${plan.toUpperCase()} Subscription - ${dj?.dj_name || "DJ"}`;
     }
 
+    // Points Redemption
+    let discount = 0;
+    if (points_to_redeem > 0) {
+      const { data: pointsData, error: pointsError } = await supabaseServer
+        .from('points')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (pointsError || !pointsData) {
+        return fail("Could not retrieve user points balance.", 500);
+      }
+
+      if (pointsData.balance < points_to_redeem) {
+        return fail("Not enough points to redeem.", 400);
+      }
+
+      const maxRedeemable = Math.floor(amount * 0.2); // 20% cap
+      const pointsToUse = Math.min(points_to_redeem, maxRedeemable);
+      discount = pointsToUse;
+      amount -= discount;
+    }
+
     // Get payment provider
     const paymentProvider = await getPaymentProvider();
 
@@ -99,10 +123,11 @@ export async function POST(req: Request) {
         content_type,
         content_id,
         plan: plan || "",
+        points_used: discount,
       },
     });
 
-    console.log(`[PAYMENT_ORDER_CREATED] User: ${user.email} | ${description} | ₹${amount / 100}`);
+    console.log(`[PAYMENT_ORDER_CREATED] User: ${user.email} | ${description} | ₹${amount / 100} (after ${discount} points discount)`);
 
     return ok({
       orderId: order.orderId,
@@ -111,6 +136,7 @@ export async function POST(req: Request) {
       keyId: order.keyId, // For Razorpay frontend
       checkoutUrl: order.checkoutUrl, // For PhonePe redirect
       description,
+      discount,
     });
 
   } catch (err: any) {

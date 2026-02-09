@@ -1,162 +1,84 @@
+
 "use client";
 
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, Headphones } from "lucide-react";
-import { cn } from "@/app/lib/utils";
-import { Button } from "./ui/Button";
 import { useAuth } from "@/app/lib/AuthContext";
-import { signOut } from "@/app/lib/auth";
+import { Button } from "@/app/components/ui/Button";
+import { LogOut, User, Music, Mic, BarChart, Settings, Library } from "lucide-react";
+import { motion } from "framer-motion";
+import { usePathname } from 'next/navigation';
+import { cn } from "@/app/lib/utils";
 
-const navLinks = [
-    { name: "Explore", href: "/explore" },
-    { name: "Tracks", href: "/tracks" },
-    { name: "Albums", href: "/albums" },
-    { name: "Pricing", href: "/pricing" },
+const NAV_LINKS = [
+  { href: "/tracks", label: "Tracks", icon: Music },
+  { href: "/explore", label: "Explore DJs", icon: Mic },
 ];
 
 export function Navbar() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
-    const pathname = usePathname();
-    const { user, loading } = useAuth();
+  const { user, signOut } = useAuth();
+  const pathname = usePathname();
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    return (
-        <nav
-            className={cn(
-                "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-8",
-                scrolled ? "py-2" : "py-4"
-            )}
-        >
-            <div className={cn(
-                "max-w-7xl mx-auto h-14 flex items-center justify-between px-6 rounded-2xl transition-all duration-300",
-                scrolled ? "glass" : "bg-transparent"
-            )}>
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2.5 group">
-                    <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shadow-violet-600/20">
-                        <Headphones className="text-white" size={18} />
-                    </div>
-                    <span className="text-lg font-bold tracking-tight text-white">MixMint</span>
-                </Link>
-
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-1">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={cn(
-                                "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                                pathname === link.href 
-                                    ? "text-white bg-zinc-800/60" 
-                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/40"
-                            )}
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
-                </div>
-
-                {/* Desktop Auth */}
-                <div className="hidden md:flex items-center gap-3">
-                    {!loading && !user && (
-                        <>
-                            <Link href="/auth/login">
-                                <Button variant="ghost" size="sm">Log In</Button>
-                            </Link>
-                            <Link href="/auth/signup">
-                                <Button size="sm">Sign Up</Button>
-                            </Link>
-                        </>
-                    )}
-
-                    {!loading && user && (
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-zinc-400 font-medium hidden lg:block">
-                                {user.email}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-                                    await signOut();
-                                    window.location.href = "/";
-                                }}
-                                className="text-zinc-400 hover:text-red-400"
-                            >
-                                Logout
-                            </Button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Mobile Toggle */}
-                <button
-                    className="md:hidden w-10 h-10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-colors"
-                    onClick={() => setIsOpen(!isOpen)}
+  return (
+    <motion.header 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="sticky top-4 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-2xl px-6">
+          <div className="flex items-center gap-10">
+            <Link href="/" className="text-2xl font-bold text-white">Mix<span className="text-violet-500">Mint</span></Link>
+            <nav className="hidden md:flex items-center gap-6">
+              {NAV_LINKS.map(link => (
+                <Link 
+                  key={link.href} 
+                  href={link.href} 
+                  className={cn(
+                    "text-sm font-medium transition-colors",
+                    pathname === link.href ? "text-violet-400" : "text-zinc-400 hover:text-white"
+                  )}
                 >
-                    {isOpen ? <X size={20} /> : <Menu size={20} />}
-                </button>
-            </div>
-
-            {/* Mobile Menu */}
-            {isOpen && (
-                <div className="absolute top-20 left-4 right-4 glass p-6 rounded-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                    <div className="flex flex-col gap-2">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                onClick={() => setIsOpen(false)}
-                                className={cn(
-                                    "px-4 py-3 rounded-xl text-sm font-medium transition-colors",
-                                    pathname === link.href 
-                                        ? "text-white bg-zinc-800/60" 
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/40"
-                                )}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                        <hr className="border-zinc-800 my-3" />
-                        <div className="flex flex-col gap-2">
-                            {!loading && !user && (
-                                <>
-                                    <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                                        <Button variant="outline" className="w-full">Log In</Button>
-                                    </Link>
-                                    <Link href="/auth/signup" onClick={() => setIsOpen(false)}>
-                                        <Button className="w-full">Sign Up</Button>
-                                    </Link>
-                                </>
-                            )}
-                            {!loading && user && (
-                                <Button
-                                    variant="outline"
-                                    onClick={async () => {
-                                        await signOut();
-                                        setIsOpen(false);
-                                        window.location.href = "/";
-                                    }}
-                                    className="w-full"
-                                >
-                                    Logout
-                                </Button>
-                            )}
-                        </div>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="relative group">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                   <User size={16} />
+                   <span className="hidden sm:inline">{user.email}</span>
+                </Button>
+                <div className="absolute top-full right-0 mt-2 w-48 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                    <div className="py-1">
+                       <Link href="/my-collection" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700"><Library size={14}/> My Collection</Link>
+                       {user.role === 'dj' && (
+                         <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700"><BarChart size={14}/> DJ Dashboard</Link>
+                       )}
+                       {user.role === 'admin' && (
+                         <Link href="/admin/dj-approvals" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700"> <Settings size={14}/> Admin Panel</Link>
+                       )}
+                       <button onClick={signOut} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-zinc-700">
+                           <LogOut size={14} />
+                           Sign Out
+                       </button>
                     </div>
                 </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link href="/auth/login">
+                  <Button variant="ghost" size="sm">Log In</Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button size="sm">Sign Up</Button>
+                </Link>
+              </div>
             )}
-        </nav>
-    );
+          </div>
+        </div>
+      </div>
+    </motion.header>
+  );
 }

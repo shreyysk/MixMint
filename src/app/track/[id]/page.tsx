@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -5,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClient";
 import { useAuth } from "@/app/lib/AuthContext";
 import { Button } from "@/app/components/ui/Button";
-import { Loader2, Music, Download, Play, ArrowLeft, ExternalLink } from "lucide-react";
+import { Loader2, Music, Download, Play, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { purchaseContent } from "@/app/lib/razorpayCheckout";
@@ -33,12 +34,18 @@ export default function TrackDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [redeemPoints, setRedeemPoints] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
   useEffect(() => {
     if (trackId) {
       loadTrack();
     }
-  }, [trackId]);
+    if (user) {
+      loadUserPoints();
+    }
+  }, [trackId, user]);
 
   async function loadTrack() {
     try {
@@ -83,6 +90,18 @@ export default function TrackDetailPage() {
     }
   }
 
+  async function loadUserPoints() {
+    const { data, error } = await supabase
+      .from('points')
+      .select('balance')
+      .eq('user_id', user!.id)
+      .single();
+
+    if (data) {
+      setUserPoints(data.balance);
+    }
+  }
+
   async function handlePurchase() {
     if (!user) {
       alert("Please log in to purchase");
@@ -100,6 +119,7 @@ export default function TrackDetailPage() {
         contentType: "track",
         userEmail: user.email || undefined,
         userName: user.user_metadata?.full_name || undefined,
+        pointsToRedeem: redeemPoints ? pointsToRedeem : 0,
         onSuccess: () => {
           console.log("Purchase successful");
         },
@@ -185,6 +205,7 @@ export default function TrackDetailPage() {
   }
 
   const isFree = track.price === 0;
+  const finalPrice = track.price - (redeemPoints ? Math.min(pointsToRedeem, track.price, Math.floor(track.price * 0.2)) : 0);
 
   return (
     <div className="min-h-screen pb-24" data-testid="track-detail-page">
@@ -306,6 +327,30 @@ export default function TrackDetailPage() {
                       </div>
                       <Music className="text-violet-500/30" size={48} />
                     </div>
+
+                    {userPoints > 0 && (
+                      <div className="mb-4 p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/30">
+                          <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                  <Sparkles size={16} className="text-yellow-400" />
+                                  <span className="text-yellow-400 font-bold">You have {userPoints} points</span>
+                              </div>
+                              <input type="checkbox" checked={redeemPoints} onChange={() => setRedeemPoints(!redeemPoints)} />
+                          </div>
+                          {redeemPoints && (
+                              <div className="mt-2">
+                                  <input 
+                                      type="number" 
+                                      className="w-full bg-transparent text-white border-b border-yellow-400/50 focus:outline-none focus:border-yellow-400"
+                                      value={pointsToRedeem}
+                                      onChange={(e) => setPointsToRedeem(Number(e.target.value))}
+                                      max={Math.min(userPoints, Math.floor(track.price * 0.2))}
+                                  />
+                                  <p className="text-xs text-yellow-400/70 mt-1">Max redeemable: {Math.min(userPoints, Math.floor(track.price * 0.2))} points (20% cap)</p>
+                              </div>
+                          )}
+                      </div>
+                    )}
                     
                     <Button
                       onClick={handlePurchase}
@@ -322,7 +367,7 @@ export default function TrackDetailPage() {
                       ) : (
                         <>
                           <Download size={20} />
-                          Buy Track - ₹{track.price}
+                          Buy Track - ₹{finalPrice}
                         </>
                       )}
                     </Button>

@@ -11,6 +11,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Loader2, Music, Package, Users, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 
 interface DJProfile {
   id: string;
@@ -20,6 +21,7 @@ interface DJProfile {
   bio: string | null;
   genres: string[] | null;
   banner_url: string | null;
+  profile_picture_url: string | null;
 }
 
 interface Track {
@@ -62,7 +64,7 @@ export default function DJProfilePage() {
 
       const { data: djData, error: djError } = await supabase
         .from("dj_profiles")
-        .select("*")
+        .select("*, profile_picture_url")
         .eq("slug", slug)
         .eq("status", "approved")
         .single();
@@ -97,7 +99,6 @@ export default function DJProfilePage() {
     }
   }
 
-  // Loading State
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="loading-state">
@@ -111,7 +112,6 @@ export default function DJProfilePage() {
     );
   }
 
-  // Error State
   if (error || !dj) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" data-testid="error-state">
@@ -120,7 +120,7 @@ export default function DJProfilePage() {
             <Music className="text-red-400" size={32} />
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">DJ Not Found</h1>
-          <p className="text-zinc-500 mb-6">{error || "This DJ profile doesn't exist or hasn't been approved."}</p>
+          <p className="text-zinc-500 mb-6">{error || "This DJ profile doesn\'t exist or hasn\'t been approved."}</p>
           <Link href="/explore">
             <Button>Explore All DJs</Button>
           </Link>
@@ -133,13 +133,11 @@ export default function DJProfilePage() {
     <div className="min-h-screen pb-24" data-testid="dj-profile-page">
       {/* Hero Banner */}
       <div
-        className="relative h-[350px] md:h-[400px]"
-        style={{
-          backgroundImage: dj.banner_url ? `url(${dj.banner_url})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        className="relative h-[350px] md:h-[400px] bg-zinc-900"
       >
+        {dj.banner_url && (
+            <Image src={dj.banner_url} layout="fill" objectFit="cover" alt={`${dj.dj_name} banner`} />
+        )}
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/80 to-transparent" />
 
@@ -149,25 +147,33 @@ export default function DJProfilePage() {
             <motion.div
               initial={mounted ? { opacity: 0, y: 30 } : false}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
+              className="flex items-end gap-6"
             >
-              {/* Genres */}
-              {dj.genres && dj.genres.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {dj.genres.filter(g => g).map((genre, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-xs font-medium"
-                    >
-                      {genre}
-                    </span>
-                  ))}
+            {dj.profile_picture_url && (
+                <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-zinc-900 overflow-hidden shrink-0">
+                    <Image src={dj.profile_picture_url} layout="fill" objectFit="cover" alt={`${dj.dj_name} profile picture`} />
                 </div>
-              )}
+            )}
+              <div>
+                {/* Genres */}
+                {dj.genres && dj.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                    {dj.genres.filter(g => g).map((genre, i) => (
+                        <span
+                        key={i}
+                        className="px-3 py-1 rounded-full bg-violet-600/20 border border-violet-500/30 text-violet-300 text-xs font-medium"
+                        >
+                        {genre}
+                        </span>
+                    ))}
+                    </div>
+                )}
 
-              {/* DJ Name */}
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
-                {dj.dj_name}
-              </h1>
+                {/* DJ Name */}
+                <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
+                    {dj.dj_name}
+                </h1>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -184,9 +190,9 @@ export default function DJProfilePage() {
               animate={mounted ? { opacity: 1, y: 0 } : {}}
               className="mb-16"
             >
-              <div className="p-6 md:p-8 rounded-2xl bg-zinc-900/50 border border-zinc-800/60">
-                <h2 className="text-lg font-semibold text-white mb-3">About</h2>
-                <p className="text-zinc-400 leading-relaxed">{dj.bio}</p>
+              <div className="p-6 md:p-8 rounded-2xl bg-zinc-900/50 border border-zinc-800/60 max-w-4xl">
+                <h2 className="text-xl font-bold text-white mb-4">About {dj.dj_name}</h2>
+                <p className="text-zinc-400 leading-relaxed whitespace-pre-line">{dj.bio}</p>
               </div>
             </motion.div>
           )}
@@ -216,7 +222,9 @@ export default function DJProfilePage() {
                     title={track.title}
                     djName={dj.dj_name}
                     djSlug={dj.slug}
+                    price={track.price}
                     youtubeUrl={track.youtube_url}
+                    onDownload={() => {}}
                   />
                 ))}
               </div>
@@ -247,6 +255,7 @@ export default function DJProfilePage() {
                     id={album.id}
                     title={album.title}
                     description={album.description}
+                    price={album.price}
                     fileSize={album.file_size}
                     djName={dj.dj_name}
                     djSlug={dj.slug}
@@ -267,7 +276,7 @@ export default function DJProfilePage() {
                 <Music className="text-zinc-600" size={32} />
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">No Content Yet</h3>
-              <p className="text-zinc-500">This DJ hasn't uploaded any tracks or albums yet.</p>
+              <p className="text-zinc-500">This DJ hasn\'t uploaded any tracks or albums yet.</p>
             </motion.div>
           )}
 

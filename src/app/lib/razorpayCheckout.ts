@@ -1,3 +1,4 @@
+
 // Razorpay payment utility for frontend
 
 declare global {
@@ -71,6 +72,7 @@ export async function purchaseContent(params: {
   contentType: "track" | "zip";
   userEmail?: string;
   userName?: string;
+  pointsToRedeem?: number;
   onSuccess?: () => void;
   onFailure?: (error: string) => void;
 }): Promise<void> {
@@ -82,6 +84,7 @@ export async function purchaseContent(params: {
       body: JSON.stringify({
         content_type: params.contentType,
         content_id: params.contentId,
+        points_to_redeem: params.pointsToRedeem,
       }),
     });
 
@@ -118,6 +121,7 @@ export async function purchaseContent(params: {
               signature: response.razorpay_signature,
               content_type: params.contentType,
               content_id: params.contentId,
+              points_used: orderData.discount,
             }),
           });
 
@@ -149,6 +153,7 @@ export async function subscribeToDJ(params: {
   plan: "basic" | "pro" | "super";
   userEmail?: string;
   userName?: string;
+  pointsToRedeem?: number;
   onSuccess?: () => void;
   onFailure?: (error: string) => void;
 }): Promise<void> {
@@ -161,6 +166,7 @@ export async function subscribeToDJ(params: {
         content_type: "subscription",
         content_id: params.djId,
         plan: params.plan,
+        points_to_redeem: params.pointsToRedeem,
       }),
     });
 
@@ -196,6 +202,7 @@ export async function subscribeToDJ(params: {
               content_type: "subscription",
               content_id: params.djId,
               plan: params.plan,
+              points_used: orderData.discount,
             }),
           });
 
