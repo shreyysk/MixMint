@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import RequireRole from "@/app/components/RequireRole";
-import { Button } from "@/app/components/ui/Button";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import RequireRole from "@/components/features/auth/RequireRole";
+import { Button } from "@/components/ui/Button";
 import { Settings, CreditCard, DollarSign, Flag, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -36,7 +36,7 @@ export default function AdminSettingsPage() {
 
   const [paymentProvider, setPaymentProvider] = useState<"razorpay" | "phonepe">("razorpay");
   const [paymentMode, setPaymentMode] = useState<"test" | "production">("test");
-  
+
   const [minPrices, setMinPrices] = useState({
     track: 29,
     album: 79,
@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
   async function loadSettings() {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from("system_settings")
         .select("key, value");
@@ -94,13 +94,13 @@ export default function AdminSettingsPage() {
 
   async function savePaymentGateway() {
     if (!user) return;
-    
+
     try {
       setSaving(true);
       setMessage(null);
 
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         setMessage({ type: "error", text: "Not authenticated" });
         return;
@@ -118,7 +118,7 @@ export default function AdminSettingsPage() {
       if (error) throw error;
 
       setMessage({ type: "success", text: "Payment gateway updated successfully" });
-      
+
       // Reload settings
       await loadSettings();
     } catch (err: any) {
@@ -131,7 +131,7 @@ export default function AdminSettingsPage() {
 
   async function savePricing() {
     if (!user) return;
-    
+
     try {
       setSaving(true);
       setMessage(null);
@@ -159,7 +159,7 @@ export default function AdminSettingsPage() {
 
   async function saveFeatureFlags() {
     if (!user) return;
-    
+
     try {
       setSaving(true);
       setMessage(null);
@@ -222,11 +222,10 @@ export default function AdminSettingsPage() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-xl mb-8 flex items-center gap-3 ${
-                  message.type === "success"
+                className={`p-4 rounded-xl mb-8 flex items-center gap-3 ${message.type === "success"
                     ? "bg-green-900/20 border border-green-800/50"
                     : "bg-red-900/20 border border-red-800/50"
-                }`}
+                  }`}
               >
                 {message.type === "success" ? (
                   <CheckCircle className="text-green-500" size={20} />
@@ -262,11 +261,10 @@ export default function AdminSettingsPage() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setPaymentProvider("razorpay")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                        paymentProvider === "razorpay"
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentProvider === "razorpay"
                           ? "border-violet-500 bg-violet-500/10"
                           : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                      }`}
+                        }`}
                       data-testid="razorpay-option"
                     >
                       <div className="font-black text-white uppercase">Razorpay</div>
@@ -274,11 +272,10 @@ export default function AdminSettingsPage() {
                     </button>
                     <button
                       onClick={() => setPaymentProvider("phonepe")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                        paymentProvider === "phonepe"
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentProvider === "phonepe"
                           ? "border-violet-500 bg-violet-500/10"
                           : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                      }`}
+                        }`}
                       data-testid="phonepe-option"
                     >
                       <div className="font-black text-white uppercase">PhonePe</div>
@@ -295,22 +292,20 @@ export default function AdminSettingsPage() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setPaymentMode("test")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                        paymentMode === "test"
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMode === "test"
                           ? "border-amber-500 bg-amber-500/10"
                           : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                      }`}
+                        }`}
                     >
                       <div className="font-black text-white uppercase">Test Mode</div>
                       <div className="text-xs text-zinc-500 mt-1">Development</div>
                     </button>
                     <button
                       onClick={() => setPaymentMode("production")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                        paymentMode === "production"
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMode === "production"
                           ? "border-green-500 bg-green-500/10"
                           : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                      }`}
+                        }`}
                     >
                       <div className="font-black text-white uppercase">Production</div>
                       <div className="text-xs text-zinc-500 mt-1">Live Payments</div>
@@ -422,11 +417,10 @@ export default function AdminSettingsPage() {
                     </span>
                     <button
                       onClick={() => setFeatureFlags({ ...featureFlags, [key]: !value })}
-                      className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                        value
+                      className={`px-4 py-2 rounded-lg font-bold transition-all ${value
                           ? "bg-green-600 text-white"
                           : "bg-zinc-800 text-zinc-500"
-                      }`}
+                        }`}
                     >
                       {value ? "Enabled" : "Disabled"}
                     </button>

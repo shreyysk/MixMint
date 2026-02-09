@@ -1,10 +1,10 @@
 
 "use client";
 
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
-import RequireRole from "@/app/components/RequireRole";
-import { Button } from "@/app/components/ui/Button";
+import RequireRole from "@/components/features/auth/RequireRole";
+import { Button } from "@/components/ui/Button";
 
 interface DJProfile {
   id: string;
@@ -39,9 +39,9 @@ export default function FeaturedDJs() {
           {djs.map((dj) => (
             <div key={dj.id} className="border p-3 rounded-lg flex items-center justify-between">
               <p className="font-bold">{dj.dj_name}</p>
-              <Button 
-                onClick={() => toggleFeatured(dj)} 
-                variant={dj.featured ? "secondary" : "default"}
+              <Button
+                onClick={() => toggleFeatured(dj)}
+                variant={dj.featured ? "secondary" : "primary"}
                 size="sm"
               >
                 {dj.featured ? 'Unfeature' : 'Feature'}

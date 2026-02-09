@@ -1,7 +1,7 @@
 
 "use client";
 
-import { CreateAlbumForm } from "@/app/components/dashboard/CreateAlbumForm";
+import { CreateAlbumForm } from "@/components/features/dashboard/CreateAlbumForm";
 
 export default function CreateAlbumPage() {
     return (

@@ -1,6 +1,6 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
 
 export async function GET() {
     try {
@@ -8,9 +8,9 @@ export async function GET() {
 
         // Get balance
         const { data: balance } = await supabaseServer
-            .from('user_points')
-            .select('balance, total_earned')
-            .eq('profile_id', user.id)
+            .from('points')
+            .select('balance')
+            .eq('id', user.id)
             .single();
 
         // Get history
@@ -23,7 +23,7 @@ export async function GET() {
 
         return ok({
             balance: balance?.balance || 0,
-            totalEarned: balance?.total_earned || 0,
+            totalEarned: balance?.balance || 0, // Simplified for now
             history: history || []
         });
     } catch (err: any) {

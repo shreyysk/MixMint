@@ -1,10 +1,10 @@
 
 "use client";
 
-import { DJDashboard } from "@/app/components/dashboard/DJDashboard";
-import { useAuth } from "@/app/lib/AuthContext";
+import { DJDashboard } from "@/components/features/dashboard/DJDashboard";
+import { useAuth } from "@/lib/AuthContext";
 import Link from "next/link";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -26,7 +26,7 @@ export default function DashboardPage() {
     if (user.role !== 'dj') {
         return (
             <div className="min-h-screen flex items-center justify-center text-center">
-                 <div>
+                <div>
                     <h1 className="text-2xl font-bold mb-4">Not a DJ</h1>
                     <p className="text-zinc-500 mb-8">Only DJs can access the dashboard.</p>
                     <Link href="/dj/apply">

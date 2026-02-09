@@ -1,10 +1,10 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { r2 } from "@/app/lib/r2";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { r2 } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { getDJStoragePath } from "@/app/lib/djStorage";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { requireDJ } from "@/app/lib/requireDJ";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { getDJStoragePath } from "@/lib/djStorage";
+import { requireAuth } from "@/lib/requireAuth";
+import { requireDJ } from "@/lib/requireDJ";
+import { ok, fail } from "@/lib/apiResponse";
 
 /**
  * GET /api/dj/tracks/upload
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const { data: djProfile, error: profileError } = await supabaseServer
       .from("dj_profiles")
       .select("id, status")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
     if (profileError || !djProfile) {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       return fail("Only MP3, WAV, FLAC allowed", 400);
     }
 
-    // Size check (50MB)
+    // Size check (50MB) - Platform limit
     const MAX_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return fail("File too large (max 50MB)", 400);
@@ -75,15 +75,22 @@ export async function POST(req: Request) {
     // 3. REMAINING FORM DATA
     const title = formData.get("title") as string;
     const price = Number(formData.get("price"));
-    const contentType = (formData.get("content_type") as "track" | "zip") || "track";
+    const isFanOnly = formData.get("is_fan_only") === "true";
+    const bpm = Number(formData.get("bpm")) || null;
+    const genre = formData.get("genre") as string || null;
 
     if (!title || isNaN(price)) {
       return fail("Missing required fields (title/price)", 400);
     }
 
+    // Enforce platform minimum price (₹29) for paid tracks
+    // Exception: isFanOnly content is not individually purchasable, but we record it.
+    if (!isFanOnly && price > 0 && price < 29) {
+      return fail("Minimum track price is ₹29", 400);
+    }
+
     // 4. STORAGE LOGIC
     const fileName = file.name;
-    // NEW PATH FORMAT: <dj_slug>_<dj_id>/tracks/<timestamp>-<filename>
     const fileKey = getDJStoragePath(
       coreProfile.full_name,
       user.id,
@@ -92,7 +99,7 @@ export async function POST(req: Request) {
     );
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 5. MANDATORY MIXMINT METADATA
+    // 5. MANDATORY MIXMINT METADATA (R2 Headers)
     const uploadParams = {
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: fileKey,
@@ -104,17 +111,21 @@ export async function POST(req: Request) {
         "x-upload-source": "MixMint DJ Tracks Upload",
         "x-dj-id": user.id,
         "x-uploaded-at": new Date().toISOString(),
+        "x-is-fan-only": String(isFanOnly),
       },
     };
 
     await r2.send(new PutObjectCommand(uploadParams));
 
-    // 6. DATABASE PERSISTENCE (PHASE 3)
+    // 6. DATABASE PERSISTENCE
     const { error: dbError } = await supabaseServer.from("tracks").insert({
       dj_id: djProfile.id,
       title,
       price,
       file_key: fileKey,
+      is_fan_only: isFanOnly,
+      bpm,
+      genre,
       created_at: new Date().toISOString(),
     });
 
@@ -123,7 +134,7 @@ export async function POST(req: Request) {
     return ok({
       success: true,
       fileKey,
-      type: contentType,
+      type: isFanOnly ? "fan_upload" : "track",
     });
 
   } catch (err: any) {

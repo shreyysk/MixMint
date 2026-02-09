@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Check, Zap, TrendingUp, Crown, Info } from "lucide-react";
-import { cn } from "@/app/lib/utils";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const plans = [
@@ -70,7 +70,7 @@ export default function PricingPage() {
                         >
                             Transparent Pricing
                         </motion.div>
-                        <motion.h1 
+                        <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
@@ -78,7 +78,7 @@ export default function PricingPage() {
                         >
                             Simple, <span className="text-violet-gradient">DJ-First</span> Pricing
                         </motion.h1>
-                        <motion.p 
+                        <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
@@ -148,7 +148,7 @@ export default function PricingPage() {
                     </div>
 
                     {/* Info Section */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "@/app/lib/subscriptionPlans";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "@/lib/subscriptionPlans";
 
 /**
  * @deprecated This API is deprecated and should not be used directly.

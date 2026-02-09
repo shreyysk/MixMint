@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { getPaymentProvider } from "@/app/lib/payments";
-import { sendPurchaseEmail, sendSubscriptionEmail } from "@/app/lib/email";
-import { ok, fail } from "@/app/lib/apiResponse";
-import { SUBSCRIPTION_PLANS } from "@/app/lib/subscriptionPlans";
-import { handlePurchasePoints } from "@/app/lib/rewards";
-import { logger } from "@/app/lib/logger";
-import { checkRateLimit, getClientIp } from "@/app/lib/rateLimit";
-import { calculateRevenueSplit } from "@/app/lib/monetization";
+import { requireAuth } from "@/lib/requireAuth";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { getPaymentProvider } from "@/lib/payments";
+import { sendPurchaseEmail, sendSubscriptionEmail } from "@/lib/email";
+import { ok, fail } from "@/lib/apiResponse";
+import { SUBSCRIPTION_PLANS } from "@/lib/subscriptionPlans";
+import { handlePurchasePoints, redeemPoints, checkReferralMilestones } from "@/lib/rewards";
+import { logger } from "@/lib/logger";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { calculateRevenueSplit, recordRevenue } from "@/lib/monetization";
 
 export async function POST(req: Request) {
   let user: any = null;
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       return fail("Too many payment verification attempts. Please wait an hour.", 429, "PAYMENT");
     }
 
-    const { orderId, paymentId, signature, content_type, content_id, plan } = body;
+    const { orderId, paymentId, signature, content_type, content_id, plan, points_used } = body;
 
     if (!orderId || !paymentId || !signature) {
       return fail("orderId, paymentId, and signature are required", 400, "PAYMENT");
@@ -68,8 +68,12 @@ export async function POST(req: Request) {
 
       const purchaseDjId = item?.dj_id;
       if (purchaseDjId) {
-        const split = await calculateRevenueSplit(purchaseDjId, amountPaid);
-        logger.info("PAYMENT", "Purchase revenue split detail", { ...split, djId: purchaseDjId });
+        await recordRevenue(
+          purchaseDjId, 
+          amountPaid, 
+          content_type === "track" ? "track_sale" : "zip_sale", 
+          paymentId
+        );
       }
 
       // Create purchase record
@@ -88,6 +92,11 @@ export async function POST(req: Request) {
       if (purchaseError) {
         logger.error("PAYMENT", "Purchase record failed", purchaseError, { user: user.id, paymentId });
         return fail("Failed to record purchase", 500, "PAYMENT");
+      }
+
+      // Check for DJ referral milestones (non-blocking)
+      if (purchaseDjId) {
+          checkReferralMilestones(purchaseDjId);
       }
 
       // Send email (non-blocking)
@@ -138,6 +147,11 @@ export async function POST(req: Request) {
       // Award points and handle referrals (non-blocking)
       handlePurchasePoints(user.id, amountPaid);
 
+      // Deduct redeemed points
+      if (points_used && points_used > 0) {
+          await redeemPoints(user.id, points_used, `Redeemed for ${content_type} ${content_id}`);
+      }
+
       return ok({
         success: true,
         message: "Purchase successful",
@@ -156,8 +170,7 @@ export async function POST(req: Request) {
       }
 
       // Monetization split check
-      const split = await calculateRevenueSplit(content_id, amountPaid);
-      logger.info("PAYMENT", "Subscription revenue split detail", { ...split, djId: content_id });
+      await recordRevenue(content_id, amountPaid, "subscription", paymentId);
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + planConfig.duration_days);
@@ -215,6 +228,11 @@ export async function POST(req: Request) {
 
       // Award points and handle referrals (non-blocking)
       handlePurchasePoints(user.id, amountPaid);
+
+      // Deduct redeemed points
+      if (points_used && points_used > 0) {
+          await redeemPoints(user.id, points_used, `Redeemed for subscription ${plan} to ${content_id}`);
+      }
 
       return ok({
         success: true,

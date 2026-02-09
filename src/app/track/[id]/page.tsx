@@ -3,13 +3,13 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import { Button } from "@/app/components/ui/Button";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { Button } from "@/components/ui/Button";
 import { Loader2, Music, Download, Play, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { purchaseContent } from "@/app/lib/razorpayCheckout";
+import { purchaseContent } from "@/lib/razorpayCheckout";
 
 interface Track {
   id: string;
@@ -76,8 +76,8 @@ export default function TrackDetailPage() {
       // Transform nested data
       const transformedData = {
         ...data,
-        dj_profile: Array.isArray(data.dj_profiles) 
-          ? data.dj_profiles[0] 
+        dj_profile: Array.isArray(data.dj_profiles)
+          ? data.dj_profiles[0]
           : data.dj_profiles
       };
 
@@ -145,7 +145,7 @@ export default function TrackDetailPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert("Please log in");
         return;
@@ -154,13 +154,13 @@ export default function TrackDetailPage() {
       // Request download token for free track
       const res = await fetch("/api/download-token", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}` 
+          "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          content_id: trackId, 
-          content_type: "track" 
+        body: JSON.stringify({
+          content_id: trackId,
+          content_type: "track"
         }),
       });
 
@@ -211,7 +211,7 @@ export default function TrackDetailPage() {
     <div className="min-h-screen pb-24" data-testid="track-detail-page">
       <div className="px-6 md:px-12">
         <div className="max-w-5xl mx-auto pt-8">
-          
+
           {/* Back Button */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -229,7 +229,7 @@ export default function TrackDetailPage() {
 
           {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            
+
             {/* Left: Track Artwork & Preview */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -266,7 +266,7 @@ export default function TrackDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              
+
               {/* Track Title */}
               <h1 className="text-5xl font-black text-white uppercase italic tracking-tighter mb-4">
                 {track.title}
@@ -274,7 +274,7 @@ export default function TrackDetailPage() {
 
               {/* DJ Info */}
               {track.dj_profile && (
-                <Link 
+                <Link
                   href={`/dj/${track.dj_profile.slug}`}
                   className="inline-block mb-6"
                 >
@@ -330,28 +330,28 @@ export default function TrackDetailPage() {
 
                     {userPoints > 0 && (
                       <div className="mb-4 p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/30">
-                          <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                  <Sparkles size={16} className="text-yellow-400" />
-                                  <span className="text-yellow-400 font-bold">You have {userPoints} points</span>
-                              </div>
-                              <input type="checkbox" checked={redeemPoints} onChange={() => setRedeemPoints(!redeemPoints)} />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles size={16} className="text-yellow-400" />
+                            <span className="text-yellow-400 font-bold">You have {userPoints} points</span>
                           </div>
-                          {redeemPoints && (
-                              <div className="mt-2">
-                                  <input 
-                                      type="number" 
-                                      className="w-full bg-transparent text-white border-b border-yellow-400/50 focus:outline-none focus:border-yellow-400"
-                                      value={pointsToRedeem}
-                                      onChange={(e) => setPointsToRedeem(Number(e.target.value))}
-                                      max={Math.min(userPoints, Math.floor(track.price * 0.2))}
-                                  />
-                                  <p className="text-xs text-yellow-400/70 mt-1">Max redeemable: {Math.min(userPoints, Math.floor(track.price * 0.2))} points (20% cap)</p>
-                              </div>
-                          )}
+                          <input type="checkbox" checked={redeemPoints} onChange={() => setRedeemPoints(!redeemPoints)} />
+                        </div>
+                        {redeemPoints && (
+                          <div className="mt-2">
+                            <input
+                              type="number"
+                              className="w-full bg-transparent text-white border-b border-yellow-400/50 focus:outline-none focus:border-yellow-400"
+                              value={pointsToRedeem}
+                              onChange={(e) => setPointsToRedeem(Number(e.target.value))}
+                              max={Math.min(userPoints, Math.floor(track.price * 0.2))}
+                            />
+                            <p className="text-xs text-yellow-400/70 mt-1">Max redeemable: {Math.min(userPoints, Math.floor(track.price * 0.2))} points (20% cap)</p>
+                          </div>
+                        )}
                       </div>
                     )}
-                    
+
                     <Button
                       onClick={handlePurchase}
                       disabled={purchasing}
@@ -382,8 +382,8 @@ export default function TrackDetailPage() {
               {/* Info Box */}
               <div className="p-6 rounded-xl bg-violet-600/10 border border-violet-500/30">
                 <p className="text-violet-400 text-sm font-bold">
-                  ✓ High-quality audio file<br/>
-                  ✓ Permanent ownership<br/>
+                  ✓ High-quality audio file<br />
+                  ✓ Permanent ownership<br />
                   ✓ Download anytime from your library
                 </p>
               </div>

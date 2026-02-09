@@ -1,13 +1,161 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Google Fonts - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+/* CSS Variables for Theme */
+:root {
+  /* Light Theme (default) */
+  --color-primary: #8B5CF6;
+  --color-accent: #10B981;
+  --color-bg: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --shadow-purple: 0 0 20px -5px rgba(139, 92, 246, 0.5);
+  --shadow-mint: 0 0 20px -5px rgba(16, 185, 129, 0.5);
+}
+
+.dark {
+  /* Dark Theme */
+  --color-primary: #A78BFA;
+  --color-accent: #34D399;
+  --color-bg: #0F0F1A;
+  --color-surface: #252538;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --shadow-purple: 0 0 20px -5px rgba(167, 139, 250, 0.5);
+  --shadow-mint: 0 0 20px -5px rgba(52, 211, 153, 0.5);
+}
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-mint-studio text-slate-900;
+    @apply bg-gradient-dark text-mint-studio font-sans antialiased;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
   }
 
   .dark body {
-    @apply bg-mint-dark text-mint-studio;
+    @apply bg-gradient-dark text-mint-studio;
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading font-bold tracking-tight;
+  }
+
+  /* Focus States */
+  :focus-visible {
+    @apply outline-none ring-2 ring-purple-primary ring-offset-2 ring-offset-transparent;
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/10 backdrop-blur-glass border border-white/20;
+  }
+
+  .dark .glass {
+    @apply bg-black/20 backdrop-blur-glass border border-white/10;
+  }
+
+  /* Button Variants */
+  .btn-primary {
+    @apply bg-gradient-purple text-white font-semibold px-6 py-3 rounded-xl shadow-purple-glow hover:shadow-purple-glow-lg transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+
+  .btn-mint {
+    @apply bg-gradient-mint text-white font-semibold px-6 py-3 rounded-xl shadow-mint-glow hover:shadow-mint-glow-lg transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/10 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+
+  /* Card States */
+  .card-owned {
+    @apply border-2 border-mint-accent bg-mint-accent/5;
+  }
+
+  .card-available {
+    @apply border-2 border-purple-primary bg-purple-primary/5;
+  }
+
+  .card-locked {
+    @apply grayscale opacity-60 border border-zinc-700;
+  }
+
+  /* Glow Effects */
+  .glow-purple {
+    box-shadow: var(--shadow-purple);
+  }
+
+  .glow-mint {
+    box-shadow: var(--shadow-mint);
+  }
+
+  /* Avatar with glow */
+  .avatar-glow {
+    @apply ring-4 ring-mint-accent/30 shadow-mint-glow;
+  }
+
+  /* Badge Styles */
+  .badge-new {
+    @apply bg-mint-accent text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse-slow;
+  }
+
+  .badge-super {
+    @apply bg-gradient-super text-white text-xs font-bold px-2 py-0.5 rounded-full;
+  }
+
+  .badge-owned {
+    @apply bg-mint-accent text-white text-xs font-bold px-2 py-0.5 rounded-full;
+  }
+
+  /* Progress Bar */
+  .progress-quota {
+    @apply h-2 rounded-full bg-zinc-700 overflow-hidden;
+  }
+
+  .progress-quota-fill {
+    @apply h-full bg-gradient-purple-mint rounded-full transition-all duration-500;
+  }
+}
+
+@layer utilities {
+
+  /* Hover Glow Animation */
+  .hover-glow:hover {
+    @apply shadow-purple-glow-lg;
+  }
+
+  /* Rotate on hover */
+  .hover-rotate:hover {
+    @apply animate-rotate-360;
+  }
+
+  /* Price Typography */
+  .price {
+    @apply font-accent font-semibold;
+  }
+
+  /* Token/Code Typography */
+  .code {
+    @apply font-mono text-sm bg-zinc-800 px-2 py-1 rounded;
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-gradient-purple-mint bg-clip-text text-transparent;
   }
 }

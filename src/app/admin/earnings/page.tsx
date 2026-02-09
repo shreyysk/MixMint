@@ -1,9 +1,9 @@
 
 "use client";
 
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
-import RequireRole from "@/app/components/RequireRole";
+import RequireRole from "@/components/features/auth/RequireRole";
 
 interface DJEarnings {
   dj_id: string;

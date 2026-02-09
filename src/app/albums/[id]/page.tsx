@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/app/lib/AuthContext";
-import { supabase } from "@/app/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
 import { useParams } from "next/navigation";
 
 interface Album {

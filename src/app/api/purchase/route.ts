@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
 
 /**
  * @deprecated This API is deprecated and should not be used directly.

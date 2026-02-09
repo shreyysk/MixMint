@@ -1,4 +1,4 @@
-import RequireRole from "@/app/components/RequireRole";
+import RequireRole from "@/components/features/auth/RequireRole";
 
 export default function AdminPage() {
   return (

@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Headphones, Mail, Lock, Music } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { signIn } from "@/app/lib/auth";
+import { signIn } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+    const router = useRouter();
     // 1. Add state for email and password
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -16,7 +18,7 @@ export default function LoginPage() {
     const handleLogin = async () => {
         try {
             await signIn(email, password);
-            alert("Login successful");
+            router.push("/dashboard");
         } catch (err: any) {
             alert(err.message);
         }
@@ -97,8 +99,8 @@ export default function LoginPage() {
 
                         <div>
                             {/* Connected logic to onClick */}
-                            <Button 
-                                type="button" 
+                            <Button
+                                type="button"
                                 onClick={handleLogin}
                                 className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]"
                             >

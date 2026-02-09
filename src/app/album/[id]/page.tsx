@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import { Button } from "@/app/components/ui/Button";
-import { Loader2, Package, Download, FileArchive, ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { Button } from "@/components/ui/Button";
+import { Loader2, Package, Download, FileArchive, ArrowLeft, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { purchaseContent } from "@/app/lib/razorpayCheckout";
+import { purchaseContent } from "@/lib/razorpayCheckout";
 
 interface Album {
   id: string;
@@ -34,12 +34,30 @@ export default function AlbumDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [redeemPoints, setRedeemPoints] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
   useEffect(() => {
     if (albumId) {
       loadAlbum();
     }
-  }, [albumId]);
+    if (user) {
+      loadUserPoints();
+    }
+  }, [albumId, user]);
+
+  async function loadUserPoints() {
+    const { data } = await supabase
+      .from('points')
+      .select('balance')
+      .eq('user_id', user!.id)
+      .single();
+
+    if (data) {
+      setUserPoints(data.balance);
+    }
+  }
 
   async function loadAlbum() {
     try {
@@ -69,8 +87,8 @@ export default function AlbumDetailPage() {
 
       const transformedData = {
         ...data,
-        dj_profile: Array.isArray(data.dj_profiles) 
-          ? data.dj_profiles[0] 
+        dj_profile: Array.isArray(data.dj_profiles)
+          ? data.dj_profiles[0]
           : data.dj_profiles
       };
 
@@ -105,6 +123,7 @@ export default function AlbumDetailPage() {
         contentType: "zip",
         userEmail: user.email || undefined,
         userName: user.user_metadata?.full_name || undefined,
+        pointsToRedeem: redeemPoints ? pointsToRedeem : 0,
         onSuccess: () => {
           console.log("Purchase successful");
         },
@@ -130,7 +149,7 @@ export default function AlbumDetailPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert("Please log in");
         return;
@@ -138,13 +157,13 @@ export default function AlbumDetailPage() {
 
       const res = await fetch("/api/download-token", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}` 
+          "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          content_id: albumId, 
-          content_type: "zip" 
+        body: JSON.stringify({
+          content_id: albumId,
+          content_type: "zip"
         }),
       });
 
@@ -191,7 +210,7 @@ export default function AlbumDetailPage() {
     <div className="min-h-screen pb-24" data-testid="album-detail-page">
       <div className="px-6 md:px-12">
         <div className="max-w-5xl mx-auto pt-8">
-          
+
           {/* Back Button */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -209,7 +228,7 @@ export default function AlbumDetailPage() {
 
           {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            
+
             {/* Left: Album Artwork */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -248,7 +267,7 @@ export default function AlbumDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              
+
               {/* Album Title */}
               <h1 className="text-5xl font-black text-white uppercase italic tracking-tighter mb-4">
                 {album.title}
@@ -256,7 +275,7 @@ export default function AlbumDetailPage() {
 
               {/* DJ Info */}
               {album.dj_profile && (
-                <Link 
+                <Link
                   href={`/dj/${album.dj_profile.slug}`}
                   className="inline-block mb-6"
                 >
@@ -309,7 +328,31 @@ export default function AlbumDetailPage() {
                       </div>
                       <FileArchive className="text-amber-500/30" size={48} />
                     </div>
-                    
+
+                    {userPoints > 0 && (
+                      <div className="mb-4 p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles size={16} className="text-yellow-400" />
+                            <span className="text-yellow-400 font-bold">You have {userPoints} points</span>
+                          </div>
+                          <input type="checkbox" checked={redeemPoints} onChange={() => setRedeemPoints(!redeemPoints)} />
+                        </div>
+                        {redeemPoints && (
+                          <div className="mt-2">
+                            <input
+                              type="number"
+                              className="w-full bg-transparent text-white border-b border-yellow-400/50 focus:outline-none focus:border-yellow-400"
+                              value={pointsToRedeem}
+                              onChange={(e) => setPointsToRedeem(Number(e.target.value))}
+                              max={Math.min(userPoints, Math.floor(album.price * 0.2))}
+                            />
+                            <p className="text-xs text-yellow-400/70 mt-1">Max redeemable: {Math.min(userPoints, Math.floor(album.price * 0.2))} points (20% cap)</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <Button
                       onClick={handlePurchase}
                       disabled={purchasing}
@@ -340,9 +383,9 @@ export default function AlbumDetailPage() {
               {/* Info Box */}
               <div className="p-6 rounded-xl bg-amber-600/10 border border-amber-500/30">
                 <p className="text-amber-400 text-sm font-bold">
-                  ✓ Complete album collection<br/>
-                  ✓ High-quality audio files<br/>
-                  ✓ Permanent ownership<br/>
+                  ✓ Complete album collection<br />
+                  ✓ High-quality audio files<br />
+                  ✓ Permanent ownership<br />
                   ✓ Download anytime from your library
                 </p>
               </div>

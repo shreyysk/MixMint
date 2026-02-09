@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import RequireRole from "@/app/components/RequireRole";
-import { downloadContent } from "@/app/lib/download";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import RequireRole from "@/components/features/auth/RequireRole";
+import { downloadContent } from "@/lib/download";
 
 type Track = {
   id: string;

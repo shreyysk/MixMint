@@ -1,12 +1,12 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { r2 } from "@/app/lib/r2";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { getDJStoragePath } from "@/app/lib/djStorage";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { requireDJ } from "@/app/lib/requireDJ";
-import { ok, fail } from "@/app/lib/apiResponse";
-import { logger } from "@/app/lib/logger";
-import { checkRateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { r2 } from "@/lib/r2";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { getDJStoragePath } from "@/lib/djStorage";
+import { requireAuth } from "@/lib/requireAuth";
+import { requireDJ } from "@/lib/requireDJ";
+import { ok, fail } from "@/lib/apiResponse";
+import { logger } from "@/lib/logger";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 /**
  * GET /api/dj/upload

@@ -1,9 +1,9 @@
 "use client";
 
-import { useAuth } from "@/app/lib/AuthContext";
+import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
-import RequireRole from "@/app/components/RequireRole";
+import { supabase } from "@/lib/supabaseClient";
+import RequireRole from "@/components/features/auth/RequireRole";
 import { Upload, Music, Package, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 export default function DJUploadPage() {

@@ -1,6 +1,6 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
 import { NextRequest } from "next/server";
 
 /**
@@ -65,8 +65,17 @@ export async function DELETE(
 
         if (!djProfile) return fail("Not a DJ", 403);
 
-        // TODO: We should also delete the file from R2
-        // But for now, we just delete the record
+        // 1. Get track to find file_key
+        const { data: track } = await supabaseServer
+            .from('tracks')
+            .select('file_key')
+            .eq('id', id)
+            .eq('dj_id', djProfile.id)
+            .single();
+
+        if (!track) return fail("Track not found or access denied", 404);
+
+        // 2. Delete the record
         const { error } = await supabaseServer
             .from('tracks')
             .delete()
@@ -74,6 +83,20 @@ export async function DELETE(
             .eq('dj_id', djProfile.id);
 
         if (error) throw error;
+
+        // 3. Delete from R2 (Fire and forget or best effort)
+        try {
+            const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+            const { r2 } = await import("@/lib/r2");
+            
+            await r2.send(new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME!,
+                Key: track.file_key,
+            }));
+        } catch (r2Err) {
+            console.error("[R2_DELETE_ERROR]:", r2Err);
+            // We don't fail the request if R2 delete fails, but we log it.
+        }
 
         return ok({ success: true, message: "Track deleted successfully" });
     } catch (err: any) {

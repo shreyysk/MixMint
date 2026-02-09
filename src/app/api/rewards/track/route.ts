@@ -1,7 +1,7 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
-import { trackReferral, awardSignupBonus } from "@/app/lib/rewards";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
+import { trackReferral, awardSignupBonus } from "@/lib/rewards";
 
 export async function POST(req: Request) {
   try {

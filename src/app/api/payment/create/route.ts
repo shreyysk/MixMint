@@ -1,9 +1,9 @@
 
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { getPaymentProvider } from "@/app/lib/payments";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { requireAuth } from "@/lib/requireAuth";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { getPaymentProvider } from "@/lib/payments";
+import { ok, fail } from "@/lib/apiResponse";
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +27,19 @@ export async function POST(req: Request) {
     let description = "";
 
     if (content_type === "track") {
+      // 1. Check if already purchased
+      const { data: existing } = await supabaseServer
+        .from("purchases")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("content_id", content_id)
+        .eq("content_type", "track")
+        .single();
+
+      if (existing) {
+        return fail("You already own this track", 400);
+      }
+
       const { data: track, error } = await supabaseServer
         .from("tracks")
         .select("title, price")
@@ -37,10 +50,27 @@ export async function POST(req: Request) {
         return fail("Track not found", 404);
       }
 
+      if (track.price > 0 && track.price < 29) {
+          return fail("Price is below platform minimum (₹29)", 400);
+      }
+
       amount = track.price * 100; // Convert to paise
       description = `Track: ${track.title}`;
 
     } else if (content_type === "zip") {
+      // 1. Check if already purchased
+      const { data: existing } = await supabaseServer
+        .from("purchases")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("content_id", content_id)
+        .eq("content_type", "zip")
+        .single();
+
+      if (existing) {
+        return fail("You already own this album pack", 400);
+      }
+
       const { data: album, error } = await supabaseServer
         .from("album_packs")
         .select("title, price")
@@ -51,6 +81,10 @@ export async function POST(req: Request) {
         return fail("Album pack not found", 404);
       }
 
+      if (album.price < 79) {
+          return fail("Price is below platform minimum (₹79)", 400);
+      }
+
       amount = album.price * 100;
       description = `Album Pack: ${album.title}`;
 
@@ -59,7 +93,25 @@ export async function POST(req: Request) {
         return fail("Valid plan required for subscription (basic/pro/super)", 400);
       }
 
-      // Get subscription pricing from system_settings
+      // Check if active subscription already exists
+      const { data: existingSub } = await supabaseServer
+        .from("dj_subscriptions")
+        .select("expires_at")
+        .eq("user_id", user.id)
+        .eq("dj_id", content_id)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+
+      // We allow purchase if it expires within 7 days, otherwise block to prevent overkill
+      if (existingSub) {
+          const expires = new Date(existingSub.expires_at);
+          const now = new Date();
+          const diffDays = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 3600 * 24));
+          if (diffDays > 7) {
+              return fail(`You have an active subscription for another ${diffDays} days.`, 400);
+          }
+      }
+
       const { data: settings } = await supabaseServer
         .from("system_settings")
         .select("value")
@@ -123,7 +175,7 @@ export async function POST(req: Request) {
         content_type,
         content_id,
         plan: plan || "",
-        points_used: discount,
+        points_used: String(discount),
       },
     });
 
@@ -136,7 +188,7 @@ export async function POST(req: Request) {
       keyId: order.keyId, // For Razorpay frontend
       checkoutUrl: order.checkoutUrl, // For PhonePe redirect
       description,
-      discount,
+      discount: discount || 0,
     });
 
   } catch (err: any) {

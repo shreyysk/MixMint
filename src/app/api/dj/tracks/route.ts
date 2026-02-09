@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/app/lib/supabaseServer";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { TrackService } from "@/server/services/TrackService";
 
 export async function GET(req: Request) {
     const authHeader = req.headers.get("authorization");
@@ -26,26 +27,7 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Not a DJ" }, { status: 403 });
     }
 
-    const { data: tracks, error: tracksError } = await supabaseServer
-        .from("tracks")
-        .select("id, title, price, created_at")
-        .eq("dj_id", dj.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
+    const result = await TrackService.getByDjId(dj.id);
 
-    const { data: albumPacks, error: albumsError } = await supabaseServer
-        .from("album_packs")
-        .select("id, title, price, created_at, description")
-        .eq("dj_id", dj.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-    if (tracksError || albumsError) {
-        return NextResponse.json({ error: tracksError?.message || albumsError?.message }, { status: 400 });
-    }
-
-    return NextResponse.json({
-        tracks: tracks || [],
-        albumPacks: albumPacks || []
-    });
+    return NextResponse.json(result);
 }

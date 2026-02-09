@@ -1,8 +1,8 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { requireDJ } from "@/app/lib/requireDJ";
-import { ok, fail } from "@/app/lib/apiResponse";
-import { logger } from "@/app/lib/logger";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { requireDJ } from "@/lib/requireDJ";
+import { ok, fail } from "@/lib/apiResponse";
+import { logger } from "@/lib/logger";
 import dns from "dns";
 import { promisify } from "util";
 

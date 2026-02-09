@@ -1,20 +1,20 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
-import { generateReferralCode } from "@/app/lib/rewards";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
+import { generateReferralCode } from "@/lib/rewards";
 
 export async function GET() {
     try {
         const user = await requireAuth();
 
         // Get referral code
-        const { data: codeData } = await supabaseServer
-            .from('referral_codes')
-            .select('code')
-            .eq('profile_id', user.id)
+        const { data: profile } = await supabaseServer
+            .from('profiles')
+            .select('referral_code')
+            .eq('id', user.id)
             .single();
 
-        let code = codeData?.code;
+        let code = profile?.referral_code;
 
         if (!code) {
             code = await generateReferralCode(user.id);
@@ -35,7 +35,7 @@ export async function GET() {
                 totalInvites,
                 successfulReferrals
             },
-            link: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mixmint.com'}/?ref=${code}`
+            link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://mixmint.com'}/?ref=${code}`
         });
     } catch (err: any) {
         console.error("[REFERRAL_API_ERROR]:", err);

@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/app/lib/AuthContext";
-import { supabase } from "@/app/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
 import { useState } from "react";
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 

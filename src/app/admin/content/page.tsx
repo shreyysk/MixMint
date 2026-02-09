@@ -1,10 +1,10 @@
-
 "use client";
 
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
-import RequireRole from "@/app/components/RequireRole";
-import { Button } from "@/app/components/ui/Button";
+import RequireRole from "@/components/features/auth/RequireRole";
+import { Button } from "@/components/ui/Button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 
 export default function ContentModeration() {
   const [tracks, setTracks] = useState<any[]>([]);
@@ -39,10 +39,10 @@ export default function ContentModeration() {
             <div key={track.id} className="border p-3 rounded-lg">
               <p className="font-bold">{track.title}</p>
               <p className="text-sm text-zinc-400">Status: {track.status}</p>
-              <Button 
-                onClick={() => disableContent(track.id, 'track')} 
+              <Button
+                onClick={() => disableContent(track.id, 'track')}
                 disabled={track.status === 'disabled'}
-                variant="destructive"
+                variant="outline"
                 size="sm"
                 className="mt-2"
               >
@@ -58,10 +58,10 @@ export default function ContentModeration() {
             <div key={album.id} className="border p-3 rounded-lg">
               <p className="font-bold">{album.title}</p>
               <p className="text-sm text-zinc-400">Status: {album.status}</p>
-              <Button 
-                onClick={() => disableContent(album.id, 'album')} 
+              <Button
+                onClick={() => disableContent(album.id, 'album')}
                 disabled={album.status === 'disabled'}
-                variant="destructive"
+                variant="outline"
                 size="sm"
                 className="mt-2"
               >

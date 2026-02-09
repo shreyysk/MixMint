@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Headphones, Mail, Lock, User, ShieldCheck } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { signUp } from "@/app/lib/auth"; // Import added
+import { signUp } from "@/lib/auth"; // Import added
 
 export default function SignupPage() {
     // 1. Add state for name, email, password
@@ -113,8 +113,8 @@ export default function SignupPage() {
 
                         <div className="pt-2">
                             {/* Connected logic to onClick */}
-                            <Button 
-                                type="button" 
+                            <Button
+                                type="button"
                                 onClick={handleSignup}
                                 className="w-full h-14 rounded-2xl text-base shadow-[0_0_20px_rgba(124,58,237,0.2)]"
                             >

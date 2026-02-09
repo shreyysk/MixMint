@@ -1,7 +1,7 @@
 
 "use client";
 
-import { UploadTrackForm } from "@/app/components/dashboard/UploadTrackForm";
+import { UploadTrackForm } from "@/components/features/dashboard/UploadTrackForm";
 
 export default function UploadTrackPage() {
     return (

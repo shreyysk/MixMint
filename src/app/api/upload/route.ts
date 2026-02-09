@@ -1,9 +1,9 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { r2 } from "@/app/lib/r2";
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { getDJStoragePath } from "@/app/lib/djStorage";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { r2 } from "@/lib/r2";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { getDJStoragePath } from "@/lib/djStorage";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
 
 /**
  * POST /api/upload

@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ResetPassword() {
+import { Suspense } from 'react';
+
+function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -75,6 +77,14 @@ export default function ResetPassword() {
         {error && <p className="mt-4 text-center text-red-500">{error}</p>}
       </div>
     </div>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
 

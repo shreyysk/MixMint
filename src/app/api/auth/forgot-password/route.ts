@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { supabaseAdmin } from '@/app/lib/supabaseServer';
+import { supabaseAdmin } from '@/lib/supabaseServer';
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
 
   // Check if user exists
-  const { data: user, error: userError } = await supabase
+  const { data: user, error: userError } = await supabaseAdmin
     .from('users')
     .select('id')
     .eq('email', email)

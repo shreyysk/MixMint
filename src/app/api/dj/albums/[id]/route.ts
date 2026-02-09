@@ -1,6 +1,6 @@
-import { supabaseServer } from "@/app/lib/supabaseServer";
-import { requireAuth } from "@/app/lib/requireAuth";
-import { ok, fail } from "@/app/lib/apiResponse";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { requireAuth } from "@/lib/requireAuth";
+import { ok, fail } from "@/lib/apiResponse";
 import { NextRequest } from "next/server";
 
 /**
@@ -47,6 +47,17 @@ export async function DELETE(
         const user = await requireAuth();
         const { id } = await params;
 
+        // 1. Get album to find file_key
+        const { data: album } = await supabaseServer
+            .from('album_packs')
+            .select('file_key')
+            .eq('id', id)
+            .eq('dj_id', user.id)
+            .single();
+
+        if (!album) return fail("Album not found or access denied", 404);
+
+        // 2. Delete the record
         const { error } = await supabaseServer
             .from('album_packs')
             .delete()
@@ -54,6 +65,19 @@ export async function DELETE(
             .eq('dj_id', user.id);
 
         if (error) throw error;
+
+        // 3. Delete from R2
+        try {
+            const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+            const { r2 } = await import("@/lib/r2");
+            
+            await r2.send(new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME!,
+                Key: album.file_key,
+            }));
+        } catch (r2Err) {
+            console.error("[R2_DELETE_ERROR (ALBUM)]:", r2Err);
+        }
 
         return ok({ success: true, message: "Album deleted successfully" });
     } catch (err: any) {

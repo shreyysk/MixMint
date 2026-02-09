@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/app/lib/supabaseClient';
-import { DJCard } from '@/app/components/ui/DJCard';
-import { EmptyState } from '@/app/components/ui/EmptyState';
-import { ErrorBanner } from '@/app/components/ui/ErrorBanner';
-import { Search, Users } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { DJCard } from "@/components/ui/DJCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Search, Users, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface DJ {
@@ -65,54 +65,80 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen pb-24" data-testid="explore-page">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-primary/10 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-primary/20 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="relative px-6 md:px-12 pt-8 pb-12">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 20 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
+              className="flex flex-col lg:flex-row lg:items-end justify-between gap-8"
+            >
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-primary/10 border border-purple-primary/20 mb-4">
+                  <Sparkles size={14} className="text-purple-primary" />
+                  <span className="text-xs font-medium text-purple-primary-dark">Discover Amazing Artists</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-3">
+                  Explore <span className="text-gradient-purple">DJs</span>
+                </h1>
+                <p className="text-zinc-500 max-w-lg">
+                  Discover artists pushing the boundaries.{' '}
+                  {djs.length > 0 && (
+                    <span className="text-mint-accent font-medium">{djs.length} artists available.</span>
+                  )}
+                </p>
+              </div>
+
+              {/* Search */}
+              <div className="relative group w-full lg:w-auto">
+                <div className="absolute inset-0 bg-purple-primary/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-50 transition-opacity" />
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-primary transition-colors z-10"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Search DJs, genres..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="relative w-full lg:w-80 glass border border-white/5 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-purple-primary/50 transition-all placeholder:text-zinc-600"
+                  data-testid="dj-search-input"
+                />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
       <div className="px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={mounted ? { opacity: 0, y: 20 } : false}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12"
-          >
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-                Explore <span className="text-violet-gradient">DJs</span>
-              </h1>
-              <p className="text-zinc-500 max-w-lg">
-                Discover artists pushing the boundaries.{' '}
-                {djs.length > 0 && `${djs.length} artists available.`}
-              </p>
-            </div>
-
-            <div className="relative group w-full lg:w-auto">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-violet-400 transition-colors"
-                size={18}
-              />
-              <input
-                type="text"
-                placeholder="Search DJs, genres..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full lg:w-72 bg-zinc-900/60 border border-zinc-800/60 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-600"
-                data-testid="dj-search-input"
-              />
-            </div>
-          </motion.div>
-
+          {/* Loading State */}
           {loading && (
             <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               data-testid="loading-state"
             >
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-zinc-900/60 rounded-xl p-4 animate-pulse">
-                    <div className="w-full h-40 bg-zinc-800 rounded-lg mb-4"></div>
-                    <div className="w-3/4 h-6 bg-zinc-800 rounded-md mb-2"></div>
-                    <div className="w-1/2 h-4 bg-zinc-800 rounded-md"></div>
+                <div key={i} className="bg-surface-dark rounded-2xl overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-zinc-800" />
+                  <div className="p-4">
+                    <div className="w-3/4 h-5 bg-zinc-800 rounded-lg mb-2" />
+                    <div className="flex gap-2">
+                      <div className="w-16 h-4 bg-zinc-800 rounded-full" />
+                      <div className="w-12 h-4 bg-zinc-800 rounded-full" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
 
+          {/* Error State */}
           {error && (
             <motion.div
               initial={mounted ? { opacity: 0, scale: 0.95 } : false}
@@ -131,6 +157,7 @@ export default function ExplorePage() {
             </motion.div>
           )}
 
+          {/* Empty State */}
           {!loading && !error && filteredDJs.length === 0 && (
             <motion.div
               initial={mounted ? { opacity: 0, y: 20 } : false}
@@ -138,7 +165,7 @@ export default function ExplorePage() {
               data-testid="empty-state"
             >
               <EmptyState
-                icon={<Users size={40} />}
+                icon={<Users size={40} className="text-purple-primary" />}
                 title="No DJs Found"
                 description={
                   searchQuery
@@ -149,6 +176,7 @@ export default function ExplorePage() {
             </motion.div>
           )}
 
+          {/* DJ Grid */}
           {!loading && !error && filteredDJs.length > 0 && (
             <motion.div
               initial={mounted ? { opacity: 0 } : false}
@@ -157,14 +185,20 @@ export default function ExplorePage() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               data-testid="dj-grid"
             >
-              {filteredDJs.map(dj => (
-                <DJCard
+              {filteredDJs.map((dj, index) => (
+                <motion.div
                   key={dj.id}
-                  name={dj.dj_name}
-                  slug={dj.slug}
-                  genre={dj.genres || []}
-                  image={dj.profile_picture_url}
-                />
+                  initial={mounted ? { opacity: 0, y: 20 } : false}
+                  animate={mounted ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <DJCard
+                    name={dj.dj_name}
+                    slug={dj.slug}
+                    genre={dj.genres || []}
+                    image={dj.profile_picture_url}
+                  />
+                </motion.div>
               ))}
             </motion.div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Mail, MessageSquare, CreditCard, HelpCircle, Twitter, Instagram, Github } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 
 export default function ContactPage() {

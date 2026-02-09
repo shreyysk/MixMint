@@ -2,12 +2,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useAuth } from "@/app/lib/AuthContext";
-import { TrackCard } from "@/app/components/ui/TrackCard";
-import { TrackCardSkeleton } from "@/app/components/ui/TrackCardSkeleton";
-import { EmptyState } from "@/app/components/ui/EmptyState";
-import { ErrorBanner } from "@/app/components/ui/ErrorBanner";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { TrackCard } from "@/components/ui/TrackCard";
+import { TrackCardSkeleton } from "@/components/ui/TrackCardSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Loader2, Music, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -76,12 +76,10 @@ export default function TracksPage() {
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
-      
-      // Mock genre data for now
-      const dataWithGenre = data.map((track, index) => ({...track, genre: genres[index % genres.length]}));
 
-      const transformedData = (dataWithGenre || []).map((track: any) => ({
+      const transformedData = (data || []).map((track: any) => ({
         ...track,
+        genre: track.genre || 'Electronic',
         dj_profile: Array.isArray(track.dj_profiles)
           ? track.dj_profiles[0]
           : track.dj_profiles
@@ -95,7 +93,7 @@ export default function TracksPage() {
       setLoading(false);
     }
   }
-  
+
   useEffect(() => {
     loadTracks();
   }, [sortBy]);
@@ -154,7 +152,7 @@ export default function TracksPage() {
                 data-testid="track-search-input"
               />
             </div>
-            <select 
+            <select
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
               className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all w-full md:w-auto"
@@ -162,7 +160,7 @@ export default function TracksPage() {
               <option value="">All Genres</option>
               {genres.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
-            <select 
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all w-full md:w-auto"
@@ -172,7 +170,7 @@ export default function TracksPage() {
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
             </select>
-             <button onClick={clearFilters} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-bold p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
+            <button onClick={clearFilters} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-bold p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
               <X size={16} />
               Clear
             </button>
@@ -236,7 +234,6 @@ export default function TracksPage() {
                   price={track.price}
                   djName={track.dj_profile?.dj_name}
                   djSlug={track.dj_profile?.slug}
-                  youtubeUrl={track.youtube_url}
                   onDownload={handleDownload}
                 />
               ))}
