@@ -1,6 +1,7 @@
-import { getClientIp } from "@/lib/rateLimit";
+import { getClientIp, checkRateLimit } from "@/lib/rateLimit";
 import { fail } from "@/lib/apiResponse";
 import { DownloadService } from "@/server/services/DownloadService";
+import { isVpnOrProxy } from "@/lib/security/vpn";
 
 /**
  * GET /api/download
@@ -14,17 +15,30 @@ export async function GET(req: Request) {
     if (!token) return fail("Token is required", 400);
 
     const clientIp = getClientIp(req);
+    const userAgent = req.headers.get("user-agent") || "unknown";
 
-    // 1. Validate Token & Get Content Context
+    // 1. VPN Detection (Anti-Piracy Phase)
+    const isVpn = await isVpnOrProxy(clientIp);
+    if (isVpn) {
+        return fail("Downloads via VPN or Proxy are not allowed for security reasons.", 403);
+    }
+
+    // 2. Global Rate Limiting per IP
+    const rl = await checkRateLimit("download_start", clientIp, 20, 3600); 
+    if (!rl.success) {
+        return fail("Download limit reached. Please try again in an hour.", 429);
+    }
+
+    // 3. Validate Token & Get Content Context
     const { tokenRow, content } = await DownloadService.validateToken(token, clientIp);
 
-    // 2. Mark as Used & Handle Quota
-    await DownloadService.markAsUsed(token, tokenRow);
+    // 4. Concurrent Download Limit (Lock down account sharing)
+    await DownloadService.checkConcurrentLimit(tokenRow.user_id, 3);
 
-    // 3. Get File Stream
+    // 6. Get File Stream
     const { Body, ContentType, ContentLength } = await DownloadService.getFileStream(content.file_key);
 
-    // 4. Return Stream Response
+    // 7. Return Stream Response
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", ContentType || "application/octet-stream");
     if (ContentLength) responseHeaders.set("Content-Length", ContentLength.toString());
@@ -43,6 +57,6 @@ export async function GET(req: Request) {
 
   } catch (err: any) {
     console.error("[DOWNLOAD_PROXY_ERROR]:", err);
-    return fail("Internal server error during download proxy.", 500);
+    return fail(err.message || "Internal server error during download proxy.", 500);
   }
 }

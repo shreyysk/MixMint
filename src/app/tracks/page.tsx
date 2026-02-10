@@ -25,6 +25,11 @@ interface Track {
     dj_name: string;
     slug: string;
   };
+  previews?: Array<{
+    type: "youtube" | "instagram";
+    embedId: string;
+    isPrimary: boolean;
+  }>;
 }
 
 export default function TracksPage() {
@@ -59,6 +64,11 @@ export default function TracksPage() {
           dj_profiles:dj_id (
             dj_name,
             slug
+          ),
+          track_previews (
+            preview_type,
+            embed_id,
+            is_primary
           )
         `)
         .eq("status", "active");
@@ -82,7 +92,12 @@ export default function TracksPage() {
         genre: track.genre || 'Electronic',
         dj_profile: Array.isArray(track.dj_profiles)
           ? track.dj_profiles[0]
-          : track.dj_profiles
+          : track.dj_profiles,
+        previews: track.track_previews?.map((p: any) => ({
+          type: p.preview_type,
+          embedId: p.embed_id,
+          isPrimary: p.is_primary
+        })) || []
       }));
 
       setTracks(transformedData);
@@ -235,6 +250,7 @@ export default function TracksPage() {
                   djName={track.dj_profile?.dj_name}
                   djSlug={track.dj_profile?.slug}
                   onDownload={handleDownload}
+                  previews={track.previews}
                 />
               ))}
             </motion.div>

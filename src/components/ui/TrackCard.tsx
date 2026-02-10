@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
-import { Music, Download, Check, Lock, Play, Sparkles } from "lucide-react";
+import { Music, Download, Check, Lock, Play, Sparkles, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
+import { PreviewModal } from "./PreviewModal";
 
 interface TrackCardProps {
     id: string;
@@ -20,6 +21,11 @@ interface TrackCardProps {
     userTier?: string;
     isNew?: boolean;
     className?: string;
+    previews?: Array<{
+        type: "youtube" | "instagram";
+        embedId: string;
+        isPrimary: boolean;
+    }>;
 }
 
 export function TrackCard({
@@ -38,7 +44,9 @@ export function TrackCard({
     userTier,
     isNew = false,
     className,
+    previews = [],
 }: TrackCardProps) {
+    const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
     const handlePurchase = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -90,8 +98,26 @@ export function TrackCard({
                 )}
 
                 {/* Play Button Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button className="w-14 h-14 rounded-full bg-purple-primary flex items-center justify-center shadow-purple-glow hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsPreviewOpen(true);
+                        }}
+                        className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110"
+                        title="Quick Preview"
+                    >
+                        <Youtube size={20} className="text-white" />
+                    </button>
+                    <button
+                        className="w-14 h-14 rounded-full bg-purple-primary flex items-center justify-center shadow-purple-glow hover:scale-110 transition-transform"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Logic for play could go here, or just link to detail
+                        }}
+                    >
                         <Play size={24} fill="white" className="text-white ml-1" />
                     </button>
                 </div>
@@ -175,6 +201,13 @@ export function TrackCard({
                     )}
                 </div>
             </div>
+
+            <PreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                trackTitle={title}
+                previews={previews}
+            />
         </div>
     );
 }

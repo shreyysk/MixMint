@@ -92,6 +92,27 @@ export async function awardSignupBonus(userId: string) {
 }
 
 /**
+ * awardEngagementPoints
+ * Simple bonus for engagement (follows, reviews).
+ */
+export async function awardEngagementPoints(userId: string, targetId: string, type: 'follow' | 'review') {
+    // Check for idempotency (e.g. only award follow bonus once per DJ)
+    const { data: existing } = await supabaseServer
+        .from('points_history')
+        .select('id')
+        .eq('profile_id', userId)
+        .eq('type', `${type}_reward`)
+        .ilike('description', `%${targetId.slice(0, 8)}%`)
+        .single();
+
+    if (!existing) {
+        const points = type === 'follow' ? 10 : 25;
+        const desc = type === 'follow' ? `Followed DJ ${targetId.slice(0, 8)}...` : `Reviewed item ${targetId.slice(0, 8)}...`;
+        await awardPoints(userId, points, `${type}_reward`, desc);
+    }
+}
+
+/**
  * trackReferral
  * Records a referral relationship.
  */
@@ -101,22 +122,23 @@ export async function trackReferral(referredId: string, referralCode: string | n
 
     if (!referralCode) return;
 
-    // 2. Resolve Referrer
-    const { data: referral } = await supabaseServer
-        .from('referrals')
-        .select('referrer_id')
+    // 2. Resolve Referrer from profiles
+    const { data: referrerProfile } = await supabaseServer
+        .from('profiles')
+        .select('id')
         .eq('referral_code', referralCode)
         .single();
     
-    if (referral && referral.referrer_id !== referredId) {
-        // Link them
+    if (referrerProfile && referrerProfile.id !== referredId) {
+        // Link them in referrals table
         await supabaseServer.from('referrals').insert({
-            referrer_id: referral.referrer_id,
+            referrer_id: referrerProfile.id,
             referred_id: referredId,
             referral_code: referralCode,
             status: 'pending'
         });
     }
+
 }
 
 /**

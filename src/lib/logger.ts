@@ -4,7 +4,8 @@
  */
 
 type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "ALERT";
-type DomainTag = "AUTH" | "PAYMENT" | "DOWNLOAD" | "UPLOAD" | "REWARDS" | "SYSTEM" | "CRON" | "ADMIN";
+type DomainTag = "AUTH" | "PAYMENT" | "DOWNLOAD" | "UPLOAD" | "REWARDS" | "SYSTEM" | "CRON" | "ADMIN" | "SECURITY";
+
 
 interface LogPayload {
     level: LogLevel;

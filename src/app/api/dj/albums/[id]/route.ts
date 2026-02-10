@@ -4,6 +4,36 @@ import { ok, fail } from "@/lib/apiResponse";
 import { NextRequest } from "next/server";
 
 /**
+ * GET /api/dj/albums/[id]
+ * Fetch album details including processing status.
+ */
+export async function GET(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const user = await requireAuth();
+        const { id } = await params;
+
+        const { data, error } = await supabaseServer
+            .from('album_packs')
+            .select('*')
+            .eq('id', id)
+            .eq('dj_id', user.id)
+            .single();
+
+        if (error) throw error;
+        if (!data) return fail("Album not found or access denied", 404);
+
+        return ok({ success: true, album: data });
+    } catch (err: unknown) {
+        console.error("[ALBUM_GET_ERROR]:", err);
+        const msg = err instanceof Error ? err.message : "Internal server error";
+        return fail(msg, 500);
+    }
+}
+
+/**
  * PATCH /api/dj/albums/[id]
  * Update album metadata
  */
@@ -21,7 +51,7 @@ export async function PATCH(
             .from('album_packs')
             .update({ title, description, price })
             .eq('id', id)
-            .eq('dj_id', user.id) // album_packs.dj_id refers to profiles.id
+            .eq('dj_id', user.id)
             .select()
             .single();
 
@@ -29,9 +59,10 @@ export async function PATCH(
         if (!data) return fail("Album not found or access denied", 404);
 
         return ok({ success: true, album: data });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[ALBUM_UPDATE_ERROR]:", err);
-        return fail(err.message || "Internal server error", 500);
+        const msg = err instanceof Error ? err.message : "Internal server error";
+        return fail(msg, 500);
     }
 }
 
@@ -80,8 +111,9 @@ export async function DELETE(
         }
 
         return ok({ success: true, message: "Album deleted successfully" });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[ALBUM_DELETE_ERROR]:", err);
-        return fail(err.message || "Internal server error", 500);
+        const msg = err instanceof Error ? err.message : "Internal server error";
+        return fail(msg, 500);
     }
 }

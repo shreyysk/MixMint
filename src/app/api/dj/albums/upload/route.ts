@@ -5,11 +5,14 @@ import { getDJStoragePath } from "@/lib/djStorage";
 import { requireAuth } from "@/lib/requireAuth";
 import { requireDJ } from "@/lib/requireDJ";
 import { ok, fail } from "@/lib/apiResponse";
+import { AlbumProcessorService } from "@/server/services/AlbumProcessorService";
+import { validateMagicBytes } from "@/lib/validation";
+import { logger } from "@/lib/logger";
+
 
 /**
  * POST /api/dj/albums/upload
- * Standardized DJ album (ZIP) uploader.
- * Enforces ₹79 minimum price and secure storage.
+ * Standardized DJ album (ZIP) uploader with background processing.
  */
 export async function POST(req: Request) {
   try {
@@ -17,123 +20,119 @@ export async function POST(req: Request) {
     const user = await requireAuth();
     await requireDJ(user.id);
 
-    // Verify DJ profile status
     const { data: djProfile, error: profileError } = await supabaseServer
       .from("dj_profiles")
       .select("id, status")
-      .eq("id", user.id) // PK is user.id
+      .eq("id", user.id)
       .single();
 
-    if (profileError || !djProfile) {
-      return fail("DJ profile not found", 403);
+    if (profileError || !djProfile || djProfile.status !== "approved") {
+      return fail("DJ account not approved", 403);
     }
 
-    if (djProfile.status !== "approved") {
-      return fail("Your DJ account is pending approval", 403);
-    }
-
-    // Fetch DJ name from profiles for storage path
-    const { data: coreProfile, error: coreError } = await supabaseServer
+    const { data: coreProfile } = await supabaseServer
       .from("profiles")
       .select("full_name")
       .eq("id", user.id)
       .single();
 
-    if (coreError || !coreProfile || !coreProfile.full_name) {
-      return fail("Profile incomplete: full_name required", 400);
+    if (!coreProfile?.full_name) {
+      return fail("Profile incomplete", 400);
     }
 
-    // 2. FILE VALIDATION
+    // 2. FORM DATA
     const formData = await req.formData();
     const file = formData.get("file") as File;
-
-    if (!file || !(file instanceof File)) {
-      return fail("No file uploaded or invalid file input", 400);
-    }
-
-    // MIME type check (ZIP/RAR/7Z)
-    const allowedTypes = ["application/zip", "application/x-zip-compressed", "application/x-rar-compressed", "application/x-7z-compressed"];
-    if (!allowedTypes.includes(file.type) && !file.name.endsWith(".zip")) {
-      return fail("Only ZIP, RAR, 7Z allowed for album packs", 400);
-    }
-
-    // Size check (250MB for Albums)
-    const MAX_SIZE = 250 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      return fail("Album ZIP too large (max 250MB)", 400);
-    }
-
-    // 3. REMAINING FORM DATA
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
     const price = Number(formData.get("price"));
     const isFanOnly = formData.get("is_fan_only") === "true";
+    const uploadMethod = (formData.get("upload_method") as string) || "direct_zip";
 
-    if (!title || isNaN(price)) {
-      return fail("Missing required fields (title/price)", 400);
+    if (!file || !title || isNaN(price)) {
+      return fail("Missing required fields", 400);
     }
 
-    // Enforce platform minimum price (₹79) for album packs
     if (price < 79) {
       return fail("Minimum album pack price is ₹79", 400);
     }
 
-    // 4. STORAGE LOGIC
+    // 3. STORAGE LOGIC (Temp)
     const fileName = file.name;
-    const fileKey = getDJStoragePath(
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
+
+    if (!validateMagicBytes(buffer, fileExt)) {
+      logger.warn("UPLOAD", "Magic byte mismatch", { fileName, type: file.type });
+      return fail("File integrity check failed. Content does not match extension.", 400);
+    }
+
+    // Store in temp folder first for processing
+    const tempKey = getDJStoragePath(
       coreProfile.full_name,
       user.id,
-      "albums",
-      fileName
+      "temp/albums",
+      `raw_${Date.now()}_${fileName}`
     );
-    const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 5. MANDATORY MIXMINT METADATA (R2 Headers)
-    const uploadParams = {
+
+    await r2.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
-      Key: fileKey,
+      Key: tempKey,
       Body: buffer,
       ContentType: file.type || "application/zip",
       Metadata: {
-        "x-platform": "MixMint",
-        "x-platform-url": "https://mixmint.site",
-        "x-upload-source": "MixMint DJ Album Upload",
         "x-dj-id": user.id,
-        "x-uploaded-at": new Date().toISOString(),
-        "x-is-fan-only": String(isFanOnly),
+        "x-upload-type": "raw_album_zip"
       },
-    };
+    }));
 
-    await r2.send(new PutObjectCommand(uploadParams));
+    // 4. DATABASE INITIAL PERSISTENCE
+    const { data: album, error: dbError } = await supabaseServer
+      .from("album_packs")
+      .insert({
+        dj_id: djProfile.id,
+        title,
+        description,
+        price,
+        file_key: tempKey, // Temporary, will be updated after processing
+        original_file_key: tempKey,
+        upload_method: uploadMethod,
+        is_fan_only: isFanOnly,
+        processing_status: 'pending',
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-    // 6. DATABASE PERSISTENCE
-    const { error: dbError } = await supabaseServer.from("album_packs").insert({
-      dj_id: djProfile.id,
-      title,
-      description,
-      price,
-      file_key: fileKey,
-      is_fan_only: isFanOnly,
-      created_at: new Date().toISOString(),
+    if (dbError || !album) throw dbError;
+
+    // 5. TRIGGER BACKGROUND PROCESSING
+    // In a real prod env, we'd use BullMQ. Here we fire and forget (with caveat on serverless runtime).
+    // For this implementation, we proceed to call the processor.
+    console.log(`[ALBUM_UPLOAD] Triggering processing for album: ${album.id}`);
+    
+    // We don't 'await' this to return a quick response to the UI
+    AlbumProcessorService.processUploadedZip(
+        album.id,
+        user.id,
+        tempKey,
+        coreProfile.full_name,
+        title
+    ).catch(err => {
+        console.error(`[BACKGROUND_PROCESS_FAIL] Album ${album.id}:`, err);
     });
-
-    if (dbError) throw dbError;
 
     return ok({
       success: true,
-      fileKey,
-      type: "zip_pack",
+      albumId: album.id,
+      status: "processing",
+      message: "ZIP uploaded. MixMint metadata injection in progress..."
     });
 
-  } catch (err: any) {
-    if (err.message === "UNAUTHORIZED") {
-      return fail("Unauthorized", 401);
-    }
-    if (err.message === "FORBIDDEN") {
-      return fail("DJ access required", 403);
-    }
-
+  } catch (err: unknown) {
     console.error("[ALBUM_UPLOAD_ERROR]:", err);
-    return fail(err.message || "Internal server error", 500);
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    return fail(msg, 500);
   }
 }

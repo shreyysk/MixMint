@@ -15,26 +15,37 @@ export async function POST(req: Request) {
     const user = await requireAuth();
     const clientIp = getClientIp(req);
     const body = await req.json();
-    const { content_id, content_type } = body;
+    const { content_id, content_type, version_id } = body;
 
     if (!content_id || !content_type) {
       return fail("content_id and content_type are required", 400);
     }
 
     // 1. Check Access Permission
+    // Note: We might want to verify version_id belongs to content_id, but validateToken will fail if not found.
     const access = await canAccessContent(user.id, content_type, content_id);
 
     if (!access.allowed) {
       return fail("Access denied. No active purchase or subscription quota.", 403);
     }
 
-    // 2. Generate Secure Token via Service
+    // 2. Check Concurrent Download Limit (Anti-Piracy) with logging
+    const userAgent = req.headers.get("user-agent") || "unknown";
+    
+    await DownloadService.checkConcurrentLimitWithLogging(user.id, 3, {
+        ip: clientIp || "unknown",
+        userAgent
+    }); 
+
+    // 3. Generate Secure Token via Service
     const result = await DownloadService.generateToken(
         user.id, 
         content_id, 
         content_type, 
         access.via || "unknown", 
-        clientIp || "unknown"
+        clientIp || "unknown",
+        userAgent,
+        version_id // Optional
     );
 
     return ok(result);

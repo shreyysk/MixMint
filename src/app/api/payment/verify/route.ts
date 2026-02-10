@@ -9,6 +9,7 @@ import { handlePurchasePoints, redeemPoints, checkReferralMilestones } from "@/l
 import { logger } from "@/lib/logger";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { calculateRevenueSplit, recordRevenue } from "@/lib/monetization";
+import { DownloadService } from "@/server/services/DownloadService";
 
 export async function POST(req: Request) {
   let user: any = null;
@@ -76,7 +77,12 @@ export async function POST(req: Request) {
         );
       }
 
-      // Create purchase record
+      const clientIp = getClientIp(req);
+      const userAgent = req.headers.get("user-agent") || "unknown";
+      const country = req.headers.get("x-vercel-ip-country") || "unknown";
+      const city = req.headers.get("x-vercel-ip-city") || "unknown";
+
+      // Create purchase record with analytics
       const { error: purchaseError } = await supabaseServer
         .from("purchases")
         .insert({
@@ -86,8 +92,12 @@ export async function POST(req: Request) {
           price: amountPaid,
           payment_id: paymentId,
           payment_order_id: orderId,
-          seller_id: purchaseDjId, // Track who got the money
+          seller_id: purchaseDjId,
+          ip_address: clientIp,
+          user_agent: userAgent,
+          location_data: { country, city }
         });
+
 
       if (purchaseError) {
         logger.error("PAYMENT", "Purchase record failed", purchaseError, { user: user.id, paymentId });
@@ -115,17 +125,19 @@ export async function POST(req: Request) {
           .single();
 
         if (content && profile && user.email) {
-          // Generate download token
-          const tokenRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/download-token`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${paymentId}`, // Temporary auth
-            },
-            body: JSON.stringify({ content_id, content_type }),
-          });
+          const clientIp = getClientIp(req);
+          const userAgent = req.headers.get("user-agent") || "unknown";
 
-          const tokenData = await tokenRes.json();
+          // Generate Secure Token via Service directly (REFACTORED: NO INTERNAL FETCH)
+          const tokenData = await DownloadService.generateToken(
+            user.id,
+            content_id, 
+            content_type, 
+            "purchase", 
+            clientIp,
+            userAgent
+          );
+
           const downloadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/download?token=${tokenData.token}`;
 
           await sendPurchaseEmail({

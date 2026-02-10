@@ -7,6 +7,8 @@ import { requireDJ } from "@/lib/requireDJ";
 import { ok, fail } from "@/lib/apiResponse";
 import { logger } from "@/lib/logger";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { validateMagicBytes } from "@/lib/validation";
+
 
 /**
  * GET /api/dj/upload
@@ -108,16 +110,25 @@ export async function POST(req: Request) {
             return fail("Missing title or price", 400, "UPLOAD");
         }
 
-        /* ─────────────────────────────────────────────────────────────
-           3. FILE VALIDATION & ISOLATION
-        ───────────────────────────────────────────────────────────── */
+        // 3. FILE VALIDATION & ISOLATION (HARDENED)
         const fileName = file.name;
         const fileExt = fileName.split(".").pop()?.toLowerCase();
         const allowedZipExt = ["zip", "rar", "7z"];
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        if (fileExt && !validateMagicBytes(buffer, fileExt)) {
+            logger.warn("UPLOAD", "Magic byte mismatch - potential spoofing", { fileName, type: file.type });
+            return fail(`File integrity check failed. The content of ${fileName} does not match its extension.`, 400, "UPLOAD");
+        }
+
 
         // Determine if it's an album pack (ZIP) or a track based on extension or param
         const isZip = allowedZipExt.includes(fileExt || "") || contentTypeParam === "zip";
-        const folder = isZip ? "zips" : "tracks";
+        // Limit check for generic files (Tracks)
+        const MAX_TRACK_SIZE = 300 * 1024 * 1024; // 300MB
+        if (!isZip && file.size > MAX_TRACK_SIZE) {
+            return fail("Track too large (max 300MB)", 400, "UPLOAD");
+        }
 
         // STRICT ZIP VALIDATION (PHASE 3.2 - BOUNDARY CONTROL)
         if (isZip) {
@@ -134,10 +145,10 @@ export async function POST(req: Request) {
                 return fail(`Invalid MIME type for ZIP: ${file.type}. Only ZIP/RAR/7Z allowed.`, 400, "UPLOAD");
             }
 
-            // ZIP size limit: 500MB
-            const MAX_ZIP_SIZE = 500 * 1024 * 1024;
+            // ZIP size limit: 1GB
+            const MAX_ZIP_SIZE = 1000 * 1024 * 1024;
             if (file.size > MAX_ZIP_SIZE) {
-                return fail("ZIP too large (max 500MB)", 400, "UPLOAD");
+                return fail("ZIP too large (max 1GB)", 400, "UPLOAD");
             }
         }
 
@@ -145,11 +156,42 @@ export async function POST(req: Request) {
         if (contentTypeParam === "zip" && !allowedZipExt.includes(fileExt || "")) {
             return fail("Only ZIP, RAR, or 7Z files are allowed for album packs", 400, "UPLOAD");
         }
+        
+        // Extract extra metadata
+        const bpm = Number(formData.get("bpm")) || null;
+        const genre = formData.get("genre") as string || null;
+        const youtubeUrl = formData.get("youtube_url") as string || null;
+        
+        // Handle Cover Art
+        const coverFile = formData.get("cover_file") as File;
+        let coverUrl = null;
+
+        if (coverFile && coverFile instanceof File) {
+             if (coverFile.size < 5 * 1024 * 1024 && coverFile.type.startsWith("image/")) {
+                 const coverKey = getDJStoragePath(
+                    coreProfile.full_name,
+                    user.id,
+                    "covers",
+                    `cover_${Date.now()}_${coverFile.name}`
+                 );
+                 const coverBuffer = Buffer.from(await coverFile.arrayBuffer());
+                 
+                 await r2.send(new PutObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME!,
+                    Key: coverKey,
+                    Body: coverBuffer,
+                    ContentType: coverFile.type,
+                    Metadata: { "x-dj-id": user.id }
+                 }));
+
+                 const R2_PUBLIC_DOMAIN = process.env.NEXT_PUBLIC_R2_DOMAIN || "https://cdn.mixmint.site";
+                 coverUrl = `${R2_PUBLIC_DOMAIN}/${coverKey}`;
+            }
+        }
 
         /* ─────────────────────────────────────────────────────────────
            4. R2 UPLOAD WITH METADATA (PHASE 3.2 - NON-NEGOTIABLE)
         ───────────────────────────────────────────────────────────── */
-        const buffer = Buffer.from(await file.arrayBuffer());
         const timestamp = Date.now();
         // NEW PATH FORMAT: <dj_slug>_<dj_id>/tracks|albums/<timestamp>-<filename>
         const fileKey = getDJStoragePath(
@@ -200,21 +242,42 @@ export async function POST(req: Request) {
                 file_key: fileKey,
                 file_size: file.size,
                 is_fan_only: isFanOnly,
+                cover_url: coverUrl,
                 created_at: new Date().toISOString(),
             });
 
             if (dbError) throw dbError;
         } else {
-            const { error: dbError } = await supabaseServer.from("tracks").insert({
+            const { data: trackData, error: dbError } = await supabaseServer.from("tracks").insert({
                 dj_id: finalDjProfileId,  // ✅ FK to dj_profiles.id
                 title,
                 price,
                 file_key: fileKey,
                 is_fan_only: isFanOnly,
+                bpm,
+                genre,
+                cover_url: coverUrl,
                 created_at: new Date().toISOString(),
-            });
+            })
+            .select("id")
+            .single();
 
             if (dbError) throw dbError;
+            
+            // Handle Preview (YouTube) if provided
+            if (trackData && youtubeUrl) {
+                // Simple regex validation or import validatePreviewUrl
+                // For now, simple insert if it looks like a URL
+                 const { error: previewError } = await supabaseServer
+                  .from("track_previews")
+                  .insert({
+                    track_id: trackData.id,
+                    preview_type: "youtube",
+                    url: youtubeUrl,
+                    embed_id: youtubeUrl.split("v=")[1]?.split("&")[0] || youtubeUrl.split("/").pop(), // simplified extraction
+                    is_primary: true
+                  });
+            }
         }
 
         return ok({

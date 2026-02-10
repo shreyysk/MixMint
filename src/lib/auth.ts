@@ -44,6 +44,52 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
-export async function signOut() {
-  await supabase.auth.signOut();
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * MFA (Two-Factor Authentication)
+ */
+
+export async function enrollMFA() {
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: 'totp',
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function verifyMFA(factorId: string, code: string) {
+  const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+    factorId,
+    code,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getMFAFactors() {
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) throw error;
+  return data;
+}
+
+export async function unenrollMFA(factorId: string) {
+  const { data, error } = await supabase.auth.mfa.unenroll({
+    factorId,
+  });
+
+  if (error) throw error;
+  return data;
 }

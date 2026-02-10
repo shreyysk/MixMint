@@ -17,6 +17,9 @@ interface DJ {
   genres: string[] | null;
   profile_picture_url: string | null;
   status: string;
+  location: string | null;
+  popularity_score: number;
+  created_at: string;
 }
 
 export default function ExplorePage() {
@@ -24,6 +27,8 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState<string>('All');
+  const [sortBy, setSortBy] = useState<'newest' | 'popularity'>('newest');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,15 +58,27 @@ export default function ExplorePage() {
     }
   }
 
-  const filteredDJs = djs.filter(dj => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      dj.dj_name.toLowerCase().includes(query) ||
-      dj.bio?.toLowerCase().includes(query) ||
-      dj.genres?.some(g => g.toLowerCase().includes(query))
-    );
-  });
+  const allGenres = ['All', ...Array.from(new Set(djs.flatMap(dj => dj.genres || []))).sort()];
+
+  const filteredDJs = djs
+    .filter(dj => {
+      // 1. Search Query
+      const matchesSearch = !searchQuery || [
+        dj.dj_name,
+        dj.bio,
+        ...(dj.genres || []),
+        dj.location
+      ].some(text => text?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // 2. Genre Filter
+      const matchesGenre = selectedGenre === 'All' || dj.genres?.includes(selectedGenre);
+
+      return matchesSearch && matchesGenre;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'popularity') return b.popularity_score - a.popularity_score;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="min-h-screen pb-24" data-testid="explore-page">
@@ -109,6 +126,55 @@ export default function ExplorePage() {
                   className="relative w-full lg:w-80 glass border border-white/5 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-purple-primary/50 transition-all placeholder:text-zinc-600"
                   data-testid="dj-search-input"
                 />
+              </div>
+            </motion.div>
+
+            {/* Filters & Sorting */}
+            <motion.div
+              initial={mounted ? { opacity: 0, y: 10 } : false}
+              animate={mounted ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.1 }}
+              className="mt-8 flex flex-wrap items-center gap-4 lg:gap-6"
+            >
+              {/* Genre Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest leading-none">Genre</span>
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  className="bg-zinc-900/50 border border-white/5 rounded-xl px-4 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-purple-primary transition-all cursor-pointer"
+                >
+                  {allGenres.map(genre => (
+                    <option key={genre} value={genre}>{genre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest leading-none">Sort By</span>
+                <div className="flex p-1 bg-zinc-900/50 border border-white/5 rounded-xl">
+                  <button
+                    onClick={() => setSortBy('newest')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all ${sortBy === 'newest' ? 'bg-purple-primary text-white shadow-purple-glow' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                  >
+                    Newest
+                  </button>
+                  <button
+                    onClick={() => setSortBy('popularity')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all ${sortBy === 'popularity' ? 'bg-purple-primary text-white shadow-purple-glow' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                  >
+                    Popularity
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1" />
+
+              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+                Showing {filteredDJs.length} results
               </div>
             </motion.div>
           </div>

@@ -5,6 +5,7 @@ import { getDJStoragePath } from "@/lib/djStorage";
 import { requireAuth } from "@/lib/requireAuth";
 import { requireDJ } from "@/lib/requireDJ";
 import { ok, fail } from "@/lib/apiResponse";
+import { validatePreviewUrl } from "@/lib/previewUtils";
 
 /**
  * GET /api/dj/tracks/upload
@@ -78,6 +79,9 @@ export async function POST(req: Request) {
     const isFanOnly = formData.get("is_fan_only") === "true";
     const bpm = Number(formData.get("bpm")) || null;
     const genre = formData.get("genre") as string || null;
+    const versionType = (formData.get("version_type") as string) || "original";
+    const youtubeUrl = formData.get("youtube_url") as string || null;
+    const instagramUrl = formData.get("instagram_url") as string || null;
 
     if (!title || isNaN(price)) {
       return fail("Missing required fields (title/price)", 400);
@@ -90,6 +94,7 @@ export async function POST(req: Request) {
     }
 
     // 4. STORAGE LOGIC
+    // 5. STORAGE LOGIC (Audio)
     const fileName = file.name;
     const fileKey = getDJStoragePath(
       coreProfile.full_name,
@@ -99,7 +104,46 @@ export async function POST(req: Request) {
     );
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 5. MANDATORY MIXMINT METADATA (R2 Headers)
+    // 5b. STORAGE LOGIC (Cover Art)
+    const coverFile = formData.get("cover_file") as File;
+    let coverUrl = null;
+
+    if (coverFile && coverFile instanceof File) {
+        // Simple validation
+        if (coverFile.size < 5 * 1024 * 1024 && coverFile.type.startsWith("image/")) {
+             const coverKey = getDJStoragePath(
+                coreProfile.full_name,
+                user.id,
+                "covers",
+                `cover_${Date.now()}_${coverFile.name}`
+             );
+             const coverBuffer = Buffer.from(await coverFile.arrayBuffer());
+             
+             await r2.send(new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME!,
+                Key: coverKey,
+                Body: coverBuffer,
+                ContentType: coverFile.type,
+                Metadata: { "x-dj-id": user.id }
+             }));
+
+             // Public URL (Assuming R2 public access or worker)
+             // For now, store the R2 Key or a constructed URL if using a domain
+             // We'll store the Key or full URL. Let's assume a public domain env var or standard R2 pattern.
+             // If implicit, we can reconstruct. Let's store the Key for consistent backend use, 
+             // OR arguably formatting it as a URL is better for frontend.
+             // Let's assume we have a public domain variable or we just use the Key for now?
+             // Actually, TrackCard expects a URL.
+             // Let's assume https://pub-xxxxxxxx.r2.dev/{key} pattern or similar.
+             // For safety, I'll store the relative path/key, and we rely on a helper to serve it?
+             // Checks Steps 247: <img src={coverUrl} ... />. It expects a full URL.
+             // Let's construct it.
+             const R2_PUBLIC_DOMAIN = process.env.NEXT_PUBLIC_R2_DOMAIN || "https://cdn.mixmint.site";
+             coverUrl = `${R2_PUBLIC_DOMAIN}/${coverKey}`;
+        }
+    }
+
+    // 5c. MANDATORY MIXMINT METADATA (R2 Headers)
     const uploadParams = {
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: fileKey,
@@ -126,10 +170,60 @@ export async function POST(req: Request) {
       is_fan_only: isFanOnly,
       bpm,
       genre,
+      version_type: versionType,
+      cover_url: coverUrl,
       created_at: new Date().toISOString(),
     });
 
     if (dbError) throw dbError;
+
+    // 7. PREVIEW PERSISTENCE
+    const { data: newTrack } = await supabaseServer
+      .from("tracks")
+      .select("id")
+      .eq("file_key", fileKey)
+      .single();
+
+    if (newTrack) {
+      const previewInserts = [];
+      
+      if (youtubeUrl) {
+        const validated = validatePreviewUrl(youtubeUrl);
+        if (validated.type === "youtube") {
+          previewInserts.push({
+            track_id: newTrack.id,
+            preview_type: "youtube",
+            url: youtubeUrl,
+            embed_id: validated.id,
+            is_primary: true
+          });
+        }
+      }
+
+      if (instagramUrl) {
+        const validated = validatePreviewUrl(instagramUrl);
+        if (validated.type === "instagram") {
+          previewInserts.push({
+            track_id: newTrack.id,
+            preview_type: "instagram",
+            url: instagramUrl,
+            embed_id: validated.id,
+            is_primary: previewInserts.length === 0
+          });
+        }
+      }
+
+      if (previewInserts.length > 0) {
+        const { error: previewError } = await supabaseServer
+          .from("track_previews")
+          .insert(previewInserts);
+          
+        if (previewError) {
+          console.warn("[PREVIEW_SAVE_ERROR]:", previewError);
+          // Don't fail the whole upload if just previews fail
+        }
+      }
+    }
 
     return ok({
       success: true,

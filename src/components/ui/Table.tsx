@@ -27,8 +27,8 @@ export const TableHead = ({ children, className }: { children: React.ReactNode; 
     </th>
 );
 
-export const TableCell = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <td className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0 text-zinc-300", className)}>
+export const TableCell = ({ children, className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+    <td className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0 text-zinc-300", className)} {...props}>
         {children}
     </td>
 );

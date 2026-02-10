@@ -1,54 +1,33 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/lib/AuthContext";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import RequireRole from "@/components/features/auth/RequireRole";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
-import { Settings, CreditCard, DollarSign, Flag, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Settings,
+  Shield,
+  Mail,
+  CreditCard,
+  Terminal,
+  Globe,
+  Save,
+  RotateCw,
+  Lock
+} from 'lucide-react';
 
-interface SystemSettings {
-  payment_gateway: {
-    provider: "razorpay" | "phonepe";
-    mode: "test" | "production";
-  };
-  minimum_pricing: {
-    track: number;
-    album: number;
-    subscription_basic: number;
-    subscription_pro: number;
-    subscription_super: number;
-  };
-  feature_flags: {
-    fan_uploads_enabled: boolean;
-    referrals_enabled: boolean;
-    custom_domains_enabled: boolean;
-  };
-}
-
-export default function AdminSettingsPage() {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function PlatformSettingsPage() {
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [paymentProvider, setPaymentProvider] = useState<"razorpay" | "phonepe">("razorpay");
-  const [paymentMode, setPaymentMode] = useState<"test" | "production">("test");
-
-  const [minPrices, setMinPrices] = useState({
-    track: 29,
-    album: 79,
-    subscription_basic: 49,
-    subscription_pro: 99,
-    subscription_super: 199,
-  });
-
-  const [featureFlags, setFeatureFlags] = useState({
-    fan_uploads_enabled: true,
-    referrals_enabled: false,
-    custom_domains_enabled: false,
+  const [settings, setSettings] = useState({
+    platformName: 'MixMint',
+    commissionPercent: 15,
+    tokenExpiryMinutes: 5,
+    maxUploadMB: 500,
+    supportEmail: 'support@mixmint.com',
+    isMaintenanceMode: false
   });
 
   useEffect(() => {
@@ -58,385 +37,202 @@ export default function AdminSettingsPage() {
   async function loadSettings() {
     try {
       setLoading(true);
-
       const { data, error } = await supabase
-        .from("system_settings")
-        .select("key, value");
+        .from('system_settings')
+        .select('*');
 
       if (error) throw error;
 
-      const settingsMap: any = {};
-      data?.forEach((setting) => {
-        settingsMap[setting.key] = setting.value;
+      const newSettings = { ...settings };
+      data?.forEach(s => {
+        if (s.key === 'platform_config') {
+          Object.assign(newSettings, s.value);
+        } else if (s.key === 'maintenance_mode') {
+          newSettings.isMaintenanceMode = s.value.enabled;
+        }
       });
-
-      if (settingsMap.payment_gateway) {
-        setPaymentProvider(settingsMap.payment_gateway.provider);
-        setPaymentMode(settingsMap.payment_gateway.mode);
-      }
-
-      if (settingsMap.minimum_pricing) {
-        setMinPrices(settingsMap.minimum_pricing);
-      }
-
-      if (settingsMap.feature_flags) {
-        setFeatureFlags(settingsMap.feature_flags);
-      }
-
-      setSettings(settingsMap as SystemSettings);
-    } catch (err: any) {
-      console.error("[SETTINGS_LOAD_ERROR]", err);
-      setMessage({ type: "error", text: "Failed to load settings" });
+      setSettings(newSettings);
+    } catch (err) {
+      console.error('[LOAD_SETTINGS_ERROR]', err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function savePaymentGateway() {
-    if (!user) return;
-
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-      setMessage(null);
+      // 1. Save Platform Config
+      const { error: configErr } = await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'platform_config',
+          value: {
+            platformName: settings.platformName,
+            commissionPercent: settings.commissionPercent,
+            tokenExpiryMinutes: settings.tokenExpiryMinutes,
+            maxUploadMB: settings.maxUploadMB,
+            supportEmail: settings.supportEmail
+          },
+          updated_at: new Date().toISOString()
+        });
 
-      const { data: { session } } = await supabase.auth.getSession();
+      if (configErr) throw configErr;
 
-      if (!session) {
-        setMessage({ type: "error", text: "Not authenticated" });
-        return;
-      }
+      // 2. Save Maintenance Mode
+      const { error: maintErr } = await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'maintenance_mode',
+          value: { enabled: settings.isMaintenanceMode },
+          updated_at: new Date().toISOString()
+        });
 
-      const { error } = await supabase
-        .from("system_settings")
-        .update({
-          value: { provider: paymentProvider, mode: paymentMode },
-          updated_at: new Date().toISOString(),
-          updated_by: user.id,
-        })
-        .eq("key", "payment_gateway");
+      if (maintErr) throw maintErr;
 
-      if (error) throw error;
-
-      setMessage({ type: "success", text: "Payment gateway updated successfully" });
-
-      // Reload settings
-      await loadSettings();
-    } catch (err: any) {
-      console.error("[SAVE_GATEWAY_ERROR]", err);
-      setMessage({ type: "error", text: err.message || "Failed to save settings" });
+      alert('Settings saved successfully to the database!');
+    } catch (err) {
+      console.error('[SAVE_SETTINGS_ERROR]', err);
+      alert('Failed to save settings.');
     } finally {
       setSaving(false);
     }
-  }
-
-  async function savePricing() {
-    if (!user) return;
-
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      const { error } = await supabase
-        .from("system_settings")
-        .update({
-          value: minPrices,
-          updated_at: new Date().toISOString(),
-          updated_by: user.id,
-        })
-        .eq("key", "minimum_pricing");
-
-      if (error) throw error;
-
-      setMessage({ type: "success", text: "Pricing updated successfully" });
-      await loadSettings();
-    } catch (err: any) {
-      console.error("[SAVE_PRICING_ERROR]", err);
-      setMessage({ type: "error", text: err.message || "Failed to save pricing" });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveFeatureFlags() {
-    if (!user) return;
-
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      const { error } = await supabase
-        .from("system_settings")
-        .update({
-          value: featureFlags,
-          updated_at: new Date().toISOString(),
-          updated_by: user.id,
-        })
-        .eq("key", "feature_flags");
-
-      if (error) throw error;
-
-      setMessage({ type: "success", text: "Feature flags updated successfully" });
-      await loadSettings();
-    } catch (err: any) {
-      console.error("[SAVE_FLAGS_ERROR]", err);
-      setMessage({ type: "error", text: err.message || "Failed to save feature flags" });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <RequireRole allowed={["admin"]}>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin text-violet-500" size={48} />
-        </div>
-      </RequireRole>
-    );
-  }
+  };
 
   return (
     <RequireRole allowed={["admin"]}>
-      <div className="pb-24" data-testid="admin-settings-page">
-        <div className="px-6 md:px-12">
-          <div className="max-w-5xl mx-auto">
-            {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-12"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <Settings className="text-violet-500" size={32} />
-                <h1 className="text-5xl font-black text-white uppercase italic tracking-tight">
-                  System Settings
-                </h1>
-              </div>
-              <p className="text-zinc-500 font-bold">
-                Configure payment gateways, pricing, and platform features.
-              </p>
-            </motion.div>
-
-            {/* Message Banner */}
-            {message && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-xl mb-8 flex items-center gap-3 ${message.type === "success"
-                    ? "bg-green-900/20 border border-green-800/50"
-                    : "bg-red-900/20 border border-red-800/50"
-                  }`}
-              >
-                {message.type === "success" ? (
-                  <CheckCircle className="text-green-500" size={20} />
-                ) : (
-                  <AlertCircle className="text-red-500" size={20} />
-                )}
-                <span className={message.type === "success" ? "text-green-400" : "text-red-400"}>
-                  {message.text}
-                </span>
-              </motion.div>
-            )}
-
-            {/* Payment Gateway Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 mb-8"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <CreditCard className="text-violet-500" size={24} />
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                  Payment Gateway
-                </h2>
-              </div>
-
-              <div className="space-y-6">
-                {/* Provider Selection */}
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-3">
-                    Active Provider
-                  </label>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setPaymentProvider("razorpay")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentProvider === "razorpay"
-                          ? "border-violet-500 bg-violet-500/10"
-                          : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                        }`}
-                      data-testid="razorpay-option"
-                    >
-                      <div className="font-black text-white uppercase">Razorpay</div>
-                      <div className="text-xs text-zinc-500 mt-1">Active & Configured</div>
-                    </button>
-                    <button
-                      onClick={() => setPaymentProvider("phonepe")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentProvider === "phonepe"
-                          ? "border-violet-500 bg-violet-500/10"
-                          : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                        }`}
-                      data-testid="phonepe-option"
-                    >
-                      <div className="font-black text-white uppercase">PhonePe</div>
-                      <div className="text-xs text-red-500 mt-1">Not Configured</div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Mode Selection */}
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-3">
-                    Environment Mode
-                  </label>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setPaymentMode("test")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMode === "test"
-                          ? "border-amber-500 bg-amber-500/10"
-                          : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                        }`}
-                    >
-                      <div className="font-black text-white uppercase">Test Mode</div>
-                      <div className="text-xs text-zinc-500 mt-1">Development</div>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMode("production")}
-                      className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMode === "production"
-                          ? "border-green-500 bg-green-500/10"
-                          : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
-                        }`}
-                    >
-                      <div className="font-black text-white uppercase">Production</div>
-                      <div className="text-xs text-zinc-500 mt-1">Live Payments</div>
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={savePaymentGateway}
-                  disabled={saving}
-                  className="w-full"
-                  data-testid="save-payment-gateway"
-                >
-                  {saving ? "Saving..." : "Save Payment Gateway"}
-                </Button>
-              </div>
-            </motion.div>
-
-            {/* Minimum Pricing Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 mb-8"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <DollarSign className="text-green-500" size={24} />
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                  Minimum Pricing (INR)
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-2">Track</label>
-                  <input
-                    type="number"
-                    value={minPrices.track}
-                    onChange={(e) => setMinPrices({ ...minPrices, track: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-2">Album Pack</label>
-                  <input
-                    type="number"
-                    value={minPrices.album}
-                    onChange={(e) => setMinPrices({ ...minPrices, album: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-2">Basic Subscription</label>
-                  <input
-                    type="number"
-                    value={minPrices.subscription_basic}
-                    onChange={(e) => setMinPrices({ ...minPrices, subscription_basic: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-2">Pro Subscription</label>
-                  <input
-                    type="number"
-                    value={minPrices.subscription_pro}
-                    onChange={(e) => setMinPrices({ ...minPrices, subscription_pro: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-zinc-400 mb-2">Super Subscription</label>
-                  <input
-                    type="number"
-                    value={minPrices.subscription_super}
-                    onChange={(e) => setMinPrices({ ...minPrices, subscription_super: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white"
-                  />
-                </div>
-              </div>
-
-              <Button
-                onClick={savePricing}
-                disabled={saving}
-                className="w-full mt-6"
-              >
-                {saving ? "Saving..." : "Save Pricing"}
-              </Button>
-            </motion.div>
-
-            {/* Feature Flags Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <Flag className="text-amber-500" size={24} />
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                  Feature Flags
-                </h2>
-              </div>
-
-              <div className="space-y-4">
-                {Object.entries(featureFlags).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                    <span className="text-white font-bold capitalize">
-                      {key.replace(/_/g, " ")}
-                    </span>
-                    <button
-                      onClick={() => setFeatureFlags({ ...featureFlags, [key]: !value })}
-                      className={`px-4 py-2 rounded-lg font-bold transition-all ${value
-                          ? "bg-green-600 text-white"
-                          : "bg-zinc-800 text-zinc-500"
-                        }`}
-                    >
-                      {value ? "Enabled" : "Disabled"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                onClick={saveFeatureFlags}
-                disabled={saving}
-                className="w-full mt-6"
-              >
-                {saving ? "Saving..." : "Save Feature Flags"}
-              </Button>
-            </motion.div>
+      <div className="p-6 space-y-8 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-zinc-800 rounded-2xl border border-zinc-700">
+              <Settings className="w-8 h-8 text-zinc-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-heading font-bold text-white">Platform Settings</h1>
+              <p className="text-zinc-400">Configure global platform behavior and thresholds.</p>
+            </div>
           </div>
+          <Button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-purple-glow gap-2 px-8"
+          >
+            {saving ? <RotateCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* General Settings */}
+          <Card className="bg-zinc-950/50 border-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-400" />
+                General Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Platform Name</label>
+                <input
+                  type="text"
+                  value={settings.platformName}
+                  onChange={(e) => setSettings({ ...settings, platformName: e.target.value })}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Support Contact Email</label>
+                <input
+                  type="email"
+                  value={settings.supportEmail}
+                  onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Financial & Monetization */}
+          <Card className="bg-zinc-950/50 border-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-400" />
+                Monetization Thresholds
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Platform Commission (%)</label>
+                <input
+                  type="number"
+                  value={settings.commissionPercent}
+                  onChange={(e) => setSettings({ ...settings, commissionPercent: parseInt(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-start gap-3">
+                <Terminal className="w-5 h-5 text-emerald-500 mt-1" />
+                <p className="text-xs text-emerald-200/60 leading-relaxed font-medium">
+                  This rate is applied globally to all purchases and subscriptions unless a custom override is set per DJ.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security & Token Settings */}
+          <Card className="bg-zinc-950/50 border-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-400" />
+                Security & Token Policy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Download Token Expiry (Minutes)</label>
+                <input
+                  type="number"
+                  value={settings.tokenExpiryMinutes}
+                  onChange={(e) => setSettings({ ...settings, tokenExpiryMinutes: parseInt(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Max Upload File Size (MB)</label>
+                <input
+                  type="number"
+                  value={settings.maxUploadMB}
+                  onChange={(e) => setSettings({ ...settings, maxUploadMB: parseInt(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* System Maintenance */}
+          <Card className="bg-zinc-950/50 border-red-500/10 hover:border-red-500/30 transition-all border-dashed">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-red-500" />
+                System Overrides
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Maintenance Mode</h4>
+                  <p className="text-[10px] text-red-300/50 font-medium uppercase tracking-widest">Blocks all public access except for Admins.</p>
+                </div>
+                <button
+                  onClick={() => setSettings({ ...settings, isMaintenanceMode: !settings.isMaintenanceMode })}
+                  className={`w-12 h-6 rounded-full transition-all relative ${settings.isMaintenanceMode ? 'bg-red-600 shadow-red-glow' : 'bg-zinc-800'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.isMaintenanceMode ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </RequireRole>

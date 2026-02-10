@@ -16,24 +16,29 @@ export function UploadForm({ type, onSuccess }: UploadFormProps) {
     const [isFree, setIsFree] = useState(false);
     const [description, setDescription] = useState("");
     const [youtubeUrl, setYoutubeUrl] = useState("");
+    const [bpm, setBpm] = useState<number | "">("");
+    const [genre, setGenre] = useState("");
+    const [coverFile, setCoverFile] = useState<File | null>(null);
+    const [coverPreview, setCoverPreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const isTrack = type === 'track';
-    const maxSize = isTrack ? 50 * 1024 * 1024 : 500 * 1024 * 1024; // 50MB for tracks, 500MB for albums
+    const maxSize = isTrack ? 300 * 1024 * 1024 : 1000 * 1024 * 1024; // 300MB for tracks (High-Res), 1GB for albums
     const acceptedTypes = isTrack
         ? '.mp3,.wav,.flac,.m4a,.aac'
         : '.zip,.rar,.7z';
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (!selectedFile) return;
 
         // Validate file size
         if (selectedFile.size > maxSize) {
-            setError(`File too large. Max size: ${isTrack ? '50MB' : '500MB'}`);
+            setError(`File too large. Max size: ${isTrack ? '300MB' : '1GB'}`);
             return;
         }
 
@@ -50,6 +55,43 @@ export function UploadForm({ type, onSuccess }: UploadFormProps) {
 
         setFile(selectedFile);
         setError(null);
+
+        // Metadata Extraction
+        if (isTrack) {
+            try {
+                setIsAnalyzing(true);
+                // Dynamic import to avoid SSR issues with buffer/stream
+                const { parseBlob } = await import('music-metadata-browser');
+                const metadata = await parseBlob(selectedFile);
+
+                // Auto-fill Title if empty or matches filename pattern
+                if (!title) {
+                    // removing extension and underscores
+                    const cleanName = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                    setTitle(metadata.common.title || cleanName);
+                }
+
+                // Auto-fill BPM
+                if (metadata.common.bpm) {
+                    setBpm(Math.round(metadata.common.bpm));
+                }
+
+                // Auto-fill Genre
+                if (metadata.common.genre && metadata.common.genre.length > 0) {
+                    setGenre(metadata.common.genre[0]);
+                }
+
+            } catch (err) {
+                console.warn("Failed to extract metadata:", err);
+                // Fallback: just use filename for title
+                if (!title) {
+                    const cleanName = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                    setTitle(cleanName);
+                }
+            } finally {
+                setIsAnalyzing(false);
+            }
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +120,13 @@ export function UploadForm({ type, onSuccess }: UploadFormProps) {
 
             if (description) {
                 formData.append('description', description);
+            }
+
+            if (isTrack) {
+                if (bpm) formData.append('bpm', bpm.toString());
+                if (genre) formData.append('genre', genre);
+                if (youtubeUrl) formData.append('youtube_url', youtubeUrl);
+                if (coverFile) formData.append('cover_file', coverFile);
             }
 
             // Simulate progress (since we can't track actual upload progress easily)
@@ -185,10 +234,23 @@ export function UploadForm({ type, onSuccess }: UploadFormProps) {
                         )}
                     </div>
 
+                    {/* Cover Art Preview */}
+                    {isTrack && coverPreview && (
+                        <div className="flex items-center gap-4 p-4 bg-zinc-800/40 rounded-xl border border-zinc-700/40">
+                            <div className="relative w-16 h-16 rounded overflow-hidden">
+                                <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white">Cover Art Detected</p>
+                                <p className="text-xs text-zinc-400">Extracted from file metadata</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Title */}
                     <div>
                         <label className="block text-sm font-bold text-white mb-2">
-                            Title *
+                            Title * {isAnalyzing && <span className="text-xs text-violet-400 animate-pulse ml-2">Reading tags...</span>}
                         </label>
                         <input
                             type="text"
@@ -219,18 +281,49 @@ export function UploadForm({ type, onSuccess }: UploadFormProps) {
 
                     {/* YouTube URL (Tracks only) */}
                     {isTrack && (
-                        <div>
-                            <label className="block text-sm font-bold text-white mb-2">
-                                YouTube Preview URL
-                            </label>
-                            <input
-                                type="url"
-                                value={youtubeUrl}
-                                onChange={(e) => setYoutubeUrl(e.target.value)}
-                                disabled={uploading}
-                                placeholder="https://youtube.com/watch?v=..."
-                                className="w-full px-4 py-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors disabled:opacity-50"
-                            />
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-white mb-2">
+                                        BPM {isAnalyzing && <span className="text-xs text-violet-400 animate-pulse">(Detecting...)</span>}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={bpm}
+                                        onChange={(e) => setBpm(Number(e.target.value) || "")}
+                                        disabled={uploading}
+                                        placeholder="128"
+                                        className="w-full px-4 py-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors disabled:opacity-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-white mb-2">
+                                        Genre {isAnalyzing && <span className="text-xs text-violet-400 animate-pulse">(Detecting...)</span>}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={genre}
+                                        onChange={(e) => setGenre(e.target.value)}
+                                        disabled={uploading}
+                                        placeholder="House, Techno..."
+                                        className="w-full px-4 py-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors disabled:opacity-50"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-white mb-2">
+                                    YouTube Preview URL
+                                </label>
+                                <input
+                                    type="url"
+                                    value={youtubeUrl}
+                                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                                    disabled={uploading}
+                                    placeholder="https://youtube.com/watch?v=..."
+                                    className="w-full px-4 py-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors disabled:opacity-50"
+                                />
+                            </div>
                         </div>
                     )}
 

@@ -51,7 +51,7 @@ export function getDJFolderName(fullName: string, djId: string): string {
 export function getDJStoragePath(
     fullName: string,
     djId: string,
-    subfolder: "tracks" | "albums" | "fan_uploads",
+    subfolder: "tracks" | "albums" | "fan_uploads" | "covers" | "temp/albums" | "temp/tracks",
     filename: string
 ): string {
     const folderName = getDJFolderName(fullName, djId);

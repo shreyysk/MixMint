@@ -14,6 +14,7 @@ create table if not exists admin_audit_logs (
 alter table admin_audit_logs enable row level security;
 
 -- Only admins can view audit logs
+drop policy if exists "Admins can view audit logs" on admin_audit_logs;
 create policy "Admins can view audit logs"
     on admin_audit_logs
     for select
@@ -26,6 +27,7 @@ create policy "Admins can view audit logs"
     );
 
 -- Only system/admins can insert (via API)
+drop policy if exists "Admins can insert audit logs" on admin_audit_logs;
 create policy "Admins can insert audit logs"
     on admin_audit_logs
     for insert

@@ -12,7 +12,22 @@ import {
     Star,
     Plus,
     ChevronRight,
-    Headphones
+    Headphones,
+    Shield,
+    Share2,
+    TrendingUp,
+    ShieldAlert,
+    Users,
+    AlertTriangle,
+    Music,
+    DollarSign,
+    Layout,
+    Award,
+    Clock,
+    Settings,
+    Activity,
+    MessageSquare,
+    FlaskConical
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -30,6 +45,24 @@ const NAV_ITEMS = [
     { href: "/my-collection", label: "Your Collection", icon: Library },
     { href: "/my-collection?tab=purchases", label: "My Purchases", icon: Package },
     { href: "/my-collection?tab=subscriptions", label: "Subscriptions", icon: Star },
+    { href: "/dashboard/security", label: "Security", icon: Shield },
+    { href: "/dashboard/social", label: "Community", icon: Share2 },
+    { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
+];
+
+const ADMIN_ITEMS = [
+    { href: "/admin", label: "Dashboard", icon: Layout },
+    { href: "/admin/djs", label: "DJs", icon: Music },
+    { href: "/admin/dj-approvals", label: "DJ Apps", icon: Clock },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/moderation", label: "Mod Queue", icon: ShieldAlert },
+    { href: "/admin/reports", label: "Copyright", icon: AlertTriangle },
+    { href: "/admin/finance", label: "Finance", icon: DollarSign },
+    { href: "/admin/points", label: "Points", icon: Award },
+    { href: "/admin/support", label: "Support", icon: MessageSquare },
+    { href: "/admin/operations", label: "Operations", icon: Activity },
+    { href: "/admin/experiments", label: "Experiments", icon: FlaskConical },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function LeftSidebar() {
@@ -116,6 +149,36 @@ export function LeftSidebar() {
                         </Link>
                     );
                 })}
+
+                {/* Admin Section */}
+                {user?.user_metadata?.role === 'admin' && (
+                    <div className="pt-4 mt-4 border-t border-white/5 space-y-1">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 px-4">
+                            Platform Admin
+                        </h3>
+                        {ADMIN_ITEMS.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200",
+                                        isActive
+                                            ? "bg-purple-primary/10 text-purple-primary shadow-sm"
+                                            : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    <Icon size={18} />
+                                    {!isCollapsed && (
+                                        <span className="font-medium text-xs font-heading">{item.label}</span>
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </nav>
 
             {/* Subscribed DJs Section */}

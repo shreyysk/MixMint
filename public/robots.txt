@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /tracks
+Allow: /albums
+Allow: /dj
+Disallow: /admin
+Disallow: /api
+Disallow: /temp
+
+Sitemap: https://mixmint.site/sitemap.xml
