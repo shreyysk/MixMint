@@ -1,0 +1,642 @@
+section,table_name,column_name,data_type,is_nullable,column_default,constraint_type,related_table,related_column,rls_enabled
+COLUMNS,activity_feed,metadata,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,activity_feed,is_read,boolean,YES,false,null,null,null,null
+COLUMNS,activity_feed,action_type,text,NO,null,null,null,null,null
+COLUMNS,activity_feed,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,activity_feed,entity_type,text,NO,null,null,null,null,null
+COLUMNS,activity_feed,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,activity_feed,entity_id,uuid,NO,null,null,null,null,null
+COLUMNS,activity_feed,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,admin_audit_logs,entity_type,text,NO,null,null,null,null,null
+COLUMNS,admin_audit_logs,details,jsonb,YES,null,null,null,null,null
+COLUMNS,admin_audit_logs,ip_address,text,YES,null,null,null,null,null
+COLUMNS,admin_audit_logs,created_at,timestamp with time zone,NO,"timezone('utc'::text, now())",null,null,null,null
+COLUMNS,admin_audit_logs,action_type,text,NO,null,null,null,null,null
+COLUMNS,admin_audit_logs,entity_id,text,YES,null,null,null,null,null
+COLUMNS,admin_audit_logs,admin_id,uuid,NO,null,null,null,null,null
+COLUMNS,admin_audit_logs,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,album_packs,dj_id,uuid,YES,null,null,null,null,null
+COLUMNS,album_packs,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,album_packs,expires_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,album_packs,is_disabled,boolean,YES,false,null,null,null,null
+COLUMNS,album_packs,processing_error,text,YES,null,null,null,null,null
+COLUMNS,album_packs,processing_status,text,YES,'pending'::text,null,null,null,null
+COLUMNS,album_packs,original_file_key,text,YES,null,null,null,null,null
+COLUMNS,album_packs,upload_method,text,YES,'direct_zip'::text,null,null,null,null
+COLUMNS,album_packs,cover_url,text,YES,null,null,null,null,null
+COLUMNS,album_packs,cover_image_key,text,YES,null,null,null,null,null
+COLUMNS,album_packs,is_fan_only,boolean,YES,false,null,null,null,null
+COLUMNS,album_packs,file_key,text,NO,null,null,null,null,null
+COLUMNS,album_packs,description,text,YES,null,null,null,null,null
+COLUMNS,album_packs,title,text,NO,null,null,null,null,null
+COLUMNS,album_packs,dj_profile_id,uuid,YES,null,null,null,null,null
+COLUMNS,album_packs,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,album_packs,processing_started_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,album_packs,processing_completed_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,album_packs,track_count,integer,YES,0,null,null,null,null
+COLUMNS,album_packs,total_duration,integer,YES,null,null,null,null,null
+COLUMNS,album_packs,price,integer,NO,null,null,null,null,null
+COLUMNS,album_packs,file_size,bigint,YES,null,null,null,null,null
+COLUMNS,album_processing_queue,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,album_processing_queue,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,album_processing_queue,error_message,text,YES,null,null,null,null,null
+COLUMNS,album_processing_queue,started_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,album_processing_queue,completed_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,album_processing_queue,status,text,YES,'queued'::text,null,null,null,null
+COLUMNS,album_processing_queue,album_id,uuid,NO,null,null,null,null,null
+COLUMNS,album_processing_queue,attempts,integer,YES,0,null,null,null,null
+COLUMNS,album_processing_queue,max_attempts,integer,YES,3,null,null,null,null
+COLUMNS,album_tracks,album_id,uuid,NO,null,null,null,null,null
+COLUMNS,album_tracks,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,announcements,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,announcements,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,announcements,title,text,NO,null,null,null,null,null
+COLUMNS,announcements,expires_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,announcements,target_audience,text,NO,'all'::text,null,null,null,null
+COLUMNS,announcements,active,boolean,YES,true,null,null,null,null
+COLUMNS,announcements,starts_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,announcements,content,text,NO,null,null,null,null,null
+COLUMNS,api_metrics,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,api_metrics,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,api_metrics,ip_address,inet,YES,null,null,null,null,null
+COLUMNS,api_metrics,user_id,uuid,YES,null,null,null,null,null
+COLUMNS,api_metrics,status_code,integer,NO,null,null,null,null,null
+COLUMNS,api_metrics,response_time_ms,integer,NO,null,null,null,null,null
+COLUMNS,api_metrics,error_message,text,YES,null,null,null,null,null
+COLUMNS,api_metrics,method,text,NO,null,null,null,null,null
+COLUMNS,api_metrics,endpoint,text,NO,null,null,null,null,null
+COLUMNS,comments,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,comments,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,comments,is_moderated,boolean,YES,false,null,null,null,null
+COLUMNS,comments,parent_id,uuid,YES,null,null,null,null,null
+COLUMNS,comments,album_id,uuid,YES,null,null,null,null,null
+COLUMNS,comments,track_id,uuid,YES,null,null,null,null,null
+COLUMNS,comments,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,comments,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,comments,content,text,NO,null,null,null,null,null
+COLUMNS,copyright_reports,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,copyright_reports,reporter_id,uuid,YES,null,null,null,null,null
+COLUMNS,copyright_reports,reason,text,NO,null,null,null,null,null
+COLUMNS,copyright_reports,evidence_url,text,YES,null,null,null,null,null
+COLUMNS,copyright_reports,status,text,NO,'pending'::text,null,null,null,null
+COLUMNS,copyright_reports,admin_notes,text,YES,null,null,null,null,null
+COLUMNS,copyright_reports,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,copyright_reports,album_id,uuid,YES,null,null,null,null,null
+COLUMNS,copyright_reports,track_id,uuid,YES,null,null,null,null,null
+COLUMNS,dj_branding,custom_domain,text,YES,null,null,null,null,null
+COLUMNS,dj_branding,layout_preferences,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,dj_branding,custom_css,text,YES,null,null,null,null,null
+COLUMNS,dj_branding,logo_url,text,YES,null,null,null,null,null
+COLUMNS,dj_branding,banner_url,text,YES,null,null,null,null,null
+COLUMNS,dj_branding,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,dj_branding,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_branding,color_scheme,jsonb,YES,"'{""primary"": ""#7c3aed"", ""secondary"": ""#a78bfa""}'::jsonb",null,null,null,null
+COLUMNS,dj_branding,fonts,jsonb,YES,"'{""body"": ""Inter"", ""heading"": ""Inter""}'::jsonb",null,null,null,null
+COLUMNS,dj_milestones,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_milestones,milestone_type,text,NO,null,null,null,null,null
+COLUMNS,dj_milestones,notified,boolean,YES,false,null,null,null,null
+COLUMNS,dj_milestones,achieved_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,dj_milestones,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,dj_onboarding_progress,email_sequence_stage,integer,YES,0,null,null,null,null
+COLUMNS,dj_onboarding_progress,steps_completed,jsonb,YES,'[]'::jsonb,null,null,null,null
+COLUMNS,dj_onboarding_progress,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_onboarding_progress,last_email_sent_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,dj_onboarding_progress,completed_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,dj_onboarding_progress,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,dj_profiles,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,dj_profiles,location,text,YES,null,null,null,null,null
+COLUMNS,dj_profiles,custom_domain,text,YES,null,null,null,null,null
+COLUMNS,dj_profiles,banner_url,text,YES,null,null,null,null,null
+COLUMNS,dj_profiles,genres,ARRAY,YES,null,null,null,null,null
+COLUMNS,dj_profiles,bio,text,YES,null,null,null,null,null
+COLUMNS,dj_profiles,slug,text,NO,null,null,null,null,null
+COLUMNS,dj_profiles,dj_name,text,NO,null,null,null,null,null
+COLUMNS,dj_profiles,popularity_score,integer,YES,0,null,null,null,null
+COLUMNS,dj_profiles,social_links,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,dj_profiles,is_featured,boolean,YES,false,null,null,null,null
+COLUMNS,dj_profiles,domain_verified,boolean,YES,false,null,null,null,null
+COLUMNS,dj_profiles,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,dj_profiles,status,USER-DEFINED,NO,'pending'::dj_status,null,null,null,null
+COLUMNS,dj_profiles,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_sale_analytics,total_sales,bigint,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,gross_revenue,numeric,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,net_earnings,numeric,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,content_type,USER-DEFINED,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,dj_id,uuid,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,sale_date,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,city,text,YES,null,null,null,null,null
+COLUMNS,dj_sale_analytics,country,text,YES,null,null,null,null,null
+COLUMNS,dj_subscriptions,track_quota,integer,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,dj_subscriptions,is_revoked,boolean,YES,false,null,null,null,null
+COLUMNS,dj_subscriptions,fan_uploads_used,integer,NO,0,null,null,null,null
+COLUMNS,dj_subscriptions,starts_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,dj_subscriptions,expires_at,timestamp with time zone,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,dj_subscriptions,tracks_used,integer,NO,0,null,null,null,null
+COLUMNS,dj_subscriptions,fan_upload_quota,integer,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,zip_quota,integer,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,plan,text,NO,null,null,null,null,null
+COLUMNS,dj_subscriptions,zips_used,integer,NO,0,null,null,null,null
+COLUMNS,download_attempts,max_attempts,integer,YES,3,null,null,null,null
+COLUMNS,download_attempts,last_attempt_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,download_attempts,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,download_attempts,access_source,text,NO,null,null,null,null,null
+COLUMNS,download_attempts,content_type,text,NO,null,null,null,null,null
+COLUMNS,download_attempts,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,download_attempts,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,download_attempts,content_id,uuid,NO,null,null,null,null,null
+COLUMNS,download_attempts,attempts_used,integer,YES,0,null,null,null,null
+COLUMNS,download_tokens,version_id,uuid,YES,null,null,null,null,null
+COLUMNS,download_tokens,ip_address,text,YES,null,null,null,null,null
+COLUMNS,download_tokens,token,text,NO,null,null,null,null,null
+COLUMNS,download_tokens,user_agent,text,YES,null,null,null,null,null
+COLUMNS,download_tokens,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,download_tokens,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,download_tokens,content_type,USER-DEFINED,NO,null,null,null,null,null
+COLUMNS,download_tokens,expires_at,timestamp with time zone,NO,null,null,null,null,null
+COLUMNS,download_tokens,access_source,text,YES,null,null,null,null,null
+COLUMNS,download_tokens,content_id,uuid,NO,null,null,null,null,null
+COLUMNS,download_tokens,is_used,boolean,YES,false,null,null,null,null
+COLUMNS,download_tokens,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,experiment_exposures,user_id,uuid,YES,null,null,null,null,null
+COLUMNS,experiment_exposures,metadata,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,experiment_exposures,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,experiment_exposures,ip_address,inet,YES,null,null,null,null,null
+COLUMNS,experiment_exposures,experiment_id,uuid,NO,null,null,null,null,null
+COLUMNS,experiment_exposures,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,experiment_exposures,variant_name,text,NO,null,null,null,null,null
+COLUMNS,experiments,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,experiments,name,text,NO,null,null,null,null,null
+COLUMNS,experiments,description,text,YES,null,null,null,null,null
+COLUMNS,experiments,status,text,NO,'draft'::text,null,null,null,null
+COLUMNS,experiments,conversion_goal,text,NO,null,null,null,null,null
+COLUMNS,experiments,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,experiments,config,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,experiments,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,fan_uploads,file_key,text,NO,null,null,null,null,null
+COLUMNS,fan_uploads,title,text,NO,null,null,null,null,null
+COLUMNS,fan_uploads,status,USER-DEFINED,NO,'active'::content_status,null,null,null,null
+COLUMNS,fan_uploads,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,fan_uploads,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,fan_uploads,description,text,YES,null,null,null,null,null
+COLUMNS,fan_uploads,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,feature_flags,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,feature_flags,is_enabled,boolean,YES,false,null,null,null,null
+COLUMNS,feature_flags,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,feature_flags,name,text,NO,null,null,null,null,null
+COLUMNS,feature_flags,description,text,YES,null,null,null,null,null
+COLUMNS,follows,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,follows,follower_id,uuid,NO,null,null,null,null,null
+COLUMNS,follows,followed_id,uuid,NO,null,null,null,null,null
+COLUMNS,fraud_alerts,reviewed_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,fraud_alerts,reviewed_by,uuid,YES,null,null,null,null,null
+COLUMNS,fraud_alerts,severity,text,YES,'medium'::text,null,null,null,null
+COLUMNS,fraud_alerts,alert_type,text,NO,null,null,null,null,null
+COLUMNS,fraud_alerts,status,text,YES,'pending'::text,null,null,null,null
+COLUMNS,fraud_alerts,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,fraud_alerts,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,fraud_alerts,user_id,uuid,YES,null,null,null,null,null
+COLUMNS,fraud_alerts,details,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,invoices,currency,text,NO,'INR'::text,null,null,null,null
+COLUMNS,invoices,tax_amount,numeric,NO,0.00,null,null,null,null
+COLUMNS,invoices,invoice_number,text,NO,null,null,null,null,null
+COLUMNS,invoices,status,text,NO,'issued'::text,null,null,null,null
+COLUMNS,invoices,subtotal,numeric,NO,null,null,null,null,null
+COLUMNS,invoices,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,invoices,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,invoices,purchase_id,uuid,YES,null,null,null,null,null
+COLUMNS,invoices,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,invoices,notes,text,YES,null,null,null,null,null
+COLUMNS,invoices,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,invoices,total_amount,numeric,NO,null,null,null,null,null
+COLUMNS,login_history,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,login_history,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,login_history,is_suspicious,boolean,YES,false,null,null,null,null
+COLUMNS,login_history,user_agent,text,YES,null,null,null,null,null
+COLUMNS,login_history,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,login_history,ip_address,inet,NO,null,null,null,null,null
+COLUMNS,login_history,location_data,jsonb,YES,null,null,null,null,null
+COLUMNS,moderation_queue,reason,text,NO,null,null,null,null,null
+COLUMNS,moderation_queue,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,moderation_queue,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,moderation_queue,similarity_score,numeric,YES,null,null,null,null,null
+COLUMNS,moderation_queue,matched_track_id,uuid,YES,null,null,null,null,null
+COLUMNS,moderation_queue,reviewed_by,uuid,YES,null,null,null,null,null
+COLUMNS,moderation_queue,reviewed_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,moderation_queue,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,moderation_queue,status,text,YES,'pending'::text,null,null,null,null
+COLUMNS,moderation_queue,admin_notes,text,YES,null,null,null,null,null
+COLUMNS,monetization_settings,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,monetization_settings,updated_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,monetization_settings,bundle_configs,jsonb,YES,'[]'::jsonb,null,null,null,null
+COLUMNS,monetization_settings,discount_codes,jsonb,YES,'[]'::jsonb,null,null,null,null
+COLUMNS,monetization_settings,revenue_share_pct,numeric,YES,80.00,null,null,null,null
+COLUMNS,monetization_settings,dj_id,uuid,YES,null,null,null,null,null
+COLUMNS,playlist_tracks,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,playlist_tracks,position,integer,NO,null,null,null,null,null
+COLUMNS,playlist_tracks,playlist_id,uuid,NO,null,null,null,null,null
+COLUMNS,playlist_tracks,added_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,playlists,is_smart,boolean,YES,false,null,null,null,null
+COLUMNS,playlists,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,playlists,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,playlists,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,playlists,is_public,boolean,NO,true,null,null,null,null
+COLUMNS,playlists,is_collaborative,boolean,NO,false,null,null,null,null
+COLUMNS,playlists,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,playlists,description,text,YES,null,null,null,null,null
+COLUMNS,playlists,name,text,NO,null,null,null,null,null
+COLUMNS,playlists,smart_criteria,jsonb,YES,null,null,null,null,null
+COLUMNS,points_history,points,integer,NO,null,null,null,null,null
+COLUMNS,points_history,metadata,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,points_history,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,points_history,event_type,text,NO,null,null,null,null,null
+COLUMNS,points_history,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,points_history,profile_id,uuid,NO,null,null,null,null,null
+COLUMNS,profiles,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,profiles,notification_preferences,jsonb,YES,"'{""dj_milestone"": true, ""wishlist_free"": true, ""followed_dj_release"": true, ""wishlist_price_drop"": true}'::jsonb",null,null,null,null
+COLUMNS,profiles,referral_tier,text,YES,'bronze'::text,null,null,null,null
+COLUMNS,profiles,avatar_url,text,YES,null,null,null,null,null
+COLUMNS,profiles,full_name,text,YES,null,null,null,null,null
+COLUMNS,profiles,id,uuid,NO,null,null,null,null,null
+COLUMNS,profiles,role,USER-DEFINED,NO,'user'::user_role,null,null,null,null
+COLUMNS,profiles,is_banned,boolean,YES,false,null,null,null,null
+COLUMNS,purchases,ip_address,inet,YES,null,null,null,null,null
+COLUMNS,purchases,price,integer,NO,null,null,null,null,null
+COLUMNS,purchases,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,purchases,attempts_used,integer,YES,0,null,null,null,null
+COLUMNS,purchases,max_attempts,integer,YES,3,null,null,null,null
+COLUMNS,purchases,points_used,integer,YES,0,null,null,null,null
+COLUMNS,purchases,dj_earnings,numeric,YES,null,null,null,null,null
+COLUMNS,purchases,is_revoked,boolean,YES,false,null,null,null,null
+COLUMNS,purchases,cached_offline,boolean,YES,false,null,null,null,null
+COLUMNS,purchases,seller_id,uuid,YES,null,null,null,null,null
+COLUMNS,purchases,price_paid,numeric,YES,null,null,null,null,null
+COLUMNS,purchases,user_agent,text,YES,null,null,null,null,null
+COLUMNS,purchases,location_data,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,purchases,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,purchases,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,purchases,content_type,USER-DEFINED,NO,null,null,null,null,null
+COLUMNS,purchases,content_id,uuid,NO,null,null,null,null,null
+COLUMNS,push_subscriptions,endpoint,text,NO,null,null,null,null,null
+COLUMNS,push_subscriptions,user_agent,text,YES,null,null,null,null,null
+COLUMNS,push_subscriptions,last_used,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,push_subscriptions,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,push_subscriptions,keys,jsonb,NO,null,null,null,null,null
+COLUMNS,push_subscriptions,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,push_subscriptions,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,rate_limits,count,integer,YES,0,null,null,null,null
+COLUMNS,rate_limits,key,text,NO,null,null,null,null,null
+COLUMNS,rate_limits,reset_at,timestamp with time zone,NO,null,null,null,null,null
+COLUMNS,referral_codes,profile_id,uuid,NO,null,null,null,null,null
+COLUMNS,referral_codes,code,text,NO,null,null,null,null,null
+COLUMNS,referral_codes,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,referrals,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,referrals,points_awarded,boolean,YES,false,null,null,null,null
+COLUMNS,referrals,referred_id,uuid,NO,null,null,null,null,null
+COLUMNS,referrals,referrer_id,uuid,NO,null,null,null,null,null
+COLUMNS,referrals,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,referrals,status,text,NO,'joined'::text,null,null,null,null
+COLUMNS,reviews,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,reviews,comment,text,YES,null,null,null,null,null
+COLUMNS,reviews,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,reviews,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,reviews,rating,integer,NO,null,null,null,null,null
+COLUMNS,reviews,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,reviews,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,subscription_plans,price,integer,NO,null,null,null,null,null
+COLUMNS,subscription_plans,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,subscription_plans,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,subscription_plans,fan_upload_quota,integer,NO,null,null,null,null,null
+COLUMNS,subscription_plans,zip_quota,integer,NO,null,null,null,null,null
+COLUMNS,subscription_plans,name,text,NO,null,null,null,null,null
+COLUMNS,subscription_plans,track_quota,integer,NO,null,null,null,null,null
+COLUMNS,subscription_plans,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,subscriptions,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,subscriptions,plan_id,uuid,NO,null,null,null,null,null
+COLUMNS,subscriptions,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,subscriptions,is_active,boolean,YES,true,null,null,null,null
+COLUMNS,subscriptions,end_date,date,NO,null,null,null,null,null
+COLUMNS,subscriptions,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,subscriptions,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,subscriptions,start_date,date,NO,null,null,null,null,null
+COLUMNS,support_tickets,status,text,NO,'open'::text,null,null,null,null
+COLUMNS,support_tickets,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,support_tickets,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,support_tickets,user_id,uuid,YES,null,null,null,null,null
+COLUMNS,support_tickets,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,support_tickets,subject,text,NO,null,null,null,null,null
+COLUMNS,support_tickets,category,text,NO,null,null,null,null,null
+COLUMNS,support_tickets,priority,text,NO,'medium'::text,null,null,null,null
+COLUMNS,support_tickets,description,text,NO,null,null,null,null,null
+COLUMNS,system_settings,updated_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,system_settings,description,text,YES,null,null,null,null,null
+COLUMNS,system_settings,key,text,NO,null,null,null,null,null
+COLUMNS,system_settings,value,jsonb,NO,null,null,null,null,null
+COLUMNS,system_settings,updated_by,uuid,YES,null,null,null,null,null
+COLUMNS,tax_records,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,tax_records,tax_amount,numeric,NO,null,null,null,null,null
+COLUMNS,tax_records,tax_rate,numeric,NO,null,null,null,null,null
+COLUMNS,tax_records,invoice_id,uuid,NO,null,null,null,null,null
+COLUMNS,tax_records,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,tax_records,tax_type,text,NO,null,null,null,null,null
+COLUMNS,tax_records,jurisdiction,text,YES,null,null,null,null,null
+COLUMNS,track_fingerprints,algorithm,text,YES,'chromaprint'::text,null,null,null,null
+COLUMNS,track_fingerprints,fingerprint,text,NO,null,null,null,null,null
+COLUMNS,track_fingerprints,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,track_fingerprints,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,track_previews,url,text,NO,null,null,null,null,null
+COLUMNS,track_previews,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,track_previews,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,track_previews,updated_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,track_previews,is_active,boolean,YES,true,null,null,null,null
+COLUMNS,track_previews,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,track_previews,preview_type,text,NO,null,null,null,null,null
+COLUMNS,track_previews,is_primary,boolean,YES,false,null,null,null,null
+COLUMNS,track_previews,embed_html,text,YES,null,null,null,null,null
+COLUMNS,track_previews,embed_id,text,NO,null,null,null,null,null
+COLUMNS,track_versions,version_type,text,NO,'original'::text,null,null,null,null
+COLUMNS,track_versions,file_key,text,NO,null,null,null,null,null
+COLUMNS,track_versions,file_size,bigint,YES,null,null,null,null,null
+COLUMNS,track_versions,format,USER-DEFINED,NO,null,null,null,null,null
+COLUMNS,track_versions,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,track_versions,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,track_versions,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,tracks,price,integer,YES,0,null,null,null,null
+COLUMNS,tracks,file_key,text,NO,null,null,null,null,null
+COLUMNS,tracks,genre,text,YES,null,null,null,null,null
+COLUMNS,tracks,cover_art_key,text,YES,null,null,null,null,null
+COLUMNS,tracks,expires_at,timestamp with time zone,YES,null,null,null,null,null
+COLUMNS,tracks,cover_url,text,YES,null,null,null,null,null
+COLUMNS,tracks,version_type,text,YES,'original'::text,null,null,null,null
+COLUMNS,tracks,is_disabled,boolean,YES,false,null,null,null,null
+COLUMNS,tracks,bpm,integer,YES,null,null,null,null,null
+COLUMNS,tracks,is_fan_only,boolean,YES,false,null,null,null,null
+COLUMNS,tracks,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,tracks,status,USER-DEFINED,NO,'active'::content_status,null,null,null,null
+COLUMNS,tracks,description,text,YES,null,null,null,null,null
+COLUMNS,tracks,dj_id,uuid,NO,null,null,null,null,null
+COLUMNS,tracks,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,tracks,title,text,NO,null,null,null,null,null
+COLUMNS,usage_counters,fan_uploads_used,integer,YES,0,null,null,null,null
+COLUMNS,usage_counters,subscription_id,uuid,NO,null,null,null,null,null
+COLUMNS,usage_counters,id,uuid,NO,gen_random_uuid(),null,null,null,null
+COLUMNS,usage_counters,created_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,usage_counters,zips_used,integer,YES,0,null,null,null,null
+COLUMNS,usage_counters,tracks_used,integer,YES,0,null,null,null,null
+COLUMNS,usage_counters,reset_at,date,NO,null,null,null,null,null
+COLUMNS,user_devices,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,user_devices,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,user_devices,label,text,YES,null,null,null,null,null
+COLUMNS,user_devices,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,user_devices,last_active_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,user_devices,fingerprint,text,NO,null,null,null,null,null
+COLUMNS,user_devices,last_ip,inet,YES,null,null,null,null,null
+COLUMNS,user_devices,status,USER-DEFINED,NO,'authorized'::device_status,null,null,null,null
+COLUMNS,user_interactions,track_id,uuid,YES,null,null,null,null,null
+COLUMNS,user_interactions,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,user_interactions,metadata,jsonb,YES,'{}'::jsonb,null,null,null,null
+COLUMNS,user_interactions,dj_id,uuid,YES,null,null,null,null,null
+COLUMNS,user_interactions,interaction_type,text,NO,null,null,null,null,null
+COLUMNS,user_interactions,user_id,uuid,NO,null,null,null,null,null
+COLUMNS,user_interactions,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,user_points,profile_id,uuid,NO,null,null,null,null,null
+COLUMNS,user_points,updated_at,timestamp with time zone,YES,now(),null,null,null,null
+COLUMNS,user_points,balance,integer,NO,0,null,null,null,null
+COLUMNS,user_points,total_earned,integer,NO,0,null,null,null,null
+COLUMNS,wishlist_price_history,price,numeric,NO,null,null,null,null,null
+COLUMNS,wishlist_price_history,recorded_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,wishlist_price_history,track_id,uuid,NO,null,null,null,null,null
+COLUMNS,wishlist_price_history,id,uuid,NO,uuid_generate_v4(),null,null,null,null
+COLUMNS,wishlists,content_id,uuid,NO,null,null,null,null,null
+COLUMNS,wishlists,content_type,USER-DEFINED,NO,null,null,null,null,null
+COLUMNS,wishlists,created_at,timestamp with time zone,NO,now(),null,null,null,null
+COLUMNS,wishlists,user_id,uuid,NO,null,null,null,null,null
+FOREIGN_KEYS,activity_feed,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,album_packs,dj_profile_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,album_packs,dj_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,album_processing_queue,album_id,null,null,null,FOREIGN KEY,album_packs,id,null
+FOREIGN_KEYS,album_tracks,album_id,null,null,null,FOREIGN KEY,album_packs,id,null
+FOREIGN_KEYS,album_tracks,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,api_metrics,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,comments,parent_id,null,null,null,FOREIGN KEY,comments,id,null
+FOREIGN_KEYS,comments,album_id,null,null,null,FOREIGN KEY,album_packs,id,null
+FOREIGN_KEYS,comments,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,comments,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,copyright_reports,reporter_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,copyright_reports,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,copyright_reports,album_id,null,null,null,FOREIGN KEY,album_packs,id,null
+FOREIGN_KEYS,dj_branding,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,dj_milestones,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,dj_onboarding_progress,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,dj_profiles,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,dj_subscriptions,dj_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,dj_subscriptions,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,download_attempts,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,download_tokens,version_id,null,null,null,FOREIGN KEY,track_versions,id,null
+FOREIGN_KEYS,download_tokens,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,experiment_exposures,experiment_id,null,null,null,FOREIGN KEY,experiments,id,null
+FOREIGN_KEYS,experiment_exposures,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,fan_uploads,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,follows,follower_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,follows,followed_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,fraud_alerts,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,fraud_alerts,reviewed_by,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,invoices,purchase_id,null,null,null,FOREIGN KEY,purchases,id,null
+FOREIGN_KEYS,invoices,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,invoices,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,moderation_queue,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,moderation_queue,reviewed_by,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,moderation_queue,matched_track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,monetization_settings,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,playlist_tracks,playlist_id,null,null,null,FOREIGN KEY,playlists,id,null
+FOREIGN_KEYS,playlist_tracks,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,playlists,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,points_history,profile_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,purchases,seller_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,purchases,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,push_subscriptions,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,referral_codes,profile_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,referrals,referred_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,referrals,referrer_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,reviews,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,reviews,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,subscription_plans,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,subscriptions,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,subscriptions,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,subscriptions,plan_id,null,null,null,FOREIGN KEY,subscription_plans,id,null
+FOREIGN_KEYS,support_tickets,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,system_settings,updated_by,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,tax_records,invoice_id,null,null,null,FOREIGN KEY,invoices,id,null
+FOREIGN_KEYS,track_fingerprints,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,track_previews,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,track_versions,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,tracks,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,usage_counters,subscription_id,null,null,null,FOREIGN KEY,subscriptions,id,null
+FOREIGN_KEYS,user_interactions,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,user_interactions,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,user_interactions,dj_id,null,null,null,FOREIGN KEY,dj_profiles,id,null
+FOREIGN_KEYS,user_points,profile_id,null,null,null,FOREIGN KEY,profiles,id,null
+FOREIGN_KEYS,wishlist_price_history,track_id,null,null,null,FOREIGN KEY,tracks,id,null
+FOREIGN_KEYS,wishlists,user_id,null,null,null,FOREIGN KEY,profiles,id,null
+PRIMARY_KEYS,activity_feed,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,admin_audit_logs,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,album_packs,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,album_processing_queue,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,album_tracks,album_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,album_tracks,track_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,announcements,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,api_metrics,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,comments,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,copyright_reports,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,dj_branding,dj_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,dj_milestones,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,dj_onboarding_progress,dj_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,dj_profiles,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,dj_subscriptions,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,download_attempts,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,download_tokens,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,experiment_exposures,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,experiments,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,fan_uploads,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,feature_flags,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,follows,followed_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,follows,follower_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,fraud_alerts,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,invoices,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,login_history,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,moderation_queue,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,monetization_settings,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,playlist_tracks,track_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,playlist_tracks,playlist_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,playlists,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,points_history,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,profiles,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,purchases,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,push_subscriptions,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,rate_limits,key,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,referral_codes,profile_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,referrals,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,reviews,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,subscription_plans,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,subscriptions,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,support_tickets,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,system_settings,key,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,tax_records,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,track_fingerprints,track_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,track_previews,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,track_versions,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,tracks,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,usage_counters,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,user_devices,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,user_interactions,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,user_points,profile_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,wishlist_price_history,id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,wishlists,user_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,wishlists,content_id,null,null,null,PRIMARY KEY,null,null,null
+PRIMARY_KEYS,wishlists,content_type,null,null,null,PRIMARY KEY,null,null,null
+RLS,activity_feed,null,null,null,null,null,null,null,true
+RLS,admin_audit_logs,null,null,null,null,null,null,null,true
+RLS,album_packs,null,null,null,null,null,null,null,true
+RLS,album_processing_queue,null,null,null,null,null,null,null,true
+RLS,album_tracks,null,null,null,null,null,null,null,true
+RLS,announcements,null,null,null,null,null,null,null,true
+RLS,api_metrics,null,null,null,null,null,null,null,true
+RLS,comments,null,null,null,null,null,null,null,true
+RLS,copyright_reports,null,null,null,null,null,null,null,true
+RLS,dj_branding,null,null,null,null,null,null,null,true
+RLS,dj_milestones,null,null,null,null,null,null,null,true
+RLS,dj_onboarding_progress,null,null,null,null,null,null,null,true
+RLS,dj_profiles,null,null,null,null,null,null,null,true
+RLS,dj_subscriptions,null,null,null,null,null,null,null,true
+RLS,download_attempts,null,null,null,null,null,null,null,true
+RLS,download_tokens,null,null,null,null,null,null,null,true
+RLS,experiment_exposures,null,null,null,null,null,null,null,true
+RLS,experiments,null,null,null,null,null,null,null,true
+RLS,fan_uploads,null,null,null,null,null,null,null,true
+RLS,feature_flags,null,null,null,null,null,null,null,true
+RLS,follows,null,null,null,null,null,null,null,true
+RLS,fraud_alerts,null,null,null,null,null,null,null,true
+RLS,invoices,null,null,null,null,null,null,null,true
+RLS,login_history,null,null,null,null,null,null,null,true
+RLS,moderation_queue,null,null,null,null,null,null,null,true
+RLS,monetization_settings,null,null,null,null,null,null,null,true
+RLS,playlist_tracks,null,null,null,null,null,null,null,true
+RLS,playlists,null,null,null,null,null,null,null,true
+RLS,points_history,null,null,null,null,null,null,null,true
+RLS,profiles,null,null,null,null,null,null,null,true
+RLS,purchases,null,null,null,null,null,null,null,true
+RLS,push_subscriptions,null,null,null,null,null,null,null,true
+RLS,rate_limits,null,null,null,null,null,null,null,true
+RLS,referral_codes,null,null,null,null,null,null,null,true
+RLS,referrals,null,null,null,null,null,null,null,true
+RLS,reviews,null,null,null,null,null,null,null,true
+RLS,subscription_plans,null,null,null,null,null,null,null,true
+RLS,subscriptions,null,null,null,null,null,null,null,true
+RLS,support_tickets,null,null,null,null,null,null,null,true
+RLS,system_settings,null,null,null,null,null,null,null,true
+RLS,tax_records,null,null,null,null,null,null,null,true
+RLS,track_fingerprints,null,null,null,null,null,null,null,true
+RLS,track_previews,null,null,null,null,null,null,null,true
+RLS,track_versions,null,null,null,null,null,null,null,true
+RLS,tracks,null,null,null,null,null,null,null,true
+RLS,usage_counters,null,null,null,null,null,null,null,true
+RLS,user_devices,null,null,null,null,null,null,null,true
+RLS,user_interactions,null,null,null,null,null,null,null,true
+RLS,user_points,null,null,null,null,null,null,null,true
+RLS,wishlist_price_history,null,null,null,null,null,null,null,true
+RLS,wishlists,null,null,null,null,null,null,null,true
+TABLES,activity_feed,null,null,null,null,null,null,null,null
+TABLES,admin_audit_logs,null,null,null,null,null,null,null,null
+TABLES,album_packs,null,null,null,null,null,null,null,null
+TABLES,album_processing_queue,null,null,null,null,null,null,null,null
+TABLES,album_tracks,null,null,null,null,null,null,null,null
+TABLES,announcements,null,null,null,null,null,null,null,null
+TABLES,api_metrics,null,null,null,null,null,null,null,null
+TABLES,comments,null,null,null,null,null,null,null,null
+TABLES,copyright_reports,null,null,null,null,null,null,null,null
+TABLES,dj_branding,null,null,null,null,null,null,null,null
+TABLES,dj_milestones,null,null,null,null,null,null,null,null
+TABLES,dj_onboarding_progress,null,null,null,null,null,null,null,null
+TABLES,dj_profiles,null,null,null,null,null,null,null,null
+TABLES,dj_sale_analytics,null,null,null,null,null,null,null,null
+TABLES,dj_subscriptions,null,null,null,null,null,null,null,null
+TABLES,download_attempts,null,null,null,null,null,null,null,null
+TABLES,download_tokens,null,null,null,null,null,null,null,null
+TABLES,experiment_exposures,null,null,null,null,null,null,null,null
+TABLES,experiments,null,null,null,null,null,null,null,null
+TABLES,fan_uploads,null,null,null,null,null,null,null,null
+TABLES,feature_flags,null,null,null,null,null,null,null,null
+TABLES,follows,null,null,null,null,null,null,null,null
+TABLES,fraud_alerts,null,null,null,null,null,null,null,null
+TABLES,invoices,null,null,null,null,null,null,null,null
+TABLES,login_history,null,null,null,null,null,null,null,null
+TABLES,moderation_queue,null,null,null,null,null,null,null,null
+TABLES,monetization_settings,null,null,null,null,null,null,null,null
+TABLES,playlist_tracks,null,null,null,null,null,null,null,null
+TABLES,playlists,null,null,null,null,null,null,null,null
+TABLES,points_history,null,null,null,null,null,null,null,null
+TABLES,profiles,null,null,null,null,null,null,null,null
+TABLES,purchases,null,null,null,null,null,null,null,null
+TABLES,push_subscriptions,null,null,null,null,null,null,null,null
+TABLES,rate_limits,null,null,null,null,null,null,null,null
+TABLES,referral_codes,null,null,null,null,null,null,null,null
+TABLES,referrals,null,null,null,null,null,null,null,null
+TABLES,reviews,null,null,null,null,null,null,null,null
+TABLES,subscription_plans,null,null,null,null,null,null,null,null
+TABLES,subscriptions,null,null,null,null,null,null,null,null
+TABLES,support_tickets,null,null,null,null,null,null,null,null
+TABLES,system_settings,null,null,null,null,null,null,null,null
+TABLES,tax_records,null,null,null,null,null,null,null,null
+TABLES,track_fingerprints,null,null,null,null,null,null,null,null
+TABLES,track_previews,null,null,null,null,null,null,null,null
+TABLES,track_versions,null,null,null,null,null,null,null,null
+TABLES,tracks,null,null,null,null,null,null,null,null
+TABLES,usage_counters,null,null,null,null,null,null,null,null
+TABLES,user_devices,null,null,null,null,null,null,null,null
+TABLES,user_interactions,null,null,null,null,null,null,null,null
+TABLES,user_points,null,null,null,null,null,null,null,null
+TABLES,wishlist_price_history,null,null,null,null,null,null,null,null
+TABLES,wishlists,null,null,null,null,null,null,null,null
