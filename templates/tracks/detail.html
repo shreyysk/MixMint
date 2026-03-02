@@ -38,7 +38,7 @@
             <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
                 <div class="flex justify-between items-center mb-6">
                     <span class="text-3xl font-mono font-bold">${{ track.price }}</span>
-                    <button
+                    <button id="buy-now-btn" data-content-id="{{ track.id }}" data-content-type="track"
                         class="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-full font-bold transition shadow-lg shadow-pink-500/20">
                         Buy Now
                     </button>
@@ -62,4 +62,43 @@
         </div>
     </section>
 </div>
+
+<script>
+    document.getElementById('buy-now-btn').addEventListener('click', async function () {
+        const contentId = this.getAttribute('data-content-id');
+        const contentType = this.getAttribute('data-content-type');
+
+        try {
+            const response = await fetch('{% url "initiate_payment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    content_id: contentId,
+                    content_type: contentType
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.free) {
+                alert(data.message);
+                return;
+            }
+
+            if (data.order_id) {
+                // Razorpay logic would go here in a full implementation
+                console.log("Payment initiated:", data);
+                alert("Payment initiated! Order ID: " + data.order_id);
+            } else {
+                alert(data.error || "Failed to initiate payment.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred. Please try again.");
+        }
+    });
+</script>
 {% endblock %}

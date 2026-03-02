@@ -43,7 +43,6 @@ class Profile(models.Model):
     avatar_url = models.URLField(max_length=500, null=True, blank=True)
     is_banned = models.BooleanField(default=False)
     is_frozen = models.BooleanField(default=False)  # Admin freeze [Spec §11]
-    has_confirmed_age = models.BooleanField(default=False)  # Spec §3.1: Age confirmation required
     last_active_at = models.DateTimeField(null=True, blank=True)  # Auto-expire after 12 months [Spec §10]
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

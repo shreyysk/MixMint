@@ -53,10 +53,6 @@ def download_content(request, token_str):
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=403)
 
-    # 3.1 Age confirmation check [Spec §3.1]
-    if not token.user.has_confirmed_age:
-        return JsonResponse({'error': 'Age confirmation required. Please confirm you are 18+.'}, status=403)
-
     # 3.2 Concurrent connection limit (Max 2) [Spec §4.4]
     cache_key = f"dl_concurrency_{token_str}"
     current_conns = cache.get(cache_key, 0)
