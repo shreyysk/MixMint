@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-20">
+    <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl">
+        <h2 class="text-3xl font-bold mb-6 text-center">Welcome Back</h2>
+        <form method="post" action="{% url 'accounts/login' %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-gray-400 text-sm mb-2">Email Address</label>
+                <input type="email" name="username" required
+                    class="w-full bg-gray-800 border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-pink-500">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-400 text-sm mb-2">Password</label>
+                <input type="password" name="password" required
+                    class="w-full bg-gray-800 border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-pink-500">
+            </div>
+            <button type="submit"
+                class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition">
+                Sign In
+            </button>
+        </form>
+        <p class="mt-6 text-center text-gray-500 text-sm">
+            Don't have an account? <a href="/signup/" class="text-pink-500">Create one</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

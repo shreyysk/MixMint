@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}My Dashboard - MixMint{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Sidebar / Profile Summary -->
+    <div class="space-y-6">
+        <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
+                    {{ profile.full_name|slice:":1" }}
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">{{ profile.full_name }}</h2>
+                    <p class="text-gray-500 text-sm">Member since {{ profile.created_at|date:"M Y" }}</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Points</span>
+                    <span class="text-pink-500 font-mono">{{ profile.points_balance }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Wallet Balance</span>
+                    <span class="text-green-500 font-mono">${{ wallet.balance }}</span>
+                </div>
+            </div>
+        </div>
+
+        {% if is_dj %}
+        <a href="/dashboard/dj/"
+            class="block bg-pink-600 hover:bg-pink-700 text-center py-3 rounded-xl font-bold transition">
+            Manage DJ Storefront
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-8">
+        <section>
+            <h3 class="text-2xl font-bold mb-6">My Recent Purchases</h3>
+            {% if purchases %}
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-800 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-6 py-3">Content</th>
+                            <th class="px-6 py-3">Price</th>
+                            <th class="px-6 py-3">Date</th>
+                            <th class="px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td class="px-6 py-4 font-medium">{{ purchase.content_id }}</td>
+                            <td class="px-6 py-4">${{ purchase.price_paid }}</td>
+                            <td class="px-6 py-4 text-gray-500 text-sm">{{ purchase.created_at|date }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-pink-500 hover:underline">Download</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-gray-900 border border-gray-800 p-12 rounded-2xl text-center text-gray-500">
+                No purchases yet. <a href="/explore/" class="text-pink-500">Start exploring!</a>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

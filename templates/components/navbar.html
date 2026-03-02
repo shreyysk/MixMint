@@ -1,0 +1,28 @@
+<nav class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-50">
+    <div class="container mx-auto flex justify-between items-center">
+        <a href="/"
+            class="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent flex items-center gap-2">
+            <span>MixMint</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+            <a href="{% url 'explore' %}" class="hover:text-pink-500 transition">Explore</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="hover:text-pink-500 transition">Dashboard</a>
+            <a href="{% url 'accounts/rewards' %}"
+                class="hover:text-pink-500 transition font-mono border border-pink-500/30 px-3 py-1 rounded-full text-xs">
+                {{ user.profile.points.balance|default:0 }}pts
+            </a>
+            <div class="h-4 w-[1px] bg-gray-800"></div>
+            <form action="{% url 'logout' %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="hover:text-pink-500 transition text-sm text-gray-400">Logout</button>
+            </form>
+            {% else %}
+            <a href="{% url 'login' %}" class="hover:text-pink-500 transition">Login</a>
+            <a href="{% url 'signup' %}"
+                class="bg-pink-500 px-5 py-2 rounded-full hover:bg-pink-600 transition font-bold text-sm shadow-lg shadow-pink-500/20">Join
+                Now</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

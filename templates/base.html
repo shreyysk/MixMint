@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MixMint{% endblock %}</title>
+    <!-- Tailwind CSS (via CDN for simplicity, can be configured for build step) -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- HTMX for dynamic interactions -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Alpine JS for lightweight reactive UI -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {% block extra_head %}{% endblock %}
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #0f172a; color: white; }
+    </style>
+</head>
+<body class="min-h-screen">
+    {% include 'components/navbar.html' %}
+
+    <main class="container mx-auto px-4 py-8">
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-4 mb-2 rounded {% if message.tags == 'error' %}bg-red-500{% else %}bg-green-500{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'components/footer.html' %}
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

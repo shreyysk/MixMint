@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ track.title }} - MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-12">
+    <div class="flex flex-col md:flex-row gap-12">
+        <!-- Cover Art -->
+        <div class="w-full md:w-1/3">
+            <div
+                class="aspect-square bg-gray-900 rounded-3xl border border-gray-800 flex items-center justify-center overflow-hidden">
+                {% if track.cover_url %}
+                <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                {% else %}
+                <svg class="w-24 h-24 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5z" />
+                </svg>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1 space-y-6">
+            <div>
+                <h1 class="text-5xl font-bold mb-2">{{ track.title }}</h1>
+                <p class="text-pink-500 text-xl font-bold">BY {{ track.dj.dj_name }}</p>
+            </div>
+
+            <div class="flex gap-4 text-gray-500 font-mono text-sm">
+                <span>{{ track.genre }}</span>
+                <span>•</span>
+                <span>{{ track.bpm }} BPM</span>
+                <span>•</span>
+                <span>{{ track.download_count }} Downloads</span>
+            </div>
+
+            <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-3xl font-mono font-bold">${{ track.price }}</span>
+                    <button
+                        class="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-full font-bold transition shadow-lg shadow-pink-500/20">
+                        Buy Now
+                    </button>
+                </div>
+                <p class="text-gray-400 text-sm italic">{{ track.description|default:"No description provided." }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previews -->
+    <section class="space-y-6">
+        <h3 class="text-2xl font-bold">Media Previews</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {% for preview in previews %}
+            <div class="aspect-video bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+                {{ preview.embed_html|safe }}
+            </div>
+            {% empty %}
+            <p class="text-gray-500 italic">No previews available for this track.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

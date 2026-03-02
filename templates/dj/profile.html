@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dj.dj_name }} - MixMint Storefront{% endblock %}
+
+{% block content %}
+<div class="space-y-12">
+    <!-- Banner & Identity -->
+    <div class="bg-gray-900 rounded-3xl p-8 border border-gray-800 flex flex-col items-center text-center">
+        <div class="w-24 h-24 bg-pink-500 rounded-full mb-4 flex items-center justify-center text-4xl font-bold">
+            {{ dj.dj_name|slice:":1" }}
+        </div>
+        <h1 class="text-4xl font-bold mb-2">{{ dj.dj_name }}</h1>
+        <p class="text-gray-400 max-w-xl mx-auto mb-6">{{ dj.bio|default:"No bio available." }}</p>
+
+        <div class="flex gap-4">
+            <button class="bg-pink-500 hover:bg-pink-600 text-white px-8 py-2 rounded-full font-bold transition">
+                Follow
+            </button>
+            <button class="bg-gray-800 hover:bg-gray-700 text-white px-8 py-2 rounded-full font-bold transition">
+                Share
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <!-- Tracks -->
+        <div class="lg:col-span-2 space-y-6">
+            <h3 class="text-2xl font-bold">Latest Tracks</h3>
+            {% if tracks %}
+            <div class="space-y-4">
+                {% for track in tracks %}
+                <div class="bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-gray-800 rounded"></div>
+                        <div>
+                            <h4 class="font-bold">{{ track.title }}</h4>
+                            <span class="text-xs text-gray-500">{{ track.genre }}</span>
+                        </div>
+                    </div>
+                    <button class="bg-white text-black px-4 py-1 rounded-full text-sm font-bold">
+                        ${{ track.price }}
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 italic">No tracks uploaded yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar (Subscription Plans) -->
+        <div class="space-y-8">
+            <h3 class="text-2xl font-bold">Support the Artist</h3>
+
+            <!-- Tier 1: Basic -->
+            <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl relative overflow-hidden group">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xl font-bold">Basic</h4>
+                    <span class="text-pink-500 font-mono text-lg">$5/mo</span>
+                </div>
+                <ul class="text-sm text-gray-400 space-y-2 mb-6">
+                    <li>• 5 High-Quality Tracks</li>
+                    <li>• Early Access to Edits</li>
+                </ul>
+                <button
+                    class="w-full bg-gray-800 hover:bg-pink-500 py-2 rounded-lg font-bold transition">Subscribe</button>
+            </div>
+
+            <!-- Tier 2: Pro (Featured) -->
+            <div class="bg-pink-500/5 border-2 border-pink-500 p-6 rounded-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-pink-500 text-white text-[10px] uppercase px-2 py-1 font-bold">
+                    Best Value</div>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xl font-bold">Pro</h4>
+                    <span class="text-pink-500 font-mono text-lg">$15/mo</span>
+                </div>
+                <ul class="text-sm text-gray-400 space-y-2 mb-6">
+                    <li>• 20 High-Quality Tracks</li>
+                    <li>• All Album Packs</li>
+                    <li>• Fan-Only Discord Access</li>
+                </ul>
+                <button
+                    class="w-full bg-pink-500 hover:bg-pink-600 py-2 rounded-lg font-bold transition">Subscribe</button>
+            </div>
+
+            <h3 class="text-2xl font-bold pt-8">Album Packs</h3>
+            {% if albums %}
+            {% for album in albums %}
+            <div
+                class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-pink-500/10 transition">
+                <div class="aspect-video bg-gray-800 flex items-center justify-center font-bold text-gray-700">
+                    {{ album.title }}
+                </div>
+                <div class="p-4">
+                    <h4 class="font-bold mb-2">{{ album.title }}</h4>
+                    <button class="w-full bg-pink-500 py-2 rounded-lg font-bold">Buy Pack - ${{ album.price }}</button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-gray-500 italic">No album packs available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

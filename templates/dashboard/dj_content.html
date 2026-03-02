@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage My Content - MixMint DJ Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold">My Content</h1>
+        <div class="flex gap-4">
+            <button class="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-lg font-bold transition">
+                Upload New Track
+            </button>
+            <button class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-bold transition">
+                Create Album Pack
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <p class="text-gray-500 text-sm uppercase">Total Tracks</p>
+            <p class="text-3xl font-bold font-mono">{{ profile.dj_profile.tracks.count }}</p>
+        </div>
+        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <p class="text-gray-500 text-sm uppercase">Total Revenue</p>
+            <p class="text-3xl font-bold font-mono text-green-500">${{ profile.dj_profile.total_revenue }}</p>
+        </div>
+        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <p class="text-gray-500 text-sm uppercase">Subscribers</p>
+            <p class="text-3xl font-bold font-mono text-pink-500">{{ profile.dj_profile.subscriber_profiles.count }}</p>
+        </div>
+    </div>
+
+    <!-- Tracks List -->
+    <section>
+        <h2 class="text-2xl font-bold mb-6">Uploaded Tracks</h2>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-800 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-6 py-4">Track</th>
+                        <th class="px-6 py-4">Price</th>
+                        <th class="px-6 py-4">Sales</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for track in profile.dj_profile.tracks.all %}
+                    <tr class="hover:bg-gray-800/10 transition">
+                        <td class="px-6 py-4">
+                            <span class="font-bold">{{ track.title }}</span>
+                            <p class="text-xs text-gray-500">{{ track.genre }}</p>
+                        </td>
+                        <td class="px-6 py-4 font-mono">${{ track.price }}</td>
+                        <td class="px-6 py-4">{{ track.download_count }}</td>
+                        <td class="px-6 py-4">
+                            <span
+                                class="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] rounded uppercase">Live</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-gray-500 hover:text-white transition">Edit</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

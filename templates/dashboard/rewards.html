@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Affiliates & Rewards - MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-8">
+    <div class="bg-gradient-to-r from-pink-600 to-purple-600 p-8 rounded-3xl text-white">
+        <h1 class="text-3xl font-bold mb-2">Refer a friend, get paid.</h1>
+        <p class="opacity-80">Earn 500 points for every DJ you bring to the platform.</p>
+
+        <div class="mt-8 bg-black/20 p-4 rounded-xl flex items-center justify-between border border-white/10">
+            <span class="font-mono text-sm opacity-60">mixmint.site/signup?ref={{ profile.user.id }}</span>
+            <button
+                class="bg-white text-black px-4 py-1 rounded-lg text-xs font-bold hover:bg-gray-200 transition">Copy</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 text-center">
+        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <p class="text-gray-500 text-xs uppercase mb-1">Lifetime Earned</p>
+            <p class="text-3xl font-bold font-mono">{{ points.lifetime_earned }}</p>
+        </div>
+        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <p class="text-gray-500 text-xs uppercase mb-1">Referrals</p>
+            <p class="text-3xl font-bold font-mono">{{ referrals.count }}</p>
+        </div>
+    </div>
+
+    <section>
+        <h2 class="text-xl font-bold mb-4">Points History</h2>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl divide-y divide-gray-800">
+            {% for entry in history %}
+            <div class="p-4 flex justify-between items-center">
+                <div>
+                    <p class="font-bold capitalize">{{ entry.transaction_type|replace:"_, " }}</p>
+                    <p class="text-xs text-gray-500">{{ entry.created_at|date:"M d, Y" }}</p>
+                </div>
+                <span class="font-mono {% if entry.amount > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                    {% if entry.amount > 0 %}+{% endif %}{{ entry.amount }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="p-8 text-center text-gray-500 italic">No history yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

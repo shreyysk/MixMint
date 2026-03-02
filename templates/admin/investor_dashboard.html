@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div class="container" style="padding: 20px; font-family: 'Inter', sans-serif;">
+    <h1 style="color: #00ff88; margin-bottom: 30px;">MixMint Investor Dashboard</h1>
+
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Total GMV (Gross Merchandise Value)
+            </h3>
+            <p style="font-size: 32px; font-weight: bold; color: #fff;">₹{{ total_gmv|default:"0.00" }}</p>
+        </div>
+        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Platform Net Commission</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #00ff88;">₹{{ platform_commission|default:"0.00" }}</p>
+            <small style="color: #666;">(15% Regular / 8% Pro DJ)</small>
+        </div>
+        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Ad Revenue Generated</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #3498db;">₹{{ ad_revenue|default:"0.00" }}</p>
+        </div>
+    </div>
+
+    <div style="background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333;">
+        <h2 style="color: #fff; margin-bottom: 20px;">Transparency Metrics</h2>
+        <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 1px solid #444;">
+                    <th style="padding: 12px;">Metric</th>
+                    <th style="padding: 12px;">Value</th>
+                    <th style="padding: 12px;">Health</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 12px;">Active Verified DJs</td>
+                    <td style="padding: 12px;">{{ active_djs }}</td>
+                    <td style="padding: 12px; color: #00ff88;">● Good</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 12px;">Pro DJ Mix</td>
+                    <td style="padding: 12px;">{{ pro_dj_count }} / {{ total_dj_count }}</td>
+                    <td style="padding: 12px; color: #f1c40f;">● Growing</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 12px;">Average Commission Rate</td>
+                    <td style="padding: 12px;">{{ avg_commission_rate }}%</td>
+                    <td style="padding: 12px; color: #00ff88;">● Target</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

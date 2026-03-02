@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center py-20">
+    <h1 class="text-5xl font-extrabold mb-6">Own Your Sound. <span class="text-pink-500">Empower Your DJ.</span></h1>
+    <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+        Join the exclusive platform where DJs share unreleased edits, stems, and album packs directly with their
+        superfans.
+    </p>
+    <div class="flex justify-center gap-4">
+        <a href="/explore/"
+            class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition">Explore Tracks</a>
+        <a href="/signup/?role=dj"
+            class="border border-gray-700 px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition">Become a DJ</a>
+    </div>
+</div>
+{% endblock %}
