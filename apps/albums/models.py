@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from apps.accounts.models import DJProfile
 
 class AlbumPack(models.Model):
@@ -25,6 +26,16 @@ class AlbumPack(models.Model):
     )
     file_key = models.CharField(max_length=500)
     cover_image = models.URLField(max_length=500, null=True, blank=True)  # Cover image [Spec §6.2]
+
+    # Preview URLs — DJ chooses type [Spec §2.1]
+    PREVIEW_CHOICES = (
+        ('youtube', 'YouTube'),
+        ('instagram', 'Instagram Reel'),
+    )
+    preview_type = models.CharField(max_length=20, choices=PREVIEW_CHOICES, null=True, blank=True)
+    youtube_url = models.URLField(max_length=500, null=True, blank=True)
+    instagram_url = models.URLField(max_length=500, null=True, blank=True)
+
     is_active = models.BooleanField(default=True)  # Admin can disable content [Spec §3.3]
     is_deleted = models.BooleanField(default=False)  # Soft delete only [Spec P2 §3.2]
     upload_method = models.CharField(max_length=20, choices=UPLOAD_METHODS, default='direct_zip')
@@ -39,6 +50,22 @@ class AlbumPack(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+
+        # External preview is mandatory; no streaming allowed [Spec §2.1]
+        if not self.preview_type:
+            raise ValidationError({"preview_type": "Preview type is required (YouTube or Instagram)."})
+
+        if self.preview_type == "youtube":
+            if not self.youtube_url:
+                raise ValidationError({"youtube_url": "YouTube preview URL is required."})
+        elif self.preview_type == "instagram":
+            if not self.instagram_url:
+                raise ValidationError({"instagram_url": "Instagram Reel preview URL is required."})
+        else:
+            raise ValidationError({"preview_type": "Invalid preview type."})
 
 class AlbumTrack(models.Model):
     album = models.ForeignKey(AlbumPack, on_delete=models.CASCADE, related_name='tracks')

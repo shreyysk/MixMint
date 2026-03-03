@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from apps.accounts.models import DJProfile
 
 
@@ -36,6 +37,29 @@ class Track(models.Model):
     def __str__(self):
         return self.title
 
+    def clean(self):
+        super().clean()
+
+        if self.price is None:
+            raise ValidationError({"price": "Price is required."})
+
+        # Allow free (₹0). If paid, enforce ₹19 minimum [Spec §3.2].
+        if self.price > 0 and self.price < Decimal("19.00"):
+            raise ValidationError({"price": "Paid track price must be at least ₹19."})
+
+        # External preview is mandatory; no streaming allowed [Spec §2.1]
+        if not self.preview_type:
+            raise ValidationError({"preview_type": "Preview type is required (YouTube or Instagram)."})
+
+        if self.preview_type == "youtube":
+            if not self.youtube_url:
+                raise ValidationError({"youtube_url": "YouTube preview URL is required."})
+        elif self.preview_type == "instagram":
+            if not self.instagram_url:
+                raise ValidationError({"instagram_url": "Instagram Reel preview URL is required."})
+        else:
+            raise ValidationError({"preview_type": "Invalid preview type."})
+
 
 class TrackPreview(models.Model):
     """External preview embeds only — no hosted previews [Spec §2.1]"""
@@ -62,6 +86,23 @@ class TrackCollaborator(models.Model):
 
     class Meta:
         unique_together = ('track', 'dj')
+
+    def clean(self):
+        super().clean()
+
+        # Max 3 collaborators total [Spec P2 §4]
+        existing = TrackCollaborator.objects.filter(track=self.track).exclude(pk=self.pk)
+        if existing.count() >= 3:
+            raise ValidationError("A track can have at most 3 collaborators.")
+
+        # Revenue must sum to 100% across collaborators.
+        total = Decimal("0.00")
+        for c in existing:
+            total += (c.revenue_percentage or Decimal("0.00"))
+        total += (self.revenue_percentage or Decimal("0.00"))
+
+        if total != Decimal("100.00"):
+            raise ValidationError("Collaborator revenue percentages must sum to exactly 100.00.")
 
 
 class TrackVersion(models.Model):

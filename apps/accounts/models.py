@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
+import uuid
 
 
 class UserManager(BaseUserManager):
@@ -20,15 +21,10 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = None
     email = models.EmailField(_('email address'), unique=True)
 
-    ROLE_CHOICES = (
-        ('user', 'User'),      # Listener/Buyer [Spec §3.1]
-        ('dj', 'DJ'),          # Partner Artist [Spec §3.2]
-        ('admin', 'Admin'),    # Platform Admin [Spec §3.3]
-    )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     email_verified = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
@@ -38,9 +34,22 @@ class User(AbstractUser):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    ROLE_CHOICES = (
+        ('user', 'User'),      # Listener/Buyer [Spec §3.1]
+        ('dj', 'DJ'),          # Partner Artist [Spec §3.2]
+        ('admin', 'Admin'),    # Platform Admin [Spec §3.3]
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', primary_key=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     full_name = models.CharField(max_length=255)
     avatar_url = models.URLField(max_length=500, null=True, blank=True)
+
+    # DJ flags stored on profile (canonical) [Spec P2 profiles]
+    is_verified_dj = models.BooleanField(default=False)
+    is_pro_dj = models.BooleanField(default=False)
+    store_paused = models.BooleanField(default=False)
+
     is_banned = models.BooleanField(default=False)
     is_frozen = models.BooleanField(default=False)  # Admin freeze [Spec §11]
     last_active_at = models.DateTimeField(null=True, blank=True)  # Auto-expire after 12 months [Spec §10]
@@ -70,11 +79,6 @@ class DJProfile(models.Model):
     popularity_score = models.IntegerField(default=0)
     genres = models.JSONField(default=list, blank=True)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    store_paused = models.BooleanField(default=False)  # DJ can pause store [Spec §3.2]
-    application_fee_paid = models.BooleanField(default=False)  # ₹99 fee [Spec §6]
-    legal_agreement_accepted = models.BooleanField(default=False)  # Mandatory [Spec §6]
-    is_verified_dj = models.BooleanField(default=False)  # Verified DJ badge [Spec P2 §2]
-    is_pro_dj = models.BooleanField(default=False)  # Pro Plan: 8% commission [Spec P3 §1.5]
     custom_domain = models.CharField(max_length=255, null=True, blank=True)  # Pro feature
     ad_exposure_reduction = models.BooleanField(default=False)  # Pro feature [Spec P3 §1.2]
     
@@ -114,3 +118,20 @@ class UserDevice(models.Model):
 
     class Meta:
         unique_together = ('user', 'fingerprint')
+
+
+class DJApplication(models.Model):
+    """DJ application workflow [Spec P2 §2]"""
+
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='dj_application')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    paid_application_fee = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(null=True, blank=True)

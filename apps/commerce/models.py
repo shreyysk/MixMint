@@ -21,7 +21,7 @@ class DJWallet(models.Model):
 class Purchase(models.Model):
     CONTENT_TYPES = (
         ('track', 'Track'),
-        ('zip', 'ZIP/Album'),
+        ('album', 'Album'),
     )
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='purchases')
     content_id = models.PositiveBigIntegerField()
@@ -29,7 +29,9 @@ class Purchase(models.Model):
     original_price = models.DecimalField(max_digits=10, decimal_places=2)  # Pre-discount price [Spec P2 §5]
     checkout_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5.00)  # Platform service fee [Spec P3 §1.3]
     commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 15% platform commission
-    dj_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 85% DJ revenue
+    # Canonical per spec is dj_revenue; keep dj_earnings for backwards compatibility.
+    dj_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 85% DJ revenue [Spec P2 §5]
+    dj_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Back-compat alias
     ad_revenue_allocated = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Ad revenue share
     price_paid = models.DecimalField(max_digits=10, decimal_places=2)  # Final amount charged to buyer
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

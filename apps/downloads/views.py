@@ -21,6 +21,7 @@ from django.conf import settings
 
 from .utils import DownloadManager
 from apps.tracks.models import Track
+from apps.albums.models import AlbumPack
 from django.core.cache import cache
 from apps.accounts.models import Profile, DJProfile
 from apps.admin_panel.models import KillSwitch, FraudAlert
@@ -129,7 +130,7 @@ def download_content(request, token_str):
                 content.download_count += 1
                 content.save(update_fields=['download_count'])
 
-        filename = f"{content.title}.zip" if token.content_type == 'zip' else f"{content.title}.mp3"
+        filename = f"{content.title}.zip" if token.content_type == 'album' else f"{content.title}.mp3"
         response = StreamingHttpResponse(
             file_iterator(s3_object['Body']),
             content_type=s3_object.get('ContentType', 'application/octet-stream')

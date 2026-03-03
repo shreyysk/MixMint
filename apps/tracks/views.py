@@ -10,7 +10,7 @@ from .utils import process_track_metadata
 
 
 class TrackViewSet(viewsets.ModelViewSet):
-    queryset = Track.objects.filter(is_active=True, is_deleted=False, dj__store_paused=False)
+    queryset = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
     serializer_class = TrackSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['genre', 'dj', 'year', 'preview_type']

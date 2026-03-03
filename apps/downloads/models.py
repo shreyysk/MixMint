@@ -9,7 +9,7 @@ class DownloadToken(models.Model):
     content_id = models.PositiveBigIntegerField()
     CONTENT_TYPES = (
         ('track', 'Track'),
-        ('zip', 'ZIP/Album'),
+        ('album', 'Album'),
     )
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -37,7 +37,7 @@ class DownloadAttempt(models.Model):
     content_id = models.PositiveBigIntegerField()
     CONTENT_TYPES = (
         ('track', 'Track'),
-        ('zip', 'ZIP/Album'),
+        ('album', 'Album'),
     )
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     attempt_count = models.IntegerField(default=0)

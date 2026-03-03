@@ -27,7 +27,7 @@ GST_RATE = Decimal('18.00')  # 18%
 
 def calculate_commission_rate(dj_profile):
     """Get commission rate based on DJ plan [Spec P3 §1.5]."""
-    if dj_profile.is_pro_dj:
+    if dj_profile.profile.is_pro_dj:
         return Decimal(str(settings.PRO_DJ_COMMISSION_RATE))
     return Decimal(str(settings.PLATFORM_COMMISSION_RATE))
 
@@ -95,7 +95,7 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
         content = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
         dj_profile = content.dj
         price = content.price
-        content_type = 'zip'  # Normalize
+        content_type = 'album'  # Normalize
     else:
         raise ValueError(f'Invalid content_type: {content_type}')
 
@@ -116,6 +116,7 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
         price_paid=split['total_buyer_pays'],
         checkout_fee=split['checkout_fee'],
         commission=split['commission'],
+        dj_revenue=split['dj_earnings'],
         dj_earnings=split['dj_earnings'],
         ad_revenue_allocated=Decimal('0.00'),
         platform_fee=split['commission'] + split['checkout_fee'],

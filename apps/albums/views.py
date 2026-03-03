@@ -9,7 +9,7 @@ from apps.commerce.models import Purchase
 
 
 class AlbumPackViewSet(viewsets.ModelViewSet):
-    queryset = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__store_paused=False)
+    queryset = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
     serializer_class = AlbumPackSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['dj', 'processing_status']
@@ -30,7 +30,7 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
         has_purchased = Purchase.objects.filter(
             user=profile,
             content_id=album.id,
-            content_type='zip',
+            content_type='album',
             is_revoked=False,
         ).exists()
 
@@ -41,10 +41,10 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
             }, status=403)
 
         # 2. Check IP attempt limit [Spec §5: 3 per IP]
-        allowed, msg = DownloadManager.check_ip_attempts(client_ip, album.id, 'zip')
+        allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, album.id, 'album')
         if not allowed:
             eligible, redownload_msg = DownloadManager.check_redownload_eligibility(
-                profile, album.id, 'zip'
+                profile, album.id, 'album'
             )
             if eligible:
                 return Response({
@@ -57,12 +57,12 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
 
         # 3. Generate token
         token = DownloadManager.generate_token(
-            profile, album.id, 'zip', 'purchase', client_ip, user_agent
+            profile, album.id, 'album', 'purchase', client_ip, user_agent
         )
+        response_data = {'download_url': f"/api/v1/downloads/{token.token}/"}
+        if msg:
+            response_data['warning'] = msg
+        if remaining == 1:
+            response_data['warning'] = "WARNING: This is your last download attempt from this IP."
 
-        # 4. Increment IP attempt counter
-        DownloadManager.increment_attempt(client_ip, album.id, 'zip')
-
-        return Response({
-            'download_url': f"/api/v1/downloads/{token.token}/"
-        })
+        return Response(response_data)
