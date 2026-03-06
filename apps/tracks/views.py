@@ -40,22 +40,33 @@ class TrackViewSet(viewsets.ModelViewSet):
         if is_banned:
             return Response({'error': ban_msg}, status=403)
 
-        # 1. Check purchase ownership [Spec §2.2]
-        has_purchased = Purchase.objects.filter(
+        # 1. Ownership + single-download lock enforcement [Spec §2.2, §4.3]
+        purchase = Purchase.objects.filter(
             user=profile,
             content_id=track.id,
             content_type='track',
             is_revoked=False,
-        ).exists()
+            is_redownload=False,
+        ).order_by('-created_at').first()
 
-        if not has_purchased:
-            if track.price <= 0:
-                pass  # Free tracks don't require purchase
+        if not purchase and track.price > 0:
+            return Response({'error': 'You must purchase this track first.', 'price': str(track.price)}, status=403)
+
+        access_source = 'purchase'
+        if purchase and purchase.download_completed:
+            # Insurance allows free re-downloads [Spec §4.3]
+            if hasattr(purchase, 'insurance') and purchase.insurance.status == 'active':
+                access_source = 'insurance'
             else:
-                return Response({
-                    'error': 'You must purchase this track first.',
-                    'price': str(track.price)
-                }, status=403)
+                eligible, msg = DownloadManager.check_redownload_eligibility(profile, track.id, 'track')
+                if eligible:
+                    return Response({
+                        'error': 'Re-download requires payment.',
+                        'redownload_available': True,
+                        'redownload_price': str(track.price * 0.5),
+                        'message': msg,
+                    }, status=403)
+                return Response({'error': msg}, status=403)
 
         # 2. Check IP attempt limit [Spec §4.2: 3 per IP]
         allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, track.id, 'track')
@@ -74,7 +85,7 @@ class TrackViewSet(viewsets.ModelViewSet):
 
         # 3. Generate token (IP + device bound)
         token = DownloadManager.generate_token(
-            profile, track.id, 'track', 'purchase',
+            profile, track.id, 'track', access_source,
             client_ip, user_agent, device_hash
         )
 

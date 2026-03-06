@@ -1,3 +1,2 @@
-from django.contrib import admin
-
-# Rewards system removed per Master Document v2.0
+# rewards/admin.py
+# Rewards system removed per Master Document v2.0.

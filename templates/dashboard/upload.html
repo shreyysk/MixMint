@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% block title %}Upload New Track — MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-[800px] mx-auto py-12 px-4">
+
+    <!-- ── HEADER ── -->
+    <div class="mb-12 border-b border-[var(--border)] pb-8">
+        <h1
+            class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">
+            Upload New Track
+        </h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">
+            Upload your audio file, add metadata, and set your price. You keep {{
+            100|add:"-"|add:platform_settings.platform_commission_rate|floatformat:0 }}% of every sale.
+        </p>
+    </div>
+
+    <!-- ── UPLOAD FORM ── -->
+    <form method="post" enctype="multipart/form-data" class="space-y-12">
+        {% csrf_token %}
+
+        <!-- Audio File -->
+        <div>
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Audio File
+            </h3>
+            <div
+                class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-12 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer">
+                <input type="file" name="audio_file" accept=".mp3,.wav,.flac" required
+                    class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                <div class="text-4xl opacity-30 mb-4 group-hover:opacity-60 transition-opacity">🎵</div>
+                <p class="font-body text-[15px] text-[var(--text-primary)] font-[600] mb-2">
+                    Drop your audio file here or click to browse
+                </p>
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
+                    WAV, MP3, FLAC · Max 100MB · 320kbps minimum
+                </p>
+            </div>
+        </div>
+
+        <!-- Cover Art -->
+        <div>
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Cover Art
+            </h3>
+            <div
+                class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-8 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer max-w-[300px]">
+                <input type="file" name="cover_art" accept="image/*"
+                    class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                <div class="text-3xl opacity-30 mb-3 group-hover:opacity-60 transition-opacity">🖼️</div>
+                <p class="font-body text-[14px] text-[var(--text-primary)] font-[500] mb-1">Cover artwork</p>
+                <p class="font-mono text-[11px] text-[var(--text-muted)]">JPG, PNG · 1000×1000px min</p>
+            </div>
+        </div>
+
+        <!-- Track Details -->
+        <div>
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Track Details
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Title</label>
+                    <input type="text" name="title" required class="input-mm" placeholder="Track title">
+                </div>
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Genre</label>
+                    <select name="genre" class="input-mm cursor-pointer">
+                        <option value="">Select Genre</option>
+                        <option value="Techno">Techno</option>
+                        <option value="House">House</option>
+                        <option value="Trance">Trance</option>
+                        <option value="Dubstep">Dubstep</option>
+                        <option value="Drum & Bass">Drum & Bass</option>
+                        <option value="Hardstyle">Hardstyle</option>
+                        <option value="Bollywood">Bollywood</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Year</label>
+                    <input type="number" name="year" class="input-mm" placeholder="2026" min="2020" max="2030">
+                </div>
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">BPM
+                        (optional)</label>
+                    <input type="number" name="bpm" class="input-mm" placeholder="128" step="1" min="60" max="200">
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label
+                    class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Description</label>
+                <textarea name="description" rows="4" class="input-mm" style="height: auto; min-height: 120px;"
+                    placeholder="Describe your track, its vibe, and what makes it unique..."></textarea>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div>
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Preview
+                (Optional)</h3>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Add a YouTube or Instagram link so buyers can
+                preview before purchasing.</p>
+
+            <div class="flex gap-3 mb-4" x-data="{ previewType: 'youtube' }">
+                <button type="button" @click="previewType = 'youtube'"
+                    :class="previewType === 'youtube' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
+                    class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
+                    YouTube
+                </button>
+                <button type="button" @click="previewType = 'instagram'"
+                    :class="previewType === 'instagram' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
+                    class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
+                    Instagram
+                </button>
+                <input type="hidden" name="preview_type" :value="previewType">
+            </div>
+
+            <input type="url" name="preview_url" class="input-mm" placeholder="Paste YouTube or Instagram URL">
+        </div>
+
+        <!-- Pricing -->
+        <div>
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Pricing</h3>
+            <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 shadow-[var(--shadow-card)]"
+                x-data="{ price: 0, commissionRate: {{ platform_settings.platform_commission_rate|default:'15' }} / 100 }">
+                <label class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-3">
+                    Your Price (₹)
+                </label>
+                <input type="number" name="price" step="1" min="10" max="5000" required
+                    class="input-mm font-mono text-[20px] font-bold text-[var(--accent-mint)] mb-6" placeholder="₹49"
+                    x-model="price">
+
+                <!-- Live Breakdown -->
+                <div class="space-y-3 pt-4 border-t border-[var(--border)]">
+                    <div class="flex justify-between font-body text-[13px]">
+                        <span class="text-[var(--text-muted)]">Your price</span>
+                        <span class="font-mono text-[var(--text-primary)]">₹<span x-text="price || '0'"></span></span>
+                    </div>
+                    <div class="flex justify-between font-body text-[13px]">
+                        <span class="text-[var(--text-muted)] flex items-center gap-2">
+                            Platform fee ({{ platform_settings.platform_commission_rate|floatformat:0|default:"15" }}%)
+                            {% if active_promotional_offer and active_promotional_offer.show_on_dj_upload %}
+                            <span
+                                class="px-1.5 py-0.5 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] text-[9px] uppercase tracking-wider rounded border border-[var(--accent-mint)]/20">Offer
+                                Applied</span>
+                            {% endif %}
+                        </span>
+                        <span class="font-mono text-[var(--accent-red)]">−₹<span
+                                x-text="(price * commissionRate).toFixed(0)"></span></span>
+                    </div>
+                    <div
+                        class="flex justify-between font-body text-[14px] font-[600] pt-3 border-t border-[var(--border)]">
+                        <span class="text-[var(--text-primary)]">You receive per sale</span>
+                        <span class="font-mono text-[var(--accent-mint)]">₹<span
+                                x-text="(price * (1 - commissionRate)).toFixed(0)"></span></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 notice-info">
+                    <span class="font-body text-[12px] text-[var(--text-muted)]">
+                        Buyer sees: <span class="font-mono font-bold text-[var(--text-primary)]">₹<span
+                                x-text="price || '0'"></span></span> (inclusive of all charges)
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="notice-danger">
+            <p class="font-body text-[13px] text-[var(--accent-red)]">
+                {% for field, errors in form.errors.items %}
+                {% for error in errors %}{{ error }}{% endfor %}
+                {% endfor %}
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Content Responsibility -->
+        <div class="p-6 rounded-[12px] border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/5">
+            <h4 class="font-mono text-[11px] font-[700] text-[var(--accent-red)] uppercase tracking-widest mb-3">
+                Content Responsibility
+            </h4>
+            <label class="flex items-start gap-4 cursor-pointer">
+                <input type="checkbox" name="content_responsibility_accepted" required
+                    class="mt-1 w-4 h-4 accent-[var(--accent-red)] bg-transparent border-[var(--border)] rounded-sm">
+                <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
+                    I certify that I have the rights to distribute this content. I understand that MixMint acts as a
+                    distribution platform and I bear sole legal responsibility for all content I upload. Uploading
+                    unauthorized or unlicensed material will result in account termination.
+                </p>
+            </label>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-mm btn-mint w-full h-[60px] text-[16px] font-[600] rounded-[8px]">
+            Save & Submit for Review
+        </button>
+        <p class="text-center font-body text-[12px] text-[var(--text-muted)] mt-3">
+            Tracks are reviewed within 24–48 hours before going live.
+        </p>
+    </form>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import connection
 from .models import User, Profile, LoginHistory
 from .validators import validate_email_domain, validate_strong_password
 
@@ -25,7 +26,6 @@ def signup_view(request):
         full_name = request.POST.get('full_name', '').strip()
         email = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '')
-        is_dj = request.POST.get('is_dj') == 'on'
 
         # Validate temp email domains [Spec §13]
         try:
@@ -54,16 +54,15 @@ def signup_view(request):
             user = User.objects.create_user(
                 email=email,
                 password=password,
-                role='dj' if is_dj else 'user',
                 first_name=full_name.split(' ')[0] if ' ' in full_name else full_name,
                 last_name=full_name.split(' ', 1)[1] if ' ' in full_name else ''
             )
 
-            # Create Profile [CRITICAL: was missing, caused downstream crashes]
-            Profile.objects.create(
-                user=user,
-                full_name=full_name,
-            )
+            # Profile is auto-created via accounts.signals; ensure desired defaults.
+            profile = user.profile
+            profile.full_name = full_name
+            profile.role = 'user'  # DJ status is granted via application + admin approval [Spec §7]
+            profile.save(update_fields=['full_name', 'role'])
 
             login(request, user)
 
@@ -163,5 +162,63 @@ class ExploreView:
     @staticmethod
     def as_view():
         def view(request):
-            return render(request, 'explore.html')
+            from apps.tracks.models import Track
+            from apps.albums.models import AlbumPack
+            from apps.accounts.models import DJProfile
+
+            q = (request.GET.get('q') or '').strip()
+            genre = (request.GET.get('genre') or '').strip()
+            year = (request.GET.get('year') or '').strip()
+            sort = (request.GET.get('sort') or 'latest').strip()
+
+            tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
+            albums = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
+            djs = DJProfile.objects.filter(status='approved', profile__store_paused=False).select_related('profile', 'profile__user')
+
+            if genre:
+                tracks = tracks.filter(genre__icontains=genre)
+
+            if year:
+                try:
+                    tracks = tracks.filter(year=int(year))
+                except ValueError:
+                    pass
+
+            if q:
+                if connection.vendor == 'postgresql':
+                    from django.contrib.postgres.search import TrigramSimilarity
+                    from django.db.models import Q
+
+                    tracks = tracks.annotate(sim=TrigramSimilarity('title', q)).filter(
+                        Q(sim__gt=0.2) | Q(title__icontains=q) | Q(dj__dj_name__icontains=q)
+                    ).order_by('-sim')
+
+                    albums = albums.annotate(sim=TrigramSimilarity('title', q)).filter(
+                        Q(sim__gt=0.2) | Q(title__icontains=q) | Q(dj__dj_name__icontains=q)
+                    ).order_by('-sim')
+
+                    djs = djs.annotate(sim=TrigramSimilarity('dj_name', q)).filter(sim__gt=0.2).order_by('-sim')
+                else:
+                    from django.db.models import Q
+                    tracks = tracks.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q))
+                    albums = albums.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q))
+                    djs = djs.filter(Q(dj_name__icontains=q) | Q(slug__icontains=q))
+
+            if sort == 'popular':
+                tracks = tracks.order_by('-download_count')
+            elif sort == 'price_low':
+                tracks = tracks.order_by('price')
+            else:
+                tracks = tracks.order_by('-created_at')
+
+            ctx = {
+                'q': q,
+                'genre': genre,
+                'year': year,
+                'sort': sort,
+                'tracks': tracks.select_related('dj', 'dj__profile')[:24],
+                'albums': albums.select_related('dj', 'dj__profile')[:24],
+                'djs': djs[:24],
+            }
+            return render(request, 'explore.html', ctx)
         return view

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import environ
 from django.utils import timezone
+import datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,8 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.downloads',
     'apps.admin_panel',
+    'apps.social',    # Stub: wishlists + follows (no gamification) [Spec §6]
+    'apps.rewards',   # Stub: referral tracking only [Spec §8]
 ]
 
 MIDDLEWARE = [
@@ -57,6 +60,7 @@ MIDDLEWARE = [
     'apps.accounts.middleware.MaintenanceModeMiddleware',
     'apps.accounts.middleware.BanCheckMiddleware',
     'apps.accounts.middleware.IPSessionMiddleware',
+    'apps.accounts.middleware.InactivityMiddleware',  # Updates last_active_at for 12-month expiry [Spec §10]
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -72,6 +76,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.admin_panel.context_processors.global_settings',
             ],
         },
     },
@@ -121,13 +126,13 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cloudflare R2 / S3 Config
@@ -155,7 +160,6 @@ FROM_EMAIL = env('FROM_EMAIL', default='noreply@mixmint.site')
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 
-import datetime
 # Platform Constants
 PLATFORM_LAUNCH_DATE = timezone.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
 PLATFORM_COMMISSION_RATE = 0.15  # 15% [Spec P3 §1.1]
@@ -170,3 +174,8 @@ DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5  # [Spec §4.5]
 IP_LOCK_DAYS = 2                 # [Spec §4.3]
 MAX_DOWNLOAD_ATTEMPTS = 3       # [Spec §4.2]
 INACTIVE_ACCOUNT_THRESHOLD_MONTHS = 12 # [Spec §10]
+
+# Auth URLs
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.conf import settings
 from decimal import Decimal
-from .models import AlbumPack, AlbumTrack, AlbumProcessingQueue
+from .models import AlbumPack, AlbumTrack
 
 
 class AlbumTrackSerializer(serializers.ModelSerializer):

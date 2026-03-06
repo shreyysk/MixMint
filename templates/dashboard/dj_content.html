@@ -1,72 +1,242 @@
 {% extends 'base.html' %}
-
-{% block title %}Manage My Content - MixMint DJ Dashboard{% endblock %}
+{% block title %}My Tracks — MixMint DJ Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
-    <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold">My Content</h1>
-        <div class="flex gap-4">
-            <button class="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-lg font-bold transition">
-                Upload New Track
-            </button>
-            <button class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-bold transition">
-                Create Album Pack
-            </button>
+<div class="py-12 max-w-[1200px] mx-auto">
+    <!-- ── DJ HEADER ── -->
+    <div class="mb-16 border-b border-[var(--border)] pb-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1
+                    class="font-display text-[40px] md:text-[56px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                    My Tracks
+                </h1>
+                <p class="font-body text-[14px] text-[var(--text-muted)] mt-3">
+                    Manage your uploaded content, track earnings, and monitor performance.
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'upload_track'|default:'#' %}"
+                    class="btn-mm btn-mint h-12 px-6 flex items-center gap-2 font-[600]">
+                    <span>Upload Track</span>
+                    <span class="opacity-50">+</span>
+                </a>
+                <a href="{% url 'create_album'|default:'#' %}"
+                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
+                    <span>Create Album</span>
+                    <span class="opacity-50">📦</span>
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
-            <p class="text-gray-500 text-sm uppercase">Total Tracks</p>
-            <p class="text-3xl font-bold font-mono">{{ profile.dj_profile.tracks.count }}</p>
+    <!-- ── STATS ── -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <!-- Lifetime Earnings -->
+        <div
+            class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] relative group hover:border-[var(--accent-mint)] transition-colors rounded-[12px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Lifetime Earnings
+                (₹)</p>
+            <div class="flex items-baseline gap-2">
+                <span class="font-display text-5xl font-black text-[var(--accent-mint)] tracking-tighter">
+                    ₹{{ profile.dj_profile.total_revenue|default:"0.00" }}
+                </span>
+            </div>
+            <div
+                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--accent-mint)]/20 group-hover:bg-[var(--accent-mint)] transition-colors rounded-b-[12px]">
+            </div>
         </div>
-        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
-            <p class="text-gray-500 text-sm uppercase">Total Revenue</p>
-            <p class="text-3xl font-bold font-mono text-green-500">${{ profile.dj_profile.total_revenue }}</p>
+
+        <!-- Total Tracks -->
+        <div
+            class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] relative group hover:border-[var(--text-primary)] transition-colors rounded-[12px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Total Tracks</p>
+            <div class="flex items-baseline gap-2">
+                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter">
+                    {{ profile.dj_profile.tracks.count|default:"0" }}
+                </span>
+            </div>
+            <div
+                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--border)] group-hover:bg-[var(--text-primary)] transition-colors rounded-b-[12px]">
+            </div>
         </div>
-        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
-            <p class="text-gray-500 text-sm uppercase">Subscribers</p>
-            <p class="text-3xl font-bold font-mono text-pink-500">{{ profile.dj_profile.subscriber_profiles.count }}</p>
+
+        <!-- Total Sales -->
+        <div
+            class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] relative group hover:border-[var(--text-primary)] transition-colors rounded-[12px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Total Sales</p>
+            <div class="flex items-baseline gap-2">
+                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter">
+                    {% sum profile.dj_profile.tracks.all 'download_count' as total_dls %}
+                    {{ total_dls|default:"0" }}
+                </span>
+            </div>
+            <div
+                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--border)] group-hover:bg-[var(--text-primary)] transition-colors rounded-b-[12px]">
+            </div>
         </div>
     </div>
 
-    <!-- Tracks List -->
-    <section>
-        <h2 class="text-2xl font-bold mb-6">Uploaded Tracks</h2>
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-gray-800 text-xs uppercase text-gray-500">
-                    <tr>
-                        <th class="px-6 py-4">Track</th>
-                        <th class="px-6 py-4">Price</th>
-                        <th class="px-6 py-4">Sales</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4"></th>
+    <!-- ── REVENUE CHART ── -->
+    <div
+        class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] mb-16 rounded-[12px]">
+        <h3 class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-8">Weekly Revenue</h3>
+        <div class="flex items-end gap-3 h-40 pt-4 border-b border-[var(--border)]">
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 15%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹150</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 45%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹450</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 30%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹300</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 80%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹800</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 60%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹600</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 100%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹1000</div>
+            </div>
+            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                style="height: 40%;">
+                <div
+                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                    ₹400</div>
+            </div>
+        </div>
+        <div
+            class="flex justify-between mt-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest px-2">
+            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+    </div>
+
+    <!-- ── CONTENT TABLE ── -->
+    <div
+        class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] overflow-hidden rounded-[12px]">
+        <div class="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
+            <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)]">All Tracks</h2>
+        </div>
+
+        {% if profile.dj_profile.tracks.all %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left font-body">
+                <thead>
+                    <tr
+                        class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
+                        <th class="px-8 py-5 font-normal">Track</th>
+                        <th class="px-8 py-5 font-normal">Price</th>
+                        <th class="px-8 py-5 font-normal">Sales</th>
+                        <th class="px-8 py-5 font-normal">Status</th>
+                        <th class="px-8 py-5 text-right font-normal">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800">
+                <tbody class="divide-y divide-[var(--border)]">
                     {% for track in profile.dj_profile.tracks.all %}
-                    <tr class="hover:bg-gray-800/10 transition">
-                        <td class="px-6 py-4">
-                            <span class="font-bold">{{ track.title }}</span>
-                            <p class="text-xs text-gray-500">{{ track.genre }}</p>
+                    <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-10 h-10 flex items-center justify-center bg-[var(--bg-base)] border border-[var(--border)] text-lg group-hover:border-[var(--accent-mint)] transition-colors rounded-[8px]">
+                                    🎵
+                                </div>
+                                <div>
+                                    <span class="text-[14px] text-[var(--text-primary)] font-[500] block">{{ track.title
+                                        }}</span>
+                                    <span
+                                        class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1 block">{{
+                                        track.genre|default:"Audio" }}</span>
+                                </div>
+                            </div>
                         </td>
-                        <td class="px-6 py-4 font-mono">${{ track.price }}</td>
-                        <td class="px-6 py-4">{{ track.download_count }}</td>
-                        <td class="px-6 py-4">
-                            <span
-                                class="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] rounded uppercase">Live</span>
+                        <td class="px-8 py-6 text-[13px] text-[var(--accent-mint)] font-mono font-bold">₹{{ track.price
+                            }}</td>
+                        <td class="px-8 py-6 text-[13px] font-mono text-[var(--text-primary)]">{{
+                            track.download_count|default:0 }}</td>
+                        <td class="px-8 py-6">
+                            {% if track.is_active %}
+                            <span class="pill-success">Active</span>
+                            {% else %}
+                            <span class="pill-neutral">Paused</span>
+                            {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <button class="text-gray-500 hover:text-white transition">Edit</button>
+                        <td class="px-8 py-6 text-right">
+                            <a href="{% url 'track_detail' track.id %}"
+                                class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]">Edit</a>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </section>
+        {% else %}
+        <!-- Empty State -->
+        <div class="p-24 text-center">
+            <div
+                class="w-16 h-16 border border-dashed border-[var(--border)] rounded-[8px] mx-auto flex items-center justify-center text-[var(--text-muted)] text-2xl mb-8 opacity-50">
+                📁
+            </div>
+            <h3 class="font-display text-xl text-[var(--text-primary)] tracking-tight mb-4">
+                No tracks uploaded</h3>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mb-10 max-w-xs mx-auto leading-relaxed">
+                Upload your first track to start selling on MixMint.
+            </p>
+            <a href="{% url 'upload_track'|default:'#' %}"
+                class="btn-mm btn-mint h-14 px-10 text-[12px] font-[600]">Upload New Track</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Guidelines Grid -->
+    <div
+        class="mt-20 grid grid-cols-1 md:grid-cols-2 gap-12 bg-[var(--bg-elevated)] border border-[var(--border)] p-10 rounded-[12px]">
+        <div>
+            <h4 class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.2em] mb-6">Upload
+                Guidelines</h4>
+            <ul class="space-y-4 font-body text-[13px] text-[var(--text-muted)] leading-relaxed">
+                <li class="flex gap-4">
+                    <span class="text-[var(--text-primary)] font-mono text-[12px]">01</span>
+                    <span>Upload only original edits or content you have rights to distribute.</span>
+                </li>
+                <li class="flex gap-4">
+                    <span class="text-[var(--text-primary)] font-mono text-[12px]">02</span>
+                    <span>WAV or MP3 320kbps minimum quality required.</span>
+                </li>
+                <li class="flex gap-4">
+                    <span class="text-[var(--text-primary)] font-mono text-[12px]">03</span>
+                    <span>Downloads are secured and device-locked for buyer protection.</span>
+                </li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="font-mono text-[11px] text-[var(--accent-red)] uppercase tracking-[0.2em] mb-6">Content
+                Responsibility</h4>
+            <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6] italic pr-8">
+                You are legally responsible for all content you upload to MixMint. MixMint acts as a distribution
+                platform and maintains zero tolerance for unauthorized or unlicensed material. Violations result in
+                account termination.
+            </p>
+        </div>
+    </div>
 </div>
 {% endblock %}

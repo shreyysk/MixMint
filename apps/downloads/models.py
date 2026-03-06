@@ -21,6 +21,7 @@ class DownloadToken(models.Model):
     bytes_expected = models.BigIntegerField(null=True, blank=True)
     bytes_delivered = models.BigIntegerField(null=True, blank=True)
     checksum_verified = models.BooleanField(default=False)  # Checksum match [Spec §4.4]
+    checksum_hex = models.CharField(max_length=64, null=True, blank=True)  # SHA-256 of delivered file
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -57,5 +58,6 @@ class DownloadLog(models.Model):
     attempt_number = models.IntegerField(default=1)
     completed = models.BooleanField(default=False)
     checksum_verified = models.BooleanField(default=False)
+    checksum_hex = models.CharField(max_length=64, null=True, blank=True)
     bytes_delivered = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

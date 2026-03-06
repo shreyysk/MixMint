@@ -1,7 +1,6 @@
 from django.utils import timezone
 from datetime import timedelta
 from .models import FraudAlert, AuditLog
-from apps.accounts.models import LoginHistory, UserDevice
 from apps.downloads.models import DownloadToken
 from apps.commerce.models import Purchase
 

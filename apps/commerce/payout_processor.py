@@ -14,7 +14,6 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import DJProfile
 from apps.commerce.models import DJWallet, Payout, LedgerEntry
 
 
@@ -78,10 +77,11 @@ def _process_single_payout(wallet):
     )
 
     # Update wallet
+    from django.db.models import F
     wallet.pending_earnings = Decimal('0.00')
-    wallet.escrow_amount += escrow_reserve
-    wallet.available_for_payout -= payout_amount
-    wallet.save()
+    wallet.available_for_payout = Decimal('0.00')
+    wallet.escrow_amount = F('escrow_amount') + escrow_reserve
+    wallet.save(update_fields=['pending_earnings', 'available_for_payout', 'escrow_amount'])
 
     # Ledger entry for payout
     LedgerEntry.objects.create(

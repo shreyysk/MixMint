@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import SystemSetting, AuditLog, FraudAlert, CopyrightReport, SupportTicket, BanList, KillSwitch, MaintenanceMode
+from .models import SystemSetting, AuditLog, FraudAlert, CopyrightReport, SupportTicket, BanList, KillSwitch, MaintenanceMode, PlatformSettings, PromotionalOffer
+
+@admin.register(PlatformSettings)
+class PlatformSettingsAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'platform_commission_rate', 'buyer_platform_fee_enabled', 'gst_charging_enabled')
+
+@admin.register(PromotionalOffer)
+class PromotionalOfferAdmin(admin.ModelAdmin):
+    list_display = ('title', 'is_active', 'start_date', 'end_date')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'tagline')
 
 
 @admin.register(SystemSetting)

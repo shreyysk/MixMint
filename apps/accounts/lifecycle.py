@@ -9,7 +9,7 @@ Handles:
 from datetime import timedelta
 from django.utils import timezone
 
-from apps.accounts.models import User, Profile
+from apps.accounts.models import Profile
 
 
 def expire_inactive_accounts():

@@ -1,40 +1,752 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MixMint{% endblock %}</title>
-    <!-- Tailwind CSS (via CDN for simplicity, can be configured for build step) -->
+    <meta name="description"
+        content="MixMint — India's only DJ music marketplace where you truly own what you buy. Secure downloads, no streaming.">
+    <meta property="og:site_name" content="MixMint">
+    <meta property="og:type" content="website">
+    <title>{% block title %}MixMint — Home of DJ Releases{% endblock %}</title>
+
+    <!-- Typography -->
+    <link
+        href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700,900&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <!-- HTMX for dynamic interactions -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <!-- Alpine JS for lightweight reactive UI -->
+    <!-- Alpine JS -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     {% block extra_head %}{% endblock %}
+
     <style>
-        [x-cloak] { display: none !important; }
-        body { background-color: #0f172a; color: white; }
+        /* ── Design Tokens ── */
+        :root[data-theme="dark"] {
+            --bg-base: #0A0A0F;
+            --bg-surface: #111118;
+            --bg-elevated: #1A1A25;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-focus: #00FFB3;
+            --text-primary: #F0F0F5;
+            --text-muted: #6B6B7E;
+            --text-inverse: #0A0A0F;
+            --accent-mint: #00FFB3;
+            --accent-amber: #FFB800;
+            --accent-red: #FF3355;
+            --accent-blue: #4D9CFF;
+            --grain-opacity: 0.04;
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 20px rgba(0, 255, 179, 0.2);
+        }
+
+        :root[data-theme="light"] {
+            --bg-base: #F5F0E8;
+            --bg-surface: #FDFAF4;
+            --bg-elevated: #EDE8DC;
+            --border: rgba(0, 0, 0, 0.08);
+            --border-focus: #008F64;
+            --text-primary: #1A1410;
+            --text-muted: #7A7060;
+            --text-inverse: #F5F0E8;
+            --accent-mint: #007A55;
+            --accent-amber: #C47D00;
+            --accent-red: #CC1F3A;
+            --accent-blue: #1A6FCC;
+            --grain-opacity: 0.025;
+            --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.08);
+            --shadow-glow: 0 0 16px rgba(0, 143, 100, 0.15);
+        }
+
+        :root {
+            --font-display: 'Clash Display', sans-serif;
+            --font-mono: 'DM Mono', monospace;
+            --font-body: 'Satoshi', sans-serif;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        /* Smooth theme transition */
+        *,
+        *::before,
+        *::after {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* ── Base ── */
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── Skip to content (a11y) ── */
+        .skip-to-content {
+            position: absolute;
+            top: -100%;
+            left: 16px;
+            z-index: 99999;
+            padding: 12px 24px;
+            background: var(--accent-mint);
+            color: var(--text-inverse);
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+        }
+
+        .skip-to-content:focus {
+            top: 16px;
+        }
+
+        /* ── Focus rings (a11y) ── */
+        :focus-visible {
+            outline: 2px solid var(--border-focus);
+            outline-offset: 2px;
+        }
+
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--border-focus);
+            outline-offset: 2px;
+        }
+
+        /* ── Background Effects ── */
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: var(--grain-opacity);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .mesh-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .mesh-blob {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(160px);
+            opacity: 0.06;
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+
+        [data-theme="light"] .mesh-blob {
+            opacity: 0.03;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translate(-10%, -10%) scale(1);
+            }
+
+            to {
+                transform: translate(10%, 10%) scale(1.1);
+            }
+        }
+
+        /* ── UI Components ── */
+        .btn-mm {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            height: 44px;
+            padding: 0 24px;
+            border: none;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        .btn-mm:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-mint {
+            background: var(--accent-mint);
+            color: var(--text-inverse);
+        }
+
+        .btn-mint:hover {
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-amber {
+            background: var(--accent-amber);
+            color: var(--text-inverse);
+        }
+
+        .btn-amber:hover {
+            box-shadow: 0 0 20px rgba(255, 184, 0, 0.3);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1.5px solid var(--accent-mint);
+            color: var(--accent-mint);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(0, 255, 179, 0.08);
+        }
+
+        [data-theme="light"] .btn-ghost:hover {
+            background: rgba(0, 122, 85, 0.06);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 0 20px rgba(255, 51, 85, 0.3);
+        }
+
+        .btn-disabled {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn-disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .glow-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-card);
+        }
+
+        .glow-card:hover {
+            transform: translateY(-2px);
+            border-color: color-mix(in srgb, var(--accent-mint) 40%, transparent);
+        }
+
+        /* ── Status Pills ── */
+        .pill-success {
+            background: color-mix(in srgb, var(--accent-mint) 15%, transparent);
+            color: var(--accent-mint);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .pill-warning {
+            background: color-mix(in srgb, var(--accent-amber) 15%, transparent);
+            color: var(--accent-amber);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .pill-error {
+            background: color-mix(in srgb, var(--accent-red) 15%, transparent);
+            color: var(--accent-red);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .pill-neutral {
+            background: var(--border);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        /* ── Info/Notice Boxes ── */
+        .notice-info {
+            background: var(--bg-elevated);
+            border-left: 3px solid var(--accent-mint);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .notice-warning {
+            background: var(--bg-elevated);
+            border-left: 3px solid var(--accent-amber);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .notice-danger {
+            background: var(--bg-elevated);
+            border-left: 3px solid var(--accent-red);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        /* ── Inputs ── */
+        .input-mm {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            height: 48px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 15px;
+            outline: none;
+            width: 100%;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-mm::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-mm:focus {
+            border-color: var(--border-focus);
+            border-width: 1.5px;
+        }
+
+        .input-mm.input-error {
+            border-color: var(--accent-red);
+            border-width: 1.5px;
+        }
+
+        /* ── Typography Helpers ── */
+        .font-display {
+            font-family: var(--font-display);
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+
+        .font-body {
+            font-family: var(--font-body);
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* ── Toasts ── */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 360px;
+        }
+
+        .toast-item {
+            width: 360px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent-mint);
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast-error {
+            border-left-color: var(--accent-red);
+        }
+
+        .toast-warning {
+            border-left-color: var(--accent-amber);
+        }
+
+        .toast-info {
+            border-left-color: var(--accent-blue);
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .toast-close:hover {
+            color: var(--text-primary);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent-mint);
+            animation: toast-countdown 5s linear forwards;
+        }
+
+        .toast-error .toast-progress {
+            background: var(--accent-red);
+        }
+
+        .toast-warning .toast-progress {
+            background: var(--accent-amber);
+        }
+
+        .toast-info .toast-progress {
+            background: var(--accent-blue);
+        }
+
+        @keyframes toast-countdown {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
+        /* ── Theme Switcher Animation ── */
+        .theme-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        [data-theme="light"] .theme-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* ── Shimmer / Skeleton Loading ── */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-surface) 50%, var(--bg-elevated) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ── Shake animation (dangerous actions) ── */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-4px);
+            }
+
+            50% {
+                transform: translateX(4px);
+            }
+
+            75% {
+                transform: translateX(-4px);
+            }
+        }
+
+        .animate-shake {
+            animation: shake 0.3s ease 3;
+        }
+
+        /* ── Slow Pulse Animation ── */
+        @keyframes pulse-slow {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* ── Page transition ── */
+        @keyframes page-enter {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        main {
+            animation: page-enter 0.28s ease-out;
+        }
+
+        /* ── Custom Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-mint);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .toast-container {
+                right: 12px;
+                left: 12px;
+            }
+
+            .toast-item {
+                width: 100%;
+            }
+        }
     </style>
+
+    <!-- Theme initialization (prevent flash) -->
+    <script>
+        (function () {
+            var saved = localStorage.getItem('mm-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+
+        function toggleTheme() {
+            var current = document.documentElement.getAttribute('data-theme');
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('mm-theme', next);
+
+            // Update ARIA labels on all theme toggle buttons
+            document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+                btn.setAttribute('aria-label', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            });
+        }
+    </script>
 </head>
-<body class="min-h-screen">
+
+<body x-data="{ toasts: [] }" @show-toast.window="
+    if (toasts.length >= 3) toasts.shift();
+    toasts.push({...$event.detail, id: Date.now()});
+    let id = toasts[toasts.length - 1].id;
+    setTimeout(() => { toasts = toasts.filter(t => t.id !== id); }, 5000);
+">
+    <!-- Skip to content (a11y) -->
+    <a href="#main" class="skip-to-content">Skip to main content</a>
+
+    <div class="noise-overlay"></div>
+    <div class="mesh-gradient">
+        <div class="mesh-blob" style="top:-10%; left:-10%; background:var(--accent-mint);"></div>
+        <div class="mesh-blob" style="bottom:-10%; right:-10%; background:#4B0082;"></div>
+        <div class="mesh-blob" style="top:40%; right:20%; background:var(--accent-amber); width:400px; height:400px;">
+        </div>
+    </div>
+
     {% include 'components/navbar.html' %}
 
-    <main class="container mx-auto px-4 py-8">
+    <main id="main" class="container mx-auto px-4 py-10 max-w-[1280px] relative z-10">
+        {# Django messages → toast #}
         {% if messages %}
-            <div class="mb-4">
-                {% for message in messages %}
-                    <div class="p-4 mb-2 rounded {% if message.tags == 'error' %}bg-red-500{% else %}bg-green-500{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
+        <script>
+            {% for message in messages %}
+            window.dispatchEvent(new CustomEvent('show-toast', {
+                detail: {
+                    type: '{% if message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% else %}success{% endif %}',
+                    text: '{{ message|escapejs }}'
+                }
+            }));
+            {% endfor %}
+        </script>
         {% endif %}
 
         {% block content %}{% endblock %}
     </main>
 
     {% include 'components/footer.html' %}
-    
+
+    <!-- Toast container -->
+    <div class="toast-container" x-cloak>
+        <template x-for="(toast, i) in toasts" :key="toast.id">
+            <div class="toast-item" :class="'toast-' + toast.type" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
+                <span class="font-mono flex-shrink-0 mt-0.5"
+                    x-text="toast.type === 'error' ? '✗' : (toast.type === 'warning' ? '⚠' : (toast.type === 'info' ? 'ℹ' : '✓'))"></span>
+                <span class="flex-1 pr-6" x-text="toast.text"></span>
+                <button class="toast-close" @click="toasts = toasts.filter(t => t.id !== toast.id)"
+                    aria-label="Dismiss notification">×</button>
+                <div class="toast-progress"></div>
+            </div>
+        </template>
+    </div>
+
     {% block extra_js %}{% endblock %}
+
+    <!-- ── Auth Modal ── -->
+    <div x-data="{ 
+            open: false, 
+            mode: 'login',
+            nextUrl: '',
+            init() {
+                window.addEventListener('open-auth-modal', (e) => {
+                    this.mode = e.detail?.mode || 'login';
+                    this.nextUrl = e.detail?.nextUrl || '';
+                    this.open = true;
+                });
+            }
+         }" x-show="open" class="fixed inset-0 z-[99999] flex items-center justify-center px-4" x-cloak>
+
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" x-show="open"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="open = false"></div>
+
+        <!-- Modal Content -->
+        <div class="relative w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl shadow-2xl p-8 overflow-hidden"
+            x-show="open" x-transition:enter="transition ease-out duration-300 origin-bottom"
+            x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-8 scale-95">
+
+            <!-- Decorative Glow -->
+            <div
+                class="absolute -top-24 -right-24 w-48 h-48 bg-[var(--accent-mint)]/20 rounded-full blur-[60px] pointer-events-none">
+            </div>
+
+            <button @click="open = false"
+                class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-white transition-colors">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-8 text-center">
+                <h3 class="font-display text-2xl font-bold mb-2">
+                    <span x-show="mode === 'login'">Welcome Back</span>
+                    <span x-show="mode === 'signup'">Join MixMint</span>
+                </h3>
+                <p class="text-[var(--text-muted)] text-sm">
+                    <span x-show="mode === 'login'">Sign in to continue your session.</span>
+                    <span x-show="mode === 'signup'">Create an account to discover and download tracks.</span>
+                </p>
+            </div>
+
+            <form :action="mode === 'login' ? '{% url 'login' %}' : '{% url 'signup' %}'" method="get"
+                class="flex flex-col gap-4">
+                <!-- Using GET form to redirect to the actual login/signup pages but passing a 'next' parameter if needed -->
+                <!-- Alternatively, just redirect directly -->
+
+                <input type="hidden" name="next" :value="nextUrl" x-show="nextUrl">
+
+                <p class="text-sm text-center text-[var(--text-muted)] mb-2">Continue to full authentication page</p>
+                <button type="submit" class="btn-mm btn-mint w-full text-black">
+                    <span x-show="mode === 'login'">Go to Login</span>
+                    <span x-show="mode === 'signup'">Go to Sign Up</span>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-sm text-[var(--text-muted)]">
+                <span x-show="mode === 'login'">Don't have an account? <button type="button" @click="mode = 'signup'"
+                        class="text-[var(--accent-mint)] hover:underline">Sign up</button></span>
+                <span x-show="mode === 'signup'">Already have an account? <button type="button" @click="mode = 'login'"
+                        class="text-[var(--accent-mint)] hover:underline">Log in</button></span>
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>

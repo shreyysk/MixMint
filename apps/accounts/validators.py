@@ -57,8 +57,8 @@ def validate_strong_password(password):
     has_digit = any(c.isdigit() for c in password)
     has_special = any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password)
 
-    if not (has_upper and has_lower and has_digit):
+    if not (has_upper and has_lower and has_digit and has_special):
         raise ValidationError(
             'Password must contain at least one uppercase letter, '
-            'one lowercase letter, and one digit.'
+            'one lowercase letter, one digit, and one special character.'
         )

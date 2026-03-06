@@ -11,10 +11,8 @@ Admin capabilities:
 """
 
 from decimal import Decimal
-from django.conf import settings
-from django.db import models
-from django.db.models import Sum, Count, Q
-from django.db.models.functions import TruncWeek, TruncMonth
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncWeek
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -23,12 +21,12 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Profile, DJProfile
 from apps.commerce.models import (
-    Purchase, DJWallet, Payout, DJApplicationFee, AdRevenueLog,
+    Purchase, DJWallet, Payout, AdRevenueLog,
 )
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from .models import (
-    SystemSetting, AuditLog, FraudAlert, BanList,
+    SystemSetting, AuditLog, BanList,
     KillSwitch, MaintenanceMode,
 )
 
@@ -53,13 +51,20 @@ def toggle_application_fee(request):
 def list_pending_djs(request):
     """List pending DJ applications [Spec §3.3]."""
     pending = DJProfile.objects.filter(status='pending').select_related('profile__user')
-    data = [{
-        'id': dj.id,
-        'dj_name': dj.dj_name,
-        'email': dj.profile.user.email,
-        'fee_paid': dj.application_fee_paid,
-        'created_at': dj.created_at.isoformat(),
-    } for dj in pending]
+    data = []
+    for dj in pending:
+        try:
+            fee_paid = dj.application_fee.status == 'paid'
+        except Exception:
+            fee_paid = False
+
+        data.append({
+            'id': dj.id,
+            'dj_name': dj.dj_name,
+            'email': dj.profile.user.email,
+            'fee_paid': fee_paid,
+            'created_at': dj.created_at.isoformat(),
+        })
     return Response(data)
 
 
@@ -104,6 +109,22 @@ def soft_delete_content(request):
     content.is_deleted = True
     content.is_active = False
     content.save(update_fields=['is_deleted', 'is_active'])
+
+    # Notify DJ [Spec §3.3]
+    try:
+        from apps.admin_panel.email_utils import send_email
+
+        send_email(
+            to_email=dj.profile.user.email,
+            subject="MixMint: Your content was removed",
+            html_content=(
+                f"<p>Your content <strong>{content.title}</strong> was removed by MixMint admin moderation.</p>"
+                f"<p><strong>Reason:</strong> {reason}</p>"
+                f"<p>If you believe this is a mistake, reply to this email for review.</p>"
+            ),
+        )
+    except Exception:
+        pass
 
     # Log admin action
     _log_admin_action(
@@ -478,7 +499,7 @@ def investor_report(request):
     Visual dashboard for platform transparency [Spec §12].
     Shows GMV, commissions, and ad revenue.
     """
-    from django.db.models import Sum, Avg
+    from django.db.models import Sum
     from apps.commerce.models import Purchase, AdRevenueLog
     from apps.accounts.models import DJProfile
     from django.shortcuts import render
@@ -491,7 +512,7 @@ def investor_report(request):
     ad_revenue = AdRevenueLog.objects.aggregate(total=Sum('ad_impression_value'))['total'] or 0
     total_djs = DJProfile.objects.count()
     active_djs = DJProfile.objects.filter(status='approved').count()
-    pro_djs = DJProfile.objects.filter(is_pro_dj=True).count()
+    pro_djs = DJProfile.objects.filter(profile__is_pro_dj=True).count()
     
     # Calculate effective avg rate: (pro * 8 + (total-pro)*15) / total
     if total_djs > 0:
@@ -512,6 +533,98 @@ def investor_report(request):
     return render(request, 'admin/investor_dashboard.html', ctx)
 
 
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def investor_report_pdf(request):
+    """
+    Export investor dashboard as downloadable PDF [Spec §12].
+    Suitable for sharing with investors or stakeholders.
+    """
+    import io
+    from django.http import HttpResponse
+    from django.db.models import Sum
+    from apps.commerce.models import Purchase, AdRevenueLog
+    from apps.accounts.models import DJProfile
+
+    total_stats = Purchase.objects.filter(is_completed=True).aggregate(
+        gmv=Sum('price_paid'),
+        comm=Sum('commission'),
+        purchase_count=Count('id'),
+    )
+    ad_revenue = AdRevenueLog.objects.aggregate(total=Sum('ad_impression_value'))['total'] or 0
+    total_djs = DJProfile.objects.count()
+    active_djs = DJProfile.objects.filter(status='approved').count()
+    pro_djs = DJProfile.objects.filter(profile__is_pro_dj=True).count()
+    eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * 15) / total_djs if total_djs > 0 else 15
+
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=22, spaceAfter=6)
+        subtitle_style = ParagraphStyle('subtitle', parent=styles['Normal'], fontSize=10, textColor=colors.grey)
+
+        elements = []
+
+        elements.append(Paragraph("MixMint — Investor Report", title_style))
+        elements.append(Paragraph(f"Generated: {timezone.now().strftime('%d %B %Y, %H:%M UTC')}", subtitle_style))
+        elements.append(Paragraph("CONFIDENTIAL — For Investor Use Only", subtitle_style))
+        elements.append(Spacer(1, 0.8*cm))
+
+        kpi_data = [
+            ['Metric', 'Value'],
+            ['Gross Merchandise Value (GMV)', f"₹{total_stats['gmv'] or 0}"],
+            ['Platform Commission Earned', f"₹{total_stats['comm'] or 0}"],
+            ['Ad Revenue (Gross)', f"₹{ad_revenue}"],
+            ['Total Purchases', str(total_stats['purchase_count'] or 0)],
+            ['Total DJs on Platform', str(total_djs)],
+            ['Active (Approved) DJs', str(active_djs)],
+            ['Pro DJs (8% commission)', str(pro_djs)],
+            ['Effective Commission Rate', f"{round(eff_rate, 2)}%"],
+        ]
+        kpi_table = Table(kpi_data, colWidths=[10*cm, 7*cm])
+        kpi_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e91e8c')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(kpi_table)
+        elements.append(Spacer(1, 1*cm))
+        elements.append(Paragraph(
+            "MixMint is a DJ-first digital music distribution platform operating in India. "
+            "Revenue is generated through track/album sales commissions (15% standard, 8% Pro) "
+            "and programmatic advertising. All financial data is real-time from the platform database.",
+            subtitle_style
+        ))
+
+        doc.build(elements)
+        pdf = buffer.getvalue()
+        buffer.close()
+
+    except ImportError:
+        from django.http import HttpResponse
+        return HttpResponse('reportlab required. pip install reportlab', status=501, content_type='text/plain')
+
+    from django.http import HttpResponse
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="MixMint-Investor-Report-{timezone.now().strftime("%Y%m%d")}.pdf"'
+    return response
+
+
+
+
 # ─── Helpers ──────────────────────────────────────────────────────
 
 def _log_admin_action(request, action, target_id=None, metadata=None):
@@ -524,3 +637,88 @@ def _log_admin_action(request, action, target_id=None, metadata=None):
         ip_address=request.META.get('REMOTE_ADDR'),
         user_agent=request.META.get('HTTP_USER_AGENT', ''),
     )
+
+# ─── Offers & Pricing Dashboard ──────────────────────────────────
+
+from django.shortcuts import render
+from .models import PlatformSettings, PromotionalOffer
+from django.utils.dateparse import parse_datetime
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def offers_pricing_dashboard(request):
+    """Render the Offers & Pricing dashboard for admin."""
+    settings = PlatformSettings.load()
+    offers = PromotionalOffer.objects.all().order_by('-created_at')
+    active_offer = offers.filter(is_active=True).first()
+    
+    context = {
+        'settings': settings,
+        'offers': offers,
+        'active_offer': active_offer
+    }
+    return render(request, 'admin/offers_pricing.html', context)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def update_platform_settings(request):
+    """Update global platform pricing settings."""
+    settings = PlatformSettings.load()
+    
+    if 'platform_commission_rate' in request.data:
+        settings.platform_commission_rate = Decimal(request.data['platform_commission_rate'])
+    if 'buyer_fee_amount' in request.data:
+        settings.buyer_fee_amount = Decimal(request.data['buyer_fee_amount'])
+    if 'gst_rate' in request.data:
+        settings.gst_rate = Decimal(request.data['gst_rate'])
+    if 'dj_application_fee' in request.data:
+        settings.dj_application_fee = Decimal(request.data['dj_application_fee'])
+    if 'dj_application_fee_enabled' in request.data:
+        settings.dj_application_fee_enabled = request.data['dj_application_fee_enabled']
+        
+    settings.save()
+    _log_admin_action(request, "Updated Platform Settings (Pricing)")
+    return Response({'status': 'success', 'message': 'Settings updated successfully'})
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def save_promotional_offer(request):
+    """Create or update a promotional offer."""
+    data = request.data
+    offer_id = data.get('id')
+    
+    if offer_id:
+        try:
+            offer = PromotionalOffer.objects.get(id=offer_id)
+        except PromotionalOffer.DoesNotExist:
+            return Response({'error': 'Offer not found'}, status=404)
+    else:
+        offer = PromotionalOffer()
+        
+    offer.title = data.get('title', offer.title)
+    offer.internal_name = data.get('internal_name', offer.internal_name)
+    offer.badge_label = data.get('badge_label', offer.badge_label)
+    offer.sub_text = data.get('sub_text', offer.sub_text)
+    offer.announcement_bar_text = data.get('announcement_bar_text', offer.announcement_bar_text)
+    
+    if 'show_on_homepage' in data:
+        offer.show_on_homepage = data['show_on_homepage']
+    if 'show_on_checkout' in data:
+        offer.show_on_checkout = data['show_on_checkout']
+    if 'show_on_dj_upload' in data:
+        offer.show_on_dj_upload = data['show_on_dj_upload']
+    if 'is_active' in data:
+        is_active = data['is_active']
+        if is_active:
+            # Deactivate all other offers
+            PromotionalOffer.objects.filter(is_active=True).update(is_active=False)
+        offer.is_active = is_active
+        
+    if data.get('starts_at'):
+        offer.starts_at = parse_datetime(data['starts_at'])
+    if data.get('ends_at'):
+        offer.ends_at = parse_datetime(data['ends_at'])
+        
+    offer.save()
+    _log_admin_action(request, f"Saved Promotional Offer: {offer.title}")
+    return Response({'status': 'success', 'offer_id': offer.id})

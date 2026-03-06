@@ -93,7 +93,7 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
     """
 
     # Paths that bypass maintenance mode
-    BYPASS_PATHS = ['/admin/', '/api/v1/admin-panel/']
+    BYPASS_PATHS = ['/admin/', '/api/v1/admin/']
 
     def process_request(self, request):
         # Let admin paths through

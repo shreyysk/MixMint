@@ -1,8 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import UserViewSet, ProfileViewSet, DJProfileViewSet
-from .frontend_views import HomeView, ExploreView, login_view, signup_view, rewards_view
-from .dashboard_views import dashboard_view, dj_profile_edit_view
+from .frontend_views import HomeView, ExploreView, login_view, signup_view
+from .dashboard_views import dashboard_view, dj_dashboard_view
 from .dj_views import dj_storefront_view
 from django.contrib.auth import views as auth_views
 
@@ -22,8 +22,8 @@ urlpatterns = [
     # Dashboard
     path('dashboard/', dashboard_view, name='dashboard'),
     path('dashboard/dj/', dj_dashboard_view, name='dj_dashboard'),
-    path('dashboard/rewards/', rewards_view, name='accounts/rewards'),
     
+    path('dj/<slug:slug>/', dj_storefront_view, name='dj_storefront'),
     # Password Reset
     path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),

@@ -1,107 +1,204 @@
 {% extends 'base.html' %}
+{% block title %}{{ dj.dj_name }} — MixMint{% endblock %}
 
-{% block title %}{{ dj.dj_name }} - MixMint Storefront{% endblock %}
+{% block extra_head %}
+<style>
+    .dj-banner {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        height: 280px;
+        border: 1px solid var(--border);
+    }
+
+    [data-theme="dark"] .dj-banner {
+        background: linear-gradient(135deg, #0d1117 0%, #111118 50%, #0A0A0F 100%);
+    }
+
+    [data-theme="dark"] .dj-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background: linear-gradient(to top, var(--bg-base), transparent);
+        z-index: 1;
+    }
+
+    [data-theme="light"] .dj-banner {
+        background: linear-gradient(135deg, #EDE8DC 0%, #F5F0E8 50%, #FDFAF4 100%);
+    }
+
+    [data-theme="light"] .dj-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background: linear-gradient(to top, var(--bg-base), transparent);
+        z-index: 1;
+    }
+
+    .dj-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 3px solid var(--accent-mint);
+        background: var(--bg-elevated);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--accent-mint);
+        flex-shrink: 0;
+        position: relative;
+        z-index: 10;
+        margin-top: -60px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-12">
-    <!-- Banner & Identity -->
-    <div class="bg-gray-900 rounded-3xl p-8 border border-gray-800 flex flex-col items-center text-center">
-        <div class="w-24 h-24 bg-pink-500 rounded-full mb-4 flex items-center justify-center text-4xl font-bold">
-            {{ dj.dj_name|slice:":1" }}
-        </div>
-        <h1 class="text-4xl font-bold mb-2">{{ dj.dj_name }}</h1>
-        <p class="text-gray-400 max-w-xl mx-auto mb-6">{{ dj.bio|default:"No bio available." }}</p>
+<!-- ── DJ Banner ── -->
+<div class="dj-banner mb-0">
+    {% if dj.profile.banner_url %}
+    <img src="{{ dj.profile.banner_url }}" alt="{{ dj.dj_name }} banner" class="w-full h-full object-cover">
+    {% endif %}
+</div>
 
-        <div class="flex gap-4">
-            <button class="bg-pink-500 hover:bg-pink-600 text-white px-8 py-2 rounded-full font-bold transition">
-                Follow
-            </button>
-            <button class="bg-gray-800 hover:bg-gray-700 text-white px-8 py-2 rounded-full font-bold transition">
-                Share
-            </button>
+<!-- ── DJ Header ── -->
+<div class="max-w-[1200px] mx-auto px-4 mb-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-end gap-6">
+        <div class="dj-avatar">
+            {{ dj.dj_name|slice:":1"|upper }}
+        </div>
+        <div class="flex flex-col gap-2 pb-2">
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="font-display text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                    {{ dj.dj_name }}</h1>
+                {% if dj.profile.is_verified_dj %}
+                <span class="pill-success flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2L15.09 5.09L19.5 4.5L20.09 8.91L23.18 12L20.09 15.09L19.5 19.5L15.09 18.91L12 22L8.91 18.91L4.5 19.5L3.91 15.09L0.82 12L3.91 8.91L4.5 4.5L8.91 5.09L12 2ZM10.96 15.48L17.32 9.12L15.91 7.71L10.96 12.66L8.14 9.84L6.73 11.25L10.96 15.48Z" />
+                    </svg>
+                    Verified DJ
+                </span>
+                {% endif %}
+            </div>
+            <p class="font-body text-[14px] text-[var(--text-muted)] max-w-lg leading-[1.65]">
+                {{ dj.bio|default:"This DJ hasn't written a bio yet." }}
+            </p>
+            <div class="flex items-center gap-3 font-mono text-[12px] text-[var(--text-muted)]">
+                <span>Member since {{ dj.date_joined|date:"Y" }}</span>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- Content Sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <!-- Tracks -->
-        <div class="lg:col-span-2 space-y-6">
-            <h3 class="text-2xl font-bold">Latest Tracks</h3>
-            {% if tracks %}
-            <div class="space-y-4">
-                {% for track in tracks %}
-                <div class="bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-gray-800 rounded"></div>
-                        <div>
-                            <h4 class="font-bold">{{ track.title }}</h4>
-                            <span class="text-xs text-gray-500">{{ track.genre }}</span>
+<!-- ── Responsibility Banner ── -->
+<div class="max-w-[1200px] mx-auto px-4 mb-10">
+    <div class="bg-[var(--bg-elevated)] border-b border-[var(--border)] px-5 py-3 rounded-[8px]">
+        <p class="font-body text-[12px] text-[var(--text-muted)] italic">
+            All music on this page is independently uploaded by {{ dj.dj_name }}. MixMint is not responsible for content
+            licensing or ownership.
+        </p>
+    </div>
+</div>
+
+<!-- ── Content Tabs ── -->
+<div class="max-w-[1200px] mx-auto px-4" x-data="{ tab: 'tracks' }">
+    <!-- Tab Switcher -->
+    <div class="flex gap-1 mb-10 border-b border-[var(--border)]">
+        <button @click="tab = 'tracks'"
+            :class="tab === 'tracks' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Tracks
+        </button>
+        <button @click="tab = 'albums'"
+            :class="tab === 'albums' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Albums
+        </button>
+    </div>
+
+    <!-- Tracks Tab -->
+    <div x-show="tab === 'tracks'" x-transition.opacity>
+        {% if tracks %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for track in tracks %}
+            <div
+                class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+                <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
+                    <div
+                        class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
+                        {% if track.cover_url %}
+                        <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
+                        {% endif %}
+                        <div
+                            class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
+                            {{ track.genre|default:"AUDIO" }}
                         </div>
                     </div>
-                    <button class="bg-white text-black px-4 py-1 rounded-full text-sm font-bold">
-                        ${{ track.price }}
-                    </button>
-                </div>
-                {% endfor %}
+                    <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
+                                track.title }}</h3>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between">
+                            <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">₹{{ track.price
+                                }}</span>
+                        </div>
+                    </div>
+                </a>
             </div>
-            {% else %}
-            <p class="text-gray-500 italic">No tracks uploaded yet.</p>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-20 border border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)]">
+            <span class="text-4xl opacity-20 mb-4 block">🎧</span>
+            <p class="font-body text-[15px] text-[var(--text-muted)]">No tracks uploaded yet.</p>
+        </div>
+        {% endif %}
+    </div>
 
-        <!-- Sidebar (Subscription Plans) -->
-        <div class="space-y-8">
-            <h3 class="text-2xl font-bold">Support the Artist</h3>
-
-            <!-- Tier 1: Basic -->
-            <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl relative overflow-hidden group">
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-xl font-bold">Basic</h4>
-                    <span class="text-pink-500 font-mono text-lg">$5/mo</span>
-                </div>
-                <ul class="text-sm text-gray-400 space-y-2 mb-6">
-                    <li>• 5 High-Quality Tracks</li>
-                    <li>• Early Access to Edits</li>
-                </ul>
-                <button
-                    class="w-full bg-gray-800 hover:bg-pink-500 py-2 rounded-lg font-bold transition">Subscribe</button>
-            </div>
-
-            <!-- Tier 2: Pro (Featured) -->
-            <div class="bg-pink-500/5 border-2 border-pink-500 p-6 rounded-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-pink-500 text-white text-[10px] uppercase px-2 py-1 font-bold">
-                    Best Value</div>
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-xl font-bold">Pro</h4>
-                    <span class="text-pink-500 font-mono text-lg">$15/mo</span>
-                </div>
-                <ul class="text-sm text-gray-400 space-y-2 mb-6">
-                    <li>• 20 High-Quality Tracks</li>
-                    <li>• All Album Packs</li>
-                    <li>• Fan-Only Discord Access</li>
-                </ul>
-                <button
-                    class="w-full bg-pink-500 hover:bg-pink-600 py-2 rounded-lg font-bold transition">Subscribe</button>
-            </div>
-
-            <h3 class="text-2xl font-bold pt-8">Album Packs</h3>
-            {% if albums %}
+    <!-- Albums Tab -->
+    <div x-show="tab === 'albums'" x-transition.opacity style="display: none;">
+        {% if albums %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for album in albums %}
             <div
-                class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-pink-500/10 transition">
-                <div class="aspect-video bg-gray-800 flex items-center justify-center font-bold text-gray-700">
-                    {{ album.title }}
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)]">
+                <div class="h-[160px] bg-[var(--bg-elevated)] flex items-center justify-center text-4xl opacity-20">
+                    {% if album.cover_url %}
+                    <img src="{{ album.cover_url }}" alt="{{ album.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    📦
+                    {% endif %}
                 </div>
-                <div class="p-4">
-                    <h4 class="font-bold mb-2">{{ album.title }}</h4>
-                    <button class="w-full bg-pink-500 py-2 rounded-lg font-bold">Buy Pack - ${{ album.price }}</button>
+                <div class="p-5">
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate mb-1">{{ album.title
+                        }}</h3>
+                    <p class="font-mono text-[14px] text-[var(--accent-mint)] font-medium mb-4">₹{{ album.price }}</p>
+                    <a href="{% url 'album_detail' album.id %}" class="btn-mm btn-mint w-full text-[13px]"
+                        style="height: 40px;">
+                        View Album
+                    </a>
                 </div>
             </div>
             {% endfor %}
-            {% else %}
-            <p class="text-gray-500 italic">No album packs available.</p>
-            {% endif %}
         </div>
+        {% else %}
+        <div class="text-center py-20 border border-dashed border-[var(--border)] rounded-[12px]">
+            <p class="font-body text-[15px] text-[var(--text-muted)]">No album packs available.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

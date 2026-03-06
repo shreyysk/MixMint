@@ -13,6 +13,7 @@ from django.conf import settings
 
 from apps.commerce.models import AdRevenueLog, DJWallet, LedgerEntry
 from apps.accounts.models import DJProfile
+from apps.tracks.models import TrackCollaborator, Track
 
 
 def log_ad_impression(dj_id, content_id, impression_value):
@@ -25,7 +26,7 @@ def log_ad_impression(dj_id, content_id, impression_value):
         # If Pro DJ has ad reduction enabled, we might process differently
         # Usually, this is handled by the frontend ad-unit density,
         # but the backend ensures revenue is logged correctly.
-        if dj.is_pro_dj and dj.ad_exposure_reduction:
+        if dj.profile.is_pro_dj and dj.ad_exposure_reduction:
             # Logic for reduced ad density
             pass
     except DJProfile.DoesNotExist:
@@ -38,22 +39,59 @@ def log_ad_impression(dj_id, content_id, impression_value):
     )
 
 
+def log_ad_impression_for_content(content_type, content_id, impression_value):
+    """
+    Log ad impressions by content, splitting across collaborators when needed.
+
+    - Tracks: if collaborators exist, split by TrackCollaborator.revenue_percentage.
+    - Albums: credit the primary DJ only (collab albums not modeled).
+    """
+    value = Decimal(str(impression_value))
+    if value <= 0:
+        return []
+
+    if content_type == 'track':
+        collabs = TrackCollaborator.objects.filter(track_id=content_id).select_related('dj', 'dj__profile')
+        if collabs.exists():
+            created = []
+            for c in collabs:
+                portion = (value * (c.revenue_percentage / Decimal('100'))).quantize(Decimal('0.0001'))
+                created.append(log_ad_impression(c.dj_id, content_id, portion))
+            return created
+
+        # No collaborators: credit track owner
+        track = Track.objects.get(id=content_id)
+        return [log_ad_impression(track.dj_id, content_id, value)]
+
+    # album: credit the owner only
+    from apps.albums.models import AlbumPack
+    album = AlbumPack.objects.get(id=content_id)
+    return [log_ad_impression(album.dj_id, content_id, value)]
+
+
 def credit_ad_revenue_to_djs():
     """
-    Calculate and credit 15% ad revenue share to DJs [Spec P3 §1.2].
+    Calculate and credit ad revenue share to DJs [Spec P3 §1.2].
     Called weekly alongside payout processing.
+    DJ ad share rate is admin-configurable via SystemSetting 'ad_share_rate'.
     """
     from django.db.models import Sum
     from apps.admin_panel.models import SystemSetting
 
-    # Get dynamic ad floor base price [Spec §3.3]
+    # Get dynamic ad floor base price [Spec §3.3] — reserved for future floor enforcement
     try:
         setting = SystemSetting.objects.get(key='ad_floor_pricing')
-        floor_price = Decimal(str(setting.value.get('floor_price', '0.01')))
+        # floor_price stored in setting.value['floor_price'] for future use
+        _ = setting  # setting retrieved to confirm it exists
     except SystemSetting.DoesNotExist:
-        floor_price = Decimal('0.01')
+        pass
 
-    ad_share_rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))  # 15%
+    # DJ ad share rate — admin-configurable [Spec P3 §1.2]
+    try:
+        rate_setting = SystemSetting.objects.get(key='ad_share_rate')
+        ad_share_rate = Decimal(str(rate_setting.value.get('rate', str(settings.DJ_AD_REVENUE_SHARE))))
+    except SystemSetting.DoesNotExist:
+        ad_share_rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))  # default 15%
 
     # Get all DJs with ad impressions
     dj_totals = AdRevenueLog.objects.values('dj_id').annotate(
@@ -79,6 +117,7 @@ def credit_ad_revenue_to_djs():
             wallet = DJWallet.objects.get(dj_id=dj_id)
             wallet.pending_earnings += dj_share
             wallet.total_earnings += dj_share
+            wallet.available_for_payout += dj_share
             wallet.save()
 
             LedgerEntry.objects.create(

@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 
 from apps.commerce.models import Purchase
 from apps.downloads.insurance import DownloadInsurance
-from apps.payments.utils import create_order
+from apps.payments.utils import create_order, verify_payment
 
 @login_required
 def check_insurance_eligibility(request, purchase_id):
@@ -81,9 +81,7 @@ def verify_insurance_payment(request):
     """
     Verify Razorpay payment and activate insurance [Spec §4.3].
     """
-    import json
-    from apps.payments.utils import verify_payment
-    
+
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method.'}, status=400)
         

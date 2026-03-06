@@ -14,16 +14,15 @@ No engagement metrics. No demographic data.
 """
 
 from datetime import timedelta
-from decimal import Decimal
 
-from django.db.models import Sum, Count, F
-from django.db.models.functions import TruncWeek, TruncMonth
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncWeek
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.commerce.models import Purchase, DJWallet, Payout, LedgerEntry
+from apps.commerce.models import Purchase, Payout, AdRevenueLog
 
 
 @api_view(['GET'])
@@ -33,7 +32,7 @@ def dj_earnings_overview(request):
     DJ earnings dashboard overview [Spec §3.2].
     Returns lifetime, weekly, monthly earnings + pending payout.
     """
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'DJ access only.'}, status=403)
 
     try:
@@ -63,6 +62,10 @@ def dj_earnings_overview(request):
         created_at__gte=month_ago,
     ).aggregate(total=Sum('dj_earnings'))
 
+    # Ad revenue
+    ad_lifetime = AdRevenueLog.objects.filter(dj=dj_profile).aggregate(total=Sum('ad_impression_value'))
+    ad_weekly = AdRevenueLog.objects.filter(dj=dj_profile, created_at__gte=week_ago).aggregate(total=Sum('ad_impression_value'))
+
     return Response({
         'lifetime_earnings': str(lifetime['total'] or 0),
         'weekly_earnings': str(weekly['total'] or 0),
@@ -71,6 +74,9 @@ def dj_earnings_overview(request):
         'escrow_amount': str(wallet.escrow_amount),
         'available_for_payout': str(wallet.available_for_payout),
         'total_earnings': str(wallet.total_earnings),
+        'ad_revenue_lifetime': str(ad_lifetime['total'] or 0),
+        'ad_revenue_this_week': str(ad_weekly['total'] or 0),
+        'commission_rate': '8%' if request.user.profile.is_pro_dj else '15%',
     })
 
 
@@ -78,7 +84,7 @@ def dj_earnings_overview(request):
 @permission_classes([IsAuthenticated])
 def dj_earnings_per_track(request):
     """Earnings breakdown per track [Spec §3.2]."""
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'DJ access only.'}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -114,13 +120,13 @@ def dj_earnings_per_track(request):
 @permission_classes([IsAuthenticated])
 def dj_earnings_per_album(request):
     """Earnings breakdown per album [Spec §3.2]."""
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'DJ access only.'}, status=403)
 
     dj_profile = request.user.profile.dj_profile
 
     album_earnings = Purchase.objects.filter(
-        seller=dj_profile, content_type='zip',
+        seller=dj_profile, content_type='album',
         is_completed=True, download_completed=True,
     ).values('content_id').annotate(
         total_earned=Sum('dj_earnings'),
@@ -149,7 +155,7 @@ def dj_earnings_per_album(request):
 @permission_classes([IsAuthenticated])
 def dj_payout_history(request):
     """Paid payouts history [Spec §3.2]."""
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'DJ access only.'}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -165,3 +171,30 @@ def dj_payout_history(request):
     } for p in payouts]
 
     return Response({'payouts': data})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dj_weekly_chart(request):
+    """Weekly earnings for the last 12 weeks for charting [Spec §3.2]."""
+    if request.user.profile.role != 'dj':
+        return Response({'error': 'DJ access only.'}, status=403)
+
+    dj_profile = request.user.profile.dj_profile
+    twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
+
+    weekly = Purchase.objects.filter(
+        seller=dj_profile, is_completed=True, download_completed=True,
+        created_at__gte=twelve_weeks_ago,
+    ).annotate(week=TruncWeek('created_at')).values('week').annotate(
+        earnings=Sum('dj_earnings'),
+        sales=Count('id'),
+    ).order_by('week')
+
+    return Response({
+        'chart_data': [{
+            'week': w['week'].isoformat(),
+            'earnings': str(w['earnings'] or 0),
+            'sales': w['sales'],
+        } for w in weekly]
+    })

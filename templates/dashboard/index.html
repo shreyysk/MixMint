@@ -1,76 +1,191 @@
 {% extends 'base.html' %}
-
-{% block title %}My Dashboard - MixMint{% endblock %}
+{% block title %}My Library — MixMint{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Sidebar / Profile Summary -->
-    <div class="space-y-6">
-        <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
-                    {{ profile.full_name|slice:":1" }}
-                </div>
-                <div>
-                    <h2 class="text-xl font-bold">{{ profile.full_name }}</h2>
-                    <p class="text-gray-500 text-sm">Member since {{ profile.created_at|date:"M Y" }}</p>
-                </div>
+<div class="py-12 max-w-[1200px] mx-auto" x-data="{ tab: 'tracks' }">
+
+    <!-- ── HEADER ── -->
+    <div class="mb-12 border-b border-[var(--border)] pb-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1
+                    class="font-display text-[40px] md:text-[56px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                    Your Library
+                </h1>
+                <p class="font-body text-[14px] text-[var(--text-muted)] mt-3">
+                    Everything you've purchased on MixMint. Download anytime from your verified device.
+                </p>
             </div>
-            <div class="space-y-4">
-                <div class="flex justify-between">
-                    <span class="text-gray-400">Points</span>
-                    <span class="text-pink-500 font-mono">{{ profile.points_balance }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">Wallet Balance</span>
-                    <span class="text-green-500 font-mono">${{ wallet.balance }}</span>
-                </div>
+            <div class="flex gap-4">
+                {% if user.is_dj %}
+                <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost h-[44px] px-6 text-[13px]">
+                    DJ Dashboard →
+                </a>
+                {% else %}
+                <a href="{% url 'apply_as_dj' %}" class="btn-mm btn-ghost h-[44px] px-6 text-[13px]">
+                    Become a DJ
+                </a>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        {% if is_dj %}
-        <a href="/dashboard/dj/"
-            class="block bg-pink-600 hover:bg-pink-700 text-center py-3 rounded-xl font-bold transition">
-            Manage DJ Storefront
-        </a>
+    <!-- ── TABS ── -->
+    <div class="flex gap-1 mb-10 border-b border-[var(--border)]">
+        <button @click="tab = 'tracks'"
+            :class="tab === 'tracks' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Owned Tracks
+        </button>
+        <button @click="tab = 'albums'"
+            :class="tab === 'albums' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Owned Albums
+        </button>
+    </div>
+
+    <!-- ── TRACKS TAB ── -->
+    <div x-show="tab === 'tracks'" x-transition.opacity>
+        {% if purchased_tracks %}
+        <div class="space-y-4">
+            {% for purchase in purchased_tracks %}
+            <div
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-[var(--shadow-card)] hover:border-[color-mix(in_srgb,var(--accent-mint)_30%,transparent)] transition-colors">
+                <!-- Artwork -->
+                <div
+                    class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {% if purchase.track.cover_url %}
+                    <img src="{{ purchase.track.cover_url }}" alt="{{ purchase.track.title }}"
+                        class="w-full h-full object-cover">
+                    {% else %}
+                    <span class="text-2xl opacity-20">🎧</span>
+                    {% endif %}
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
+                        purchase.track.title }}</h3>
+                    <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
+                        by {{ purchase.track.dj.dj_name }}
+                    </p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{
+                            purchase.purchase_date|date:"M d, Y" }}</span>
+                        {% if purchase.has_insurance %}
+                        <span class="pill-success">🛡 Insured</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status & Actions -->
+                <div class="flex items-center gap-4">
+                    {% if purchase.can_download %}
+                    <span class="pill-success">Ready</span>
+                    <a href="{% url 'track_detail' purchase.track.id %}"
+                        class="btn-mm btn-mint h-[40px] px-5 text-[13px]">
+                        ⬇ Download
+                    </a>
+                    {% elif purchase.needs_redownload_payment %}
+                    <span class="pill-warning">Expired</span>
+                    <a href="{% url 'track_detail' purchase.track.id %}"
+                        class="btn-mm btn-amber h-[40px] px-5 text-[13px]">
+                        Re-download · ₹{{ purchase.redownload_price|default:"—" }}
+                    </a>
+                    {% else %}
+                    <span class="pill-neutral">Processing</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div
+            class="py-24 text-center border border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)]">
+            <span class="text-4xl opacity-20 block mb-6">🎵</span>
+            <h3 class="font-display text-[20px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">
+                No tracks yet
+            </h3>
+            <p class="font-body text-[14px] text-[var(--text-muted)] max-w-sm mx-auto mb-8">
+                Your purchased tracks will appear here. Start exploring and own your first track.
+            </p>
+            <a href="{% url 'explore' %}" class="btn-mm btn-mint h-[44px] px-8 text-[14px]">
+                Browse Music
+            </a>
+        </div>
         {% endif %}
     </div>
 
-    <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-8">
-        <section>
-            <h3 class="text-2xl font-bold mb-6">My Recent Purchases</h3>
-            {% if purchases %}
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-800 text-xs uppercase text-gray-500">
-                        <tr>
-                            <th class="px-6 py-3">Content</th>
-                            <th class="px-6 py-3">Price</th>
-                            <th class="px-6 py-3">Date</th>
-                            <th class="px-6 py-3"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-800">
-                        {% for purchase in purchases %}
-                        <tr>
-                            <td class="px-6 py-4 font-medium">{{ purchase.content_id }}</td>
-                            <td class="px-6 py-4">${{ purchase.price_paid }}</td>
-                            <td class="px-6 py-4 text-gray-500 text-sm">{{ purchase.created_at|date }}</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-pink-500 hover:underline">Download</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- ── ALBUMS TAB ── -->
+    <div x-show="tab === 'albums'" x-transition.opacity style="display: none;">
+        {% if purchased_albums %}
+        <div class="space-y-4">
+            {% for purchase in purchased_albums %}
+            <div
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-[var(--shadow-card)] hover:border-[color-mix(in_srgb,var(--accent-mint)_30%,transparent)] transition-colors">
+                <!-- Artwork -->
+                <div
+                    class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {% if purchase.album.cover_url %}
+                    <img src="{{ purchase.album.cover_url }}" alt="{{ purchase.album.title }}"
+                        class="w-full h-full object-cover">
+                    {% else %}
+                    <span class="text-2xl opacity-20">📦</span>
+                    {% endif %}
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
+                        purchase.album.title }}</h3>
+                    <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
+                        by {{ purchase.album.dj.dj_name }} · {{ purchase.album.tracks.count }} tracks
+                    </p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{
+                            purchase.purchase_date|date:"M d, Y" }}</span>
+                        {% if purchase.has_insurance %}
+                        <span class="pill-success">🛡 Insured</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status & Actions -->
+                <div class="flex items-center gap-4">
+                    {% if purchase.can_download %}
+                    <span class="pill-success">Ready</span>
+                    <a href="{% url 'album_detail' purchase.album.id %}"
+                        class="btn-mm btn-mint h-[40px] px-5 text-[13px]">
+                        📦 Download ZIP
+                    </a>
+                    {% elif purchase.needs_redownload_payment %}
+                    <span class="pill-warning">Expired</span>
+                    <a href="{% url 'album_detail' purchase.album.id %}"
+                        class="btn-mm btn-amber h-[40px] px-5 text-[13px]">
+                        Re-download · ₹{{ purchase.redownload_price|default:"—" }}
+                    </a>
+                    {% else %}
+                    <span class="pill-neutral">Processing</span>
+                    {% endif %}
+                </div>
             </div>
-            {% else %}
-            <div class="bg-gray-900 border border-gray-800 p-12 rounded-2xl text-center text-gray-500">
-                No purchases yet. <a href="/explore/" class="text-pink-500">Start exploring!</a>
-            </div>
-            {% endif %}
-        </section>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div
+            class="py-24 text-center border border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)]">
+            <span class="text-4xl opacity-20 block mb-6">📦</span>
+            <h3 class="font-display text-[20px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">
+                No albums yet
+            </h3>
+            <p class="font-body text-[14px] text-[var(--text-muted)] max-w-sm mx-auto mb-8">
+                Purchased albums will appear here. Browse album packs for great deals.
+            </p>
+            <a href="{% url 'explore' %}?type=album" class="btn-mm btn-mint h-[44px] px-8 text-[14px]">
+                Browse Albums
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

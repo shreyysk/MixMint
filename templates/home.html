@@ -1,17 +1,390 @@
 {% extends 'base.html' %}
+{% block title %}Own the Drop — MixMint{% endblock %}
+
+{% block extra_head %}
+<style>
+    .hero-section {
+        min-height: 100dvh;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ticker-wrap {
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+        overflow: hidden;
+        background: var(--bg-elevated);
+        height: 40px;
+        display: flex;
+        align-items: center;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        position: relative;
+    }
+
+    .ticker-wrap::before,
+    .ticker-wrap::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 60px;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .ticker-wrap::before {
+        left: 0;
+        background: linear-gradient(to right, var(--bg-elevated), transparent);
+    }
+
+    .ticker-wrap::after {
+        right: 0;
+        background: linear-gradient(to left, var(--bg-elevated), transparent);
+    }
+
+    .ticker {
+        display: flex;
+        white-space: nowrap;
+        animation: ticker 30s linear infinite;
+    }
+
+    .ticker-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 40px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    @keyframes ticker {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    .geo-decoration {
+        position: absolute;
+        bottom: -10%;
+        right: -5%;
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 0;
+        width: 600px;
+        height: 600px;
+    }
+
+    [data-theme="light"] .geo-decoration {
+        opacity: 0.1;
+    }
+
+    .hide-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .hide-scroll {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .dj-card {
+        width: 200px;
+        height: 240px;
+        flex-shrink: 0;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .dj-card:hover {
+        border-color: color-mix(in srgb, var(--accent-mint) 40%, transparent);
+        transform: translateY(-2px);
+    }
+
+    .dj-card:hover .dj-photo {
+        transform: scale(1.04);
+    }
+
+    .dj-photo {
+        height: 60%;
+        width: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="text-center py-20">
-    <h1 class="text-5xl font-extrabold mb-6">Own Your Sound. <span class="text-pink-500">Empower Your DJ.</span></h1>
-    <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-        Join the exclusive platform where DJs share unreleased edits, stems, and album packs directly with their
-        superfans.
-    </p>
-    <div class="flex justify-center gap-4">
-        <a href="/explore/"
-            class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition">Explore Tracks</a>
-        <a href="/signup/?role=dj"
-            class="border border-gray-700 px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition">Become a DJ</a>
+<!-- ── HERO ── -->
+<section class="hero-section text-center -mt-10 mb-0">
+    <!-- Decorative Geo Art (angular lines suggesting mixing board grooves) -->
+    <svg class="geo-decoration" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M10,90 L90,10 M20,90 L90,20 M30,90 L90,30 M40,90 L90,40 M50,90 L90,50 M60,90 L90,60"
+            stroke="currentColor" stroke-width="0.5" fill="none" class="text-[var(--text-muted)]" />
+        <path d="M10,80 L80,10 M10,70 L70,10 M10,60 L60,10 M10,50 L50,10 M10,40 L40,10" stroke="currentColor"
+            stroke-width="0.5" fill="none" class="text-[var(--text-muted)]" />
+    </svg>
+
+    <div class="relative z-10 w-full max-w-5xl px-4">
+        <h1
+            class="font-display text-[64px] sm:text-[80px] lg:text-[96px] font-[700] leading-[0.9] tracking-[-0.03em] text-[var(--text-primary)] mb-6">
+            Home of DJ Releases.
+        </h1>
+
+        <p class="font-body text-[18px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.6] mb-12">
+            India's only DJ music marketplace where you truly own what you buy.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <a href="/explore/" class="btn-mm btn-mint w-full sm:w-[200px] text-[15px] font-[600]"
+                style="height: 52px; border-radius: 8px;">
+                Browse Music
+            </a>
+            <a href="/signup/" class="btn-mm btn-ghost w-full sm:w-[240px] text-[15px] font-[600]"
+                style="height: 52px; border-radius: 8px;">
+                Become a DJ Partner
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ── TRUST BAR TICKER ── -->
+<div class="ticker-wrap">
+    <div class="ticker">
+        <!-- Sequence 1 -->
+        <div class="ticker-item">🔒 Secure Token Downloads</div>
+        <div class="ticker-item">85% Revenue to DJs</div>
+        <div class="ticker-item">📦 ZIP Album Packs</div>
+        <div class="ticker-item">No Streaming</div>
+        <div class="ticker-item">Device-Locked Files</div>
+        <div class="ticker-item">🇮🇳 India-First Platform</div>
+        <div class="ticker-item">No Subscriptions</div>
+        <!-- Sequence 2 (duplicate for seamless loop) -->
+        <div class="ticker-item">🔒 Secure Token Downloads</div>
+        <div class="ticker-item">85% Revenue to DJs</div>
+        <div class="ticker-item">📦 ZIP Album Packs</div>
+        <div class="ticker-item">No Streaming</div>
+        <div class="ticker-item">Device-Locked Files</div>
+        <div class="ticker-item">🇮🇳 India-First Platform</div>
+        <div class="ticker-item">No Subscriptions</div>
     </div>
 </div>
+
+<!-- ── FEATURED DJS ── -->
+<section class="py-24">
+    <div class="mb-8">
+        <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em]">PARTNERED DJs</span>
+    </div>
+
+    <div class="flex overflow-x-auto hide-scroll gap-6 pb-4 cursor-grab active:cursor-grabbing snap-x">
+        {% for i in "123456"|make_list %}
+        <a href="#" class="dj-card snap-center group">
+            <div class="relative h-[60%] w-full overflow-hidden border-b border-[var(--border)]">
+                <div class="w-full h-full bg-[var(--bg-elevated)] flex items-center justify-center dj-photo">
+                    <span class="text-4xl opacity-20">🎧</span>
+                </div>
+                <!-- Verified Badge -->
+                <div class="absolute top-2 right-2 text-[var(--accent-mint)]" title="Verified DJ">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2L15.09 5.09L19.5 4.5L20.09 8.91L23.18 12L20.09 15.09L19.5 19.5L15.09 18.91L12 22L8.91 18.91L4.5 19.5L3.91 15.09L0.82 12L3.91 8.91L4.5 4.5L8.91 5.09L12 2ZM10.96 15.48L17.32 9.12L15.91 7.71L10.96 12.66L8.14 9.84L6.73 11.25L10.96 15.48Z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="h-[40%] p-3 flex flex-col justify-between" style="background: var(--bg-surface);">
+                <div>
+                    <h3 class="font-body text-[15px] font-[600] text-[var(--text-primary)] truncate">DJ Creator {{ i }}
+                    </h3>
+                    <div class="flex gap-1 mt-1">
+                        <span
+                            class="px-1.5 py-0.5 rounded-sm bg-[var(--bg-elevated)] text-[var(--text-muted)] font-mono text-[9px] uppercase">Tech
+                            House</span>
+                    </div>
+                </div>
+                <div class="font-mono text-[11px] text-[var(--text-muted)]">
+                    12 Tracks
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ── NEW RELEASES ── -->
+<section class="py-16">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+            <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.1em] mb-2 block">NEW
+                RELEASES</span>
+        </div>
+        <a href="/explore/"
+            class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
+            All →</a>
+    </div>
+
+    {% if featured_tracks %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for track in featured_tracks %}
+        <div
+            class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+            <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
+                <!-- Artwork -->
+                <div
+                    class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
+                    {% if track.cover_url %}
+                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
+                    {% endif %}
+
+                    <!-- Genre Overlay -->
+                    <div
+                        class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
+                        {{ track.genre|default:"AUDIO" }}
+                    </div>
+                </div>
+
+                <!-- Info block -->
+                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title
+                            }}</h3>
+                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
+                            {{ track.dj.dj_name }}
+                        </p>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">₹{{ track.price
+                            }}</span>
+                    </div>
+
+                    <!-- Buy CTA -->
+                    <div class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint"
+                        style="height: 40px; font-size: 13px;">
+                        Buy Now
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-20 border border-[var(--border)] rounded-[12px] text-center bg-[var(--bg-surface)]">
+        <p class="font-body text-[15px] text-[var(--text-muted)]">No releases available yet. Check back soon.</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="py-24 mb-10">
+    <!-- Desktop Dashed Line connection -->
+    <div
+        class="hidden lg:block relative top-[96px] left-[16%] right-[16%] h-px border-t border-dashed border-[var(--border)] z-0 w-[68%]">
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8 relative z-10">
+        <div
+            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
+            <span
+                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">01</span>
+            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Browse &
+                Preview</h3>
+            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
+                Discover exclusive DJ edits and remix packs. Preview through verified media embeds before you buy.
+            </p>
+        </div>
+        <div
+            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
+            <span
+                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">02</span>
+            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay Once, Own
+                Forever</h3>
+            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
+                Instant checkout. One-time payment for permanent ownership. No subscriptions or recurring fees.
+            </p>
+        </div>
+        <div
+            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
+            <span
+                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">03</span>
+            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Secure
+                Download</h3>
+            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
+                Receive a secure token. Files are byte-verified and device-locked to ensure maximum security.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ── CONTENT RESPONSIBILITY NOTICE ── -->
+<section class="pb-16">
+    <div class="notice-info">
+        <p class="font-body text-[12px] text-[var(--text-muted)] italic leading-relaxed">
+            All music on MixMint is independently uploaded and sold by DJs. MixMint is not responsible for the content,
+            licensing, or copyright of uploaded files. <a href="/legal/terms/"
+                class="text-[var(--accent-mint)] hover:underline underline-offset-2">Content Policy →</a>
+        </p>
+    </div>
+</section>
+
+<!-- ── FLOATING OFFER CARD ── -->
+{% if active_promotional_offer and active_promotional_offer.show_on_homepage %}
+<div x-data="{ showFloatingOffer: false }"
+    x-init="setTimeout(() => { if (!sessionStorage.getItem('hide_floating_offer_{{ active_promotional_offer.id }}')) showFloatingOffer = true }, 1500)"
+    x-show="showFloatingOffer" x-transition:enter="transition ease-out duration-700"
+    x-transition:enter-start="opacity-0 translate-y-10 scale-95"
+    x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-300"
+    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+    x-transition:leave-end="opacity-0 translate-y-10 scale-95" class="fixed bottom-6 right-6 z-50 w-full max-w-sm"
+    x-cloak>
+
+    <div
+        class="relative bg-[var(--bg-elevated)]/90 backdrop-blur-md border border-[var(--border-focus)]/30 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,255,179,0.15)] overflow-hidden group">
+        <!-- Glow effect -->
+        <div
+            class="absolute -top-20 -right-20 w-40 h-40 bg-[var(--accent-mint)]/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-[var(--accent-mint)]/30 transition-colors duration-500">
+        </div>
+
+        <button
+            @click="showFloatingOffer = false; sessionStorage.setItem('hide_floating_offer_{{ active_promotional_offer.id }}', 'true')"
+            class="absolute top-3 right-3 text-[var(--text-muted)] hover:text-white transition-colors p-1 z-10">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        {% if active_promotional_offer.badge_label %}
+        <span
+            class="inline-block px-2 py-1 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] text-[10px] font-mono tracking-widest uppercase rounded mb-3 border border-[var(--accent-mint)]/20 animate-pulse-slow relative z-10">
+            {{ active_promotional_offer.badge_label }}
+        </span>
+        {% endif %}
+
+        <h3 class="font-display text-xl font-bold text-white mb-2 relative z-10">{{ active_promotional_offer.title }}
+        </h3>
+
+        {% if active_promotional_offer.sub_text %}
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-5 relative z-10">{{
+            active_promotional_offer.sub_text }}</p>
+        {% endif %}
+
+        <button @click="showFloatingOffer = false; window.scrollTo({ top: 0, behavior: 'smooth' })"
+            class="btn-mm btn-mint w-full relative z-10" style="height: 44px; font-size: 14px;">Claim Offer</button>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

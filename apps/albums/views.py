@@ -25,20 +25,34 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
         profile = request.user.profile
         client_ip = request.META.get('REMOTE_ADDR')
         user_agent = request.META.get('HTTP_USER_AGENT')
+        device_hash = request.data.get('device_hash') or request.META.get('HTTP_X_DEVICE_HASH')
 
-        # 1. Check purchase ownership [Spec §2.2]
-        has_purchased = Purchase.objects.filter(
+        # 1. Ownership + single-download lock enforcement [Spec §2.2, §4.3]
+        purchase = Purchase.objects.filter(
             user=profile,
             content_id=album.id,
             content_type='album',
             is_revoked=False,
-        ).exists()
+            is_redownload=False,
+        ).order_by('-created_at').first()
 
-        if not has_purchased:
-            return Response({
-                'error': 'You must purchase this album first.',
-                'price': str(album.price)
-            }, status=403)
+        if not purchase:
+            return Response({'error': 'You must purchase this album first.', 'price': str(album.price)}, status=403)
+
+        access_source = 'purchase'
+        if purchase.download_completed:
+            if hasattr(purchase, 'insurance') and purchase.insurance.status == 'active':
+                access_source = 'insurance'
+            else:
+                eligible, msg = DownloadManager.check_redownload_eligibility(profile, album.id, 'album')
+                if eligible:
+                    return Response({
+                        'error': 'Re-download requires payment.',
+                        'redownload_available': True,
+                        'redownload_price': str(album.price * 0.5),
+                        'message': msg,
+                    }, status=403)
+                return Response({'error': msg}, status=403)
 
         # 2. Check IP attempt limit [Spec §5: 3 per IP]
         allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, album.id, 'album')
@@ -55,9 +69,9 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
                 }, status=403)
             return Response({'error': msg}, status=403)
 
-        # 3. Generate token
+        # 3. Generate token (IP + device bound, like tracks)
         token = DownloadManager.generate_token(
-            profile, album.id, 'album', 'purchase', client_ip, user_agent
+            profile, album.id, 'album', access_source, client_ip, user_agent, device_hash
         )
         response_data = {'download_url': f"/api/v1/downloads/{token.token}/"}
         if msg:

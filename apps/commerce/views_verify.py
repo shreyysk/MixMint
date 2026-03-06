@@ -4,12 +4,10 @@ import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
 
 from apps.payments.utils import verify_payment as razorpay_verify
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
-from apps.accounts.models import Profile, DJProfile
 from .models import Purchase, DEFAULT_CHECKOUT_FEE
 from .services import MonetizationService
 
@@ -55,10 +53,11 @@ def verify_purchase_view(request):
                 seller = item.dj
                 original_price = item.price
                 track_obj = item
-            elif content_type == 'zip':
+            elif content_type in ('album', 'zip'):
                 item = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
                 seller = item.dj
                 original_price = item.price
+                content_type = 'album'
             else:
                 return JsonResponse({'error': 'Invalid content type'}, status=400)
         except (Track.DoesNotExist, AlbumPack.DoesNotExist):

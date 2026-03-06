@@ -150,9 +150,8 @@ class DownloadManager:
             content_id=content_id,
             content_type=content_type,
             is_revoked=False,
-            download_completed=True,
             is_redownload=False,
-        ).first()
+        ).order_by('-created_at').first()
 
         if not purchase:
             return False, "No completed purchase found."
@@ -161,6 +160,9 @@ class DownloadManager:
         if hasattr(purchase, 'insurance') and purchase.insurance.status == 'active':
             return True, "Download Insurance active. Unlimited free re-downloads available."
 
+        if not purchase.download_completed:
+            return True, "Previous download failed or not completed. Free retry available."
+
         lock_expiry = purchase.created_at + timedelta(days=2)
         if timezone.now() < lock_expiry:
             return False, "Re-download lock active. Try again after 2 days from original purchase (or buy Download Insurance)."
@@ -168,14 +170,15 @@ class DownloadManager:
         return True, "Re-download available at 50% price."
 
     @staticmethod
-    def mark_download_complete(token, bytes_delivered, checksum_ok=True):
+    def mark_download_complete(token, bytes_delivered, checksum_hex=None, checksum_ok=True):
         """
         Mark a download as fully completed after byte + checksum verification [Spec §4.4].
         - Grace retry allowed if checksum fails.
         """
-        token.download_completed = True
+        token.download_completed = bool(checksum_ok)
         token.bytes_delivered = bytes_delivered
-        token.checksum_verified = checksum_ok
+        token.checksum_verified = bool(checksum_ok)
+        token.checksum_hex = checksum_hex
         token.save()
 
         # Mark purchase as download_completed ONLY if checksum is OK [Spec §4.4]
@@ -194,7 +197,12 @@ class DownloadManager:
             content_id=token.content_id,
             content_type=token.content_type,
             completed=False,
-        ).order_by('-created_at').update(completed=True, checksum_verified=checksum_ok, bytes_delivered=bytes_delivered)
+        ).order_by('-created_at').update(
+            completed=bool(checksum_ok),
+            checksum_verified=bool(checksum_ok),
+            checksum_hex=checksum_hex,
+            bytes_delivered=bytes_delivered,
+        )
 
     @staticmethod
     def check_ban_list(ip_address, device_hash=None):

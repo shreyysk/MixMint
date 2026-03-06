@@ -44,6 +44,13 @@ class Purchase(models.Model):
     is_revoked = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['payment_id']),
+            models.Index(fields=['payment_order_id']),
+            models.Index(fields=['user', 'is_completed', 'download_completed']),
+        ]
+
 
 class LedgerEntry(models.Model):
     TYPE_CHOICES = (

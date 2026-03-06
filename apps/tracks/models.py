@@ -19,6 +19,7 @@ class Track(models.Model):
     bpm = models.IntegerField(null=True, blank=True)
     genre = models.CharField(max_length=100, null=True, blank=True)
     year = models.IntegerField(null=True, blank=True)  # Release year [Spec P2 §3.1]
+    checksum = models.CharField(max_length=64, null=True, blank=True)  # SHA-256 integrity [New]
 
     # Preview URLs — DJ chooses type [Spec §2.1]
     PREVIEW_CHOICES = (
@@ -34,8 +35,15 @@ class Track(models.Model):
     download_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.title
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_active', 'is_deleted']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()

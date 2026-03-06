@@ -1,28 +1,206 @@
-<nav class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-50">
-    <div class="container mx-auto flex justify-between items-center">
-        <a href="/"
-            class="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent flex items-center gap-2">
-            <span>MixMint</span>
-        </a>
-        <div class="hidden md:flex items-center gap-8">
-            <a href="{% url 'explore' %}" class="hover:text-pink-500 transition">Explore</a>
-            {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}" class="hover:text-pink-500 transition">Dashboard</a>
-            <a href="{% url 'accounts/rewards' %}"
-                class="hover:text-pink-500 transition font-mono border border-pink-500/30 px-3 py-1 rounded-full text-xs">
-                {{ user.profile.points.balance|default:0 }}pts
+<!-- Promotional Offer Banner [Spec P3] -->
+{% if active_promotional_offer and active_promotional_offer.show_on_navbar %}
+<div x-data="{ showOffer: false }"
+    x-init="if (!sessionStorage.getItem('hide_offer_{{ active_promotional_offer.id }}')) showOffer = true"
+    x-show="showOffer" x-transition:enter="transition-all ease-out duration-500"
+    x-transition:enter-start="-translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
+    x-transition:leave="transition-all ease-in duration-300" x-transition:leave-start="translate-y-0 opacity-100"
+    x-transition:leave-end="-translate-y-full opacity-0"
+    class="bg-[var(--accent-mint)] text-black font-body text-[13px] font-bold py-2 px-4 text-center tracking-wide z-[60] relative flex items-center justify-center gap-3 w-full"
+    x-cloak>
+
+    {% if active_promotional_offer.badge_label %}
+    <span class="bg-black text-[var(--accent-mint)] text-[10px] uppercase px-2 py-0.5 rounded-sm animate-pulse-slow">{{
+        active_promotional_offer.badge_label }}</span>
+    {% endif %}
+
+    <span class="flex-1 text-center">
+        {{ active_promotional_offer.title }}
+        {% if active_promotional_offer.tagline %}
+        <span class="font-normal opacity-80 hidden md:inline-block ml-1">&mdash; {{ active_promotional_offer.tagline
+            }}</span>
+        {% endif %}
+    </span>
+
+    <button @click="showOffer = false; sessionStorage.setItem('hide_offer_{{ active_promotional_offer.id }}', 'true')"
+        class="absolute right-4 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 transition-opacity p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+</div>
+{% endif %}
+
+<nav class="sticky top-0 z-50 border-b transition-colors duration-300"
+    style="background-color: color-mix(in srgb, var(--bg-base) 90%, transparent); backdrop-filter: blur(12px); border-bottom-color: var(--border);"
+    x-data="{ open: false, showMenu: false }">
+    <div class="container mx-auto px-6 max-w-[1280px]">
+        <div class="flex items-center justify-between h-20">
+            <!-- Left: Logo / Branding -->
+            <a href="/" class="flex items-center group">
+                <span
+                    class="font-display text-[22px] font-bold tracking-tight text-[var(--text-primary)] transition-colors">MixMint</span>
+                <span class="text-[var(--accent-mint)] text-[22px] font-bold">.</span>
             </a>
-            <div class="h-4 w-[1px] bg-gray-800"></div>
-            <form action="{% url 'logout' %}" method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" class="hover:text-pink-500 transition text-sm text-gray-400">Logout</button>
-            </form>
-            {% else %}
-            <a href="{% url 'login' %}" class="hover:text-pink-500 transition">Login</a>
-            <a href="{% url 'signup' %}"
-                class="bg-pink-500 px-5 py-2 rounded-full hover:bg-pink-600 transition font-bold text-sm shadow-lg shadow-pink-500/20">Join
-                Now</a>
-            {% endif %}
+
+            <!-- Center: Navigation Links (Desktop) -->
+            <div class="hidden md:flex items-center gap-8 font-body text-[15px] font-medium">
+                <a href="{% url 'explore' %}"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Browse</a>
+                <a href="{% url 'explore' %}?sort=new"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">New Releases</a>
+                <a href="#" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Top
+                    DJs</a>
+            </div>
+
+            <!-- Right: Actions (Desktop) -->
+            <div class="hidden md:flex items-center gap-6">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" data-theme-toggle
+                    class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-amber)] hover:bg-[var(--border)] transition-all"
+                    aria-label="Switch to light mode">
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg class="w-5 h-5 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </button>
+
+                <div class="w-px h-6 bg-[var(--border)] mx-1"></div>
+
+                {% if user.is_authenticated %}
+                {% if user.is_dj %}
+                <a href="{% url 'dashboard' %}"
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">DJ
+                    Panel</a>
+                {% else %}
+                <a href="{% url 'dashboard' %}"
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
+                    Library</a>
+                {% endif %}
+
+                <!-- Account Dropdown -->
+                <div class="relative ml-2">
+                    <button @click="showMenu = !showMenu"
+                        class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--border-focus)] transition-all overflow-hidden focus:outline-none"
+                        aria-label="Account menu">
+                        <span class="font-mono text-[12px] text-[var(--accent-mint)] font-bold">{{
+                            user.email|slice:":1"|upper }}</span>
+                    </button>
+
+                    <div x-show="showMenu" @click.outside="showMenu = false"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                        class="absolute right-0 mt-3 w-56 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-sm)] p-2 shadow-2xl backdrop-blur-xl"
+                        x-cloak>
+                        <div class="px-4 py-3 border-b border-[var(--border)] mb-2">
+                            <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">
+                                Account</p>
+                            <p class="text-[13px] font-body font-semibold text-[var(--text-primary)] truncate">{{
+                                user.email }}</p>
+                        </div>
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="w-full text-left px-4 py-2 text-[13px] font-body text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 rounded-[var(--radius-sm)] transition-colors">
+                                Log out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login'}}))"
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">Login</button>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup'}}))"
+                    class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">Sign
+                    Up</button>
+                {% endif %}
+            </div>
+
+            <!-- Mobile Menu Toggle & Theme Toggle -->
+            <div class="md:hidden flex items-center gap-4">
+                <button onclick="toggleTheme()" data-theme-toggle
+                    class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)]"
+                    aria-label="Switch to light mode">
+                    <svg class="w-5 h-5 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </button>
+                <button class="w-10 h-10 flex flex-col items-center justify-center gap-1.5 focus:outline-none"
+                    @click="open = !open" aria-label="Toggle navigation menu">
+                    <span class="w-6 h-[2px] bg-[var(--text-primary)] transition-all duration-300"
+                        :class="open ? 'rotate-45 translate-y-[8px]' : ''"></span>
+                    <span class="w-6 h-[2px] bg-[var(--text-primary)] transition-all duration-300"
+                        :class="open ? 'opacity-0' : ''"></span>
+                    <span class="w-6 h-[2px] bg-[var(--text-primary)] transition-all duration-300"
+                        :class="open ? '-rotate-45 -translate-y-[8px]' : ''"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay (fullscreen) -->
+        <div x-show="open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="md:hidden fixed inset-0 top-[81px] z-40 flex flex-col bg-[var(--bg-base)] px-6 pt-12 pb-8"
+            @keyup.escape.window="open = false" x-cloak>
+
+            <nav class="flex flex-col gap-6 font-body text-[18px] font-medium">
+                <a href="{% url 'explore' %}"
+                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_50ms_forwards]">Browse</a>
+                <a href="{% url 'explore' %}?sort=new"
+                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_100ms_forwards]">New
+                    Releases</a>
+                <a href="#"
+                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_150ms_forwards]">Top
+                    DJs</a>
+            </nav>
+
+            <div class="h-px bg-[var(--border)] my-8"></div>
+
+            <div class="flex flex-col gap-4">
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}"
+                    class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">
+                    {% if user.is_dj %}DJ Panel{% else %}My Library{% endif %}
+                </a>
+                <form action="{% url 'logout' %}" method="post"
+                    class="opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards]">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full py-3 text-[15px] font-body text-[var(--accent-red)] text-center border border-[var(--accent-red)] rounded-[var(--radius-sm)]">Log
+                        out</button>
+                </form>
+                {% else %}
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login'}})); open = false"
+                    class="w-full py-3 text-[15px] font-body font-medium text-[var(--text-primary)] text-center opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards] cursor-pointer">Login</button>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup'}})); open = false"
+                    class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards]">Sign
+                    Up</button>
+                {% endif %}
+            </div>
         </div>
     </div>
+
+    <style>
+        @keyframes staggerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </nav>

@@ -15,12 +15,12 @@ import shutil
 from datetime import datetime
 
 import boto3
-from mutagen.id3 import ID3, TIT2, TPE1, TENC, COMM
+from mutagen.id3 import ID3, TPE1, TENC, COMM
 
 from django.conf import settings
 from django.utils import timezone
 
-from apps.albums.models import AlbumPack, AlbumTrack, AlbumProcessingQueue
+from apps.albums.models import AlbumPack, AlbumTrack
 
 
 def process_album_zip(album_id):

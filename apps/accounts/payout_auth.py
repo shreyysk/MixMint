@@ -9,8 +9,7 @@ import random
 import string
 from django.utils import timezone
 from datetime import timedelta
-from django.core.mail import send_mail
-from django.conf import settings
+from apps.admin_panel.email_utils import send_email
 
 def generate_payout_otp(dj_profile):
     """
@@ -22,13 +21,14 @@ def generate_payout_otp(dj_profile):
     dj_profile.payout_otp_timestamp = timezone.now()
     dj_profile.save(update_fields=['payout_otp_secret', 'payout_otp_timestamp'])
     
-    # Send email to DJ
-    send_mail(
+    send_email(
+        to_email=dj_profile.profile.user.email,
         subject="MixMint Payout Verification Code",
-        message=f"Your verification code for initiating a payout is: {otp}\n\nThis code expires in 10 minutes.",
-        from_email=settings.FROM_EMAIL,
-        recipient_list=[dj_profile.profile.user.email],
-        fail_silently=True,
+        html_content=(
+            f"<p>Your verification code for initiating a payout is:</p>"
+            f"<h2>{otp}</h2>"
+            f"<p>This code expires in 10 minutes.</p>"
+        ),
     )
     return otp
 

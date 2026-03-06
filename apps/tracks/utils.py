@@ -2,7 +2,7 @@ import os
 import tempfile
 import shutil
 from datetime import datetime
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, COMM, TENC
+from mutagen.id3 import ID3, TIT2, TPE1, COMM, TENC
 from django.conf import settings
 import boto3
 

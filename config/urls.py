@@ -16,7 +16,7 @@ urlpatterns = [
     path('api/v1/admin/', include('apps.admin_panel.urls')),
     
     # Public Legal Pages
-    path('transparency/', include('apps.commerce.legal_urls')),
+    path('legal/', include('apps.commerce.legal_urls')),
     
     # Frontend Pages
     path('', include('apps.accounts.frontend_urls')),

@@ -35,8 +35,12 @@ def initiate_payment(request):
         return JsonResponse({'error': 'Invalid JSON.'}, status=400)
 
     content_id = data.get('content_id')
-    content_type = data.get('content_type', 'track')  # 'track' or 'album'/'zip'
+    content_type = data.get('content_type', 'track')  # 'track' or 'album'
     is_redownload = data.get('is_redownload', False)
+
+    # Back-compat normalization
+    if content_type == 'zip':
+        content_type = 'album'
 
     if not content_id:
         return JsonResponse({'error': 'content_id is required.'}, status=400)
@@ -46,13 +50,21 @@ def initiate_payment(request):
         if content_type == 'track':
             content = Track.objects.get(id=content_id, is_active=True, is_deleted=False)
             price = float(content.price)
-        elif content_type in ('album', 'zip'):
+        elif content_type == 'album':
             content = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
             price = float(content.price)
+        elif content_type == 'dj_application':
+            from apps.accounts.models import DJProfile
+            from apps.commerce.models import DJApplicationFee
+            content = DJProfile.objects.get(id=content_id)
+            fee = DJApplicationFee.objects.get(dj=content, status='pending')
+            price = float(fee.amount)
         else:
             return JsonResponse({'error': 'Invalid content_type.'}, status=400)
     except (Track.DoesNotExist, AlbumPack.DoesNotExist):
         return JsonResponse({'error': 'Content not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Item not found or already paid. {str(e)}'}, status=404)
 
     # Free tracks don't need payment
     if price <= 0:
@@ -66,7 +78,12 @@ def initiate_payment(request):
         price = price * 0.5
 
     # Add checkout fee [Spec P3 §1.3]
-    checkout_fee = settings.CHECKOUT_FEE
+    checkout_fee = 0.0
+    if content_type in ['track', 'album']:
+        from apps.admin_panel.models import PlatformSettings
+        settings_obj = PlatformSettings.load()
+        checkout_fee = float(settings_obj.buyer_platform_fee) if settings_obj.buyer_platform_fee_enabled else 0.0
+    
     total_amount = price + checkout_fee
 
     # Create Razorpay Order
@@ -82,7 +99,7 @@ def initiate_payment(request):
                 'is_redownload': str(is_redownload),
             }
         )
-    except Exception as e:
+    except Exception:
         return JsonResponse({'error': 'Payment gateway error.'}, status=500)
 
     return JsonResponse({
@@ -118,12 +135,39 @@ def confirm_payment(request):
     content_type = data.get('content_type', 'track')
     is_redownload = data.get('is_redownload', False)
 
+    # Back-compat normalization
+    if content_type == 'zip':
+        content_type = 'album'
+
     if not all([payment_id, order_id, signature, content_id]):
         return JsonResponse({'error': 'Missing required fields.'}, status=400)
 
     # Verify payment signature with Razorpay
     if not verify_payment(payment_id, order_id, signature):
         return JsonResponse({'error': 'Payment verification failed.'}, status=400)
+
+    # Handle DJ Application fee separately
+    if content_type == 'dj_application':
+        from apps.accounts.models import DJProfile
+        from apps.commerce.models import DJApplicationFee
+        try:
+            dj_profile = DJProfile.objects.get(id=content_id)
+            fee = DJApplicationFee.objects.get(dj=dj_profile, status='pending')
+            fee.status = 'paid'
+            fee.payment_id = payment_id
+            from django.utils import timezone
+            fee.paid_at = timezone.now()
+            fee.save()
+            
+            dj_profile.status = 'pending_review'
+            dj_profile.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Application fee paid successfully. Application is now under review.',
+            })
+        except Exception as e:
+            return JsonResponse({'error': f'Failed to process application fee. {str(e)}'}, status=500)
 
     # Prevent duplicate purchases
     if Purchase.objects.filter(payment_id=payment_id).exists():
@@ -151,5 +195,5 @@ def confirm_payment(request):
         return JsonResponse({'error': 'Content not found.'}, status=404)
     except IntegrityError:
         return JsonResponse({'error': 'Payment already processed.'}, status=400)
-    except Exception as e:
+    except Exception:
         return JsonResponse({'error': 'Failed to process purchase.'}, status=500)

@@ -15,7 +15,6 @@ class PurchaseViewSet(viewsets.ReadOnlyModelViewSet):
         return Purchase.objects.filter(
             user=self.request.user.profile,
             is_completed=True,
-            download_completed=True,  # Only show after successful download [Spec §3.1]
         ).order_by('-created_at')
 
 
@@ -26,7 +25,7 @@ class DJWalletViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.role != 'dj':
+        if self.request.user.profile.role != 'dj':
             return DJWallet.objects.none()
         try:
             dj_profile = self.request.user.profile.dj_profile
@@ -42,7 +41,7 @@ def request_manual_payout(request):
     DJ manually initiates a payout [Spec P2 §11, P3 §3.2].
     Requires 2FA verification code.
     """
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'Only DJs can request payouts.'}, status=status.HTTP_403_FORBIDDEN)
     
     code = request.data.get('verification_code')

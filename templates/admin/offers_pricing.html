@@ -1,0 +1,421 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+    :root {
+        --bg-base: #0A0A0F;
+        --bg-elevated: #111118;
+        --bg-surface: #1A1A25;
+        --text-primary: #F0F0F5;
+        --text-muted: #6B6B7E;
+        --accent-mint: #00FFB3;
+        --accent-amber: #FFB800;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-focus: #00FFB3;
+        --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    #content,
+    body {
+        background-color: var(--bg-base);
+        color: var(--text-primary);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    #header {
+        background: var(--bg-elevated) !important;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .module h2,
+    .module caption,
+    .inline-group h2 {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+
+    a:link,
+    a:visited {
+        color: var(--accent-mint);
+    }
+
+    /* Custom Admin Inputs */
+    .admin-input {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 6px;
+        outline: none;
+        width: 100%;
+        transition: border-color 0.2s;
+    }
+
+    .admin-input:focus {
+        border-color: var(--accent-mint);
+    }
+
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: var(--accent-mint);
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: var(--accent-mint);
+    }
+</style>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+    .font-display {
+        font-family: 'Clash Display', sans-serif;
+    }
+
+    .font-mono {
+        font-family: 'DM Mono', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1000px] mx-auto p-6" x-data="offersPricingData()">
+    <!-- Header -->
+    <div class="border-b border-[var(--border)] pb-6 mb-8">
+        <h1 class="font-display text-[32px] font-[700] text-[var(--accent-mint)] mb-2 uppercase tracking-tight">🎁
+            Offers & Pricing Control</h1>
+        <p class="text-[var(--text-muted)] text-[14px]">Manage platform-wide pricing rules, commissions, and promotional
+            offers. Changes take effect immediately.</p>
+    </div>
+
+    <!-- Section 1: Live Pricing Control -->
+    <div class="mb-12">
+        <h2 class="font-display text-[24px] font-[600] mb-6 border-b border-[var(--border)] pb-2">Section 1 — Live
+            Pricing Control</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Platform Commission -->
+            <div
+                class="bg-[var(--bg-elevated)] border border-[var(--border)] p-6 rounded-xl shadow-[var(--shadow-card)]">
+                <h3 class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Platform
+                    Commission Rate</h3>
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="relative w-32">
+                        <input type="number" step="0.01" x-model="settings.commission_rate"
+                            class="admin-input pr-8 text-lg font-bold">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">%</span>
+                    </div>
+                    <button @click="saveSettings()"
+                        class="bg-[var(--accent-mint)] text-black px-4 py-2 rounded-md font-bold hover:bg-white transition-colors">Save</button>
+                </div>
+                <p class="text-[12px] text-[var(--text-muted)]">Deducted from every DJ sale before payout. Applies
+                    immediately.</p>
+            </div>
+
+            <!-- Buyer Platform Fee -->
+            <div
+                class="bg-[var(--bg-elevated)] border border-[var(--border)] p-6 rounded-xl shadow-[var(--shadow-card)]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest">Buyer Platform
+                        Fee</h3>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-buyer-fee" x-model="settings.buyer_fee_enabled"
+                            @change="confirmToggle('buyer_fee_enabled')"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[var(--bg-surface)] top-0 z-10" />
+                        <label for="toggle-buyer-fee"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-[var(--bg-surface)] cursor-pointer"></label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 mb-2 opacity-50"
+                    :class="{'opacity-100': settings.buyer_fee_enabled}">
+                    <span class="text-[var(--text-muted)]">Amount: ₹</span>
+                    <input type="number" step="0.5" x-model="settings.buyer_fee" :disabled="!settings.buyer_fee_enabled"
+                        class="admin-input w-24">
+                    <button @click="saveSettings()" :disabled="!settings.buyer_fee_enabled"
+                        class="bg-[var(--accent-mint)] text-black px-4 py-2 rounded-md font-bold disabled:opacity-50">Save</button>
+                </div>
+                <p class="text-[12px] text-[var(--text-muted)] mt-2">When enabled, added into buyer's total silently.
+                </p>
+            </div>
+
+            <!-- GST Charging -->
+            <div
+                class="bg-[var(--bg-elevated)] border border-[var(--border)] p-6 rounded-xl shadow-[var(--shadow-card)]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest">GST Charging
+                        (18%)</h3>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-gst" x-model="settings.gst_enabled"
+                            @change="confirmToggle('gst_enabled')"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[var(--bg-surface)] top-0 z-10" />
+                        <label for="toggle-gst"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-[var(--bg-surface)] cursor-pointer"></label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 mb-2">
+                    <span class="text-sm font-bold"
+                        :class="settings.gst_enabled ? 'text-[var(--accent-red)]' : 'text-[var(--text-muted)]'"
+                        x-text="settings.gst_enabled ? 'CHARGING ACTIVE' : 'NOT CHARGING'"></span>
+                </div>
+                <p class="text-[12px] text-[var(--text-muted)] mt-2">Enable when turnover > ₹10L. Hidden in UI, shown on
+                    invoice.</p>
+            </div>
+
+            <!-- DJ Application Fee -->
+            <div
+                class="bg-[var(--bg-elevated)] border border-[var(--border)] p-6 rounded-xl shadow-[var(--shadow-card)]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest">DJ Application
+                        Fee</h3>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-dj-fee" x-model="settings.dj_fee_enabled"
+                            @change="confirmToggle('dj_fee_enabled')"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[var(--bg-surface)] top-0 z-10" />
+                        <label for="toggle-dj-fee"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-[var(--bg-surface)] cursor-pointer"></label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 mb-2 opacity-50" :class="{'opacity-100': settings.dj_fee_enabled}">
+                    <span class="text-[var(--text-muted)]">Amount: ₹</span>
+                    <input type="number" step="1" x-model="settings.dj_fee" :disabled="!settings.dj_fee_enabled"
+                        class="admin-input w-24">
+                    <button @click="saveSettings()" :disabled="!settings.dj_fee_enabled"
+                        class="bg-[var(--accent-mint)] text-black px-4 py-2 rounded-md font-bold disabled:opacity-50">Save</button>
+                </div>
+                <p class="text-[12px] text-[var(--text-muted)] mt-2">Charge applicants during DJ role upgrade.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Active Offer Banner -->
+    <div class="mb-12">
+        <h2
+            class="font-display text-[24px] font-[600] mb-6 border-b border-[var(--border)] pb-2 flex items-center justify-between">
+            Section 2 — Promotional Offer Banner
+            <div class="flex items-center gap-3 text-sm font-sans">
+                <span :class="offer.is_active ? 'text-[var(--accent-mint)]' : 'text-[var(--text-muted)]'"
+                    x-text="offer.is_active ? 'BANNER ACTIVE' : 'BANNER OFF'"></span>
+                <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" id="toggle-offer" x-model="offer.is_active"
+                        class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[var(--bg-surface)] top-0 z-10" />
+                    <label for="toggle-offer"
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-[var(--bg-surface)] cursor-pointer"></label>
+                </div>
+            </div>
+        </h2>
+
+        <div class="bg-[var(--bg-elevated)] border border-[var(--border)] p-8 rounded-xl shadow-[var(--shadow-card)]"
+            :class="{'opacity-50': !offer.is_active}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Offer
+                        Title</label>
+                    <input type="text" x-model="offer.title" placeholder="Launch Offer 🚀" class="admin-input">
+                </div>
+                <div>
+                    <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Offer
+                        Tagline</label>
+                    <input type="text" x-model="offer.tagline" placeholder="Zero platform fees. 10% comm"
+                        class="admin-input">
+                </div>
+                <div>
+                    <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Sub-text</label>
+                    <input type="text" x-model="offer.sub_text" placeholder="Introductory launch pricing"
+                        class="admin-input">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Badge
+                            Label</label>
+                        <input type="text" x-model="offer.badge_label" placeholder="LIMITED TIME" class="admin-input">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Occasion
+                            Tag</label>
+                        <select x-model="offer.occasion_tag"
+                            class="admin-input text-[var(--text-primary)] bg-[var(--bg-surface)]">
+                            <option value="Launch">Launch</option>
+                            <option value="Festive">Festive</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Start Date
+                        (Optional)</label>
+                    <input type="datetime-local" x-model="offer.start_date" class="admin-input">
+                </div>
+                <div>
+                    <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">End Date
+                        (Optional)</label>
+                    <input type="datetime-local" x-model="offer.end_date" class="admin-input">
+                </div>
+            </div>
+
+            <div class="mb-8 p-4 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg">
+                <label class="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-4">Show
+                    Placements</label>
+                <div class="flex flex-wrap gap-6">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                            x-model="offer.show_on_homepage" class="accent-[var(--accent-mint)] w-4 h-4"> Homepage
+                        Hero</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                            x-model="offer.show_on_navbar" class="accent-[var(--accent-mint)] w-4 h-4"> Navbar
+                        Strip</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                            x-model="offer.show_on_dj_upload" class="accent-[var(--accent-mint)] w-4 h-4"> DJ Upload
+                        Box</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                            x-model="offer.show_on_checkout" class="accent-[var(--accent-mint)] w-4 h-4"> Checkout
+                        Inline</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                            x-model="offer.show_on_track_pages" class="accent-[var(--accent-mint)] w-4 h-4"> Track
+                        Pages</label>
+                </div>
+            </div>
+
+            <div class="flex gap-4 border-t border-[var(--border)] pt-6">
+                <!-- <button class="border border-[var(--accent-mint)] text-[var(--accent-mint)] px-6 py-2 rounded-md font-bold hover:bg-[var(--accent-mint)]/10 transition-colors">Preview Banner</button> -->
+                <button @click="saveOffer()"
+                    class="bg-[var(--accent-mint)] text-black px-8 py-2 rounded-md font-bold hover:bg-white transition-colors ml-auto">Save
+                    & Publish Offer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function offersPricingData() {
+        return {
+            settings: {
+                commission_rate: "{{ settings.platform_commission_rate|default:'15.00' }}",
+                buyer_fee_enabled: {{ settings.buyer_platform_fee_enabled | yesno: "true,false" }
+    },
+    buyer_fee: "{{ settings.buyer_platform_fee|default:'5.00' }}",
+        gst_enabled: { { settings.gst_charging_enabled | yesno: "true,false" } },
+    dj_fee_enabled: { { settings.dj_application_fee_enabled | yesno: "true,false" } },
+    dj_fee: "{{ settings.dj_application_fee|default:'99.00' }}"
+            },
+    offer: {
+        id: "{{ active_offer.id|default:'' }}",
+            is_active: { { active_offer.is_active | yesno: "true,false,false" } },
+        title: "{{ active_offer.title|default:'Launch Offer 🚀' }}",
+            tagline: "{{ active_offer.tagline|default:'Zero platform fees. 10% comm' }}",
+                sub_text: "{{ active_offer.sub_text|default:'Introductory launch pricing' }}",
+                    badge_label: "{{ active_offer.badge_label|default:'LIMITED TIME' }}",
+                        occasion_tag: "{{ active_offer.occasion_tag|default:'Launch' }}",
+                            start_date: "{{ active_offer.start_date|date:'Y-m-d\TH:i'|default:'' }}",
+                                end_date: "{{ active_offer.end_date|date:'Y-m-d\TH:i'|default:'' }}",
+                                    show_on_homepage: { { active_offer.show_on_homepage | yesno: "true,false,true" } },
+        show_on_navbar: { { active_offer.show_on_navbar | yesno: "true,false,true" } },
+        show_on_dj_upload: { { active_offer.show_on_dj_upload | yesno: "true,false,true" } },
+        show_on_checkout: { { active_offer.show_on_checkout | yesno: "true,false,true" } },
+        show_on_track_pages: { { active_offer.show_on_track_pages | yesno: "true,false,false" } }
+    },
+
+    confirmToggle(field) {
+        if (this.settings[field]) {
+            if (!confirm("Are you sure you want to enable this feature? It will apply platform-wide immediately.")) {
+                this.settings[field] = false;
+                return;
+            }
+        }
+        this.saveSettings();
+    },
+            
+            async saveSettings() {
+        try {
+            const res = await fetch("{% url 'api_update_settings' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify({
+                    platform_commission_rate: this.settings.commission_rate,
+                    buyer_platform_fee_enabled: this.settings.buyer_fee_enabled,
+                    buyer_platform_fee: this.settings.buyer_fee,
+                    gst_charging_enabled: this.settings.gst_enabled,
+                    dj_application_fee_enabled: this.settings.dj_fee_enabled,
+                    dj_application_fee: this.settings.dj_fee
+                })
+            });
+
+            if (res.ok) alert("Settings successfully updated.");
+            else alert("Failed to save settings.");
+        } catch (e) {
+            console.error(e);
+            alert("Error communicating with server.");
+        }
+    },
+            
+            async saveOffer() {
+        if (this.offer.is_active && !confirm("Are you sure you want to publish this offer platform-wide?")) {
+            return;
+        }
+
+        try {
+            const res = await fetch("{% url 'api_save_offer' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify({
+                    offer_id: this.offer.id,
+                    is_active: this.offer.is_active,
+                    title: this.offer.title,
+                    tagline: this.offer.tagline,
+                    sub_text: this.offer.sub_text,
+                    badge_label: this.offer.badge_label,
+                    occasion_tag: this.offer.occasion_tag,
+                    start_date: this.offer.start_date || null,
+                    end_date: this.offer.end_date || null,
+                    show_on_homepage: this.offer.show_on_homepage,
+                    show_on_navbar: this.offer.show_on_navbar,
+                    show_on_dj_upload: this.offer.show_on_dj_upload,
+                    show_on_checkout: this.offer.show_on_checkout,
+                    show_on_track_pages: this.offer.show_on_track_pages
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert("Offer successfully published/saved.");
+                if (data.offer_id) this.offer.id = data.offer_id;
+            } else {
+                alert("Failed to save offer.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error communicating with server.");
+        }
+    }
+        }
+    }
+</script>
+{% endblock %}

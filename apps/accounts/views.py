@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from .models import User, Profile, DJProfile
@@ -11,11 +11,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def confirm_age(self, request):
-        """Explicit 18+ age confirmation [Spec §3.1]."""
-        profile = request.user.profile
-        profile.has_confirmed_age = True
-        profile.save(update_fields=['has_confirmed_age'])
-        return Response({'status': 'confirmed', 'has_confirmed_age': True})
+        """Age confirmation is handled implicitly at signup (18+ ToS acceptance)."""
+        return Response({'status': 'ok', 'message': 'Age acknowledged via Terms of Service acceptance.'})
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
@@ -37,8 +34,5 @@ class DJProfileViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def confirm_age(request):
-    """Explicit 18+ age confirmation [Spec §3.1]."""
-    profile = request.user.profile
-    profile.has_confirmed_age = True
-    profile.save(update_fields=['has_confirmed_age'])
-    return Response({'status': 'confirmed', 'has_confirmed_age': True})
+    """Age confirmation is handled at signup via Terms of Service acceptance."""
+    return Response({'status': 'ok', 'message': 'Age acknowledged via Terms of Service acceptance.'})

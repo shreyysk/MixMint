@@ -6,7 +6,7 @@ def dj_storefront_view(request, slug):
     dj = get_object_or_404(DJProfile, slug=slug, status='approved')
 
     # Don't show content if DJ store is paused [Spec §3.2]
-    if dj.store_paused:
+    if dj.profile.store_paused:
         return render(request, 'dj/store_paused.html', {'dj': dj})
 
     tracks = dj.tracks.filter(is_active=True, is_deleted=False).order_by('-created_at')

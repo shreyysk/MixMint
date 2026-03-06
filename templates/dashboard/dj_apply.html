@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Become a DJ Partner — MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-[720px] mx-auto py-16 px-4">
+    <!-- Header -->
+    <div class="mb-12 border-b border-[var(--border)] pb-8">
+        <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em] block mb-3">DJ
+            Application</span>
+        <h1
+            class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-4">
+            Become a DJ Partner
+        </h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)] leading-[1.6] max-w-xl">
+            Start selling your music directly to fans on MixMint. You keep 85% of every sale.
+        </p>
+    </div>
+
+    <!-- Application Form -->
+    <div
+        class="bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-card)] p-8 md:p-10 rounded-[12px]">
+        <form method="post" action="{% url 'apply_as_dj' %}" class="space-y-8">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">DJ /
+                        Stage Name</label>
+                    <input type="text" name="dj_name" required class="input-mm" placeholder="e.g. DJ Shadow">
+                </div>
+                <div>
+                    <label
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Profile
+                        URL (Slug)</label>
+                    <div class="relative">
+                        <span
+                            class="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[12px] text-[var(--text-muted)] pointer-events-none">mixmint.site/dj/</span>
+                        <input type="text" name="slug" required class="input-mm pl-[125px] font-mono text-[13px]"
+                            placeholder="yourname">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label
+                    class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Bio</label>
+                <textarea name="bio" rows="4" class="input-mm" style="height: auto; min-height: 120px;"
+                    placeholder="Tell us about yourself — your sound, residencies, and artistic direction..."></textarea>
+            </div>
+
+            <div>
+                <label
+                    class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Primary
+                    Genres</label>
+                <input type="text" name="genres" class="input-mm font-mono text-[13px]"
+                    placeholder="e.g. Tech House, Acid House, Trance">
+            </div>
+
+            <!-- Agreement Block -->
+            <div class="p-6 rounded-[12px] bg-[var(--accent-red)]/5 border border-[var(--accent-red)]/20">
+                <h4 class="font-mono text-[11px] font-[700] text-[var(--accent-red)] uppercase tracking-widest mb-3">
+                    DJ Agreement
+                </h4>
+                <label class="flex items-start gap-4 cursor-pointer">
+                    <input type="checkbox" name="legal_agreement_accepted" required
+                        class="mt-1 w-4 h-4 accent-[var(--accent-red)] bg-transparent border-[var(--border)] rounded-sm">
+                    <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
+                        I agree to MixMint's DJ Partner Terms. I understand that MixMint retains a 15% platform fee per
+                        sale. I take full responsibility for the content I upload and confirm that I have the necessary
+                        rights to distribute it. Uploading unauthorized material will result in account termination and
+                        forfeiture of pending earnings.
+                    </p>
+                </label>
+            </div>
+
+            <button type="submit"
+                class="btn-mm btn-mint w-full h-[60px] text-[16px] font-[600] rounded-[8px] group relative overflow-hidden">
+                <span class="relative z-10">Submit Application</span>
+                <div
+                    class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                </div>
+            </button>
+            <p class="text-center font-body text-[12px] text-[var(--text-muted)] mt-3">
+                Applications are reviewed within 24–48 hours.
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}

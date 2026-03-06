@@ -1,3 +1,2 @@
-from django.urls import path
-
-urlpatterns = []
+# social/urls.py
+# No URLs to register — social features removed per Master Document v2.0.

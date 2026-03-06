@@ -1,1 +1,2 @@
-from django.contrib import admin
+# payments/admin.py
+# No models to register here.

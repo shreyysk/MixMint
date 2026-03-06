@@ -1,54 +1,256 @@
 {% extends "admin/base_site.html" %}
-{% block content %}
-<div class="container" style="padding: 20px; font-family: 'Inter', sans-serif;">
-    <h1 style="color: #00ff88; margin-bottom: 30px;">MixMint Investor Dashboard</h1>
+{% load i18n static %}
 
+{% block extrastyle %}
+{{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    :root {
+        --bg-base: #0A0A0F;
+        --bg-elevated: #111118;
+        --bg-surface: #111118;
+        --text-primary: #F0F0F5;
+        --text-muted: #6B6B7E;
+        --accent-mint: #00FFB3;
+        --accent-amber: #FFB800;
+        --accent-red: #FF3355;
+        --border: rgba(255, 255, 255, 0.06);
+        --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    #content,
+    body {
+        background-color: var(--bg-base);
+        color: var(--text-primary);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    }
+
+    #header {
+        background: var(--bg-elevated) !important;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* Override standard Django Admin text colors where necessary */
+    .module h2,
+    .module caption,
+    .inline-group h2 {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+
+    a:link,
+    a:visited {
+        color: var(--accent-mint);
+    }
+</style>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap"
+    rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap"
+    rel="stylesheet">
+<style>
+    .font-display {
+        font-family: 'Clash Display', sans-serif;
+    }
+
+    .font-body {
+        font-family: 'Satoshi', sans-serif;
+    }
+
+    .font-mono {
+        font-family: 'DM Mono', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto p-6 font-body">
+    <!-- Header -->
     <div
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
-        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Total GMV (Gross Merchandise Value)
-            </h3>
-            <p style="font-size: 32px; font-weight: bold; color: #fff;">₹{{ total_gmv|default:"0.00" }}</p>
+        class="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <h1 class="font-display text-[32px] font-[700] text-[var(--text-primary)] uppercase tracking-tight mb-2">📊
+                MixMint — Investor Intelligence</h1>
+            <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest block">Confidential
+                &nbsp;·&nbsp; Authorized access only &nbsp;·&nbsp; {% now "N j, Y" %}</span>
         </div>
-        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Platform Net Commission</h3>
-            <p style="font-size: 32px; font-weight: bold; color: #00ff88;">₹{{ platform_commission|default:"0.00" }}</p>
-            <small style="color: #666;">(15% Regular / 8% Pro DJ)</small>
+        <a href="{% url 'admin_investor_report_pdf' %}"
+            class="bg-[var(--accent-mint)] text-[#0A0A0F] px-6 py-3 font-[600] font-mono text-[12px] uppercase tracking-wider rounded-[8px] hover:bg-[var(--text-primary)] transition-colors inline-block"
+            target="_blank">
+            ⬇ Download Full Report
+        </a>
+    </div>
+
+    <!-- ── KPI Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div
+            class="border border-[var(--accent-mint)]/50 bg-[var(--bg-elevated)] p-6 rounded-[12px] shadow-[var(--shadow-card)] relative">
+            <div class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest mb-3">Total GMV</div>
+            <div class="font-display text-[36px] font-[700] text-[var(--text-primary)] leading-none mb-1">₹{{
+                total_gmv|default:"0.00" }}</div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">Gross Merchandise Value</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent-mint)]/20 rounded-b-[12px]"></div>
         </div>
-        <div style="background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 14px; text-transform: uppercase;">Ad Revenue Generated</h3>
-            <p style="font-size: 32px; font-weight: bold; color: #3498db;">₹{{ ad_revenue|default:"0.00" }}</p>
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-elevated)] p-6 rounded-[12px] shadow-[var(--shadow-card)]">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Platform
+                Commission</div>
+            <div class="font-display text-[36px] font-[700] text-[#a78bfa] leading-none mb-1">₹{{
+                platform_commission|default:"0.00" }}</div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">15% std / 8% Pro per sale</div>
+        </div>
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-elevated)] p-6 rounded-[12px] shadow-[var(--shadow-card)]">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Ad Revenue</div>
+            <div class="font-display text-[36px] font-[700] text-[#38bdf8] leading-none mb-1">₹{{
+                ad_revenue|default:"0.00" }}</div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">All inventory · 85% platform share</div>
+        </div>
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-elevated)] p-6 rounded-[12px] shadow-[var(--shadow-card)]">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Avg Rate</div>
+            <div class="font-display text-[36px] font-[700] text-[var(--text-primary)] leading-none mb-1">{{
+                avg_commission_rate|default:"0" }}%</div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">Blended Commission Status</div>
         </div>
     </div>
 
-    <div style="background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333;">
-        <h2 style="color: #fff; margin-bottom: 20px;">Transparency Metrics</h2>
-        <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+    <!-- ── DJ Partner Stats -->
+    <h2
+        class="font-display text-[24px] font-[600] text-[var(--text-primary)] mb-6 border-b border-[var(--border)] pb-4">
+        Active DJs & Partnerships</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-elevated)] p-8 rounded-[12px] flex items-center justify-center min-h-[300px]">
+            <canvas id="tierChart" width="400" height="400" style="max-height: 280px;"></canvas>
+        </div>
+        <div class="border border-[var(--border)] bg-[var(--bg-elevated)] rounded-[12px] overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-[var(--bg-base)] border-b border-[var(--border)]">
+                        <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Metric
+                        </th>
+                        <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Value
+                        </th>
+                        <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Status
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] font-body text-[14px]">
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-4 text-[var(--text-primary)]">Total DJs (all)</td>
+                        <td class="p-4 font-mono font-[700]">{{ total_dj_count|default:"0" }}</td>
+                        <td
+                            class="p-4 font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest font-[700]">
+                            ● Registered</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-4 text-[var(--text-primary)]">Approved Selling DJs</td>
+                        <td class="p-4 font-mono font-[700]">{{ active_djs|default:"0" }}</td>
+                        <td class="p-4 font-mono text-[10px] text-[#38bdf8] uppercase tracking-widest font-[700]">●
+                            Active</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-4 text-[var(--text-primary)]">Pro DJ Subscribers</td>
+                        <td class="p-4 font-mono font-[700]">{{ pro_dj_count|default:"0" }}</td>
+                        <td class="p-4 font-mono text-[10px] text-[#a78bfa] uppercase tracking-widest font-[700]">●
+                            Premium</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-4 text-[var(--text-primary)]">Avg Commission Rate</td>
+                        <td class="p-4 font-mono font-[700]">{{ avg_commission_rate|default:"0" }}%</td>
+                        <td
+                            class="p-4 font-mono text-[10px] text-[var(--accent-amber)] uppercase tracking-widest font-[700]">
+                            ● Blended</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ── Revenue Streams -->
+    <h2
+        class="font-display text-[24px] font-[600] text-[var(--text-primary)] mb-6 border-b border-[var(--border)] pb-4">
+        Revenue Streams Breakdown</h2>
+    <div class="border border-[var(--border)] bg-[var(--bg-elevated)] rounded-[12px] overflow-hidden mb-12">
+        <table class="w-full text-left">
             <thead>
-                <tr style="text-align: left; border-bottom: 1px solid #444;">
-                    <th style="padding: 12px;">Metric</th>
-                    <th style="padding: 12px;">Value</th>
-                    <th style="padding: 12px;">Health</th>
+                <tr class="bg-[var(--bg-base)] border-b border-[var(--border)]">
+                    <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Stream</th>
+                    <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Value (₹)
+                    </th>
+                    <th class="p-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Notes</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid #222;">
-                    <td style="padding: 12px;">Active Verified DJs</td>
-                    <td style="padding: 12px;">{{ active_djs }}</td>
-                    <td style="padding: 12px; color: #00ff88;">● Good</td>
+            <tbody class="divide-y divide-[var(--border)] font-body text-[14px]">
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-4 text-[var(--text-primary)]">Platform Commission</td>
+                    <td class="p-4 font-mono font-[700] text-[#a78bfa]">₹{{ platform_commission|default:"0.00" }}</td>
+                    <td class="p-4 text-[var(--text-muted)] text-[13px]">15% standard · 8% Pro tier per sale</td>
                 </tr>
-                <tr style="border-bottom: 1px solid #222;">
-                    <td style="padding: 12px;">Pro DJ Mix</td>
-                    <td style="padding: 12px;">{{ pro_dj_count }} / {{ total_dj_count }}</td>
-                    <td style="padding: 12px; color: #f1c40f;">● Growing</td>
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-4 text-[var(--text-primary)]">Ad Revenue (Platform Share)</td>
+                    <td class="p-4 font-mono font-[700] text-[#38bdf8]">₹{{ ad_revenue|default:"0.00" }}</td>
+                    <td class="p-4 text-[var(--text-muted)] text-[13px]">85% retained; 15% shared with DJs</td>
                 </tr>
-                <tr style="border-bottom: 1px solid #222;">
-                    <td style="padding: 12px;">Average Commission Rate</td>
-                    <td style="padding: 12px;">{{ avg_commission_rate }}%</td>
-                    <td style="padding: 12px; color: #00ff88;">● Target</td>
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-4 text-[var(--text-primary)]">Checkout Service Fee</td>
+                    <td class="p-4 font-mono font-[700] text-[var(--text-primary)]">₹5 – ₹10</td>
+                    <td class="p-4 text-[var(--text-muted)] text-[13px]">Per transaction, charged transparently to buyer
+                    </td>
+                </tr>
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-4 text-[var(--text-primary)]">Pro DJ Subscriptions</td>
+                    <td class="p-4 font-mono font-[700] text-[var(--text-primary)]">{{ pro_dj_count|default:"0" }} ×
+                        ₹999/yr</td>
+                    <td class="p-4 text-[var(--text-muted)] text-[13px]">{{ pro_dj_count|default:"0" }} active Pro
+                        subscribers unlocking 8% rates</td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        var total = parseInt("{{ total_dj_count|default:0 }}", 10);
+        var pro = parseInt("{{ pro_dj_count|default:0 }}", 10);
+        var std = Math.max(total - pro, 0);
+
+        var ctx = document.getElementById('tierChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Standard DJs (15%)', 'Pro DJs (8%)'],
+                datasets: [{
+                    data: [std, pro],
+                    backgroundColor: ['#00FFB3', '#a78bfa'],
+                    borderColor: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.05)'],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#F0F0F5',
+                            font: { family: 'ui-sans-serif, system-ui, sans-serif', size: 12, weight: '500' },
+                            padding: 20
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+    })();
+</script>
 {% endblock %}

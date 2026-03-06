@@ -1,71 +1,358 @@
 {% extends 'base.html' %}
-
-{% block title %}{{ album.title }} - MixMint Album Pack{% endblock %}
+{% block title %}{{ album.title }} — MixMint Album{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-12">
-    <div class="flex flex-col md:flex-row gap-12">
-        <!-- Album Art / Placeholder -->
-        <div class="w-full md:w-1/3">
+<div class="py-12 max-w-[1200px] mx-auto">
+
+    <!-- ── BREADCRUMBS ── -->
+    <nav class="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-10"
+        aria-label="Breadcrumb">
+        <a href="{% url 'explore' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
+        <span>/</span>
+        <a href="{% url 'explore' %}?type=album" class="hover:text-[var(--text-primary)] transition-colors">Albums</a>
+        <span>/</span>
+        <span class="text-[var(--text-primary)] truncate max-w-[200px]">{{ album.title }}</span>
+    </nav>
+
+    <!-- ── TWO-COLUMN LAYOUT ── -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-start mb-16">
+
+        <!-- LEFT: Artwork -->
+        <div class="md:col-span-5 relative">
+            <!-- Stack effect -->
             <div
-                class="aspect-square bg-gray-900 rounded-3xl border border-gray-800 flex items-center justify-center overflow-hidden">
-                <svg class="w-24 h-24 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5z" />
-                </svg>
+                class="absolute inset-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] transform translate-y-3 translate-x-3 opacity-40 -z-20">
+            </div>
+            <div
+                class="absolute inset-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] transform translate-y-1.5 translate-x-1.5 opacity-70 -z-10">
+            </div>
+
+            <div
+                class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group z-10">
+                {% if album.cover_url %}
+                <img src="{{ album.cover_url }}" alt="{{ album.title }}" class="w-full h-full object-cover">
+                {% else %}
+                <div
+                    class="w-full h-full flex items-center justify-center text-8xl opacity-20 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
+                    📦</div>
+                {% endif %}
+
+                <div
+                    class="absolute top-4 left-4 font-mono text-[11px] px-3 py-1 bg-[var(--bg-base)]/80 backdrop-blur-sm border border-[var(--border)] rounded-sm text-[var(--text-primary)] uppercase tracking-wider">
+                    ZIP ALBUM
+                </div>
             </div>
         </div>
 
-        <!-- Info -->
-        <div class="flex-1 space-y-6">
+        <!-- RIGHT: Info & Action -->
+        <div class="md:col-span-7 flex flex-col justify-between min-h-full">
             <div>
-                <h1 class="text-5xl font-bold mb-2">{{ album.title }}</h1>
-                <p class="text-pink-500 text-xl font-bold">BY {{ album.dj.dj_name }}</p>
-                <span
-                    class="inline-block mt-2 px-3 py-1 bg-gray-800 rounded-full text-xs text-gray-400 uppercase tracking-widest font-bold">Album
-                    Pack</span>
+                <!-- Tags -->
+                <div class="flex items-center gap-3 mb-6">
+                    <span
+                        class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-amber)] font-bold uppercase tracking-wider">
+                        Album Pack
+                    </span>
+                    <span
+                        class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
+                        {{ tracks|length|default:"0" }} Tracks
+                    </span>
+                </div>
+
+                <!-- Title -->
+                <h1
+                    class="font-display text-[32px] sm:text-[48px] font-[700] leading-[1.1] tracking-tight text-[var(--text-primary)] mb-6">
+                    {{ album.title }}
+                </h1>
+
+                <!-- DJ Info -->
+                <div class="flex items-center gap-4 mb-6">
+                    <div
+                        class="w-8 h-8 rounded-full bg-[var(--accent-mint)] flex items-center justify-center font-display text-[14px] font-bold text-[#0A0A0F]">
+                        {{ album.dj.dj_name|slice:":1"|upper }}
+                    </div>
+                    <a href="{% url 'dj_profile' album.dj.slug %}"
+                        class="font-body text-[16px] font-[600] text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">
+                        {{ album.dj.dj_name }}
+                    </a>
+                </div>
+
+                <!-- Metadata -->
+                <div class="flex flex-wrap items-center gap-6 font-mono text-[12px] text-[var(--text-muted)] mb-8">
+                    <div class="flex items-center gap-2">
+                        <span class="opacity-50">Uploaded:</span>
+                        <span class="text-[var(--text-primary)]">{{ album.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="opacity-50">Est. Size:</span>
+                        <span class="text-[var(--text-primary)]">~{{ tracks|length|default:"0" }}0 MB</span>
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-[var(--border)] mb-8"></div>
+
+                <!-- Description -->
+                {% if album.description %}
+                <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] mb-12 max-w-[90%]">
+                    {{ album.description|linebreaks }}
+                </div>
+                {% else %}
+                <p class="font-body text-[15px] text-[var(--text-muted)] italic mb-12">No description provided for this
+                    album.</p>
+                {% endif %}
             </div>
 
-            <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
-                <div class="flex justify-between items-center mb-6">
-                    <span class="text-3xl font-mono font-bold">${{ album.price }}</span>
-                    <button
-                        class="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-full font-bold transition shadow-lg shadow-pink-500/20">
-                        Purchase Pack
-                    </button>
+            <!-- Action Box -->
+            <div
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 shadow-[var(--shadow-card)] relative overflow-hidden">
+                <div class="absolute inset-0 opacity-[0.03] pointer-events-none"
+                    style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');">
                 </div>
-                <div class="flex gap-4 items-center">
-                    <span class="text-gray-500 text-sm">{{ tracks|length }} Tracks Included</span>
-                    <span class="text-gray-800">•</span>
-                    <span class="text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded">High-Quality Audio</span>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
+                    <div class="flex flex-col">
+                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">₹{{ album.price
+                            }}</span>
+                        <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
+                            charges</span>
+                    </div>
+
+                    <div class="w-full sm:w-auto flex-1 max-w-[320px]">
+                        {% if user.is_authenticated %}
+                        {% if can_request_download %}
+                        <button id="download-btn" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            📦 Download as ZIP Pack
+                        </button>
+                        {% elif needs_redownload_payment %}
+                        <div class="text-center mb-2">
+                            <span class="pill-warning">✓ You Own This</span>
+                        </div>
+                        <button id="redownload-pay-btn" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
+                            Re-download · ₹{{ redownload_price|default:"—" }}
+                        </button>
+                        {% else %}
+                        <button id="buy-now-btn" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            Buy & Download
+                        </button>
+                        {% endif %}
+                        {% else %}
+                        <button
+                            @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
+                            class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
+                            Login to Buy
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
+
+                <!-- Inline Offer Notice -->
+                {% if active_promotional_offer and active_promotional_offer.show_on_checkout %}
+                <div
+                    class="mt-5 p-3 bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 rounded-lg flex items-start gap-3 relative z-10">
+                    <span class="text-[var(--accent-mint)] mt-0.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </span>
+                    <div>
+                        <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if
+                            active_promotional_offer.badge_label %}[{{ active_promotional_offer.badge_label }}] {% endif
+                            %}{{ active_promotional_offer.title }}</p>
+                        {% if active_promotional_offer.tagline %}
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{
+                            active_promotional_offer.tagline }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div
+                    class="mt-5 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10 w-full flex items-center justify-center gap-2">
+                    <span class="font-mono uppercase tracking-wider">🔒 Protected by MixMint Secure Vault</span>
+                </div>
+
+                <div class="mt-3 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10">
+                    This album ZIP includes all tracks with MixMint metadata embedded.
+                </div>
+            </div>
+
+            <!-- Content Responsibility -->
+            <div class="mt-6">
+                <p class="font-body text-[12px] text-[var(--text-muted)] italic leading-relaxed">
+                    This album is uploaded and sold by {{ album.dj.dj_name }}, an independent artist on MixMint. MixMint
+                    distributes but does not verify the licensing or ownership of uploaded content.
+                    <a href="/legal/terms/#content-policy"
+                        class="text-[var(--accent-mint)] hover:underline underline-offset-2">Content Policy →</a>
+                </p>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="mt-4 notice-info">
+                <p class="font-body text-[12px] text-[var(--text-muted)]">
+                    🔒 Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
+                    <a href="/legal/transparency/"
+                        class="text-[var(--accent-mint)] hover:underline underline-offset-2 ml-1">How does this work?
+                        →</a>
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Tracklist -->
-    <section class="space-y-6">
-        <h3 class="text-2xl font-bold">Tracklist</h3>
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-gray-800/50 text-xs uppercase text-gray-500">
-                    <tr>
-                        <th class="px-6 py-4">#</th>
-                        <th class="px-6 py-4">Title</th>
-                        <th class="px-6 py-4">Format</th>
+    <!-- ── TRACKLIST ── -->
+    <div
+        class="mt-8 border border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] overflow-hidden shadow-[var(--shadow-card)]">
+        <div
+            class="px-6 py-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
+            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Tracklist</h3>
+            <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">{{ tracks|length }}
+                Tracks</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left font-body">
+                <thead class="bg-transparent border-b border-[var(--border)]">
+                    <tr class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
+                        <th class="px-6 py-4 font-normal w-12 text-center">#</th>
+                        <th class="px-6 py-4 font-normal">Title</th>
+                        <th class="px-6 py-4 font-normal text-right">Duration</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800">
+                <tbody class="divide-y divide-[var(--border)]">
                     {% for track in tracks %}
-                    <tr class="hover:bg-gray-800/20 transition">
-                        <td class="px-6 py-4 text-gray-500 font-mono">{{ track.track_order }}</td>
-                        <td class="px-6 py-4 font-bold">{{ track.title }}</td>
-                        <td class="px-6 py-4 text-gray-500">{{ track.format }}</td>
+                    <tr class="group hover:bg-[var(--bg-elevated)] transition-colors">
+                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] font-mono text-center w-12">{{
+                            track.track_order|default:forloop.counter }}</td>
+                        <td
+                            class="px-6 py-4 text-[14px] text-[var(--text-primary)] font-medium group-hover:text-[var(--accent-mint)] transition-colors">
+                            {{ track.title }}</td>
+                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] text-right font-mono">{{
+                            track.duration|default:"--:--" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-16 text-center">
+                            <p class="font-body text-[13px] text-[var(--text-muted)]">No tracks in this album</p>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </section>
+    </div>
 </div>
+
+<!-- ── Scripts ── -->
+<script>
+    async function getDeviceHash() {
+        const key = "mixmint_device_hash_v1";
+        const existing = localStorage.getItem(key);
+        if (existing) return existing;
+        const raw = [navigator.userAgent || "", navigator.platform || "", Intl.DateTimeFormat().resolvedOptions().timeZone || "", String(screen.width) + "x" + String(screen.height)].join("|");
+        const buf = new TextEncoder().encode(raw);
+        const digest = await crypto.subtle.digest("SHA-256", buf);
+        const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+        localStorage.setItem(key, hex);
+        return hex;
+    }
+
+    async function initiateAndPay(isRedownload) {
+        const contentId = "{{ album.id }}";
+        const contentType = "album";
+        try {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Initiating secure payment...' } }));
+            const response = await fetch('{% url "initiate_payment" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ content_id: contentId, content_type: contentType, is_redownload: !!isRedownload })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Failed to initiate payment");
+            if (!data.order_id) throw new Error(data.error || "No order ID returned");
+
+            return new Promise((resolve, reject) => {
+                const options = {
+                    key: data.key,
+                    amount: data.amount,
+                    currency: data.currency || "INR",
+                    name: "MixMint",
+                    description: "Secure Album Purchase",
+                    order_id: data.order_id,
+                    theme: { color: "#00FFB3" },
+                    handler: async function (resp) {
+                        try {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Payment confirmed. Preparing download...' } }));
+                            const confirmRes = await fetch('{% url "confirm_payment" %}', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                body: JSON.stringify({
+                                    payment_id: resp.razorpay_payment_id,
+                                    order_id: resp.razorpay_order_id,
+                                    signature: resp.razorpay_signature,
+                                    content_id: contentId,
+                                    content_type: contentType,
+                                    is_redownload: !!isRedownload,
+                                })
+                            });
+                            const confirmData = await confirmRes.json();
+                            if (!confirmRes.ok) throw new Error(confirmData.error || "Confirmation failed");
+                            resolve({ paid: true });
+                        } catch (e) { reject(e); }
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function () { reject(new Error("Payment failed or cancelled.")); });
+                rzp.open();
+            });
+        } catch (err) { throw err; }
+    }
+
+    async function requestDownloadTokenAndStart() {
+        try {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Generating secure download token...' } }));
+            const deviceHash = await getDeviceHash();
+            const res = await fetch('/api/v1/albums/{{ album.id }}/download-token/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}', 'X-Device-Hash': deviceHash },
+                body: JSON.stringify({ device_hash: deviceHash })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to generate token");
+            if (data.warning) window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'warning', text: data.warning } }));
+            window.location.href = data.download_url;
+        } catch (err) { throw err; }
+    }
+
+    const buyBtn = document.getElementById('buy-now-btn');
+    const rePayBtn = document.getElementById('redownload-pay-btn');
+    const dlBtn = document.getElementById('download-btn');
+
+    if (buyBtn) {
+        buyBtn.addEventListener('click', async () => {
+            try {
+                await initiateAndPay(false);
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Payment confirmed! Reloading...' } }));
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } })); }
+        });
+    }
+
+    if (rePayBtn) {
+        rePayBtn.addEventListener('click', async () => {
+            try {
+                await initiateAndPay(true);
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Re-download activated! Reloading...' } }));
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } })); }
+        });
+    }
+
+    if (dlBtn) {
+        dlBtn.addEventListener('click', async () => {
+            try { await requestDownloadTokenAndStart(); }
+            catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Download failed." } })); }
+        });
+    }
+</script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 {% endblock %}

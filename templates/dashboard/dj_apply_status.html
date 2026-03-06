@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}DJ Application Status — MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-[720px] mx-auto py-16 px-4">
+    <!-- Header -->
+    <div class="mb-12 border-b border-[var(--border)] pb-8 text-center">
+        <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em] block mb-3">
+            Application Status
+        </span>
+        <h1
+            class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-4">
+            DJ Partner Application
+        </h1>
+    </div>
+
+    <div
+        class="bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-card)] p-8 md:p-10 rounded-[12px] text-center relative overflow-hidden">
+
+        {% if status == 'pending_payment' %}
+        <!-- Payment Required State -->
+        <div class="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');">
+        </div>
+
+        <div class="relative z-10 space-y-6">
+            <div
+                class="w-16 h-16 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+            </div>
+
+            <h3 class="font-display text-2xl font-bold">Action Required: Application Fee</h3>
+            <p class="font-body text-[var(--text-muted)] max-w-md mx-auto">
+                Your application to join MixMint as a DJ Partner has been received. Please pay the one-time onboarding
+                fee to submit it for review.
+            </p>
+
+            <div
+                class="bg-[var(--bg-elevated)] p-6 rounded-lg border border-[var(--border)] inline-block min-w-[300px] my-6">
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Total Amount
+                </p>
+                <p class="font-mono text-4xl font-bold text-[var(--accent-mint)]">₹{{ fee_amount }}</p>
+            </div>
+
+            <button id="pay-application-btn"
+                class="btn-mm btn-mint w-full max-w-sm h-[56px] text-[16px] font-[600] mx-auto">
+                Pay Securely
+            </button>
+        </div>
+
+        <!-- Payment Script -->
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <script>
+            document.getElementById('pay-application-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('pay-application-btn');
+                try {
+                    btn.disabled = true;
+                    btn.innerText = 'Initializing...';
+
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Initiating secure payment...' } }));
+
+                    const response = await fetch('{% url "initiate_payment" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ content_id: '{{ dj_profile.id }}', content_type: 'dj_application' })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || "Failed to initiate payment.");
+                    if (!data.order_id) throw new Error(data.error || "No order_id returned.");
+
+                    const options = {
+                        key: data.key,
+                        amount: data.amount,
+                        currency: data.currency || "INR",
+                        name: "MixMint",
+                        description: "DJ Partner Application Fee",
+                        order_id: data.order_id,
+                        theme: { color: "#00FFB3" },
+                        handler: async function (resp) {
+                            try {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Payment confirmed. Submitting application...' } }));
+                                const confirmRes = await fetch('{% url "confirm_payment" %}', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                    body: JSON.stringify({
+                                        payment_id: resp.razorpay_payment_id,
+                                        order_id: resp.razorpay_order_id,
+                                        signature: resp.razorpay_signature,
+                                        content_id: '{{ dj_profile.id }}',
+                                        content_type: 'dj_application',
+                                    })
+                                });
+                                const confirmData = await confirmRes.json();
+                                if (!confirmRes.ok) throw new Error(confirmData.error || "Payment confirmation failed.");
+
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Application successfully submitted!' } }));
+                                setTimeout(() => window.location.reload(), 2000);
+                            } catch (e) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Confirmation failed." } }));
+                                btn.disabled = false;
+                                btn.innerText = 'Pay Securely';
+                            }
+                        }
+                    };
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function () {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: "Payment failed or cancelled." } }));
+                        btn.disabled = false;
+                        btn.innerText = 'Pay Securely';
+                    });
+                    rzp.open();
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment initiation failed." } }));
+                    btn.disabled = false;
+                    btn.innerText = 'Pay Securely';
+                }
+            });
+        </script>
+
+        {% elif status == 'pending_review' %}
+        <!-- Review State -->
+        <div class="space-y-6">
+            <div
+                class="w-16 h-16 bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+            </div>
+
+            <h3 class="font-display text-2xl font-bold">Application Under Review</h3>
+            <p class="font-body text-[var(--text-muted)] max-w-md mx-auto">
+                Thank you applied to be a MixMint DJ Partner. Your application is currently being reviewed by our
+                moderation team.
+            </p>
+            <p
+                class="font-body text-[13px] text-[var(--text-muted)] mt-6 bg-[var(--bg-base)] inline-block px-4 py-2 rounded-md">
+                Usually reviewed within 24-48 hours. We'll notify you via email.
+            </p>
+        </div>
+
+        {% elif status == 'rejected' %}
+        <!-- Rejected State -->
+        <div class="space-y-6">
+            <div
+                class="w-16 h-16 bg-[var(--accent-red)]/10 text-[var(--accent-red)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+            </div>
+
+            <h3 class="font-display text-2xl font-bold text-[var(--accent-red)]">Application Declined</h3>
+            <p class="font-body text-[var(--text-muted)] max-w-md mx-auto">
+                Unfortunately, your application to become a DJ Partner has not been approved at this time.
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="mt-12 pt-8 border-t border-[var(--border)]">
+            <a href="{% url 'dashboard' %}"
+                class="font-body text-[14px] text-[var(--text-muted)] hover:text-white transition-colors">
+                &larr; Return to Library
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

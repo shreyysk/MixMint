@@ -6,32 +6,7 @@ When admin soft-deletes content, this service archives
 the full content metadata before removal.
 """
 
-from django.db import models
-from django.utils import timezone
-from apps.accounts.models import DJProfile
-
-
-class ContentArchive(models.Model):
-    """Immutable archive of soft-deleted content [Spec §9]."""
-    CONTENT_TYPES = (
-        ('track', 'Track'),
-        ('album', 'Album/ZIP'),
-    )
-    content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
-    content_id = models.PositiveBigIntegerField()
-    dj = models.ForeignKey(DJProfile, on_delete=models.SET_NULL, null=True, related_name='archived_content')
-    title = models.CharField(max_length=255)
-    metadata = models.JSONField(default=dict)  # Full content snapshot
-    file_key = models.CharField(max_length=500)  # R2 path for potential recovery
-    reason = models.TextField(null=True, blank=True)
-    deleted_by = models.CharField(max_length=255, null=True, blank=True)
-    archived_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        app_label = 'admin_panel'
-
-    def __str__(self):
-        return f"Archive: {self.title} ({self.content_type})"
+from .models import ContentArchive
 
 
 def archive_content(content, content_type, reason='', deleted_by=''):

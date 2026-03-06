@@ -1,4 +1,5 @@
 from django.urls import path
+from . import dashboard_views
 from .frontend_views import HomeView, ExploreView, login_view, signup_view, logout_view
 from .dashboard_views import dashboard_view, dj_dashboard_view
 from .dj_views import dj_storefront_view
@@ -15,6 +16,8 @@ urlpatterns = [
     # Dashboard
     path('dashboard/', dashboard_view, name='dashboard'),
     path('dashboard/dj/', dj_dashboard_view, name='dj_dashboard'),
+    path('apply-dj/', dashboard_views.dj_apply_view, name='apply_as_dj'),
+    path('upload/', dashboard_views.upload_track_view, name='upload_track'),
     
     # DJ Storefront
     path('dj/<slug:slug>/', dj_storefront_view, name='dj_profile'),

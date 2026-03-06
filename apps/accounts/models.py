@@ -124,13 +124,20 @@ class DJApplication(models.Model):
     """DJ application workflow [Spec P2 §2]"""
 
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
+        ('pending_payment', 'Pending Payment'),
+        ('pending_review', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     )
 
     user = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='dj_application')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    dj_name = models.CharField(max_length=255, null=True, blank=True)
+    genres = models.JSONField(default=list, blank=True)
+    bio = models.TextField(null=True, blank=True)
+    social_links = models.JSONField(default=dict, blank=True)
+    why_mixmint = models.TextField(null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
     paid_application_fee = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)

@@ -23,7 +23,6 @@ from .utils import DownloadManager
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from django.core.cache import cache
-from apps.accounts.models import Profile, DJProfile
 from apps.admin_panel.models import KillSwitch, FraudAlert
 
 # Anti-leak delay threshold: files > 50MB get throttled [Spec §11]
@@ -56,15 +55,20 @@ def download_content(request, token_str):
 
     # 3.2 Concurrent connection limit (Max 2) [Spec §4.4]
     cache_key = f"dl_concurrency_{token_str}"
-    current_conns = cache.get(cache_key, 0)
-    if current_conns >= 2:
+    try:
+        current_conns = cache.incr(cache_key)
+    except ValueError:
+        # Key doesn't exist, set it to 1
+        cache.set(cache_key, 1, timeout=3600)
+        current_conns = 1
+
+    if current_conns > 2:
+        # Atomic rollback if limit exceeded
+        cache.decr(cache_key)
         return JsonResponse({
             'error': 'Too many concurrent connections. Please close other download threads.',
             'code': 'CONCURRENCY_LIMIT'
         }, status=429)
-    
-    # Increment concurrency count
-    cache.set(cache_key, current_conns + 1, timeout=3600)  # 1 hour expiry
 
     # 4. Resolve content
     if token.content_type == 'track':
@@ -121,14 +125,26 @@ def download_content(request, token_str):
                     yield chunk
 
             # After full delivery — verify and mark complete [Spec §4.4]
-            if bytes_counter['delivered'] >= content_length:
+            if bytes_counter['delivered'] == content_length:
                 checksum = sha256_hash.hexdigest()
+                
+                # Verify against source-of-truth if available [Spec §4.4]
+                # Default to True if no reference checksum exists yet
+                is_valid_integrity = True
+                if hasattr(content, 'checksum') and content.checksum:
+                    is_valid_integrity = (checksum == content.checksum)
+
                 DownloadManager.mark_download_complete(
-                    token, bytes_counter['delivered'],
-                    checksum_ok=True
+                    token,
+                    bytes_delivered=bytes_counter['delivered'],
+                    checksum_hex=checksum,
+                    checksum_ok=is_valid_integrity,
                 )
-                content.download_count += 1
-                content.save(update_fields=['download_count'])
+                
+                if is_valid_integrity:
+                    from django.db.models import F
+                    content.download_count = F('download_count') + 1
+                    content.save(update_fields=['download_count'])
 
         filename = f"{content.title}.zip" if token.content_type == 'album' else f"{content.title}.mp3"
         response = StreamingHttpResponse(

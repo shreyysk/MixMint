@@ -74,7 +74,7 @@ def purchase_history(request):
                 track = Track.objects.get(id=p.content_id)
                 entry['title'] = track.title
                 entry['dj_name'] = track.dj.dj_name
-            elif p.content_type == 'zip':
+            elif p.content_type == 'album':
                 album = AlbumPack.objects.get(id=p.content_id)
                 entry['title'] = album.title
                 entry['dj_name'] = album.dj.dj_name

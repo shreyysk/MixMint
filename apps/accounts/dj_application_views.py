@@ -17,6 +17,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Profile, DJProfile
 from apps.commerce.models import DJWallet, DJApplicationFee
+from apps.admin_panel.email_utils import send_email
 
 
 @api_view(['POST'])
@@ -34,7 +35,7 @@ def apply_as_dj(request):
     profile = user.profile
 
     # Already a DJ?
-    if user.role == 'dj':
+    if profile.role == 'dj':
         return Response({'error': 'You are already a DJ.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Already has a DJProfile?
@@ -69,20 +70,11 @@ def apply_as_dj(request):
         )
 
     # Check application fee requirement [Spec §7: ₹99 intro, free first 3 months]
-    from apps.admin_panel.models import SystemSetting
+    from apps.admin_panel.models import PlatformSettings
     
-    intro_period_end = settings.PLATFORM_LAUNCH_DATE + timedelta(days=90)
-    is_within_free_3_months = timezone.now() < intro_period_end
-    
-    fee_enabled = True
-    if is_within_free_3_months:
-        fee_enabled = False
-    else:
-        try:
-            fee_setting = SystemSetting.objects.get(key='dj_application_fee_enabled')
-            fee_enabled = fee_setting.value.get('enabled', True)
-        except SystemSetting.DoesNotExist:
-            pass
+    settings_obj = PlatformSettings.load()
+    fee_enabled = settings_obj.dj_application_fee_enabled
+    fee_amount = settings_obj.dj_application_fee
 
     # Create DJProfile in pending status
     dj_profile = DJProfile.objects.create(
@@ -91,28 +83,26 @@ def apply_as_dj(request):
         slug=slug,
         bio=bio,
         genres=genres if isinstance(genres, list) else [],
-        status='pending',
-        legal_agreement_accepted=legal_agreement,
-        application_fee_paid=not fee_enabled,  # Auto-mark paid if fee disabled/waived
+        status='pending_payment' if fee_enabled else 'pending_review',
     )
 
     # Create application fee record if fee is enabled
     if fee_enabled:
         DJApplicationFee.objects.create(
             dj=dj_profile,
-            amount=settings.DJ_APPLICATION_FEE,
+            amount=fee_amount,
             status='pending',
         )
         return Response({
-            'status': 'pending',
-            'message': f'Application submitted. Please pay ₹{settings.DJ_APPLICATION_FEE} application fee.',
+            'status': 'pending_payment',
+            'message': f'Application submitted. Please pay ₹{fee_amount} application fee.',
             'fee_required': True,
-            'fee_amount': settings.DJ_APPLICATION_FEE,
+            'fee_amount': fee_amount,
             'dj_profile_id': dj_profile.id,
         }, status=status.HTTP_201_CREATED)
     else:
         return Response({
-            'status': 'pending',
+            'status': 'pending_review',
             'message': 'Application submitted. Waiting for admin approval.',
             'fee_required': False,
             'dj_profile_id': dj_profile.id,
@@ -135,28 +125,40 @@ def admin_approve_dj(request, dj_profile_id):
         return Response({'error': 'Already approved.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Check fee paid (if required)
-    if not dj_profile.application_fee_paid:
-        try:
-            fee = dj_profile.application_fee
-            if fee.status != 'paid' and fee.status != 'waived':
-                return Response(
-                    {'error': 'Application fee not paid yet.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except DJApplicationFee.DoesNotExist:
-            pass  # Fee not required
+    try:
+        fee = dj_profile.application_fee
+        if fee.status not in ('paid', 'waived'):
+            return Response({'error': 'Application fee not paid yet.'}, status=status.HTTP_400_BAD_REQUEST)
+    except DJApplicationFee.DoesNotExist:
+        pass  # Fee not required / waived
 
     # Approve
     dj_profile.status = 'approved'
     dj_profile.save(update_fields=['status'])
 
     # Update user role
-    user = dj_profile.profile.user
-    user.role = 'dj'
-    user.save(update_fields=['role'])
+    profile = dj_profile.profile
+    profile.role = 'dj'
+    profile.save(update_fields=['role'])
 
     # Create DJ Wallet [Spec P2 §9]
     DJWallet.objects.get_or_create(dj=dj_profile)
+
+    # Send welcome email via Resend [Spec: Welcome email on DJ approval]
+    try:
+        send_email(
+            to_email=profile.user.email,
+            subject="Welcome to MixMint DJ!",
+            html_content=(
+                f"<p>Hi {dj_profile.dj_name},</p>"
+                f"<p>Your DJ application has been <strong>approved</strong>. "
+                f"Your storefront is now live on MixMint.</p>"
+                f"<p>Log in to upload tracks and album packs to get started.</p>"
+            ),
+        )
+    except Exception:
+        # Email failures must not break admin actions
+        pass
 
     return Response({
         'status': 'approved',
@@ -179,6 +181,21 @@ def admin_reject_dj(request, dj_profile_id):
     dj_profile.status = 'rejected'
     dj_profile.save(update_fields=['status'])
 
+    # Notify applicant via Resend [Spec: Rejection email]
+    try:
+        send_email(
+            to_email=dj_profile.profile.user.email,
+            subject="MixMint DJ Application Update",
+            html_content=(
+                f"<p>Hi {dj_profile.dj_name},</p>"
+                f"<p>Your DJ application was <strong>rejected</strong>.</p>"
+                f"<p>Reason: {reason}</p>"
+                f"<p>If you believe this is an error, reply to this email for a manual review.</p>"
+            ),
+        )
+    except Exception:
+        pass
+
     return Response({
         'status': 'rejected',
         'message': f'{dj_profile.dj_name} application has been rejected.',
@@ -195,8 +212,8 @@ def admin_verify_dj(request, dj_profile_id):
     except DJProfile.DoesNotExist:
         return Response({'error': 'Approved DJ profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    dj_profile.is_verified_dj = True
-    dj_profile.save(update_fields=['is_verified_dj'])
+    dj_profile.profile.is_verified_dj = True
+    dj_profile.profile.save(update_fields=['is_verified_dj'])
 
     return Response({
         'status': 'verified',
@@ -208,7 +225,7 @@ def admin_verify_dj(request, dj_profile_id):
 @permission_classes([IsAuthenticated])
 def toggle_store_pause(request):
     """DJ pauses/unpauses their store [Spec §3.2]."""
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'Only DJs can access this.'}, status=status.HTTP_403_FORBIDDEN)
 
     try:
@@ -216,12 +233,13 @@ def toggle_store_pause(request):
     except (Profile.DoesNotExist, DJProfile.DoesNotExist):
         return Response({'error': 'DJ profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    dj_profile.store_paused = not dj_profile.store_paused
-    dj_profile.save(update_fields=['store_paused'])
+    profile = dj_profile.profile
+    profile.store_paused = not profile.store_paused
+    profile.save(update_fields=['store_paused'])
 
     return Response({
-        'store_paused': dj_profile.store_paused,
-        'message': 'Store paused.' if dj_profile.store_paused else 'Store resumed.',
+        'store_paused': profile.store_paused,
+        'message': 'Store paused.' if profile.store_paused else 'Store resumed.',
     })
 
 
@@ -232,7 +250,7 @@ def request_payout_otp(request):
     DJ requests a 2FA OTP for payout verification [Spec P2 §11, P3 §3.2].
     OTP is sent to the DJ's registered email.
     """
-    if request.user.role != 'dj':
+    if request.user.profile.role != 'dj':
         return Response({'error': 'Only DJs can request payout OTPs.'}, status=status.HTTP_403_FORBIDDEN)
 
     try:

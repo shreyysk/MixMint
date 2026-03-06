@@ -16,10 +16,10 @@ from django.utils import timezone
 
 from apps.commerce.models import (
     Purchase, DJWallet, LedgerEntry, Invoice, TaxRecord,
-    DJApplicationFee, AdRevenueLog,
 )
 from apps.tracks.models import Track, TrackCollaborator
 from apps.albums.models import AlbumPack
+from apps.admin_panel.models import PlatformSettings, PromotionalOffer
 
 # GST rate for digital goods in India
 GST_RATE = Decimal('18.00')  # 18%
@@ -27,9 +27,17 @@ GST_RATE = Decimal('18.00')  # 18%
 
 def calculate_commission_rate(dj_profile):
     """Get commission rate based on DJ plan [Spec P3 §1.5]."""
+    settings_obj = PlatformSettings.load()
+    active_offer = PromotionalOffer.objects.filter(is_active=True).first()
+    
+    if active_offer:
+        return settings_obj.platform_commission_rate
+        
     if dj_profile.profile.is_pro_dj:
-        return Decimal(str(settings.PRO_DJ_COMMISSION_RATE))
-    return Decimal(str(settings.PLATFORM_COMMISSION_RATE))
+        if settings_obj.platform_commission_rate > Decimal('8.00'):
+            return Decimal('8.00')
+            
+    return settings_obj.platform_commission_rate
 
 
 def calculate_revenue_split(price, dj_profile, content=None, content_type='track'):
@@ -43,14 +51,17 @@ def calculate_revenue_split(price, dj_profile, content=None, content_type='track
     - gst_amount: GST on platform commission
     - collaborator_splits: list of (dj, amount) if collab track
     """
-    checkout_fee = Decimal(str(settings.CHECKOUT_FEE))
+    settings_obj = PlatformSettings.load()
+    checkout_fee = settings_obj.buyer_platform_fee if settings_obj.buyer_platform_fee_enabled else Decimal('0.00')
     commission_rate = calculate_commission_rate(dj_profile)
 
-    commission = (price * commission_rate).quantize(Decimal('0.01'))
+    commission = (price * commission_rate / Decimal('100')).quantize(Decimal('0.01'))
     dj_earnings = price - commission
 
     # GST on commission (platform service)
-    gst_amount = (commission * GST_RATE / Decimal('100')).quantize(Decimal('0.01'))
+    gst_amount = Decimal('0.00')
+    if settings_obj.gst_charging_enabled:
+        gst_amount = (commission * GST_RATE / Decimal('100')).quantize(Decimal('0.01'))
 
     # Collaborator splits [Spec P2 §4]
     collaborator_splits = []
@@ -136,24 +147,40 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
     invoice_setting_obj = SystemSetting.objects.filter(key='invoice_generation_enabled').first()
     invoice_enabled = invoice_setting_obj.value.get('enabled', True) if invoice_setting_obj and isinstance(invoice_setting_obj.value, dict) else True
 
+    invoice = None
     if invoice_enabled:
-        # Create Invoice + Tax records
-        create_purchase_invoice(purchase, user_profile, dj_profile, split)
-        
-    # Send purchase success email to user
-    from django.core.mail import send_mail
-    from django.conf import settings
+        # Create Invoice + Tax records if GST is enabled or just plain invoice
+        settings_obj = PlatformSettings.load()
+        if settings_obj.gst_charging_enabled:
+            pass # Keep tax calculations logic
+        invoice = create_purchase_invoice(purchase, user_profile, dj_profile, split)
+
+    # Send purchase success email via Resend [Spec: Buyer invoice email]
     try:
+        from apps.admin_panel.email_utils import send_email
+        from django.conf import settings
+
         content_title = content.title if hasattr(content, 'title') else f"{content_type.capitalize()} #{content_id}"
-        send_mail(
-            subject="Your MixMint Purchase was Successful!",
-            message=f"Hi {user_profile.user.email},\n\nYour purchase of '{content_title}' by {dj_profile.dj_name} was successful!\n\nYou can now download your content from your account.\n\nThank you for supporting DJs directly!\n\nLove,\nMixMint Team",
-            from_email=settings.FROM_EMAIL,
-            recipient_list=[user_profile.user.email],
-            fail_silently=True,  # Don't crash purchase on email failure
+        html_lines = [
+            f"<p>Hi {user_profile.full_name or user_profile.user.email},</p>",
+            f"<p>Thank you for your purchase on <strong>MixMint</strong>.</p>",
+            f"<p><strong>Content:</strong> {content_title} by {dj_profile.dj_name}</p>",
+            f"<p><strong>Amount Paid:</strong> ₹{purchase.price_paid}</p>",
+        ]
+        if invoice:
+            html_lines.append(f"<p>Your GST invoice number is <strong>{invoice.invoice_number}</strong>.</p>")
+
+        html_lines.append("<p>You can re-download your purchase from your MixMint library, "
+                          "subject to our secure download policy.</p>")
+        html_lines.append("<p>— MixMint</p>")
+
+        send_email(
+            to_email=user_profile.user.email,
+            subject="Your MixMint Purchase & GST Invoice",
+            html_content="".join(html_lines),
         )
-    except Exception as e:
-        # Log email failure silently in a real production system
+    except Exception:
+        # Email issues must not break purchase creation
         pass
 
     return purchase
@@ -170,6 +197,7 @@ def credit_dj_wallets(purchase, primary_dj, split):
             wallet, _ = DJWallet.objects.get_or_create(dj=collab_split['dj'])
             wallet.pending_earnings += collab_split['amount']
             wallet.total_earnings += collab_split['amount']
+            wallet.available_for_payout += collab_split['amount']
             wallet.save()
 
             # Ledger entry for audit
@@ -190,6 +218,7 @@ def credit_dj_wallets(purchase, primary_dj, split):
         wallet, _ = DJWallet.objects.get_or_create(dj=primary_dj)
         wallet.pending_earnings += split['dj_earnings']
         wallet.total_earnings += split['dj_earnings']
+        wallet.available_for_payout += split['dj_earnings']
         wallet.save()
 
         LedgerEntry.objects.create(
@@ -225,13 +254,15 @@ def create_purchase_invoice(purchase, user_profile, dj_profile, split):
         status='issued',
     )
 
-    # GST record
-    TaxRecord.objects.create(
-        invoice=invoice,
-        tax_type='GST',
-        tax_rate=GST_RATE,
-        tax_amount=split['gst_amount'],
-        jurisdiction='India',
-    )
+    settings_obj = PlatformSettings.load()
+    if settings_obj.gst_charging_enabled:
+        # GST record
+        TaxRecord.objects.create(
+            invoice=invoice,
+            tax_type='GST',
+            tax_rate=GST_RATE,
+            tax_amount=split['gst_amount'],
+            jurisdiction='India',
+        )
 
     return invoice

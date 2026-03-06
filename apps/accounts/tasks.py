@@ -1,8 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-from apps.accounts.models import Profile, LoginHistory
-from apps.commerce.models import Payout
+from apps.accounts.models import Profile, DJProfile
 from apps.commerce.payout_processor import retry_failed_payouts, process_weekly_payouts
 
 @shared_task
@@ -40,7 +39,6 @@ def update_dj_popularity_scores():
     thirty_days_ago = timezone.now() - timedelta(days=30)
     djs = DJProfile.objects.filter(status='approved')
     
-    from django.db.models import Count, Q
     from apps.commerce.models import Purchase
     
     updated_count = 0

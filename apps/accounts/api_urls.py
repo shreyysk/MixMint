@@ -5,6 +5,7 @@ from .dj_application_views import (
     apply_as_dj, admin_approve_dj, admin_reject_dj,
     admin_verify_dj, toggle_store_pause, request_payout_otp,
 )
+from .pro_upgrade_views import upgrade_to_pro, admin_grant_pro
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -18,7 +19,9 @@ urlpatterns = [
     path('dj/<int:dj_profile_id>/approve/', admin_approve_dj, name='dj_approve'),
     path('dj/<int:dj_profile_id>/reject/', admin_reject_dj, name='dj_reject'),
     path('dj/<int:dj_profile_id>/verify/', admin_verify_dj, name='dj_verify'),
+    path('dj/<int:dj_profile_id>/grant-pro/', admin_grant_pro, name='dj_grant_pro'),
     path('dj/toggle-store/', toggle_store_pause, name='dj_toggle_store'),
     path('dj/payout-otp/', request_payout_otp, name='dj_payout_otp'),
+    path('dj/upgrade-pro/', upgrade_to_pro, name='dj_upgrade_pro'),
     path('confirm-age/', UserViewSet.as_view({'post': 'confirm_age'}), name='user_confirm_age'),
 ]

@@ -14,7 +14,7 @@ Supports:
 
 from datetime import timedelta
 
-from django.db.models import Q, Sum, Count, F
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -42,12 +42,12 @@ def advanced_search(request):
 
     # Base filters
     track_qs = Track.objects.filter(
-        is_active=True, is_deleted=False, dj__store_paused=False
+        is_active=True, is_deleted=False, dj__profile__store_paused=False
     )
     album_qs = AlbumPack.objects.filter(
-        is_active=True, is_deleted=False, dj__store_paused=False
+        is_active=True, is_deleted=False, dj__profile__store_paused=False
     )
-    dj_qs = DJProfile.objects.filter(status='approved', store_paused=False)
+    dj_qs = DJProfile.objects.filter(status='approved', profile__store_paused=False)
 
     # Text search (Fuzzy matching via TrigramSimilarity [Spec §8])
     from django.contrib.postgres.search import TrigramSimilarity
@@ -100,8 +100,8 @@ def advanced_search(request):
             'dj_name': dj.dj_name,
             'slug': dj.slug,
             'bio': dj.bio,
-            'is_verified_dj': dj.is_verified_dj,
-            'is_pro_dj': dj.is_pro_dj,
+            'is_verified_dj': dj.profile.is_verified_dj,
+            'is_pro_dj': dj.profile.is_pro_dj,
             'genres': dj.genres,
         } for dj in dj_qs[:20]]
 
@@ -111,10 +111,8 @@ def advanced_search(request):
 @api_view(['GET'])
 def popular_this_week(request):
     """Tracks popular this week by download count [Spec §8]."""
-    one_week_ago = timezone.now() - timedelta(days=7)
-
     tracks = Track.objects.filter(
-        is_active=True, is_deleted=False, dj__store_paused=False,
+        is_active=True, is_deleted=False, dj__profile__store_paused=False,
     ).order_by('-download_count')[:20]
 
     return Response({
@@ -128,12 +126,12 @@ def new_releases(request):
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
     tracks = Track.objects.filter(
-        is_active=True, is_deleted=False, dj__store_paused=False,
+        is_active=True, is_deleted=False, dj__profile__store_paused=False,
         created_at__gte=thirty_days_ago,
     ).order_by('-created_at')[:20]
 
     albums = AlbumPack.objects.filter(
-        is_active=True, is_deleted=False, dj__store_paused=False,
+        is_active=True, is_deleted=False, dj__profile__store_paused=False,
         created_at__gte=thirty_days_ago,
     ).order_by('-created_at')[:20]
 
@@ -147,7 +145,7 @@ def new_releases(request):
 def top_partnered_djs(request):
     """Top partnered DJs by total revenue [Spec §8]."""
     djs = DJProfile.objects.filter(
-        status='approved', store_paused=False,
+        status='approved', profile__store_paused=False,
     ).order_by('-total_revenue')[:20]
 
     return Response({
@@ -155,8 +153,8 @@ def top_partnered_djs(request):
             'id': dj.id,
             'dj_name': dj.dj_name,
             'slug': dj.slug,
-            'is_verified_dj': dj.is_verified_dj,
-            'is_pro_dj': dj.is_pro_dj,
+            'is_verified_dj': dj.profile.is_verified_dj,
+            'is_pro_dj': dj.profile.is_pro_dj,
             'genres': dj.genres,
             'total_revenue': str(dj.total_revenue),
         } for dj in djs],

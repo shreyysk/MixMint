@@ -104,3 +104,78 @@ class MaintenanceMode(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+class ContentArchive(models.Model):
+    """Immutable archive of soft-deleted content [Spec §9]."""
+
+    CONTENT_TYPES = (
+        ('track', 'Track'),
+        ('album', 'Album/ZIP'),
+    )
+
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
+    content_id = models.PositiveBigIntegerField()
+    dj = models.ForeignKey(DJProfile, on_delete=models.SET_NULL, null=True, related_name='archived_content')
+    title = models.CharField(max_length=255)
+    metadata = models.JSONField(default=dict)  # Full content snapshot
+    file_key = models.CharField(max_length=500)  # R2 path for potential recovery
+    reason = models.TextField(null=True, blank=True)
+    deleted_by = models.CharField(max_length=255, null=True, blank=True)
+    archived_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Archive: {self.title} ({self.content_type})"
+
+class PlatformSettings(models.Model):
+    """Singleton model for global pricing and platform features [Spec P3 v3]"""
+    # Pricing controls
+    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
+    
+    buyer_platform_fee_enabled = models.BooleanField(default=False)
+    buyer_platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5.00)
+    
+    gst_charging_enabled = models.BooleanField(default=False)
+    
+    dj_application_fee_enabled = models.BooleanField(default=False)
+    dj_application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=99.00)
+    
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # enforce singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return "Platform Settings"
+
+
+class PromotionalOffer(models.Model):
+    """Dynamic occasion-based banner and offers [Spec P3 v3]"""
+    is_active = models.BooleanField(default=False)
+    title = models.CharField(max_length=255)  # e.g., "Launch Offer 🚀"
+    tagline = models.CharField(max_length=255)  # e.g., "Zero platform fees. 10% comm"
+    sub_text = models.CharField(max_length=255, null=True, blank=True)  # e.g., "Introductory launch pricing"
+    badge_label = models.CharField(max_length=50, default="LIMITED TIME")
+    occasion_tag = models.CharField(max_length=100, default="Launch")
+    
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    
+    # Placements
+    show_on_homepage = models.BooleanField(default=True)
+    show_on_navbar = models.BooleanField(default=True)
+    show_on_dj_upload = models.BooleanField(default=True)
+    show_on_checkout = models.BooleanField(default=True)
+    show_on_track_pages = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+

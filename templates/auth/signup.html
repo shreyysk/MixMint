@@ -1,41 +1,132 @@
 {% extends 'base.html' %}
-
-{% block title %}Sign Up - MixMint{% endblock %}
+{% block title %}Sign Up — MixMint{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto mt-20">
-    <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl">
-        <h2 class="text-3xl font-bold mb-6 text-center">Join MixMint</h2>
-        <form method="post" action="{% url 'accounts/signup' %}">
-            {% csrf_token %}
-            <div class="mb-4">
-                <label class="block text-gray-400 text-sm mb-2">Full Name</label>
-                <input type="text" name="full_name" required
-                    class="w-full bg-gray-800 border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-pink-500">
+<div class="min-h-[70vh] flex items-center justify-center py-16">
+    <div class="w-full max-w-md mx-auto px-4">
+        <div class="text-center mb-10">
+            <h1 class="font-display text-[32px] font-[700] text-[var(--text-primary)] tracking-tight mb-3">Join MixMint
+            </h1>
+            <p class="font-body text-[15px] text-[var(--text-muted)]">Create your account to start buying music.</p>
+        </div>
+
+        <div
+            class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-8 shadow-[var(--shadow-card)]">
+            <!-- Google Auth -->
+            <a href="/social-auth/login/google-oauth2/"
+                class="w-full h-[52px] rounded-[8px] border border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-center gap-3 font-body text-[15px] font-[500] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mb-6">
+                <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor">
+                    <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                        fill="#4285F4" />
+                    <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853" />
+                    <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        fill="#FBBC05" />
+                    <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335" />
+                </svg>
+                Continue with Google
+            </a>
+
+            <!-- Divider -->
+            <div class="flex items-center gap-4 mb-6">
+                <div class="flex-1 h-px bg-[var(--border)]"></div>
+                <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">or email</span>
+                <div class="flex-1 h-px bg-[var(--border)]"></div>
             </div>
-            <div class="mb-4">
-                <label class="block text-gray-400 text-sm mb-2">Email Address</label>
-                <input type="email" name="email" required
-                    class="w-full bg-gray-800 border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-pink-500">
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-400 text-sm mb-2">Password</label>
-                <input type="password" name="password" required
-                    class="w-full bg-gray-800 border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-pink-500">
-            </div>
-            <div class="mb-6">
-                <label class="flex items-center gap-2 text-gray-400 text-sm">
-                    <input type="checkbox" name="is_dj" class="rounded bg-gray-800 border-gray-700 text-pink-500">
-                    I am a DJ/Producer
-                </label>
-            </div>
-            <button type="submit"
-                class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition">
-                Create Account
-            </button>
-        </form>
-        <p class="mt-6 text-center text-gray-500 text-sm">
-            Already have an account? <a href="/login/" class="text-pink-500">Sign in</a>
+
+            <!-- Signup Form -->
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label for="full_name"
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Full
+                        Name</label>
+                    <input type="text" name="full_name" id="full_name" required autocomplete="name" class="input-mm"
+                        placeholder="Your full name">
+                </div>
+
+                <div>
+                    <label for="email"
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Email</label>
+                    <input type="email" name="email" id="email" required autocomplete="email" class="input-mm"
+                        placeholder="you@example.com">
+                </div>
+
+                <div>
+                    <label for="password"
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Password</label>
+                    <input type="password" name="password" id="password" required autocomplete="new-password"
+                        minlength="8" class="input-mm" placeholder="Min. 8 characters">
+                    <!-- Password strength indicator -->
+                    <div class="mt-2 h-1 bg-[var(--bg-elevated)] rounded-full overflow-hidden" x-data="{ strength: 0 }">
+                        <div class="h-full transition-all duration-300 rounded-full" :style="'width: ' + strength + '%'"
+                            :class="strength < 40 ? 'bg-[var(--accent-red)]' : (strength < 70 ? 'bg-[var(--accent-amber)]' : 'bg-[var(--accent-mint)]')">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirm_password"
+                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Confirm
+                        Password</label>
+                    <input type="password" name="confirm_password" id="confirm_password" required
+                        autocomplete="new-password" class="input-mm" placeholder="Re-enter password">
+                </div>
+
+                {% if form.errors %}
+                <div class="notice-danger">
+                    <p class="font-body text-[13px] text-[var(--accent-red)]">
+                        {% for field, errors in form.errors.items %}
+                        {% for error in errors %}{{ error }}{% endfor %}
+                        {% endfor %}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Agreements -->
+                <div class="space-y-4 pt-3">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="terms_accepted" required
+                            class="mt-0.5 w-4 h-4 accent-[var(--accent-mint)] bg-transparent border-[var(--border)] rounded-sm">
+                        <span class="font-body text-[13px] text-[var(--text-muted)] leading-relaxed">
+                            I agree to MixMint's <a href="/legal/terms/"
+                                class="text-[var(--accent-mint)] hover:underline underline-offset-2">Terms of
+                                Service</a> and <a href="/legal/anti-resale/"
+                                class="text-[var(--accent-mint)] hover:underline underline-offset-2">Anti-Resale
+                                Policy</a>
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="content_responsibility_acknowledged" required
+                            class="mt-0.5 w-4 h-4 accent-[var(--accent-mint)] bg-transparent border-[var(--border)] rounded-sm">
+                        <span class="font-body text-[13px] text-[var(--text-muted)] leading-relaxed">
+                            I understand that content on MixMint is uploaded by independent DJs and MixMint is not
+                            responsible for content licensing.
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-mm btn-mint w-full h-[52px] text-[15px] font-[600] rounded-[8px] mt-2">
+                    Create Account
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center mt-8">
+            <span class="font-body text-[14px] text-[var(--text-muted)]">Already have an account?</span>
+            <a href="{% url 'login' %}"
+                class="font-body text-[14px] text-[var(--accent-mint)] font-[600] ml-1 hover:underline underline-offset-2">Login</a>
+        </div>
+
+        <p class="text-center font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-6">
+            Temporary email addresses are blocked.
         </p>
     </div>
 </div>
