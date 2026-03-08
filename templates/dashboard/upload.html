@@ -99,19 +99,46 @@
         </div>
 
         <!-- Preview -->
-        <div>
+        <div x-data="{ 
+            url: '', 
+            previewType: 'youtube', 
+            valid: false, 
+            embedUrl: '', 
+            msg: '', 
+            loading: false,
+            async validate() {
+                if(!this.url) { this.valid = false; this.msg = ''; return; }
+                this.loading = true;
+                try {
+                    const res = await fetch('/api/v1/tracks/validate-preview/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ url: this.url, type: this.previewType })
+                    });
+                    const data = await res.json();
+                    this.valid = data.valid;
+                    this.embedUrl = data.embed_url;
+                    this.msg = data.message || data.error;
+                } catch(e) {
+                    this.valid = false;
+                    this.msg = 'Validation failed.';
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }">
             <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Preview
                 (Optional)</h3>
             <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Add a YouTube or Instagram link so buyers can
                 preview before purchasing.</p>
 
-            <div class="flex gap-3 mb-4" x-data="{ previewType: 'youtube' }">
-                <button type="button" @click="previewType = 'youtube'"
+            <div class="flex gap-3 mb-4">
+                <button type="button" @click="previewType = 'youtube'; validate()"
                     :class="previewType === 'youtube' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
                     class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
                     YouTube
                 </button>
-                <button type="button" @click="previewType = 'instagram'"
+                <button type="button" @click="previewType = 'instagram'; validate()"
                     :class="previewType === 'instagram' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
                     class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
                     Instagram
@@ -119,7 +146,32 @@
                 <input type="hidden" name="preview_type" :value="previewType">
             </div>
 
-            <input type="url" name="preview_url" class="input-mm" placeholder="Paste YouTube or Instagram URL">
+            <div class="relative">
+                <input type="url" name="preview_url" class="input-mm pr-24" placeholder="Paste YouTube or Instagram URL"
+                    x-model="url" @input.debounce.500ms="validate()">
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <template x-if="loading">
+                        <span class="animate-spin text-[var(--accent-mint)]">⌛</span>
+                    </template>
+                    <template x-if="!loading && url && valid">
+                        <span class="text-[var(--accent-mint)]" title="Valid link">✓</span>
+                    </template>
+                    <template x-if="!loading && url && !valid">
+                        <span class="text-[var(--accent-red)]" title="Invalid link">✕</span>
+                    </template>
+                </div>
+            </div>
+
+            <p x-show="msg" :class="valid ? 'text-[var(--accent-mint)]' : 'text-[var(--accent-red)]'"
+                class="font-body text-[11px] mt-2 mb-4" x-text="msg"></p>
+
+            <!-- Live Embed Preview [Imp 08] -->
+            <template x-if="valid && embedUrl">
+                <div
+                    class="mt-6 aspect-video bg-black rounded-lg overflow-hidden border border-[var(--border)] shadow-inner">
+                    <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </template>
         </div>
 
         <!-- Pricing -->

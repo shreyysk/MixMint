@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}My Library — MixMint{% endblock %}
+{% load custom_filters %}
+{% block title %}My Library | MixMint{% endblock %}
 
 {% block content %}
 <div class="py-12 max-w-[1200px] mx-auto" x-data="{ tab: 'tracks' }">
@@ -41,6 +41,11 @@
             :class="tab === 'albums' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
             class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
             Owned Albums
+        </button>
+        <button @click="tab = 'wishlist'"
+            :class="tab === 'wishlist' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Wishlist
         </button>
     </div>
 
@@ -187,5 +192,83 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- ── WISHLIST TAB [Imp 13] ── -->
+    <div x-show="tab === 'wishlist'" x-transition.opacity style="display: none;">
+        {% if wishlist_tracks %}
+        <div class="space-y-4">
+            {% for item in wishlist_tracks %}
+            <div
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)] transition-colors group">
+                <!-- Artwork -->
+                <div
+                    class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {% if item.track.cover_url %}
+                    <img src="{{ item.track.cover_url }}" alt="{{ item.track.title }}"
+                        class="w-full h-full object-cover">
+                    {% else %}
+                    <span class="text-2xl opacity-20">🎧</span>
+                    {% endif %}
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
+                        item.track.title }}</h3>
+                    <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
+                        by {{ item.track.dj.dj_name }}
+                    </p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{
+                            item.track.price|money }}</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-4">
+                    <button @click="toggleWishlist({{ item.track.id }})"
+                        class="btn-mm btn-ghost h-[40px] px-5 text-[13px] text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10">
+                        Remove
+                    </button>
+                    <a href="{% url 'explore' %}" class="btn-mm btn-mint h-[40px] px-5 text-[13px]">
+                        Buy Now
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div
+            class="py-24 text-center border border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)]">
+            <span class="text-4xl opacity-20 block mb-6">💖</span>
+            <h3 class="font-display text-[20px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Your
+                wishlist is empty</h3>
+            <p class="font-body text-[14px] text-[var(--text-muted)] max-w-sm mx-auto mb-8">Save tracks you love
+                to keep track of them and buy later.</p>
+            <a href="{% url 'explore' %}" class="btn-mm btn-ghost h-[44px] px-8 text-[14px]">Explore Music</a>
+        </div>
+        {% endif %}
+    </div>
 </div>
+
+<script>
+    async function toggleWishlist(trackId) {
+        try {
+            const response = await fetch('{% url "toggle_wishlist" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ track_id: trackId })
+            });
+            const data = await response.json();
+            if (data.status === 'removed' || data.status === 'added') {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+        }
+    }
+</script>
 {% endblock %}

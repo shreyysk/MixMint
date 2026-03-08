@@ -36,7 +36,8 @@ def process_weekly_payouts():
     eligible_wallets = DJWallet.objects.filter(
         pending_earnings__gte=min_threshold,
         dj__status='approved',
-    ).select_related('dj')
+        dj__user__payout_frozen=False,  # [Missing Item 05]
+    ).select_related('dj', 'dj__user')
 
     for wallet in eligible_wallets:
         # Skip if DJ has held payouts

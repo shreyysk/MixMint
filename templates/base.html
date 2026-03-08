@@ -4,10 +4,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="MixMint — India's only DJ music marketplace where you truly own what you buy. Secure downloads, no streaming.">
-    <meta property="og:site_name" content="MixMint">
-    <meta property="og:type" content="website">
+
+    {% for key, value in og_tags.items %}
+    <meta property="{{ key }}" content="{{ value }}">
+    {% endfor %}
+
+    <!-- PWA & Favicon [Imp 16] -->
+    <meta name="theme-color" content="#00FFB3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Adaptive Favicon -->
+    <link rel="icon" type="image/png" href="/static/logo/MIXMINT_WHITE.png" media="(prefers-color-scheme: dark)">
+    <link rel="icon" type="image/png" href="/static/logo/MIXMINT_BLACK.png" media="(prefers-color-scheme: light)">
+
+    <link rel="apple-touch-icon" href="/static/logo/MIXMINT_WHITE.png">
+    <link rel="manifest" href="/static/manifest.json">
+
     <title>{% block title %}MixMint — Home of DJ Releases{% endblock %}</title>
 
     <!-- Typography -->
@@ -638,14 +651,23 @@
         {# Django messages → toast #}
         {% if messages %}
         <script>
-            {% for message in messages %}
-            window.dispatchEvent(new CustomEvent('show-toast', {
-                detail: {
-                    type: '{% if message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% else %}success{% endif %}',
+            // Toast notifications from Django messages
+            (() => {
+                const messages = [
+                    {% for message in messages %}
+                    {
+                tags: '{{ message.tags }}',
                     text: '{{ message|escapejs }}'
-                }
-            }));
+            },
             {% endfor %}
+                ];
+            messages.forEach(m => {
+                const type = m.tags === 'error' ? 'error' : (m.tags === 'warning' ? 'warning' : 'success');
+                window.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: { type, text: m.text }
+                }));
+            });
+            }) ();
         </script>
         {% endif %}
 
@@ -747,6 +769,16 @@
             </div>
         </div>
     </div>
+    <!-- Service Worker [Imp 16] -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('SW Registered', reg))
+                    .catch(err => console.log('SW Error', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

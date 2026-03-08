@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Ambassador Program — MixMint Dashboard{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-[1000px] mx-auto">
+    <!-- HEADER -->
+    <div class="mb-16 border-b border-[var(--border)] pb-8">
+        <h1 class="font-display text-[48px] font-black text-white tracking-tight leading-none mb-4">Ambassador Program
+        </h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Help grow MixMint and earn bonuses for every DJ or
+            buyer you refer.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <!-- LEFT: CODE & LINK -->
+        <div class="md:col-span-2 space-y-8">
+            {% if ambassador %}
+            <div class="bg-[var(--bg-surface)] border border-[var(--border)] p-10 rounded-[24px]">
+                <h3 class="font-display text-xl font-bold text-white mb-6">Your Personal Invite Link</h3>
+                <div
+                    class="flex items-center gap-4 p-4 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl mb-6">
+                    <input type="text" readonly value="{{ referral_url }}" id="referralUrl"
+                        class="bg-transparent border-none text-[var(--accent-mint)] font-mono text-sm flex-1 outline-none">
+                    <button onclick="copyReferralUrl()"
+                        class="px-6 py-2 bg-[var(--accent-mint)] text-black font-bold rounded-lg hover:scale-105 transition-transform text-xs">Copy</button>
+                </div>
+                <div class="flex items-center gap-8">
+                    <div>
+                        <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-1">Referral Code</p>
+                        <p class="text-2xl font-bold text-white">{{ ambassador.code }}</p>
+                    </div>
+                    <div>
+                        <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-1">Total Referrals</p>
+                        <p class="text-2xl font-bold text-[var(--accent-mint)]">{{ ambassador.referral_count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT REFERRALS -->
+            <div>
+                <h3 class="font-display text-xl font-bold text-white mb-8">Recent Referrals</h3>
+                <div class="space-y-4">
+                    {% for person in referrals %}
+                    <div
+                        class="flex items-center justify-between p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center font-bold text-[var(--accent-mint)]">
+                                {{ person.full_name|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="font-bold text-white">{{ person.full_name }}</p>
+                                <p class="text-[12px] text-[var(--text-muted)]">{{ person.created_at|date:"M d, Y" }}
+                                </p>
+                            </div>
+                        </div>
+                        <span class="pill-success text-[10px]">Active</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-[var(--text-muted)]">No referrals yet. Share your link to get started!</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div
+                class="py-20 text-center border-2 border-dashed border-[var(--border)] rounded-[24px] bg-[var(--bg-surface)]">
+                <div class="text-6xl mb-8">🤝</div>
+                <h3 class="font-display text-2xl font-bold text-white mb-4">Become an Ambassador</h3>
+                <p class="font-body text-[var(--text-muted)] mb-10 max-w-sm mx-auto">Generate your unique referral code
+                    to start tracking your impact and earning bonuses.</p>
+                <form action="{% url 'generate_ambassador_code' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-mm btn-mint h-14 px-12 font-bold text-lg">Join the Program</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT: BENEFITS -->
+        <div class="space-y-6">
+            <div class="p-8 border border-[var(--border)] rounded-[24px]">
+                <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Program
+                    Benefits</h4>
+                <div class="space-y-8">
+                    <div>
+                        <p class="font-bold text-white mb-2">Growth Bonus</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Earn a % of the lifetime revenue
+                            generated by DJs you refer.</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white mb-2">Verified Badge</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Reach 50 referrals to instantly
+                            unlock the Priority Verified status.</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white mb-2">Early Access</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Be the first to test new platform
+                            features and tools.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyReferralUrl() {
+        const copyText = document.getElementById("referralUrl");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Referral link copied to clipboard!");
+    }
+</script>
+{% endblock %}

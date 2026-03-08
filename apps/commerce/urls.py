@@ -1,6 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PurchaseViewSet, DJWalletViewSet, request_manual_payout, my_library
+from .views import (
+    my_library, pro_landing, activate_pro_trial, request_refund,
+    open_dispute, toggle_wishlist, PurchaseViewSet, DJWalletViewSet, request_manual_payout, CartViewSet
+)
 from .insurance_views import check_insurance_eligibility, purchase_insurance, verify_insurance_payment
 from .views_verify import verify_purchase_view
 from .legal_views import download_invoice, dj_gst_export
@@ -12,9 +15,15 @@ from .dj_analytics import (
 router = DefaultRouter()
 router.register(r'purchases', PurchaseViewSet, basename='purchase')
 router.register(r'wallets', DJWalletViewSet, basename='wallet')
+router.register(r'cart', CartViewSet, basename='cart')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('pro/', pro_landing, name='pro_landing'),
+    path('pro/activate/', activate_pro_trial, name='activate_pro_trial'),
+    path('refund/request/', request_refund, name='request_refund'),
+    path('dispute/open/', open_dispute, name='open_dispute'),
+    path('wishlist/toggle/', toggle_wishlist, name='toggle_wishlist'),
     path('verify-purchase/', verify_purchase_view, name='verify_purchase'),
     path('payouts/request/', request_manual_payout, name='dj_payout_request'),
 

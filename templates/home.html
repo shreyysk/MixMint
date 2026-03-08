@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Own the Drop — MixMint{% endblock %}
+{% load custom_filters %}
+{% block title %}Home | MixMint{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -222,6 +222,78 @@
     </div>
 </section>
 
+<!-- ── POPULAR THIS WEEK ── -->
+<section class="py-16">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+            <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em] mb-2 block">🔥
+                POPULAR THIS WEEK</span>
+        </div>
+        <a href="/explore/?sort=popular"
+            class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
+            All →</a>
+    </div>
+
+    {% if popular_tracks %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for track in popular_tracks %}
+        <div
+            class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+            <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
+                <!-- Artwork -->
+                <div
+                    class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
+                    {% if track.cover_url %}
+                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
+                    {% endif %}
+
+                    <div
+                        class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
+                        {{ track.genre|default:"AUDIO" }}
+                    </div>
+
+                    {% if track.file_format %}
+                    <div
+                        class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase z-10">
+                        {{ track.get_file_format_display|default:"WAV" }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Info block -->
+                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title
+                            }}</h3>
+                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
+                            {{ track.dj.dj_name }}
+                        </p>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money
+                            }}</span>
+                    </div>
+
+                    <!-- Buy CTA -->
+                    <div class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint"
+                        style="height: 40px; font-size: 13px;">
+                        Buy Now
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-20 border border-[var(--border)] rounded-[12px] text-center bg-[var(--bg-surface)]">
+        <p class="font-body text-[15px] text-[var(--text-muted)]">No trending tracks this week. Check back soon.</p>
+    </div>
+    {% endif %}
+</section>
+
 <!-- ── NEW RELEASES ── -->
 <section class="py-16">
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -249,11 +321,17 @@
                     <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
                     {% endif %}
 
-                    <!-- Genre Overlay -->
                     <div
                         class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
                         {{ track.genre|default:"AUDIO" }}
                     </div>
+
+                    {% if track.file_format %}
+                    <div
+                        class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase z-10">
+                        {{ track.get_file_format_display|default:"WAV" }}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Info block -->
@@ -267,7 +345,7 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">₹{{ track.price
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money
                             }}</span>
                     </div>
 

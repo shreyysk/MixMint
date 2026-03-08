@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}DJ Onboarding — MixMint{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <h2 class="fw-bold mb-4">Welcome to MixMint, {{ dj_profile.dj_name }}!</h2>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-5" style="height: 10px;">
+                        {% if step == 'profile_setup' %}
+                        <div class="progress-bar bg-primary" style="width: 25%;"></div>
+                        {% elif step == 'payout_setup' %}
+                        <div class="progress-bar bg-primary" style="width: 50%;"></div>
+                        {% elif step == 'first_track' %}
+                        <div class="progress-bar bg-primary" style="width: 75%;"></div>
+                        {% endif %}
+                    </div>
+
+                    {% if step == 'profile_setup' %}
+                    <div id="step-profile">
+                        <h4>Step 1: Complete Your Profile</h4>
+                        <p class="text-muted">Tell your fans more about yourself.</p>
+                        <form id="profile-form">
+                            <div class="mb-3">
+                                <label class="form-label">Bio</label>
+                                <textarea class="form-control" name="bio" rows="3">{{ dj_profile.bio }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="location"
+                                    value="{{ dj_profile.location }}">
+                            </div>
+                            <button type="button" class="btn btn-primary w-100" onclick="nextStep('payout_setup')">Next:
+                                Payout Setup</button>
+                        </form>
+                    </div>
+
+                    {% elif step == 'payout_setup' %}
+                    <div id="step-payout">
+                        <h4>Step 2: Payout & Security</h4>
+                        <p class="text-muted">Set up how you'll get paid and enable 2FA.</p>
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> 2FA (Google Authenticator) is required for all payouts.
+                        </div>
+                        <button type="button" class="btn btn-outline-primary mb-3" onclick="load2FASetup()">Setup 2FA
+                            Now</button>
+                        <div id="2fa-container" style="display:none;">
+                            <!-- QR code will load here -->
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" onclick="nextStep('first_track')">Next:
+                            Upload First Track</button>
+                    </div>
+
+                    {% elif step == 'first_track' %}
+                    <div id="step-track">
+                        <h4>Step 3: Upload Your First Track</h4>
+                        <p class="text-muted">Let's get some music on your storefront!</p>
+                        <a href="{% url 'dj_dashboard' %}?upload=true" class="btn btn-success w-100 mb-3">Upload First
+                            Track</a>
+                        <button type="button" class="btn btn-primary w-100" onclick="nextStep('completed')">Finish
+                            Onboarding</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function nextStep(nextStep) {
+        fetch('{% url "update_onboarding" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ step: nextStep })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    }
+
+    function load2FASetup() {
+        fetch('{% url "enable_2fa" %}').then(r => r.json()).then(data => {
+            const container = document.getElementById('2fa-container');
+            container.style.display = 'block';
+            container.innerHTML = `
+            <p>Scan this QR code with Google Authenticator:</p>
+            <div id="qrcode"></div>
+            <p class="mt-2Small">Secret: <code>${data.secret}</code></p>
+            <div class="mb-3">
+                <input type="text" id="2fa-code" class="form-control" placeholder="Enter 6-digit code">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="verify2FA()">Verify & Link</button>
+        `;
+            // In a real app, generate QR code PNG here or use library
+        });
+    }
+
+    function verify2FA() {
+        const code = document.getElementById('2fa-code').value;
+        fetch('{% url "verify_2fa" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ code: code })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                alert('2FA Linked!');
+            } else {
+                alert(data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}

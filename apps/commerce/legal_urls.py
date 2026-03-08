@@ -19,11 +19,16 @@ def refund_page(request):
     return render(request, 'legal/refund.html')
 
 
+def security_page(request):
+    return render(request, 'legal/security.html')
+
+
 urlpatterns = [
     path('terms/', terms_page, name='terms'),
     path('privacy/', privacy_page, name='privacy'),
     path('refund/', refund_page, name='refund'),
     path('transparency/', transparency_page, name='transparency'),
+    path('security/', security_page, name='security'),
     # GST Invoice download — JSON and PDF
     path('invoice/<int:invoice_id>/', download_invoice, name='download_invoice'),
     path('invoice/<int:invoice_id>/pdf/', download_invoice_pdf, name='download_invoice_pdf'),

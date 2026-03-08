@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 {% block title %}{{ track.title }} — MixMint{% endblock %}
 
 {% block content %}
@@ -21,9 +22,11 @@
         <div class="md:col-span-5 space-y-8">
             <!-- Artwork -->
             <div
-                class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group">
+                class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group skeleton">
                 {% if track.cover_url %}
-                <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                <img src="{{ track.cover_url }}" alt="{{ track.title }}"
+                    class="w-full h-full object-cover transition-opacity duration-300"
+                    onload="this.parentElement.classList.remove('skeleton')">
                 {% else %}
                 <div class="w-full h-full flex items-center justify-center text-6xl opacity-20">🎧</div>
                 {% endif %}
@@ -86,16 +89,18 @@
                 </h1>
 
                 <!-- Tags -->
-                <div class="flex items-center gap-3 mb-6">
-                    <span
-                        class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                        {{ track.genre|default:"AUDIO" }}
-                    </span>
-                    <span
-                        class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                        {{ track.created_at|date:"Y" }}
-                    </span>
-                </div>
+                <span
+                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-wider font-bold">
+                    {{ track.get_file_format_display|default:"WAV" }}
+                </span>
+                <span
+                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
+                    {{ track.genre|default:"AUDIO" }}
+                </span>
+                <span
+                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
+                    {{ track.created_at|date:"Y" }}
+                </span>
 
                 <!-- Track Metadata -->
                 <div class="flex flex-wrap items-center gap-6 font-mono text-[12px] text-[var(--text-muted)] mb-8">
@@ -128,46 +133,118 @@
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
                     <div class="flex flex-col">
-                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">₹{{ track.price
+                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{{ track.price|money
                             }}</span>
                         <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
                             charges</span>
                     </div>
 
-                    <div class="w-full sm:w-auto flex-1 max-w-[320px]">
+                    <div class="w-full sm:w-auto flex-1 max-w-[400px]" x-data="{ showShareModal: false }">
                         {% if user.is_authenticated %}
-                        {% if can_request_download %}
-                        <button id="download-btn" data-content-id="{{ track.id }}" data-content-type="track"
-                            class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            ⬇ Download Now
-                        </button>
-                        <p class="font-body text-[11px] text-[var(--text-muted)] mt-2 text-center">Secure one-time
-                            download. Device-locked.</p>
-                        {% elif needs_redownload_payment %}
-                        <div class="text-center mb-2">
-                            <span class="pill-warning">✓ You Own This</span>
+                        <div class="flex flex-col gap-4">
+                            {% if track.is_external_link %}
+                            <a href="{{ track.external_link_url }}" target="_blank" rel="noopener noreferrer"
+                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600] flex items-center justify-center">
+                                ⬇ Free Download
+                            </a>
+                            {% elif can_request_download %}
+                            <button id="download-btn" data-content-id="{{ track.id }}" data-content-type="track"
+                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                ⬇ Download Now
+                            </button>
+                            {% elif needs_redownload_payment %}
+                            <button id="redownload-pay-btn" data-content-id="{{ track.id }}" data-content-type="track"
+                                class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
+                                Re-download · {% if redownload_price %}{{ redownload_price|money }}{% else %}—{% endif
+                                %}
+                            </button>
+                            {% else %}
+                            <button id="buy-now-btn" data-content-id="{{ track.id }}" data-content-type="track"
+                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]" {% if
+                                request.user.profile.dj_profile and request.user.profile.dj_profile==track.dj
+                                %}disabled{% endif %}>
+                                {% if request.user.profile.dj_profile and request.user.profile.dj_profile == track.dj
+                                %}You Own This Track{% else %}Buy & Download{% endif %}
+                            </button>
+
+                            <!-- Phase 3 Feature 2: DJ Buy Disclaimer -->
+                            {% if request.user.profile.dj_profile and request.user.profile.dj_profile != track.dj %}
+                            <p
+                                class="text-[11px] text-[var(--accent-amber)] font-mono uppercase tracking-widest text-center mt-2 px-2 bg-[var(--accent-amber)]/10 py-1 rounded">
+                                ✦ Support your fellow DJs!
+                            </p>
+                            {% endif %}
+
+                            {% endif %}
+
+                            <!-- Phase 3 Feature 3: Add to Cart -->
+                            {% if not can_request_download and not needs_redownload_payment and not
+                            track.is_external_link %}
+                            <button id="add-to-cart-btn" data-content-id="{{ track.id }}" data-content-type="track"
+                                class="btn-mm btn-ghost w-full h-[48px] text-[14px] font-[500] flex items-center justify-center gap-2">
+                                🛒 Add to Cart
+                            </button>
+                            {% endif %}
+
+                            <button @click="showShareModal = true"
+                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
+                                Share / Embed 🔗
+                            </button>
                         </div>
-                        <button id="redownload-pay-btn" data-content-id="{{ track.id }}" data-content-type="track"
-                            class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
-                            Re-download · ₹{{ redownload_price|default:"—" }}
-                        </button>
-                        <p class="font-body text-[11px] text-[var(--text-muted)] mt-2 text-center">Re-download:
-                            available after 2 days · 50% of price</p>
                         {% else %}
-                        <button id="buy-now-btn" data-content-id="{{ track.id }}" data-content-type="track"
-                            class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            Buy & Download
-                        </button>
-                        <p class="font-body text-[11px] text-[var(--text-muted)] mt-2 text-center">Secure one-time
-                            download. Device-locked.</p>
+                        <div class="flex flex-col gap-4">
+                            <button
+                                @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
+                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
+                                Login to Buy
+                            </button>
+                            <button @click="showShareModal = true"
+                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
+                                Share / Embed 🔗
+                            </button>
+                        </div>
                         {% endif %}
-                        {% else %}
-                        <button
-                            @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
-                            class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
-                            Login to Buy
-                        </button>
-                        {% endif %}
+
+                        <!-- SHARE MODAL -->
+                        <template x-if="showShareModal">
+                            <div
+                                class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                                <div @click.away="showShareModal = false"
+                                    class="bg-[var(--bg-surface)] border border-[var(--border)] w-full max-w-[500px] rounded-[24px] overflow-hidden shadow-2xl">
+                                    <div class="p-8 border-b border-[var(--border)] flex justify-between items-center">
+                                        <h2 class="font-display text-2xl font-bold text-white">Share Track</h2>
+                                        <button @click="showShareModal = false"
+                                            class="text-[var(--text-muted)] hover:text-white">&times;</button>
+                                    </div>
+                                    <div class="p-8 space-y-8">
+                                        <div>
+                                            <label
+                                                class="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Direct
+                                                Link</label>
+                                            <div
+                                                class="flex items-center gap-3 p-3 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl">
+                                                <input type="text" readonly value="{{ request.build_absolute_uri }}"
+                                                    class="bg-transparent border-none text-[var(--accent-mint)] font-mono text-xs flex-1 outline-none">
+                                                <button
+                                                    onclick="navigator.clipboard.writeText('{{ request.build_absolute_uri }}'); alert('Link copied!')"
+                                                    class="text-[var(--accent-mint)] font-bold text-xs uppercase">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Embed
+                                                Code (IFrame)</label>
+                                            <textarea readonly
+                                                class="w-full bg-[var(--bg-base)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-muted)] font-mono text-[10px] h-24 resize-none"><iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'track_embed' track.id %}" width="100%" height="400" frameborder="0"></iframe></textarea>
+                                            <button
+                                                onclick="navigator.clipboard.writeText('<iframe src=\'{{ request.scheme }}://{{ request.get_host }}{% url \'track_embed\' track.id %}\' width=\'100%\' height=\'400\' frameborder=\'0\'></iframe>'); alert('Embed code copied!')"
+                                                class="mt-2 text-[var(--accent-mint)] font-bold text-xs uppercase">Copy
+                                                Embed Code</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -365,6 +442,35 @@
                 await requestDownloadTokenAndStart();
             } catch (e) {
                 window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Download failed." } }));
+            }
+        });
+    }
+
+    // Phase 3 Feature 3: Add to Cart
+    const cartBtn = document.getElementById('add-to-cart-btn');
+    if (cartBtn) {
+        cartBtn.addEventListener('click', async () => {
+            const contentId = cartBtn.dataset.contentId;
+            const contentType = cartBtn.dataset.contentType;
+            try {
+                const res = await fetch('/api/commerce/cart/add_item/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+                    },
+                    body: JSON.stringify({ content_id: contentId, content_type: contentType })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Added to cart! 🛒' } }));
+                    cartBtn.textContent = '✓ In Cart';
+                    cartBtn.disabled = true;
+                } else {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: data.error || 'Could not add to cart.' } }));
+                }
+            } catch (e) {
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: 'Network error.' } }));
             }
         });
     }

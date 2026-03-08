@@ -1,3 +1,4 @@
+{% load i18n %}
 <!-- Promotional Offer Banner [Spec P3] -->
 {% if active_promotional_offer and active_promotional_offer.show_on_navbar %}
 <div x-data="{ showOffer: false }"
@@ -37,24 +38,96 @@
     <div class="container mx-auto px-6 max-w-[1280px]">
         <div class="flex items-center justify-between h-20">
             <!-- Left: Logo / Branding -->
-            <a href="/" class="flex items-center group">
-                <span
-                    class="font-display text-[22px] font-bold tracking-tight text-[var(--text-primary)] transition-colors">MixMint</span>
-                <span class="text-[var(--accent-mint)] text-[22px] font-bold">.</span>
+            <a href="/" class="flex items-center gap-2 group">
+                <div class="relative w-8 h-8 flex items-center justify-center">
+                    <!-- White logo for dark mode -->
+                    <img src="/static/logo/MIXMINT_WHITE.png" alt="MixMint"
+                        class="w-full h-full object-contain block dark-logo-only transition-transform duration-300 group-hover:scale-110">
+                    <!-- Black logo for light mode (if ever used) -->
+                    <img src="/static/logo/MIXMINT_BLACK.png" alt="MixMint"
+                        class="w-full h-full object-contain hidden light-logo-only transition-transform duration-300 group-hover:scale-110">
+                </div>
+                <div class="flex items-center">
+                    <span
+                        class="font-display text-[22px] font-bold tracking-tight text-[var(--text-primary)] transition-colors">MixMint</span>
+                    <span class="text-[var(--accent-mint)] text-[22px] font-bold">.</span>
+                </div>
             </a>
+
+            <style>
+                /* Theme-based logo switching */
+                [data-theme="light"] .dark-logo-only {
+                    display: none !important;
+                }
+
+                [data-theme="light"] .light-logo-only {
+                    display: block !important;
+                }
+
+                [data-theme="dark"] .dark-logo-only {
+                    display: block !important;
+                }
+
+                [data-theme="dark"] .light-logo-only {
+                    display: none !important;
+                }
+
+                /* Default fallback if data-theme is missing but system is light */
+                @media (prefers-color-scheme: light) {
+                    html:not([data-theme]) .dark-logo-only {
+                        display: none;
+                    }
+
+                    html:not([data-theme]) .light-logo-only {
+                        display: block;
+                    }
+                }
+            </style>
 
             <!-- Center: Navigation Links (Desktop) -->
             <div class="hidden md:flex items-center gap-8 font-body text-[15px] font-medium">
                 <a href="{% url 'explore' %}"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Browse</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans
+                    "Browse" %}</a>
                 <a href="{% url 'explore' %}?sort=new"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">New Releases</a>
-                <a href="#" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Top
-                    DJs</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "New
+                    Releases" %}</a>
+                <a href="{% url 'dj_directory' %}"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "DJs"
+                    %}</a>
             </div>
 
             <!-- Right: Actions (Desktop) -->
             <div class="hidden md:flex items-center gap-6">
+                <!-- Language Switcher [Imp 18] -->
+                <div class="relative" x-data="{ showLang: false }">
+                    <button @click="showLang = !showLang"
+                        class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--border-focus)] transition-all overflow-hidden focus:outline-none"
+                        aria-label="Change language">
+                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{
+                            request.LANGUAGE_CODE|slice:":2"|upper }}</span>
+                    </button>
+                    <div x-show="showLang" @click.outside="showLang = false"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                        class="absolute right-0 mt-3 w-40 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-sm)] p-2 shadow-2xl backdrop-blur-xl"
+                        x-cloak>
+                        <form action="{% url 'set_language' %}" method="post">
+                            {% csrf_token %}
+                            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                            <button name="language" value="en"
+                                class="w-full text-left px-4 py-2 text-[13px] font-body text-[var(--text-primary)] hover:bg-[var(--accent-mint)]/10 rounded-[var(--radius-sm)] transition-colors {% if request.LANGUAGE_CODE == 'en' %}text-[var(--accent-mint)]{% endif %}">
+                                English
+                            </button>
+                            <button name="language" value="hi"
+                                class="w-full text-left px-4 py-2 text-[13px] font-body text-[var(--text-primary)] hover:bg-[var(--accent-mint)]/10 rounded-[var(--radius-sm)] transition-colors {% if request.LANGUAGE_CODE == 'hi' %}text-[var(--accent-mint)]{% endif %}">
+                                हिन्दी (Hindi)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- Theme Toggle -->
                 <button onclick="toggleTheme()" data-theme-toggle
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-amber)] hover:bg-[var(--border)] transition-all"
@@ -71,6 +144,9 @@
 
                 {% if user.is_authenticated %}
                 {% if user.is_dj %}
+                <a href="{% url 'my_library' %}"
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
+                    Library</a>
                 <a href="{% url 'dashboard' %}"
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">DJ
                     Panel</a>
@@ -79,6 +155,12 @@
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
                     Library</a>
                 {% endif %}
+                <!-- Phase 3 Feature 3: Cart Icon -->
+                <a href="{% url 'cart_page' %}"
+                    class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:bg-[var(--border)] transition-all relative"
+                    title="My Cart" aria-label="Shopping Cart">
+                    🛒
+                </a>
 
                 <!-- Account Dropdown -->
                 <div class="relative ml-2">
@@ -113,11 +195,11 @@
                 {% else %}
                 <button
                     @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login'}}))"
-                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">Login</button>
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{%
+                    trans "Login" %}</button>
                 <button
                     @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup'}}))"
-                    class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">Sign
-                    Up</button>
+                    class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">{% trans "Sign Up" %}</button>
                 {% endif %}
             </div>
 
@@ -157,9 +239,8 @@
                 <a href="{% url 'explore' %}?sort=new"
                     class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_100ms_forwards]">New
                     Releases</a>
-                <a href="#"
-                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_150ms_forwards]">Top
-                    DJs</a>
+                <a href="{% url 'dj_directory' %}"
+                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_150ms_forwards]">DJs</a>
             </nav>
 
             <div class="h-px bg-[var(--border)] my-8"></div>

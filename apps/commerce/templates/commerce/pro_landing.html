@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}MixMint Pro - Maximize Your DJ Earnings{% endblock %}
+
+{% block content %}
+<div class="pro-landing">
+    <header class="pro-header">
+        <h1>MixMint <span class="badge pro-badge">PRO</span></h1>
+        <p class="tagline">The ultimate toolkit for the modern Digital DJ.</p>
+    </header>
+
+    <section class="pro-comparison">
+        <div class="comparison-grid">
+            <div class="plan-card standard-plan">
+                <h3>Standard</h3>
+                <div class="price">₹0<span>/month</span></div>
+                <ul>
+                    <li>10% Commission</li>
+                    <li>3 GB Storage</li>
+                    <li>3 Collaborators</li>
+                    <li>Standard Search Ranking</li>
+                </ul>
+            </div>
+            <div class="plan-card pro-plan featured">
+                <div class="featured-badge">RECOMMENDED</div>
+                <h3>Pro</h3>
+                <div class="price">₹299<span>/month</span></div>
+                <ul>
+                    <li><strong>7% Commission</strong> (Save 30% on fees)</li>
+                    <li><strong>20 GB Storage</strong> (Included)</li>
+                    <li><strong>Unlimited Collaborators</strong></li>
+                    <li><strong>Priority Search Ranking</strong></li>
+                    <li>Custom Domain Support</li>
+                    <li>Verified PRO Badge</li>
+                    <li>Advanced Analytics</li>
+                </ul>
+                <form action="{% url 'activate_pro_trial' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-pro">Start 7-Day Free Trial</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="roi-calculator">
+        <h2>Financial ROI</h2>
+        <p>If you earn more than ₹10,000/month, MixMint Pro pays for itself through lower commissions alone.</p>
+    </section>
+</div>
+
+<style>
+    .pro-landing {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 4rem 1rem;
+        color: #fff;
+    }
+
+    .pro-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .pro-header h1 {
+        font-size: 3.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .pro-badge {
+        background: linear-gradient(45deg, #f39c12, #f1c40f);
+        color: #000;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+    .comparison-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .plan-card {
+        background: #1a1a1a;
+        padding: 3rem;
+        border-radius: 12px;
+        border: 1px solid #333;
+    }
+
+    .plan-card.featured {
+        border: 2px solid #f1c40f;
+        position: relative;
+    }
+
+    .featured-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f1c40f;
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .price {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 1.5rem 0;
+    }
+
+    .price span {
+        font-size: 1rem;
+        color: #888;
+    }
+
+    .plan-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 2rem 0;
+    }
+
+    .plan-card li {
+        margin-bottom: 1rem;
+        color: #ccc;
+    }
+
+    .btn-pro {
+        width: 100%;
+        background: #f1c40f;
+        color: #000;
+        font-weight: bold;
+        padding: 1rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-pro:hover {
+        background: #f39c12;
+    }
+</style>
+{% endblock %}

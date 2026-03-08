@@ -45,31 +45,28 @@ def dj_earnings_overview(request):
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
 
+    from apps.commerce.analytics import get_dj_monthly_earnings, get_dj_lifetime_earnings
+    
     # Lifetime earnings [Spec §3.2]
-    lifetime = Purchase.objects.filter(
-        seller=dj_profile, is_completed=True, download_completed=True,
-    ).aggregate(total=Sum('dj_earnings'))
+    lifetime_total = get_dj_lifetime_earnings(dj_profile.id)
 
-    # Weekly earnings
+    # Weekly earnings (kept real-time for now as per Fix 11 NEAR-REAL-TIME requirement, but monthly/lifetime are cached)
     weekly = Purchase.objects.filter(
         seller=dj_profile, is_completed=True, download_completed=True,
         created_at__gte=week_ago,
     ).aggregate(total=Sum('dj_earnings'))
 
-    # Monthly earnings
-    monthly = Purchase.objects.filter(
-        seller=dj_profile, is_completed=True, download_completed=True,
-        created_at__gte=month_ago,
-    ).aggregate(total=Sum('dj_earnings'))
+    # Monthly earnings (cached 5 min)
+    monthly_total = get_dj_monthly_earnings(dj_profile.id)
 
     # Ad revenue
     ad_lifetime = AdRevenueLog.objects.filter(dj=dj_profile).aggregate(total=Sum('ad_impression_value'))
     ad_weekly = AdRevenueLog.objects.filter(dj=dj_profile, created_at__gte=week_ago).aggregate(total=Sum('ad_impression_value'))
 
     return Response({
-        'lifetime_earnings': str(lifetime['total'] or 0),
+        'lifetime_earnings': str(lifetime_total),
         'weekly_earnings': str(weekly['total'] or 0),
-        'monthly_earnings': str(monthly['total'] or 0),
+        'monthly_earnings': str(monthly_total),
         'pending_payout': str(wallet.pending_earnings),
         'escrow_amount': str(wallet.escrow_amount),
         'available_for_payout': str(wallet.available_for_payout),

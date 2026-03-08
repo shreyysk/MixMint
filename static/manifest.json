@@ -1,0 +1,18 @@
+{
+    "name": "MixMint",
+    "short_name": "MixMint",
+    "description": "Premium Marketplace for DJ Tool Kits & Exclusive Edits",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0A0A0F",
+    "theme_color": "#00FFB3",
+    "icons": [
+        {
+            "src": "/static/img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "orientation": "portrait"
+}

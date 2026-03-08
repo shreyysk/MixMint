@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}{{ dj.dj_name }} — MixMint{% endblock %}
+{% load custom_filters %}
+{% block title %}{{ dj.dj_name }} | MixMint{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -124,6 +124,13 @@
             class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
             Albums
         </button>
+        <button @click="tab = 'updates'"
+            :class="tab === 'updates' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
+            class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
+            Updates
+            {% if announcements %}<span class="ml-2 w-2 h-2 rounded-full bg-[var(--accent-mint)] inline-block"></span>{%
+            endif %}
+        </button>
     </div>
 
     <!-- Tracks Tab -->
@@ -152,8 +159,8 @@
                                 track.title }}</h3>
                         </div>
                         <div class="mt-3 flex items-center justify-between">
-                            <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">₹{{ track.price
-                                }}</span>
+                            <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{
+                                track.price|money }}</span>
                         </div>
                     </div>
                 </a>
@@ -185,7 +192,8 @@
                 <div class="p-5">
                     <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate mb-1">{{ album.title
                         }}</h3>
-                    <p class="font-mono text-[14px] text-[var(--accent-mint)] font-medium mb-4">₹{{ album.price }}</p>
+                    <p class="font-mono text-[14px] text-[var(--accent-mint)] font-medium mb-4">{{ album.price|money }}
+                    </p>
                     <a href="{% url 'album_detail' album.id %}" class="btn-mm btn-mint w-full text-[13px]"
                         style="height: 40px;">
                         View Album
@@ -197,6 +205,31 @@
         {% else %}
         <div class="text-center py-20 border border-dashed border-[var(--border)] rounded-[12px]">
             <p class="font-body text-[15px] text-[var(--text-muted)]">No album packs available.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Updates Tab [Imp 14] -->
+    <div x-show="tab === 'updates'" x-transition.opacity style="display: none;">
+        {% if announcements %}
+        <div class="max-w-[800px] mx-auto space-y-8">
+            {% for post in announcements %}
+            <div
+                class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[20px] p-8 shadow-[var(--shadow-card)]">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 class="font-display text-2xl font-bold text-[var(--text-primary)]">{{ post.title }}</h3>
+                    <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">{{
+                        post.created_at|date:"M d, Y" }}</span>
+                </div>
+                <div class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed whitespace-pre-wrap">
+                    {{ post.content }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20 border border-dashed border-[var(--border)] rounded-[12px]">
+            <p class="font-body text-[15px] text-[var(--text-muted)]">No updates posted yet. Check back soon!</p>
         </div>
         {% endif %}
     </div>

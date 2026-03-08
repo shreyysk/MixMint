@@ -64,3 +64,48 @@ def update_dj_popularity_scores():
             updated_count += 1
             
     return f"Updated scores for {updated_count} DJs."
+
+@shared_task
+def calculate_storage_overages():
+    """
+    Calculate storage overages for Pro DJs [Spec P3 §1.5].
+    20GB base. ₹59 per 5GB tier.
+    """
+    from apps.tracks.models import Track
+    from apps.commerce.models import StorageOverage
+    from django.db.models import Sum
+    
+    pro_profiles = Profile.objects.filter(is_pro_dj=True)
+    today = timezone.now().date()
+    first_of_month = today.replace(day=1)
+    
+    for profile in pro_profiles:
+        try:
+            dj_profile = profile.dj_profile
+        except DJProfile.DoesNotExist:
+            continue
+            
+        # Calculate usage [Gap 01: Storage Tracking]
+        total_bytes = Track.objects.filter(dj=dj_profile).aggregate(total=Sum('file_size'))['total'] or 0
+        quota_bytes = (dj_profile.custom_storage_quota_mb or profile.storage_quota_mb or 20480) * 1024 * 1024
+        
+        if total_bytes > quota_bytes:
+            overage_bytes = total_bytes - quota_bytes
+            # Calculate tiers (5GB per tier = ₹59)
+            tier_size = 5 * 1024 * 1024 * 1024
+            tiers = (overage_bytes + tier_size - 1) // tier_size
+            amount_paise = int(tiers * 59 * 100)
+            
+            # Create or update overage record for this month
+            StorageOverage.objects.update_or_create(
+                dj=dj_profile,
+                billing_month=first_of_month,
+                defaults={
+                    'usage_bytes': total_bytes,
+                    'overage_bytes': overage_bytes,
+                    'amount_paise': amount_paise,
+                    'status': 'pending'
+                }
+            )
+            
+    return f"Calculated overages for {pro_profiles.count()} Pro DJs."

@@ -45,36 +45,65 @@ class IPSessionMiddleware(MiddlewareMixin):
             return x_forwarded.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR')
 
+import ipaddress
+from django.core.cache import cache
 
-class BanCheckMiddleware(MiddlewareMixin):
+def get_blacklist():
+    cached = cache.get('ip_blacklist')
+    if cached:
+        return cached
+
+    from apps.accounts.models import IPBlacklist
+
+    ips = set(IPBlacklist.objects.filter(
+        type='ip', is_active=True
+    ).values_list('value', flat=True))
+
+    cidrs = []
+    for cidr_str in IPBlacklist.objects.filter(type='cidr', is_active=True).values_list('value', flat=True):
+        try:
+            cidrs.append(ipaddress.ip_network(cidr_str, strict=False))
+        except ValueError:
+            pass
+
+    devices = set(IPBlacklist.objects.filter(
+        type='device', is_active=True
+    ).values_list('value', flat=True))
+
+    blacklist = {'ips': ips, 'cidrs': cidrs, 'devices': devices}
+    cache.set('ip_blacklist', blacklist, 300)  # 5 min cache
+    return blacklist
+
+
+class BlacklistMiddleware(MiddlewareMixin):
     """
-    Checks global IP/device ban list on every request [Spec §4.6].
+    Missing Item 03 — Hard IP / Device Blacklist.
+    Checks global IP/device/CIDR ban list on every request.
     Rejects banned IPs and device fingerprints.
     """
 
     def process_request(self, request):
-        from apps.admin_panel.models import BanList
-
         client_ip = self._get_client_ip(request)
-        device_hash = request.META.get('HTTP_X_DEVICE_HASH')
+        device_hash = request.META.get('HTTP_X_DEVICE_HASH') or request.headers.get('X-Device-Fingerprint', '')
+        blacklist = get_blacklist()
 
-        # Check IP ban
-        if client_ip and BanList.objects.filter(
-            ban_type='ip', value=client_ip, is_active=True
-        ).exists():
-            return JsonResponse({
-                'error': 'Access denied. Your IP has been banned.',
-                'code': 'IP_BANNED'
-            }, status=403)
+        # Check exact IP
+        if client_ip and client_ip in blacklist['ips']:
+            return JsonResponse({'error': 'Access denied. Your IP has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
 
-        # Check device ban
-        if device_hash and BanList.objects.filter(
-            ban_type='device', value=device_hash, is_active=True
-        ).exists():
-            return JsonResponse({
-                'error': 'Access denied. Your device has been banned.',
-                'code': 'DEVICE_BANNED'
-            }, status=403)
+        # Check CIDR ranges
+        if client_ip:
+            try:
+                ip_obj = ipaddress.ip_address(client_ip)
+                for cidr in blacklist['cidrs']:
+                    if ip_obj in cidr:
+                        return JsonResponse({'error': 'Access denied. Your IP range has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
+            except ValueError:
+                pass
+
+        # Check device
+        if device_hash and device_hash in blacklist['devices']:
+            return JsonResponse({'error': 'Access denied. Your device has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
 
         return None
 
@@ -102,24 +131,46 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
                 return None
 
         from apps.admin_panel.models import MaintenanceMode
+        from django.shortcuts import render
 
         try:
             current_mode = MaintenanceMode.objects.order_by('-created_at').first()
-            if current_mode and current_mode.mode == 'maintenance':
-                return JsonResponse({
-                    'error': 'MixMint is currently under maintenance. Please try again later.',
-                    'message': current_mode.message or 'Scheduled maintenance in progress.',
-                    'code': 'MAINTENANCE_MODE'
-                }, status=503)
-            elif current_mode and current_mode.mode == 'kill_switch':
-                # Kill switch — block download-related paths only
-                if '/downloads/' in request.path or '/download-token' in request.path:
+            if not current_mode:
+                return None
+
+            is_api = 'api/v1' in request.path or request.content_type == 'application/json'
+
+            if current_mode.mode == 'maintenance':
+                if is_api:
                     return JsonResponse({
-                        'error': 'Downloads are temporarily disabled.',
-                        'code': 'KILL_SWITCH'
+                        'error': 'Maintenance Mode Active.',
+                        'message': current_mode.message or 'Scheduled maintenance.',
+                        'code': 'MAINTENANCE_MODE'
+                    }, status=503)
+                
+                return render(request, 'maintenance.html', {
+                    'mode': 'maintenance',
+                    'message': current_mode.message or 'Scheduled maintenance in progress.',
+                    'estimated_return': current_mode.estimated_return_at,
+                    'theme_color': 'amber' # Maintenance = Amber [Fix 14]
+                }, status=503)
+
+            elif current_mode.mode == 'kill_switch':
+                # Kill switch — block downloads
+                if '/downloads/' in request.path or '/download-token' in request.path:
+                    if is_api:
+                        return JsonResponse({
+                            'error': 'Downloads Disabled.',
+                            'code': 'KILL_SWITCH'
+                        }, status=503)
+                    
+                    return render(request, 'maintenance.html', {
+                        'mode': 'kill_switch',
+                        'message': 'Downloads area is temporarily closed for security.',
+                        'theme_color': 'red' # Kill Switch = Red [Fix 14]
                     }, status=503)
         except Exception:
-            pass  # Don't crash on DB issues
+            pass
 
         return None
 
@@ -143,4 +194,16 @@ class InactivityMiddleware(MiddlewareMixin):
                     profile.save(update_fields=['last_active_at'])
             except Exception:
                 pass
+        return None
+
+class ReferralMiddleware(MiddlewareMixin):
+    """
+    Captures 'ref' parameter from URL and stores it in session [Imp 15].
+    Used for DJ Ambassador Program.
+    """
+
+    def process_request(self, request):
+        ref_code = request.GET.get('ref')
+        if ref_code:
+            request.session['ref_code'] = ref_code
         return None

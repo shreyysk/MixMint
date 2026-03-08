@@ -51,22 +51,37 @@ def advanced_search(request):
 
     # Text search (Fuzzy matching via TrigramSimilarity [Spec §8])
     from django.contrib.postgres.search import TrigramSimilarity
+    from django.db.models import F, Case, When, Value, FloatField
 
     if query:
-        # Tracks
+        # Tracks [Fix 04: Weighted Ranking]
         track_qs = track_qs.annotate(
-            similarity=TrigramSimilarity('title', query)
-        ).filter(Q(similarity__gt=0.2) | Q(dj__dj_name__icontains=query)).order_by('-similarity')
+            similarity=TrigramSimilarity('title', query),
+            ranking_score=(
+                F('similarity') * 10.0 +
+                Case(When(dj__profile__is_pro_dj=True, then=Value(5.0)), default=Value(0.0), output_field=FloatField()) +
+                (F('download_count') * 0.05)
+            )
+        ).filter(Q(similarity__gt=0.2) | Q(dj__dj_name__icontains=query)).order_by('-ranking_score', '-similarity')
 
         # Albums
         album_qs = album_qs.annotate(
-            similarity=TrigramSimilarity('title', query)
-        ).filter(Q(similarity__gt=0.2) | Q(dj__dj_name__icontains=query)).order_by('-similarity')
+            similarity=TrigramSimilarity('title', query),
+            ranking_score=(
+                F('similarity') * 10.0 +
+                Case(When(dj__profile__is_pro_dj=True, then=Value(5.0)), default=Value(0.0), output_field=FloatField())
+            )
+        ).filter(Q(similarity__gt=0.2) | Q(dj__dj_name__icontains=query)).order_by('-ranking_score', '-similarity')
 
         # DJs
         dj_qs = dj_qs.annotate(
-            similarity=TrigramSimilarity('dj_name', query)
-        ).filter(similarity__gt=0.2).order_by('-similarity')
+            similarity=TrigramSimilarity('dj_name', query),
+            ranking_score=(
+                F('similarity') * 10.0 +
+                Case(When(profile__is_pro_dj=True, then=Value(5.0)), default=Value(0.0), output_field=FloatField()) +
+                (F('total_revenue') * 0.0001)
+            )
+        ).filter(similarity__gt=0.2).order_by('-ranking_score', '-similarity')
 
     # Genre filter
     if genre:

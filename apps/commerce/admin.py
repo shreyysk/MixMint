@@ -45,3 +45,26 @@ class DJApplicationFeeAdmin(admin.ModelAdmin):
 @admin.register(AdRevenueLog)
 class AdRevenueLogAdmin(admin.ModelAdmin):
     list_display = ('dj', 'content_id', 'ad_impression_value', 'created_at')
+
+from .models import TransactionAlert, EarningsHold, AdminAuditLog, OffloadNotification
+
+@admin.register(TransactionAlert)
+class TransactionAlertAdmin(admin.ModelAdmin):
+    list_display = ('id', 'purchase', 'user', 'alert_type', 'severity', 'reviewed', 'created_at')
+    list_filter = ('severity', 'reviewed', 'alert_type')
+
+@admin.register(EarningsHold)
+class EarningsHoldAdmin(admin.ModelAdmin):
+    list_display = ('dj', 'amount', 'hold_type', 'status', 'created_at')
+    list_filter = ('hold_type', 'status')
+
+@admin.register(AdminAuditLog)
+class AdminAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('admin', 'action', 'target_dj', 'created_at')
+    list_filter = ('action',)
+
+@admin.register(OffloadNotification)
+class OffloadNotificationAdmin(admin.ModelAdmin):
+    list_display = ('dj', 'content_type', 'reason', 'status', 'email_sent', 'created_at')
+    list_filter = ('status', 'reason', 'content_type', 'email_sent')
+    search_fields = ('dj__dj_name', 'content_id')

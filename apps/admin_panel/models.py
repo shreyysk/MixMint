@@ -100,6 +100,7 @@ class MaintenanceMode(models.Model):
     )
     mode = models.CharField(max_length=20, choices=MODE_CHOICES, default='normal')
     message = models.TextField(null=True, blank=True)  # Custom message shown during maintenance
+    estimated_return_at = models.DateTimeField(null=True, blank=True) # [Fix 14]
     activated_by = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, related_name='maintenance_modes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -138,6 +139,11 @@ class PlatformSettings(models.Model):
     
     dj_application_fee_enabled = models.BooleanField(default=False)
     dj_application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=99.00)
+    
+    # Phase 3: Offload System Thresholds
+    offload_zero_sales_days = models.IntegerField(default=60)
+    offload_low_sales_count = models.IntegerField(default=2)
+    offload_low_sales_days = models.IntegerField(default=90)
     
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -178,4 +184,28 @@ class PromotionalOffer(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ContentReport(models.Model):
+    """User-driven content flagging [Fix 08]."""
+    REPORT_TYPES = (
+        ('copyright', 'Copyright Infringement'),
+        ('spam', 'Spam / Misleading'),
+        ('audio', 'Bad Audio Quality'),
+        ('other', 'Other'),
+    )
+    STATUS_CHOICES = (
+        ('pending', 'Pending Review'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    )
+    reporter = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='reports_sent')
+    content_type = models.CharField(max_length=20, choices=(('track', 'Track'), ('album', 'Album')))
+    content_id = models.PositiveBigIntegerField()
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPES)
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
 

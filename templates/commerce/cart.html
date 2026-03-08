@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}My Cart — MixMint{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-[900px] mx-auto" x-data="cartApp()" x-init="loadCart()">
+    <div class="mb-10 border-b border-[var(--border)] pb-6">
+        <h1 class="font-display text-[36px] font-[700] text-[var(--text-primary)] tracking-tight">My Cart</h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mt-2">Review your selected tracks &amp; albums before
+            checkout.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-20">
+        <div class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest animate-pulse">Loading
+            cart…</div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && cart && cart.total_items === 0" class="py-24 text-center">
+        <div class="text-6xl mb-8 opacity-20">🛒</div>
+        <p class="font-display text-[22px] font-[600] text-[var(--text-primary)] mb-3">Your cart is empty</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-8">Browse tracks and hit <strong>Add to
+                Cart</strong> to get started.</p>
+        <a href="/explore/" class="btn-mm btn-mint h-12 px-8 font-[600]">Explore Tracks</a>
+    </div>
+
+    <!-- Loaded State -->
+    <div x-show="!loading && cart && cart.total_items > 0">
+        <!-- Cart Items -->
+        <div class="space-y-4 mb-10" x-show="cart">
+            <template x-for="item in cart.items" :key="item.id">
+                <div
+                    class="flex items-center gap-5 border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-5 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)] transition-colors group">
+                    <!-- Artwork Placeholder -->
+                    <div
+                        class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
+                        <template x-if="item.image_url">
+                            <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
+                        </template>
+                        <template x-if="!item.image_url">
+                            <span class="text-3xl opacity-20">🎵</span>
+                        </template>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="flex-1 min-w-0">
+                        <p class="font-display font-[600] text-[15px] text-[var(--text-primary)] truncate"
+                            x-text="item.title"></p>
+                        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mt-1 truncate"
+                            x-text="item.dj_name"></p>
+                        <span
+                            class="inline-block font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded mt-2 bg-[var(--bg-elevated)] text-[var(--text-muted)]"
+                            x-text="item.content_type"></span>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="font-mono text-[18px] font-bold text-[var(--accent-mint)] shrink-0">
+                        ₹<span x-text="(item.price / 100).toFixed(0)"></span>
+                    </div>
+
+                    <!-- Remove Button -->
+                    <button @click="removeItem(item.id)"
+                        class="w-8 h-8 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:border-[var(--accent-red)] transition-all shrink-0"
+                        title="Remove from cart">
+                        ✕
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <!-- Order Summary Card -->
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-8 shadow-[var(--shadow-card)]">
+            <h2 class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)] mb-6">Order Summary</h2>
+
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between font-body text-[14px]">
+                    <span class="text-[var(--text-muted)]">Subtotal (<span x-text="cart.total_items"></span>
+                        items)</span>
+                    <span class="text-[var(--text-primary)]">₹<span
+                            x-text="(cart.subtotal / 100).toFixed(0)"></span></span>
+                </div>
+                <template x-if="cart.discount_amount > 0">
+                    <div class="flex justify-between font-body text-[14px]">
+                        <span class="text-[var(--accent-mint)] flex items-center gap-1.5">✦ Bulk Discount (5+
+                            items)</span>
+                        <span class="text-[var(--accent-mint)] font-[600]">– ₹<span
+                                x-text="(cart.discount_amount / 100).toFixed(0)"></span></span>
+                    </div>
+                </template>
+                <div class="border-t border-[var(--border)] pt-3 flex justify-between">
+                    <span class="font-display font-[700] text-[18px] text-[var(--text-primary)]">Total</span>
+                    <span class="font-mono text-[22px] font-bold text-[var(--accent-mint)]">₹<span
+                            x-text="(cart.final_total / 100).toFixed(0)"></span></span>
+                </div>
+            </div>
+
+            <!-- Bulk Discount Nudge -->
+            <template x-if="cart.total_items < 5 && cart.discount_amount === 0">
+                <div
+                    class="mb-6 text-[12px] font-mono text-[var(--accent-amber)] bg-[var(--accent-amber)]/10 px-4 py-2 rounded text-center">
+                    Add <span x-text="5 - cart.total_items"></span> more item(s) to unlock a 20% bulk discount!
+                </div>
+            </template>
+
+            <!-- Error display -->
+            <div x-show="error" x-text="error" class="mb-4 text-[13px] text-[var(--accent-red)] font-body"></div>
+
+            <button @click="checkout()" :disabled="checkingOut"
+                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600] relative">
+                <span x-show="!checkingOut">Proceed to Checkout</span>
+                <span x-show="checkingOut" class="animate-pulse">Processing…</span>
+            </button>
+
+            <button @click="clearCart()"
+                class="mt-3 w-full h-10 font-body text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors">
+                Clear Cart
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cartApp() {
+        return {
+            cart: null,
+            loading: true,
+            checkingOut: false,
+            error: '',
+
+            async loadCart() {
+                this.loading = true;
+                try {
+                    const res = await fetch('/api/commerce/cart/current/', {
+                        headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+                    });
+                    if (res.ok) {
+                        this.cart = await res.json();
+                    }
+                } catch (e) {
+                    this.error = 'Failed to load cart.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async removeItem(itemId) {
+                const res = await fetch('/api/commerce/cart/remove_item/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+                    },
+                    body: JSON.stringify({ item_id: itemId })
+                });
+                if (res.ok) {
+                    this.cart = await res.json();
+                }
+            },
+
+            async clearCart() {
+                const res = await fetch('/api/commerce/cart/clear/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+                    },
+                    body: JSON.stringify({})
+                });
+                if (res.ok) {
+                    this.cart = await res.json();
+                }
+            },
+
+            async checkout() {
+                if (!this.cart || this.cart.total_items === 0) return;
+                this.checkingOut = true;
+                this.error = '';
+                try {
+                    const res = await fetch('/payments/cart-checkout/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+                        },
+                        body: JSON.stringify({ cart_id: this.cart.id })
+                    });
+                    const data = await res.json();
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        this.error = data.error || 'Checkout failed. Please try again.';
+                    }
+                } catch (e) {
+                    this.error = 'Network error. Please try again.';
+                } finally {
+                    this.checkingOut = false;
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

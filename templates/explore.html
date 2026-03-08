@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 {% block title %}Explore Tracks — MixMint{% endblock %}
 
 {% block content %}
-<div class="py-12 max-w-[1280px] mx-auto">
+<div class="py-12 max-w-[1280px] mx-auto" x-data="{ loading: false }" @submit.window="loading = true">
     <!-- ── SEARCH HEADER ── -->
     <div class="mb-12">
         <form method="get" class="w-full relative group">
@@ -37,7 +38,7 @@
                         By</label>
                     <div class="flex flex-col gap-3">
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="sort" value="popular" {% if sort == 'popular' %}checked{% endif %}
+                            <input type="radio" name="sort" value="popular" {% if sort=='popular' %}checked{% endif %}
                                 class="hidden">
                             <span
                                 class="w-4 h-4 rounded-full border-[1.5px] border-[var(--border)] group-hover:border-[var(--accent-mint)] transition-colors flex items-center justify-center {% if sort == 'popular' %}border-[var(--accent-mint)]{% endif %}">
@@ -47,7 +48,7 @@
                             <span class="font-body text-[14px] text-[var(--text-primary)]">Popular This Week</span>
                         </label>
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="sort" value="latest" {% if sort == 'latest' %}checked{% endif %}
+                            <input type="radio" name="sort" value="latest" {% if sort=='latest' %}checked{% endif %}
                                 class="hidden">
                             <span
                                 class="w-4 h-4 rounded-full border-[1.5px] border-[var(--border)] group-hover:border-[var(--accent-mint)] transition-colors flex items-center justify-center {% if sort == 'latest' %}border-[var(--accent-mint)]{% endif %}">
@@ -57,7 +58,8 @@
                             <span class="font-body text-[14px] text-[var(--text-primary)]">New</span>
                         </label>
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="sort" value="price_low" {% if sort == 'price_low' %}checked{% endif %} class="hidden">
+                            <input type="radio" name="sort" value="price_low" {% if sort=='price_low' %}checked{% endif
+                                %} class="hidden">
                             <span
                                 class="w-4 h-4 rounded-full border-[1.5px] border-[var(--border)] group-hover:border-[var(--accent-mint)] transition-colors flex items-center justify-center {% if sort == 'price_low' %}border-[var(--accent-mint)]{% endif %}">
                                 {% if sort == 'price_low' %}<span
@@ -66,7 +68,8 @@
                             <span class="font-body text-[14px] text-[var(--text-primary)]">Price Low–High</span>
                         </label>
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="sort" value="price_high" {% if sort == 'price_high' %}checked{% endif %} class="hidden">
+                            <input type="radio" name="sort" value="price_high" {% if sort=='price_high' %}checked{%
+                                endif %} class="hidden">
                             <span
                                 class="w-4 h-4 rounded-full border-[1.5px] border-[var(--border)] group-hover:border-[var(--accent-mint)] transition-colors flex items-center justify-center {% if sort == 'price_high' %}border-[var(--accent-mint)]{% endif %}">
                                 {% if sort == 'price_high' %}<span
@@ -84,8 +87,8 @@
                     <select name="type"
                         class="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[6px] h-[40px] px-3 font-body text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-mint)] cursor-pointer transition-colors">
                         <option value="all">Tracks & Albums</option>
-                        <option value="track" {% if type == 'track' %}selected{% endif %}>Tracks Only</option>
-                        <option value="album" {% if type == 'album' %}selected{% endif %}>Albums Only</option>
+                        <option value="track" {% if type=='track' %}selected{% endif %}>Tracks Only</option>
+                        <option value="album" {% if type=='album' %}selected{% endif %}>Albums Only</option>
                     </select>
                 </div>
 
@@ -126,23 +129,34 @@
         </aside>
 
         <!-- ── RESULTS GRID ── -->
-        <main class="flex-1 w-full min-w-0">
+        <main class="flex-1 w-full min-w-0 relative">
+            <!-- Loading Overlay -->
+            <div x-show="loading"
+                class="absolute inset-0 z-20 bg-[var(--bg-base)]/40 backdrop-blur-[2px] flex items-center justify-center rounded-[12px]"
+                x-cloak>
+                <div
+                    class="w-10 h-10 border-4 border-[var(--accent-mint)]/20 border-t-[var(--accent-mint)] rounded-full animate-spin">
+                </div>
+            </div>
             <div class="flex items-center justify-between mb-8 border-b border-[var(--border)] pb-4">
                 <span class="font-mono text-[13px] text-[var(--text-muted)]">{{
                     tracks|length|default:"0" }} results{% if q %} for "{{ q }}"{% endif %}</span>
             </div>
 
             {% if tracks %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                :class="loading ? 'opacity-50 pointer-events-none' : ''">
                 {% for track in tracks %}
                 <div
                     class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
                     <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
                         <!-- Artwork -->
                         <div
-                            class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
+                            class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px] skeleton">
                             {% if track.cover_url %}
-                            <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                            <img src="{{ track.cover_url }}" alt="{{ track.title }}"
+                                class="w-full h-full object-cover transition-opacity duration-300"
+                                onload="this.parentElement.classList.remove('skeleton')">
                             {% else %}
                             <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
                             {% endif %}
@@ -152,6 +166,13 @@
                                 class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
                                 {{ track.genre|default:"AUDIO" }}
                             </div>
+
+                            {% if track.file_format %}
+                            <div
+                                class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase z-10">
+                                {{ track.get_file_format_display|default:"WAV" }}
+                            </div>
+                            {% endif %}
 
                             {% if track.is_album %}
                             <div
@@ -172,8 +193,8 @@
                             </div>
 
                             <div class="mt-4 flex items-center justify-between">
-                                <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">₹{{
-                                    track.price }}</span>
+                                <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{
+                                    track.price|money }}</span>
                             </div>
 
                             <!-- Buy CTA -->

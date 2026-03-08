@@ -11,6 +11,7 @@ from .views import (
     manage_ad_floor, toggle_payment_gateway,
     toggle_invoice_generation, investor_report, investor_report_pdf,
     offers_pricing_dashboard, update_platform_settings, save_promotional_offer,
+    health_dashboard,
 )
 
 
@@ -52,4 +53,7 @@ urlpatterns = [
     path('offers-pricing/', offers_pricing_dashboard, name='admin_offers_pricing'),
     path('api/settings/update/', update_platform_settings, name='api_update_settings'),
     path('api/offers/save/', save_promotional_offer, name='api_save_offer'),
+    
+    # Platform Health [Imp 09]
+    path('health/', health_dashboard, name='admin_health'),
 ]

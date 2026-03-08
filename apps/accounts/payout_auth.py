@@ -1,55 +1,38 @@
-"""
-MixMint Payout 2FA Authentication [Spec P2 §11, P3 §3.2].
-
-Handles OTP generation and verification for DJ payout requests.
-Uses email-based delivery via Resend.
-"""
-
-import random
-import string
+import pyotp
 from django.utils import timezone
 from datetime import timedelta
 from apps.admin_panel.email_utils import send_email
 
-def generate_payout_otp(dj_profile):
-    """
-    Generate a 6-digit OTP for payout verification.
-    Valid for 10 minutes.
-    """
-    otp = ''.join(random.choices(string.digits, k=6))
-    dj_profile.payout_otp_secret = otp
-    dj_profile.payout_otp_timestamp = timezone.now()
-    dj_profile.save(update_fields=['payout_otp_secret', 'payout_otp_timestamp'])
-    
-    send_email(
-        to_email=dj_profile.profile.user.email,
-        subject="MixMint Payout Verification Code",
-        html_content=(
-            f"<p>Your verification code for initiating a payout is:</p>"
-            f"<h2>{otp}</h2>"
-            f"<p>This code expires in 10 minutes.</p>"
-        ),
-    )
-    return otp
+def generate_totp_secret():
+    """Generates a new base32 TOTP secret."""
+    return pyotp.random_base32()
 
-def verify_payout_otp(dj_profile, user_otp):
-    """
-    Verify the provided OTP against the stored secret.
-    Checks for expiration (10 minutes).
-    """
-    if not dj_profile.payout_otp_secret or not dj_profile.payout_otp_timestamp:
-        return False, "No OTP generated."
+def get_totp_uri(dj_profile):
+    """Generates the provisioning URI for Google Authenticator/Authy."""
+    if not dj_profile.payout_otp_secret:
+        dj_profile.payout_otp_secret = generate_totp_secret()
+        dj_profile.save(update_fields=['payout_otp_secret'])
     
-    # Check expiration
-    expiry_time = dj_profile.payout_otp_timestamp + timedelta(minutes=10)
-    if timezone.now() > expiry_time:
-        return False, "OTP has expired."
+    return pyotp.totp.TOTP(dj_profile.payout_otp_secret).provisioning_uri(
+        name=dj_profile.profile.user.email,
+        issuer_name="MixMint"
+    )
+
+def verify_totp(dj_profile, code):
+    """Verifies a TOTP code."""
+    if not dj_profile.payout_otp_secret:
+        return False, "TOTP not configured."
     
-    if dj_profile.payout_otp_secret == user_otp:
-        # Clear OTP after successful verification
-        dj_profile.payout_otp_secret = None
-        dj_profile.payout_otp_timestamp = None
-        dj_profile.save(update_fields=['payout_otp_secret', 'payout_otp_timestamp'])
+    totp = pyotp.TOTP(dj_profile.payout_otp_secret)
+    if totp.verify(code):
         return True, "Verified."
-    
-    return False, "Invalid OTP."
+    return False, "Invalid verification code."
+
+# Keep original for legacy/fallback if needed, but rename if appropriate.
+# The spec says TOTP is required for payouts.
+def verify_payout_otp(dj_profile, code):
+    """
+    Primary 2FA check for payouts [Fix 06].
+    Checks TOTP (Google Authenticator).
+    """
+    return verify_totp(dj_profile, code)

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Security & Trust — MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12">
+    <div class="mb-12 text-center">
+        <h1 class="text-6xl font-display mb-6">Security & Trust</h1>
+        <p class="text-xl text-[var(--text-muted)]">How we protect DJs and Buyers on India's premier music marketplace.
+        </p>
+    </div>
+
+    <div class="grid gap-8">
+        <!-- Section 1: Buyer Protection -->
+        <div class="glow-card p-8">
+            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                <span class="text-mint-500">🛡️</span> Buyer Protection
+            </h2>
+            <div class="space-y-4 text-[var(--text-muted)] leading-relaxed">
+                <p>
+                    <strong class="text-[var(--text-primary)]">Ownership, Not Access:</strong> When you buy on MixMint,
+                    you are purchasing a perpetual license. No subscriptions, no DRM, and no "revoked access" due to
+                    licensing changes.
+                </p>
+                <p>
+                    <strong class="text-[var(--text-primary)]">Download Insurance:</strong> Our optional ₹15 insurance
+                    guarantees that even if a DJ removes a track from the store, you can still download your purchase
+                    from our encrypted archive.
+                </p>
+                <p>
+                    <strong class="text-[var(--text-primary)]">Byte-Level Verification:</strong> Every download is
+                    verified via SHA-256 checksums to ensure the file you receive is exactly what the DJ uploaded, with
+                    no corruption or tampering.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 2: DJ Security -->
+        <div class="glow-card p-8">
+            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                <span class="text-mint-500">🎧</span> DJ Security
+            </h2>
+            <div class="space-y-4 text-[var(--text-muted)] leading-relaxed">
+                <p>
+                    <strong class="text-[var(--text-primary)]">Anti-Piracy (IP Lock):</strong> To prevent link sharing,
+                    every download link is locked to the buyer's IP address and device fingerprint for 48 hours.
+                </p>
+                <p>
+                    <strong class="text-[var(--text-primary)]">Escrow Policy:</strong> All earnings are held in a secure
+                    escrow account (24-48 hours) to protect against chargebacks and fraudulent behavior, ensuring a
+                    clean marketplace.
+                </p>
+                <p>
+                    <strong class="text-[var(--text-primary)]">Secure R2 Storage:</strong> Your tracks are stored in
+                    private, cryptographically secured buckets (Cloudflare R2). No public URLs ever exist for your
+                    high-quality files.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 3: Technical Integrity -->
+        <div class="glow-card p-8">
+            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                <span class="text-mint-500">🔒</span> Technical Integrity
+            </h2>
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="notice-info">
+                        <p class="font-bold mb-1">Session Isolation</p>
+                        <p>We use strict IP-bound session management. If your IP changes significantly mid-session, we
+                            auto-terminate the session to prevent hijacking.</p>
+                    </div>
+                    <div class="notice-info">
+                        <p class="font-bold mb-1">Audit Logging</p>
+                        <p>Every administrative action and financial transaction is logged in our immutable audit trail
+                            for complete transparency.</p>
+                    </div>
+                </div>
+                <div class="p-6 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl text-center">
+                    <p class="text-sm font-mono text-[var(--text-muted)]">
+                        Platform Status: <span class="text-mint-500 animate-pulse">● OPERATIONAL</span> · Security
+                        Version: 2.0.4-LOCKED
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-16 text-center text-[var(--text-muted)]">
+        <p>Found a security vulnerability? <a href="mailto:security@mixmint.site"
+                class="text-mint-500 hover:underline">Report via our Bug Bounty Program.</a></p>
+    </div>
+</div>
+{% endblock %}

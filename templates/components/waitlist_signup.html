@@ -1,0 +1,67 @@
+<div x-data="{ 
+    email: '', 
+    isDj: false, 
+    loading: false, 
+    success: false, 
+    msg: '',
+    async signup() {
+        if (!this.email) return;
+        this.loading = true;
+        try {
+            const res = await fetch('{% url 'waitlist_signup' %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    email: this.email, 
+                    is_dj: this.isDj,
+                    source: '{{ source|default:" homepage_footer" }}' }) }); const data=await res.json(); if (res.ok) {
+    this.success=true; this.msg=data.message; this.email='' ; } else { this.msg=data.error; } } catch (e) {
+    this.msg='Something went wrong. Please try again.' ; } finally { this.loading=false; } } }" class="w-full">
+    <div x-show="!success">
+        <h4 class="font-display text-xl font-bold text-white mb-4">Join the Waitlist</h4>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-6">
+            Be the first to know when we launch new features. Get early access to the pro platform.
+        </p>
+
+        <form @submit.prevent="signup()" class="space-y-4">
+            <div class="relative">
+                <input type="email" x-model="email" placeholder="Enter your email" required
+                    class="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 font-body text-[14px] text-white focus:outline-none focus:border-[var(--accent-mint)] transition-colors">
+            </div>
+
+            <label class="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" x-model="isDj"
+                    class="w-4 h-4 rounded border-[var(--border)] bg-transparent accent-[var(--accent-mint)]">
+                <span class="font-body text-[13px] text-[var(--text-muted)] group-hover:text-white transition-colors">I
+                    am a DJ / Producer</span>
+            </label>
+
+            <button type="submit" :disabled="loading"
+                class="btn-mm btn-mint w-full h-[48px] font-bold flex items-center justify-center gap-2">
+                <template x-if="loading">
+                    <span class="animate-spin text-[18px]">⌛</span>
+                </template>
+                <span x-text="loading ? 'Joining...' : 'Join Waitlist'"></span>
+            </button>
+            <p x-show="msg" x-text="msg" class="text-[var(--accent-red)] text-[12px] font-body mt-2"></p>
+        </form>
+    </div>
+
+    <!-- Success State -->
+    <div x-show="success" x-cloak x-transition:enter="transition ease-out duration-500"
+        x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+        class="bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 rounded-2xl p-8 text-center">
+        <div
+            class="w-16 h-16 bg-[var(--accent-mint)] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            ✨
+        </div>
+        <h3 class="font-display text-2xl font-bold text-white mb-2">You're in!</h3>
+        <p class="font-body text-[14px] text-[var(--text-muted)]" x-text="msg"></p>
+        <button @click="success = false; msg = ''"
+            class="mt-6 text-[var(--accent-mint)] font-mono text-[11px] uppercase tracking-widest hover:underline">Add
+            another email</button>
+    </div>
+</div>

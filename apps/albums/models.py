@@ -38,6 +38,15 @@ class AlbumPack(models.Model):
 
     is_active = models.BooleanField(default=True)  # Admin can disable content [Spec §3.3]
     is_deleted = models.BooleanField(default=False)  # Soft delete only [Spec P2 §3.2]
+    
+    # [Phase 3] External Link / Offload System
+    is_external_link = models.BooleanField(default=False)
+    external_link_url = models.URLField(max_length=1000, null=True, blank=True)
+    external_link_provider = models.CharField(max_length=20, null=True, blank=True)
+    external_link_broken = models.BooleanField(default=False)
+    external_link_error = models.CharField(max_length=200, null=True, blank=True)
+    converted_at = models.DateTimeField(null=True, blank=True)
+    
     upload_method = models.CharField(max_length=20, choices=UPLOAD_METHODS, default='direct_zip')
     original_file_key = models.CharField(max_length=500, null=True, blank=True)
     processing_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -46,6 +55,7 @@ class AlbumPack(models.Model):
     processing_error = models.TextField(null=True, blank=True)
     track_count = models.IntegerField(default=0)
     total_duration = models.IntegerField(null=True, blank=True)
+    file_size = models.BigIntegerField(null=True, blank=True)  # Size of the ZIP in bytes
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

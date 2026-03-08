@@ -27,6 +27,7 @@ class DJProfileViewSet(viewsets.ModelViewSet):
     queryset = DJProfile.objects.all()
     serializer_class = DJProfileSerializer
     lookup_field = 'slug'
+    throttle_scope = 'search'  # [Fix 16]
     
     def get_queryset(self):
         return DJProfile.objects.filter(status='approved')

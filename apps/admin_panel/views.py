@@ -316,14 +316,10 @@ def escrow_dj_funds(request):
 @permission_classes([IsAdminUser])
 def revenue_dashboard(request):
     """Platform revenue analytics [Spec P2 §12]."""
-    # Total platform revenue
-    totals = Purchase.objects.filter(is_completed=True).aggregate(
-        total_sales=Sum('price_paid'),
-        total_commission=Sum('commission'),
-        total_checkout_fees=Sum('checkout_fee'),
-        total_dj_earnings=Sum('dj_earnings'),
-        purchase_count=Count('id'),
-    )
+    from apps.commerce.analytics import get_platform_lifetime_revenue
+    
+    # Total platform revenue (Daily cache)
+    totals_data = get_platform_lifetime_revenue()
 
     # Ad revenue totals
     ad_totals = AdRevenueLog.objects.aggregate(
@@ -349,12 +345,12 @@ def revenue_dashboard(request):
 
     return Response({
         'totals': {
-            'total_sales': str(totals['total_sales'] or 0),
-            'total_commission': str(totals['total_commission'] or 0),
-            'total_checkout_fees': str(totals['total_checkout_fees'] or 0),
-            'total_dj_earnings': str(totals['total_dj_earnings'] or 0),
+            'total_sales': totals_data['total_sales'],
+            'total_commission': totals_data['total_commission'],
+            'total_checkout_fees': totals_data['total_checkout_fees'],
+            'total_dj_earnings': totals_data.get('total_dj_earnings', '0'),
             'total_ad_revenue': str(ad_totals['total_ad_revenue'] or 0),
-            'purchase_count': totals['purchase_count'] or 0,
+            'purchase_count': totals_data.get('purchase_count', 0),
         },
         'weekly_breakdown': list(weekly),
         'pending_payouts': str(pending_payouts['total'] or 0),
@@ -722,3 +718,56 @@ def save_promotional_offer(request):
     offer.save()
     _log_admin_action(request, f"Saved Promotional Offer: {offer.title}")
     return Response({'status': 'success', 'offer_id': offer.id})
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def health_dashboard(request):
+    """Platform health monitoring [Imp 09]."""
+    from apps.accounts.models import LoginHistory
+    from apps.tracks.models import Track
+    from .models import AuditLog, BanList
+    from django.shortcuts import render
+    
+    # 1. Active Traffic (last 1 hour)
+    one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
+    active_sessions = LoginHistory.objects.filter(created_at__gte=one_hour_ago).count()
+    
+    # 2. Security Alerts (Recent bans & Audit logs)
+    recent_bans = BanList.objects.filter(is_active=True).count()
+    recent_audits = AuditLog.objects.all().order_by('-created_at')[:10]
+    
+    # 3. Content Health
+    total_tracks = Track.objects.count()
+    deleted_tracks = Track.objects.filter(is_deleted=True).count()
+    
+    # 4. Storage / Disk Placeholder
+    # Metadata about the environment
+    
+    ctx = {
+        'active_sessions_1h': active_sessions,
+        'security': {
+            'active_bans': recent_bans,
+            'recent_audits': [{
+                'admin': a.admin.user.email,
+                'action': a.action,
+                'time': a.created_at.isoformat()
+            } for a in recent_audits]
+        },
+        'content_health': {
+            'total_tracks': total_tracks,
+            'deleted_tracks': deleted_tracks,
+            'health_percentage': round((1 - (deleted_tracks/total_tracks))*100, 1) if total_tracks > 0 else 100
+        },
+        'system': {
+            'status': 'HEALTHY',
+            'last_sync': timezone.now().isoformat(),
+            'server_region': 'ap-south-1',
+            'environment': 'Production'
+        }
+    }
+    
+    # If HTML requested (for dashboard template)
+    if 'html' in request.query_params or not request.accepted_renderer.format == 'json':
+        return render(request, 'admin/health.html', ctx)
+        
+    return Response(ctx)

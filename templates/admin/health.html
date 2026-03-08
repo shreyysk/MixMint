@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Platform Health — MixMint Admin{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-[1200px] mx-auto px-4">
+    <!-- Header -->
+    <div
+        class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <div class="flex items-center gap-3 mb-4">
+                <span
+                    class="px-3 py-1 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] text-[10px] font-mono font-bold uppercase tracking-widest rounded-full border border-[var(--accent-mint)]/20">
+                    System Monitor
+                </span>
+                <span class="flex items-center gap-2 text-[12px] text-[var(--text-muted)] font-mono">
+                    <span class="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse"></span>
+                    Live Data
+                </span>
+            </div>
+            <h1
+                class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                Platform Health
+            </h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Last Sync</p>
+                <p class="font-mono text-[13px] text-[var(--text-primary)]">{{ system.last_sync|date:"H:i:s" }} UTC</p>
+            </div>
+            <button onclick="window.location.reload()"
+                class="w-10 h-10 rounded-full border border-[var(--border)] flex items-center justify-center hover:bg-[var(--border)] transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+
+        <!-- Active Traffic -->
+        <div class="glow-card p-8 flex flex-col justify-between min-h-[220px]">
+            <div>
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-6">Active Traffic
+                    (1h)</p>
+                <h3 class="font-display text-[64px] font-bold text-[var(--text-primary)] leading-none mb-2">
+                    {{ active_sessions_1h }}
+                </h3>
+                <p class="font-body text-[14px] text-[var(--text-muted)]">Unique sessions detected</p>
+            </div>
+            <div class="w-full h-1.5 bg-[var(--border)] rounded-full mt-6 overflow-hidden">
+                <div class="h-full bg-[var(--accent-mint)] transition-all duration-1000"
+                    style="width: {% widthratio active_sessions_1h 100 100 %}%"></div>
+            </div>
+        </div>
+
+        <!-- Content Health -->
+        <div class="glow-card p-8 flex flex-col justify-between min-h-[220px]">
+            <div>
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-6">Content
+                    Integrity</p>
+                <div class="flex items-baseline gap-2 mb-2">
+                    <h3 class="font-display text-[64px] font-bold text-[var(--text-primary)] leading-none">
+                        {{ content_health.health_percentage }}
+                    </h3>
+                    <span class="font-display text-[24px] font-bold text-[var(--text-muted)]">%</span>
+                </div>
+                <p class="font-body text-[14px] text-[var(--text-muted)]">
+                    {{ content_health.total_tracks }} tracks total · {{ content_health.deleted_tracks }} flagged/removed
+                </p>
+            </div>
+            <div class="w-full h-1.5 bg-[var(--border)] rounded-full mt-6 overflow-hidden">
+                <div class="h-full bg-[var(--accent-amber)] transition-all duration-1000"
+                    style="width: {{ content_health.health_percentage }}%"></div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="glow-card p-8 border-[var(--accent-mint)]/30 flex flex-col justify-between min-h-[220px]">
+            <div>
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-6">Environment</p>
+                <h3 class="font-display text-[32px] font-bold text-[var(--accent-mint)] leading-tight mb-2">
+                    {{ system.status }}
+                </h3>
+                <div class="space-y-1 mt-4">
+                    <p class="font-mono text-[12px] text-[var(--text-muted)]">{{ system.server_region }} · R2 Primary
+                    </p>
+                    <p class="font-mono text-[12px] text-[var(--text-muted)]">v2.0 {{ system.environment }}</p>
+                </div>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-[13px] font-body text-[var(--accent-mint)]">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                All systems operational
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- Security Feed -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[16px] overflow-hidden">
+            <div class="p-6 border-b border-[var(--border)] flex items-center justify-between">
+                <h4 class="font-display text-[18px] font-bold">Recent Security Actions</h4>
+                <span
+                    class="px-2 py-0.5 bg-[var(--accent-red)]/10 text-[var(--accent-red)] text-[10px] font-mono font-bold rounded">
+                    {{ security.active_bans }} Active Bans
+                </span>
+            </div>
+            <div class="divide-y divide-[var(--border)] max-h-[400px] overflow-y-auto">
+                {% for audit in security.recent_audits %}
+                <div class="p-4 hover:bg-[var(--border)]/10 transition-colors">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="font-mono text-[13px] text-[var(--text-primary)]">{{ audit.action }}</p>
+                        <p class="font-mono text-[10px] text-[var(--text-muted)]">{{ audit.time|slice:"11:16" }}</p>
+                    </div>
+                    <p class="font-body text-[11px] text-[var(--text-muted)]">Admin: {{ audit.admin }}</p>
+                </div>
+                {% empty %}
+                <div class="p-12 text-center text-[var(--text-muted)] font-body text-[14px]">
+                    No recent audit logs found.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Controls -->
+        <div class="space-y-6">
+            <h4 class="font-display text-[18px] font-bold mb-4">Emergency Controls</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="{% url 'admin_maintenance' %}"
+                    class="btn-mm btn-ghost flex flex-col items-center justify-center p-8 h-auto gap-4 group">
+                    <span class="text-3xl grayscale group-hover:grayscale-0 transition-all">🛠️</span>
+                    <span class="font-display font-bold">Maintenance</span>
+                </a>
+                <a href="{% url 'admin_kill_switch' %}"
+                    class="btn-mm border-[var(--accent-red)] text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 flex flex-col items-center justify-center p-8 h-auto gap-4 group">
+                    <span class="text-3xl grayscale group-hover:grayscale-0 transition-all">🚨</span>
+                    <span class="font-display font-bold">Kill Switch</span>
+                </a>
+            </div>
+
+            <div class="notice-danger mt-6">
+                <p class="font-bold mb-1">DANGER ZONE</p>
+                <p class="text-[12px]">These controls affect platform availability globally. Authorization required for
+                    all actions.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

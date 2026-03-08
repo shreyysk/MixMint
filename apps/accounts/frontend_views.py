@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.views import View
 from django.db import connection
 from .models import User, Profile, LoginHistory
 from .validators import validate_email_domain, validate_strong_password
@@ -62,7 +63,22 @@ def signup_view(request):
             profile = user.profile
             profile.full_name = full_name
             profile.role = 'user'  # DJ status is granted via application + admin approval [Spec §7]
-            profile.save(update_fields=['full_name', 'role'])
+            
+            # Handle Referral [Imp 15]
+            ref_code = request.session.get('ref_code')
+            if ref_code:
+                from .models import AmbassadorCode
+                try:
+                    ambassador = AmbassadorCode.objects.get(code=ref_code, is_active=True)
+                    profile.referred_by = ambassador.dj
+                    ambassador.referral_count += 1
+                    ambassador.save()
+                    # Clear session after use
+                    del request.session['ref_code']
+                except AmbassadorCode.DoesNotExist:
+                    pass
+            
+            profile.save(update_fields=['full_name', 'role', 'referred_by'])
 
             login(request, user)
 
@@ -154,7 +170,9 @@ class HomeView:
     @staticmethod
     def as_view():
         def view(request):
-            return render(request, 'home.html')
+            from apps.tracks.models import Track
+            popular_tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False).order_by('-sales_last_7_days', '-created_at')[:4]
+            return render(request, 'home.html', {'popular_tracks': popular_tracks})
         return view
 
 
@@ -205,7 +223,7 @@ class ExploreView:
                     djs = djs.filter(Q(dj_name__icontains=q) | Q(slug__icontains=q))
 
             if sort == 'popular':
-                tracks = tracks.order_by('-download_count')
+                tracks = tracks.order_by('-sales_last_7_days', '-created_at')
             elif sort == 'price_low':
                 tracks = tracks.order_by('price')
             else:
@@ -221,4 +239,81 @@ class ExploreView:
                 'djs': djs[:24],
             }
             return render(request, 'explore.html', ctx)
+        return view
+
+
+class DJDirectoryView:
+    @staticmethod
+    def as_view():
+        def view(request):
+            from .models import DJProfile
+            from django.db import connection
+            from django.db.models import Q
+
+            q = (request.GET.get('q') or '').strip()
+            genre = (request.GET.get('genre') or '').strip()
+            verified = request.GET.get('verified') == 'true'
+            sort = (request.GET.get('sort') or 'popular').strip()
+
+            djs = DJProfile.objects.filter(status='approved', profile__store_paused=False).select_related('profile', 'profile__user')
+
+            if verified:
+                djs = djs.filter(is_verified=True)
+
+            if genre:
+                # DJ genres are stored in a JSONField list
+                djs = djs.filter(genres__icontains=genre)
+
+            if q:
+                if connection.vendor == 'postgresql':
+                    from django.contrib.postgres.search import TrigramSimilarity
+                    djs = djs.annotate(sim=TrigramSimilarity('dj_name', q)).filter(
+                        Q(sim__gt=0.2) | Q(dj_name__icontains=q)
+                    ).order_by('-sim')
+                else:
+                    djs = djs.filter(Q(dj_name__icontains=q) | Q(slug__icontains=q))
+
+            if sort == 'popular':
+                djs = djs.order_by('-popularity_score', '-total_revenue')
+            elif sort == 'latest':
+                djs = djs.order_by('-profile__created_at')
+            else:
+                djs = djs.order_by('dj_name')
+
+            ctx = {
+                'q': q,
+                'genre': genre,
+                'verified': verified,
+                'sort': sort,
+                'djs': djs[:48],
+            }
+            return render(request, 'dj/directory.html', ctx)
+        return view
+
+class WaitlistSignupView(View):
+    """Imp 10: Launch Waitlist System."""
+    def post(self, request):
+        import json
+        from django.http import JsonResponse
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            is_dj = data.get('is_dj', False)
+            source = data.get('source', 'unknown')
+
+            if not email:
+                return JsonResponse({'error': 'Email is required.'}, status=400)
+
+            from .models import Waitlist
+            waitlist, created = Waitlist.objects.get_or_create(
+                email=email,
+                defaults={'is_dj': is_dj, 'source': source}
+            )
+
+            if not created:
+                return JsonResponse({'message': 'You are already on the waitlist! We will notify you soon.'})
+
+            return JsonResponse({'message': 'Success! You have been added to the waitlist.'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
         return view

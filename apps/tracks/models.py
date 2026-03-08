@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 from django.core.exceptions import ValidationError
-from apps.accounts.models import DJProfile
+from apps.accounts.models import Profile, DJProfile
 
 
 class Track(models.Model):
@@ -20,6 +20,15 @@ class Track(models.Model):
     genre = models.CharField(max_length=100, null=True, blank=True)
     year = models.IntegerField(null=True, blank=True)  # Release year [Spec P2 §3.1]
     checksum = models.CharField(max_length=64, null=True, blank=True)  # SHA-256 integrity [New]
+    file_size = models.BigIntegerField(null=True, blank=True)  # Size in bytes
+    
+    FORMAT_CHOICES = (
+        ('wav', 'WAV (Lossless)'),
+        ('mp3', 'MP3 (320kbps)'),
+        ('studio', 'Studio Project (ZIP)'),
+        ('aiff', 'AIFF'),
+    )
+    file_format = models.CharField(max_length=20, choices=FORMAT_CHOICES, default='wav')  # [Fix 17]
 
     # Preview URLs — DJ chooses type [Spec §2.1]
     PREVIEW_CHOICES = (
@@ -33,6 +42,16 @@ class Track(models.Model):
     is_active = models.BooleanField(default=True)  # Admin/DJ can disable [Spec §3.2, §3.3]
     is_deleted = models.BooleanField(default=False)  # Soft delete only [Spec P2 §3.1]
     download_count = models.IntegerField(default=0)
+    sales_last_7_days = models.IntegerField(default=0)  # [Missing Item 01]
+    
+    # [Phase 3] External Link / Offload System
+    is_external_link = models.BooleanField(default=False)
+    external_link_url = models.URLField(max_length=1000, null=True, blank=True)
+    external_link_provider = models.CharField(max_length=20, null=True, blank=True) # google_drive, mediafire, other
+    external_link_broken = models.BooleanField(default=False)
+    external_link_error = models.CharField(max_length=200, null=True, blank=True)
+    converted_at = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -120,3 +139,16 @@ class TrackVersion(models.Model):
     checksum = models.CharField(max_length=255, null=True, blank=True)
     is_current = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class StarRating(models.Model):
+    """Unified rating system (1-5 stars) [Fix 09]."""
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='ratings_given')
+    content_type = models.CharField(max_length=20, choices=(('track', 'Track'), ('album', 'Album')))
+    content_id = models.PositiveBigIntegerField()
+    stars = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    review = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'content_type', 'content_id')

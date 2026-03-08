@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Platform Status — MixMint{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+    <div class="mb-8 relative">
+        <div
+            class="w-32 h-32 rounded-full flex items-center justify-center bg-{{ theme_color }}-500/10 border-2 border-{{ theme_color }}-500 animate-pulse">
+            {% if mode == 'maintenance' %}
+            <span class="text-4xl">🛠️</span>
+            {% else %}
+            <span class="text-4xl">🚨</span>
+            {% endif %}
+        </div>
+        <div
+            class="absolute -top-2 -right-2 px-3 py-1 bg-{{ theme_color }}-500 text-black text-xs font-mono font-bold rounded-full uppercase tracking-widest">
+            {{ mode }}
+        </div>
+    </div>
+
+    <h1 class="text-5xl font-display mb-4">
+        {% if mode == 'maintenance' %}
+        Mending the Mix
+        {% else %}
+        Safety Protocol Active
+        {% endif %}
+    </h1>
+
+    <p class="text-xl text-[var(--text-muted)] max-w-lg mb-8">
+        {{ message }}
+    </p>
+
+    {% if estimated_return %}
+    <div class="glow-card border-{{ theme_color }}-500/30 p-6 mb-8 max-w-sm">
+        <p class="text-xs font-mono text-{{ theme_color }}-500 uppercase tracking-widest mb-2">Estimated Return</p>
+        <p class="text-2xl font-display">{{ estimated_return|date:"d M, H:i" }} IST</p>
+    </div>
+    {% endif %}
+
+    <div class="flex gap-4">
+        <a href="https://twitter.com/mixmint_status" class="btn-mm btn-ghost">Check Status Page</a>
+        <a href="/" class="btn-mm btn-mint">Try Again</a>
+    </div>
+
+    {% if mode == 'kill_switch' %}
+    <div class="mt-12 notice-danger max-w-md">
+        <p class="font-bold mb-1">Safety First</p>
+        <p>The platform is still browseable, but downloads and payments are locked until further notice to protect our
+            users.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Dynamic theme overrides [Fix 14] */
+        {
+        % if theme_color=='amber' %
+    }
+
+    :root {
+        --accent-mint: var(--accent-amber);
+        --border-focus: var(--accent-amber);
+    }
+
+        {
+        % elif theme_color=='red' %
+    }
+
+    :root {
+        --accent-mint: var(--accent-red);
+        --border-focus: var(--accent-red);
+    }
+
+        {
+        % endif %
+    }
+
+    .bg-amber-500 {
+        background-color: #FFB800;
+    }
+
+    .bg-red-500 {
+        background-color: #FF3355;
+    }
+
+    .border-amber-500 {
+        border-color: #FFB800;
+    }
+
+    .border-red-500 {
+        border-color: #FF3355;
+    }
+
+    .text-amber-500 {
+        color: #FFB800;
+    }
+
+    .text-red-500 {
+        color: #FF3355;
+    }
+</style>
+{% endblock %}

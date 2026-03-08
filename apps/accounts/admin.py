@@ -32,3 +32,20 @@ class DJApplicationAdmin(admin.ModelAdmin):
     list_display = ('user', 'status', 'paid_application_fee', 'created_at', 'reviewed_at')
     list_filter = ('status', 'paid_application_fee')
     search_fields = ('user__user__email', 'user__full_name')
+
+
+from .models import IPBlacklist
+
+@admin.register(IPBlacklist)
+class IPBlacklistAdmin(admin.ModelAdmin):
+    list_display = ('type', 'value', 'is_active', 'added_by', 'created_at')
+    list_filter = ('type', 'is_active')
+    search_fields = ('value', 'reason')
+
+from .models import DJPageView
+
+@admin.register(DJPageView)
+class DJPageViewAdmin(admin.ModelAdmin):
+    list_display = ('dj', 'page_type', 'ip_address', 'created_at')
+    list_filter = ('page_type', 'created_at')
+    search_fields = ('dj__dj_name', 'ip_address')

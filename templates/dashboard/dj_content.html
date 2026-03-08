@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}My Tracks — MixMint DJ Dashboard{% endblock %}
+{% load custom_filters %}
+{% block title %}My Content | MixMint{% endblock %}
 
 {% block content %}
 <div class="py-12 max-w-[1200px] mx-auto">
@@ -26,12 +26,52 @@
                     <span>Create Album</span>
                     <span class="opacity-50">📦</span>
                 </a>
+                <a href="{% url 'bundle_management' %}"
+                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
+                    <span>Bundles</span>
+                    <span class="opacity-50">🎛️</span>
+                </a>
+                <a href="{% url 'announcement_management' %}"
+                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
+                    <span>Posts</span>
+                    <span class="opacity-50">📢</span>
+                </a>
+                <a href="{% url 'ambassador_management' %}"
+                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
+                    <span>Ambassador</span>
+                    <span class="opacity-50">🤝</span>
+                </a>
             </div>
         </div>
     </div>
 
     <!-- ── STATS ── -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <!-- Storage Usage -->
+        <div
+            class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] relative group hover:border-[var(--accent-mint)] transition-colors rounded-[12px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Storage Usage</p>
+            <div class="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden mb-3">
+                <div class="h-full bg-[var(--accent-mint)] transition-all duration-500"
+                    style="--storage-pct: {{ storage_percent }}%; width: var(--storage-pct);"></div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="font-display text-2xl font-bold text-[var(--text-primary)]">
+                    {{ storage_used_mb }} MB
+                </span>
+                <span class="text-[10px] text-[var(--text-muted)]">/ {{ storage_quota_mb }} MB</span>
+            </div>
+            {% if not is_pro %}
+            <div class="mt-4">
+                <a href="{% url 'pro_landing' %}"
+                    class="text-[10px] text-[var(--accent-mint)] font-bold uppercase tracking-widest hover:underline">Upgrade
+                    to Pro (20GB) &rarr;</a>
+            </div>
+            {% endif %}
+            <div
+                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--accent-mint)]/20 group-hover:bg-[var(--accent-mint)] transition-colors rounded-b-[12px]">
+            </div>
+        </div>
         <!-- Lifetime Earnings -->
         <div
             class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] relative group hover:border-[var(--accent-mint)] transition-colors rounded-[12px]">
@@ -75,168 +115,328 @@
                 class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--border)] group-hover:bg-[var(--text-primary)] transition-colors rounded-b-[12px]">
             </div>
         </div>
-    </div>
-
-    <!-- ── REVENUE CHART ── -->
-    <div
-        class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] mb-16 rounded-[12px]">
-        <h3 class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-8">Weekly Revenue</h3>
-        <div class="flex items-end gap-3 h-40 pt-4 border-b border-[var(--border)]">
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 15%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹150</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 45%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹450</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 30%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹300</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 80%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹800</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 60%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹600</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 100%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹1000</div>
-            </div>
-            <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
-                style="height: 40%;">
-                <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
-                    ₹400</div>
-            </div>
+        <!-- ── EARNINGS FORECAST [Imp 11] ── -->
+        <div class="mb-16">
+            {% include 'components/earnings_forecast.html' %}
         </div>
+
+        <!-- ── REVENUE CHART ── -->
         <div
-            class="flex justify-between mt-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest px-2">
-            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-        </div>
-    </div>
-
-    <!-- ── CONTENT TABLE ── -->
-    <div
-        class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] overflow-hidden rounded-[12px]">
-        <div class="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
-            <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)]">All Tracks</h2>
-        </div>
-
-        {% if profile.dj_profile.tracks.all %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left font-body">
-                <thead>
-                    <tr
-                        class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
-                        <th class="px-8 py-5 font-normal">Track</th>
-                        <th class="px-8 py-5 font-normal">Price</th>
-                        <th class="px-8 py-5 font-normal">Sales</th>
-                        <th class="px-8 py-5 font-normal">Status</th>
-                        <th class="px-8 py-5 text-right font-normal">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--border)]">
-                    {% for track in profile.dj_profile.tracks.all %}
-                    <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
-                        <td class="px-8 py-6">
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-10 h-10 flex items-center justify-center bg-[var(--bg-base)] border border-[var(--border)] text-lg group-hover:border-[var(--accent-mint)] transition-colors rounded-[8px]">
-                                    🎵
-                                </div>
-                                <div>
-                                    <span class="text-[14px] text-[var(--text-primary)] font-[500] block">{{ track.title
-                                        }}</span>
-                                    <span
-                                        class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1 block">{{
-                                        track.genre|default:"Audio" }}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6 text-[13px] text-[var(--accent-mint)] font-mono font-bold">₹{{ track.price
-                            }}</td>
-                        <td class="px-8 py-6 text-[13px] font-mono text-[var(--text-primary)]">{{
-                            track.download_count|default:0 }}</td>
-                        <td class="px-8 py-6">
-                            {% if track.is_active %}
-                            <span class="pill-success">Active</span>
-                            {% else %}
-                            <span class="pill-neutral">Paused</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-8 py-6 text-right">
-                            <a href="{% url 'track_detail' track.id %}"
-                                class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]">Edit</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <!-- Empty State -->
-        <div class="p-24 text-center">
-            <div
-                class="w-16 h-16 border border-dashed border-[var(--border)] rounded-[8px] mx-auto flex items-center justify-center text-[var(--text-muted)] text-2xl mb-8 opacity-50">
-                📁
+            class="border border-[var(--border)] p-8 bg-[var(--bg-surface)] shadow-[var(--shadow-card)] mb-16 rounded-[12px]">
+            <h3 class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-8">Weekly Revenue
+            </h3>
+            <div class="flex items-end gap-3 h-40 pt-4 border-b border-[var(--border)]">
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 15%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹150</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 45%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹450</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 30%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹300</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 80%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹800</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 60%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹600</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 100%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹1000</div>
+                </div>
+                <div class="w-full bg-[var(--accent-mint)] hover:bg-[var(--text-primary)] transition-colors opacity-90 rounded-t-sm relative group"
+                    style="height: 40%;">
+                    <div
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-1 rounded-sm border border-[var(--border)] transition-opacity">
+                        ₹400</div>
+                </div>
             </div>
-            <h3 class="font-display text-xl text-[var(--text-primary)] tracking-tight mb-4">
-                No tracks uploaded</h3>
-            <p class="font-body text-[13px] text-[var(--text-muted)] mb-10 max-w-xs mx-auto leading-relaxed">
-                Upload your first track to start selling on MixMint.
-            </p>
-            <a href="{% url 'upload_track'|default:'#' %}"
-                class="btn-mm btn-mint h-14 px-10 text-[12px] font-[600]">Upload New Track</a>
+            <div
+                class="flex justify-between mt-4 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest px-2">
+                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+            </div>
+        </div>
+
+        <!-- ── OFFLOAD NOTIFICATIONS (Phase 3) ── -->
+        {% if offload_notifications %}
+        <div class="mb-16">
+            <h2 class="font-display text-[20px] font-[600] text-[var(--accent-amber)] mb-6 flex items-center gap-2">
+                <span>⚠️ Attention Required: Storage Optimization</span>
+            </h2>
+            <div class="space-y-4">
+                {% for notif in offload_notifications %}
+                {% if notif.status == 'pending' %}
+                <div
+                    class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div>
+                        <h3 class="font-display text-[16px] font-[600] text-[var(--text-primary)] mb-1">
+                            {{ notif.content_type|title }} ID #{{ notif.content_id }} is {% if notif.reason ==
+                            'underperforming' %}underperforming{% else %}free on R2{% endif %}
+                        </h3>
+                        <p class="font-body text-[14px] text-[var(--text-muted)]">
+                            {% if notif.reason == 'underperforming' %}
+                            This {{ notif.content_type }} had {{ notif.sales_in_period|default:0 }} sales in the last {{
+                            notif.period_days }} days.
+                            {% else %}
+                            This {{ notif.content_type }} is permanently free.
+                            {% endif %}
+                            It's using {{ notif.storage_mb }}MB of your storage quota. Consider moving it to an external
+                            host to free up space.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0"
+                        x-data="{ showUrlInput: false, externalUrl: '', submitting: false, success: false, error: '' }">
+
+                        <!-- Actions -->
+                        <template x-if="!showUrlInput && !success">
+                            <div class="flex gap-2 w-full">
+                                <a href="{% if notif.content_type == 'track' %}/tracks/{{ notif.content_id }}/download/{% else %}/albums/{{ notif.content_id }}/download/{% endif %}"
+                                    class="btn-mm btn-ghost h-10 px-4 text-[13px] text-center w-full md:w-auto">
+                                    Export {{ notif.content_type|title }}
+                                </a>
+                                <button @click="showUrlInput = true"
+                                    class="btn-mm btn-mint h-10 px-4 text-[13px] w-full md:w-auto whitespace-nowrap">
+                                    Link External Host
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Input form -->
+                        <template x-if="showUrlInput && !success">
+                            <div class="flex flex-col gap-2 w-full min-w-[300px]">
+                                <form @submit.prevent="
+                                    submitting = true; error = '';
+                                    fetch('/api/v1/{{ notif.content_type }}s/{{ notif.content_id }}/convert-external/', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRFToken': getCookie('csrftoken')
+                                        },
+                                        body: JSON.stringify({ external_link_url: externalUrl })
+                                    })
+                                    .then(r => r.json())
+                                    .then(d => { 
+                                        submitting = false; 
+                                        if(d.status === 'success') { success = true; setTimeout(() => window.location.reload(), 2000); }
+                                        else { error = d.error || 'Failed to link URL.'; }
+                                    })
+                                    .catch(e => { submitting = false; error = 'Network error.'; })
+                                ">
+                                    <div class="flex gap-2">
+                                        <input type="url" x-model="externalUrl"
+                                            placeholder="Google Drive / MediaFire Link" required
+                                            class="w-full h-10 bg-[var(--bg-base)] border border-[var(--border)] rounded-[8px] px-3 font-mono text-[13px] text-[var(--text-primary)] focus:border-[var(--accent-mint)] focus:outline-none transition-colors">
+                                        <button type="submit" :disabled="submitting"
+                                            class="btn-mm btn-mint h-10 px-4 text-[13px] whitespace-nowrap"
+                                            :class="{'opacity-50': submitting}">
+                                            <span x-text="submitting ? 'Connecting...' : 'Save'"></span>
+                                        </button>
+                                        <button type="button" @click="showUrlInput = false; error = ''"
+                                            class="btn-mm btn-ghost h-10 px-3 text-[13px]">Cancel</button>
+                                    </div>
+                                    <p x-show="error" x-text="error" class="text-[12px] text-[var(--accent-red)] mt-1">
+                                    </p>
+                                </form>
+                            </div>
+                        </template>
+
+                        <!-- Success message -->
+                        <template x-if="success">
+                            <div
+                                class="text-[13px] font-mono text-[var(--accent-mint)] flex items-center gap-2 whitespace-nowrap">
+                                <span>✓ Offloaded Successfully</span>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
         </div>
         {% endif %}
-    </div>
 
-    <!-- Guidelines Grid -->
-    <div
-        class="mt-20 grid grid-cols-1 md:grid-cols-2 gap-12 bg-[var(--bg-elevated)] border border-[var(--border)] p-10 rounded-[12px]">
-        <div>
-            <h4 class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.2em] mb-6">Upload
-                Guidelines</h4>
-            <ul class="space-y-4 font-body text-[13px] text-[var(--text-muted)] leading-relaxed">
-                <li class="flex gap-4">
-                    <span class="text-[var(--text-primary)] font-mono text-[12px]">01</span>
-                    <span>Upload only original edits or content you have rights to distribute.</span>
-                </li>
-                <li class="flex gap-4">
-                    <span class="text-[var(--text-primary)] font-mono text-[12px]">02</span>
-                    <span>WAV or MP3 320kbps minimum quality required.</span>
-                </li>
-                <li class="flex gap-4">
-                    <span class="text-[var(--text-primary)] font-mono text-[12px]">03</span>
-                    <span>Downloads are secured and device-locked for buyer protection.</span>
-                </li>
-            </ul>
+        <!-- ── RECENT SALES (Phase 3 Feature 2) ── -->
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] overflow-hidden rounded-[12px] mb-16">
+            <div class="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
+                <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)]">Recent Sales</h2>
+            </div>
+
+            {% if recent_sales %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left font-body">
+                    <thead>
+                        <tr
+                            class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
+                            <th class="px-8 py-5 font-normal">Date</th>
+                            <th class="px-8 py-5 font-normal">Item</th>
+                            <th class="px-8 py-5 font-normal">Buyer</th>
+                            <th class="px-8 py-5 font-normal text-right">Net Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        {% for sale in recent_sales %}
+                        <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
+                            <td class="px-8 py-6 text-[13px] text-[var(--text-muted)] font-mono">
+                                {{ sale.created_at|date:"M d, Y" }}
+                            </td>
+                            <td class="px-8 py-6">
+                                <span class="text-[14px] text-[var(--text-primary)] font-[500]">{{
+                                    sale.get_content_object.title|default:"Item" }}</span>
+                                <span
+                                    class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mt-1">{{
+                                    sale.content_type }}</span>
+                            </td>
+                            <td class="px-8 py-6">
+                                <span
+                                    class="text-[14px] {% if sale.buyer_role == 'dj' %}text-[var(--accent-mint)]{% else %}text-[var(--text-primary)]{% endif %} font-[500] flex items-center gap-1.5">
+                                    {{ sale.user.full_name|default:sale.user.user.username }}
+                                    {% if sale.buyer_role == 'dj' %}
+                                    <span class="text-[12px] opacity-90" title="Fellow DJ">✦</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td class="px-8 py-6 text-right text-[13px] text-[var(--accent-mint)] font-mono font-bold">
+                                {{ sale.dj_revenue|money }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <p class="font-body text-[13px] text-[var(--text-muted)]">No sales recorded yet.</p>
+            </div>
+            {% endif %}
         </div>
-        <div>
-            <h4 class="font-mono text-[11px] text-[var(--accent-red)] uppercase tracking-[0.2em] mb-6">Content
-                Responsibility</h4>
-            <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6] italic pr-8">
-                You are legally responsible for all content you upload to MixMint. MixMint acts as a distribution
-                platform and maintains zero tolerance for unauthorized or unlicensed material. Violations result in
-                account termination.
-            </p>
+
+        <!-- ── CONTENT TABLE ── -->
+        <div
+            class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] overflow-hidden rounded-[12px]">
+            <div class="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
+                <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)]">All Tracks</h2>
+            </div>
+
+            {% if profile.dj_profile.tracks.all %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left font-body">
+                    <thead>
+                        <tr
+                            class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
+                            <th class="px-8 py-5 font-normal">Track</th>
+                            <th class="px-8 py-5 font-normal">Price</th>
+                            <th class="px-8 py-5 font-normal">Sales</th>
+                            <th class="px-8 py-5 font-normal">Status</th>
+                            <th class="px-8 py-5 text-right font-normal">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        {% for track in profile.dj_profile.tracks.all %}
+                        <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
+                            <td class="px-8 py-6">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="w-10 h-10 flex items-center justify-center bg-[var(--bg-base)] border border-[var(--border)] text-lg group-hover:border-[var(--accent-mint)] transition-colors rounded-[8px]">
+                                        🎵
+                                    </div>
+                                    <div>
+                                        <span class="text-[14px] text-[var(--text-primary)] font-[500] block">{{
+                                            track.title
+                                            }}</span>
+                                        <span
+                                            class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1 block">{{
+                                            track.genre|default:"Audio" }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6 text-[13px] text-[var(--accent-mint)] font-mono font-bold">{{
+                                track.price|money }}</td>
+                            <td class="px-8 py-6 text-[13px] font-mono text-[var(--text-primary)]">{{
+                                track.download_count|default:0 }}</td>
+                            <td class="px-8 py-6">
+                                {% if track.is_active %}
+                                <span class="pill-success">Active</span>
+                                {% else %}
+                                <span class="pill-neutral">Paused</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-8 py-6 text-right">
+                                <a href="{% url 'track_detail' track.id %}"
+                                    class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="p-24 text-center">
+                <div
+                    class="w-16 h-16 border border-dashed border-[var(--border)] rounded-[8px] mx-auto flex items-center justify-center text-[var(--text-muted)] text-2xl mb-8 opacity-50">
+                    📁
+                </div>
+                <h3 class="font-display text-xl text-[var(--text-primary)] tracking-tight mb-4">
+                    No tracks uploaded</h3>
+                <p class="font-body text-[13px] text-[var(--text-muted)] mb-10 max-w-xs mx-auto leading-relaxed">
+                    Upload your first track to start selling on MixMint.
+                </p>
+                <a href="{% url 'upload_track'|default:'#' %}"
+                    class="btn-mm btn-mint h-14 px-10 text-[12px] font-[600]">Upload New Track</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Guidelines Grid -->
+        <div
+            class="mt-20 grid grid-cols-1 md:grid-cols-2 gap-12 bg-[var(--bg-elevated)] border border-[var(--border)] p-10 rounded-[12px]">
+            <div>
+                <h4 class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.2em] mb-6">Upload
+                    Guidelines</h4>
+                <ul class="space-y-4 font-body text-[13px] text-[var(--text-muted)] leading-relaxed">
+                    <li class="flex gap-4">
+                        <span class="text-[var(--text-primary)] font-mono text-[12px]">01</span>
+                        <span>Upload only original edits or content you have rights to distribute.</span>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="text-[var(--text-primary)] font-mono text-[12px]">02</span>
+                        <span>WAV or MP3 320kbps minimum quality required.</span>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="text-[var(--text-primary)] font-mono text-[12px]">03</span>
+                        <span>Downloads are secured and device-locked for buyer protection.</span>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-mono text-[11px] text-[var(--accent-red)] uppercase tracking-[0.2em] mb-6">Content
+                    Responsibility</h4>
+                <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6] italic pr-8">
+                    You are legally responsible for all content you upload to MixMint. MixMint acts as a distribution
+                    platform and maintains zero tolerance for unauthorized or unlicensed material. Violations result in
+                    account termination.
+                </p>
+            </div>
         </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}

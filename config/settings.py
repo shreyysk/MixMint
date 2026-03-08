@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
+    'django.contrib.sitemaps',
     
     # Third-party apps
     'rest_framework',
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -58,9 +60,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Custom MixMint Middleware [Spec §11, §13, P2 §15]
     'apps.accounts.middleware.MaintenanceModeMiddleware',
-    'apps.accounts.middleware.BanCheckMiddleware',
+    'apps.accounts.middleware.BlacklistMiddleware',
     'apps.accounts.middleware.IPSessionMiddleware',
     'apps.accounts.middleware.InactivityMiddleware',  # Updates last_active_at for 12-month expiry [Spec §10]
+    'apps.accounts.middleware.ReferralMiddleware',
+    'apps.admin_panel.middleware.FraudDetectionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -77,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.admin_panel.context_processors.global_settings',
+                'apps.core.context_processors.seo_context',
             ],
         },
     },
@@ -109,6 +114,16 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+        'search': '20/minute',  # Custom rate for intensive queries [Fix 16]
+        'burst': '10/minute',   # Mitigation for scrapers
+    }
 }
 
 # Password validation
@@ -121,7 +136,14 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Asia/Kolkata'  # India-focused platform [Spec P3 §9]
+LANGUAGES = [
+    ('en', 'English'),
+    ('hi', 'Hindi'),
+]
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
@@ -135,17 +157,40 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloudflare R2 / S3 Config
+# Cloudflare R2 / S3 Config [Gap 07]
 AWS_ACCESS_KEY_ID = env('R2_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = env('R2_SECRET_ACCESS_KEY', default='')
-AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET_NAME', default='')
 AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT', default='')
 AWS_S3_REGION_NAME = 'auto'
+
+# Separate buckets for raw vs public [Spec Phase 1 Section B §4]
+R2_PRIVATE_BUCKET = env('R2_PRIVATE_BUCKET', default='mixmint-raw')
+R2_PUBLIC_BUCKET = env('R2_PUBLIC_BUCKET', default='mixmint-public')
+AWS_STORAGE_BUCKET_NAME = R2_PRIVATE_BUCKET # Default to private
+
 AWS_S3_CUSTOM_DOMAIN = env('R2_PUBLIC_URL', default='').replace('https://', '').replace('http://', '')
+
+# File Standards [Gap 10]
+SUPPORTED_AUDIO_FORMATS = ['mp3', 'wav', 'aiff', 'flac']
+MAX_UPLOAD_SIZE_MB = 200 # 200MB limit for raw tracks
 
 # Razorpay Config
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
+
+# PhonePe Config [Spec P1 Section A]
+PHONEPE_MERCHANT_ID = env('PHONEPE_MERCHANT_ID', default='PGTESTPAYUAT')
+PHONEPE_SALT_KEY = env('PHONEPE_SALT_KEY', default='099eb0cd-02cf-4e2a-8aca-3e6c6aff0399')
+PHONEPE_SALT_INDEX = env('PHONEPE_SALT_INDEX', default='1')
+# Environment-based base URL
+ENVIRONMENT = env('ENVIRONMENT', default='development')
+if ENVIRONMENT == 'production':
+    PHONEPE_BASE_URL = 'https://api.phonepe.com/apis/hermes'
+else:
+    # Sandbox/Test URL
+    PHONEPE_BASE_URL = 'https://api-preprod.phonepe.com/apis/pg-sandbox'
+
+BASE_URL = env('BASE_URL', default='http://localhost:8000')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -179,3 +224,22 @@ INACTIVE_ACCOUNT_THRESHOLD_MONTHS = 12 # [Spec §10]
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Active Payment Gateway Selection
+if ENVIRONMENT == 'production':
+    from apps.payments.phonepe import PhonePeGateway
+    ACTIVE_GATEWAY = PhonePeGateway()
+else:
+    from apps.payments.razorpay_gateway import RazorpayGateway
+    ACTIVE_GATEWAY = RazorpayGateway()
+
+# Production Safety Guards
+if ENVIRONMENT == 'production':
+    from apps.payments.phonepe import PhonePeGateway
+    assert isinstance(ACTIVE_GATEWAY, PhonePeGateway), "Production must use PhonePeGateway"
+    assert 'preprod' not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
+
+# Vercel Configuration [Phase 1 Section C Fix 02]
+VERCEL_TOKEN = os.getenv('VERCEL_TOKEN')
+VERCEL_PROJECT_ID = os.getenv('VERCEL_PROJECT_ID')
+VERCEL_TEAM_ID = os.getenv('VERCEL_TEAM_ID') # Optional
