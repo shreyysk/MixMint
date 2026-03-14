@@ -32,13 +32,25 @@ class FraudAlert(models.Model):
         ('payment_fraud', 'Payment Fraud'),
         ('suspicious_activity', 'Suspicious Activity'),
         ('ip_abuse', 'IP Abuse'),
+        ('ip_spoofing', 'IP Spoofing'),
+        ('rate_limit_exceeded', 'Rate Limit Exceeded'),
     )
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='fraud_alerts')
     alert_type = models.CharField(max_length=50, choices=ALERT_TYPES)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
     details = models.JSONField(default=dict)
     status = models.CharField(max_length=20, default='pending')
+    admin_notified = models.BooleanField(default=False)  # Real-time notification sent
+    notified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        # Trigger real-time notification for new high-severity alerts
+        if is_new and self.severity in ('high', 'critical'):
+            from apps.admin_panel.fraud_notifier import FraudAlertNotifier
+            FraudAlertNotifier.notify_admins(self)
 
 
 class CopyrightReport(models.Model):

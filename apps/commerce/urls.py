@@ -11,6 +11,10 @@ from .dj_analytics import (
     dj_earnings_overview, dj_earnings_per_track,
     dj_earnings_per_album, dj_payout_history, dj_weekly_chart,
 )
+from .dj_conversion_views import (
+    get_referral_code, apply_referral_code, apply_promo_code,
+    get_milestones, get_onboarding_status, get_dj_dashboard_stats,
+)
 
 router = DefaultRouter()
 router.register(r'purchases', PurchaseViewSet, basename='purchase')
@@ -45,4 +49,12 @@ urlpatterns = [
     path('analytics/albums/', dj_earnings_per_album, name='dj_earnings_per_album'),
     path('analytics/payouts/', dj_payout_history, name='dj_payout_history'),
     path('analytics/chart/', dj_weekly_chart, name='dj_weekly_chart'),
+    
+    # DJ Conversion & Growth [High Conversion Enhancement]
+    path('dj/referral/', get_referral_code, name='dj_referral_code'),
+    path('dj/referral/apply/', apply_referral_code, name='apply_referral'),
+    path('dj/promo/apply/', apply_promo_code, name='apply_promo'),
+    path('dj/milestones/', get_milestones, name='dj_milestones'),
+    path('dj/onboarding/', get_onboarding_status, name='dj_onboarding'),
+    path('dj/dashboard-stats/', get_dj_dashboard_stats, name='dj_dashboard_stats'),
 ]
