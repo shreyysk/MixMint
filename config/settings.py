@@ -65,6 +65,9 @@ MIDDLEWARE = [
     'apps.accounts.middleware.InactivityMiddleware',  # Updates last_active_at for 12-month expiry [Spec §10]
     'apps.accounts.middleware.ReferralMiddleware',
     'apps.admin_panel.middleware.FraudDetectionMiddleware',
+    # Phase 3 Security Middleware [EX-01.03, EX-02.01, EX-02.02]
+    'apps.core.security_middleware.SecurityMiddleware',
+    'apps.core.security_middleware.AccountVelocityMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

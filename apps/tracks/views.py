@@ -358,11 +358,13 @@ class TrackViewSet(viewsets.ModelViewSet):
         })
 
     @action(detail=False, methods=['get'], url_path='my-tracks',
-            permission_classes=[permissions.IsAuthenticated])
+            permission_classes=[permissions.IsAuthenticated],
+            throttle_classes=[])  # Uses default throttle from settings
     def my_tracks(self, request):
         """
         [P2-02.02 FIX] DJ-only endpoint to list their own tracks.
         Ensures DJs can only access their own tracks for editing.
+        [Enhancement] Added pagination support.
         """
         if request.user.profile.role != 'dj':
             return Response({'error': 'Only DJs can access this endpoint.'}, status=403)
@@ -379,9 +381,21 @@ class TrackViewSet(viewsets.ModelViewSet):
         include_deleted = request.query_params.get('include_deleted', 'false').lower() == 'true'
         if not include_deleted:
             tracks = tracks.filter(is_deleted=False)
+        
+        # Pagination [Enhancement]
+        page = int(request.query_params.get('page', 1))
+        page_size = min(int(request.query_params.get('page_size', 20)), 50)  # Max 50
+        start = (page - 1) * page_size
+        end = start + page_size
+        
+        total_count = tracks.count()
+        paginated_tracks = tracks[start:end]
             
-        serializer = TrackSerializer(tracks, many=True)
+        serializer = TrackSerializer(paginated_tracks, many=True)
         return Response({
-            'count': tracks.count(),
+            'count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size,
             'tracks': serializer.data
         })

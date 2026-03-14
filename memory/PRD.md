@@ -13,58 +13,49 @@ MixMint is a DJ-first digital music distribution platform operating in India wit
 2. **DJ**: Uploads, prices, and sells tracks (requires approval)
 3. **Admin**: Platform management, moderation, revenue analytics
 
-## Core Requirements
-- Secure download system with IP binding, device hash, 3-attempt limit
-- PhonePe payment integration with webhook signature verification
-- DJ application workflow with ₹99 fee
-- Pro DJ upgrade (8% commission vs 15% standard)
-- Admin controls: freeze/ban accounts, kill switch, maintenance mode
-
 ---
 
 ## Implementation Progress
 
 ### Phase 1 - Bug Fixes (Completed: Jan 14, 2026)
-
-#### CRITICAL Bug Fixed
-- **BUG-001 (CP-03.06)**: PhonePe webhook signature verification - FIXED
-
-#### HIGH Bugs Fixed
+- **BUG-001 (CP-03.06)**: PhonePe webhook signature - FIXED
 - **CP-02.01**: Track list API public access - FIXED
-- **CP-02.04**: XSS sanitization for search - FIXED
+- **CP-02.04**: XSS sanitization - FIXED
 - **CP-06.02**: Min track price ₹29 - FIXED
-- **CP-06.04/05**: DJ role check for uploads - FIXED
+- **CP-06.04/05**: DJ role check - FIXED
 
 ### Phase 2 - Bug Fixes (Completed: Jan 14, 2026)
+- **P2-01.02**: Dashboard undefined variables - FIXED
+- **P2-02.02**: DJ track isolation + pagination - FIXED
+- **P2-11.08**: Cart merge on login - FIXED
+- **Enhancement**: CI webhook tests added
 
-#### CRITICAL Bugs Fixed
-- **P2-01.02**: Dashboard undefined variables (wallet, is_dj) - FIXED
-- **P2-02.02**: DJ track isolation (`/api/tracks/my-tracks/` endpoint) - FIXED
+### Phase 3 - Security Fixes (Completed: Jan 14, 2026)
+- **EX-01.03**: IP spoofing detection via header analysis - FIXED
+- **EX-02.01**: Rapid download rate limiting (10/min/IP) - FIXED
+- **EX-02.02**: Account API velocity check (100/min/user) - FIXED
+- **Enhancement**: Added `SecurityMiddleware` and `AccountVelocityMiddleware`
 
-#### HIGH Bugs Fixed
-- **P2-11.08**: Cart merge on login (`merge_guest_cart` action) - FIXED
-
-#### Enhancements Added
-- **CI Pipeline**: Automated webhook signature tests (`/app/tests/test_webhook_signatures.py`)
+**Files Added:**
+- `/app/apps/core/security_middleware.py` - Security & fraud detection
+- `/app/tests/test_webhook_signatures.py` - CI pipeline tests
 
 ---
 
 ## Prioritized Backlog
 
-### P0 (Critical) - Remaining Phase 2
-- [ ] Dashboard KPIs accuracy (P2-01.03, P2-01.04)
-- [ ] Collab revenue split edge cases (P2-04.x)
-- [ ] Bulk download token security (P2-13.04)
+### P0 (Critical) - Remaining
+- [ ] R2 bucket policy audit (EX-01.01) - Already private by default
+- [ ] Token reuse prevention (EX-01.02) - Already in DownloadManager
 
-### P1 (High) - Phase 3
-- [ ] Security exploit fixes (EX-01.x - R2 direct access, token reuse)
-- [ ] Fraud detection system
-- [ ] Account deletion workflow
-- [ ] Maintenance mode UI
+### P1 (High)
+- [ ] Dashboard KPIs accuracy refinement
+- [ ] Full fraud alert dashboard for admins
+- [ ] Account deletion workflow with 30-day grace
 
 ---
 
 ## Next Tasks
-1. Continue Phase 2 remaining bugs if requested
-2. Security audit for R2 bucket access
-3. Implement fraud detection middleware
+1. Security penetration testing
+2. Load testing for download proxy
+3. Admin fraud dashboard UI
