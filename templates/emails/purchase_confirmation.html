@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+{% block title %}Purchase Confirmation{% endblock %}
+
+{% block content %}
+<h2>Thanks for your purchase! 🎵</h2>
+
+<p>Hey {{ buyer_name }},</p>
+
+<p>Your purchase is complete and ready for download:</p>
+
+<div class="highlight-box">
+    <strong>{{ content_title }}</strong><br>
+    by {{ dj_name }}<br>
+    <span style="color: #6366f1; font-weight: 600;">₹{{ amount_paid }}</span>
+</div>
+
+<p style="text-align: center;">
+    <a href="{{ download_url }}" class="btn">Download Now</a>
+</p>
+
+<table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Order ID</td>
+        <td style="padding: 10px 0; text-align: right;">#{{ order_id }}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Date</td>
+        <td style="padding: 10px 0; text-align: right;">{{ purchase_date }}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Payment Method</td>
+        <td style="padding: 10px 0; text-align: right;">PhonePe</td>
+    </tr>
+</table>
+
+<div class="highlight-box" style="background: #fef3c7; border-color: #f59e0b;">
+    <strong>💡 Tip:</strong> Consider adding Download Insurance (₹9) for unlimited re-downloads!
+</div>
+
+<p><strong>Important:</strong></p>
+<ul style="font-size: 14px; color: #666;">
+    <li>Download within 5 minutes of generating token</li>
+    <li>3 download attempts allowed per IP</li>
+    <li>Your purchase is tied to your account</li>
+</ul>
+
+<p>Enjoy your music! 🎧</p>
+{% endblock %}

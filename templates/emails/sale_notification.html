@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+{% block title %}You made a sale!{% endblock %}
+
+{% block content %}
+<h2>Cha-ching! 💰 You made a sale!</h2>
+
+<p>Hey {{ dj_name }},</p>
+
+<p>Great news! Someone just purchased your track:</p>
+
+<div class="highlight-box">
+    <strong>{{ track_title }}</strong><br>
+    <span style="color: #22c55e; font-size: 24px; font-weight: 700;">+₹{{ earnings }}</span>
+    <br><small>After platform commission</small>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-box">
+        <div class="stat-value">{{ total_sales }}</div>
+        <div class="stat-label">Total Sales</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">₹{{ total_earnings }}</div>
+        <div class="stat-label">Total Earnings</div>
+    </div>
+</div>
+
+{% if is_first_sale %}
+<div class="highlight-box" style="background: #f0fdf4; border-color: #22c55e;">
+    🎉 <strong>First Sale Bonus!</strong> ₹25 extra credited to your wallet!
+</div>
+{% endif %}
+
+{% if milestone_achieved %}
+<div class="highlight-box" style="background: #fef3c7; border-color: #f59e0b;">
+    🏆 <strong>Milestone Unlocked:</strong> {{ milestone_name }} - ₹{{ milestone_reward }} bonus!
+</div>
+{% endif %}
+
+<p style="text-align: center;">
+    <a href="https://mixmint.in/dashboard" class="btn">View Dashboard</a>
+</p>
+
+<p>Keep uploading great music! 🎵</p>
+{% endblock %}

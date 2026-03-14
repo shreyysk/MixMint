@@ -1,0 +1,42 @@
+{% extends "emails/base.html" %}
+{% block title %}Referral Success!{% endblock %}
+
+{% block content %}
+<h2>Your referral made a sale! 🎉</h2>
+
+<p>Hey {{ dj_name }},</p>
+
+<p>Great news! <strong>{{ referred_dj_name }}</strong>, whom you referred to MixMint, just made their first sale!</p>
+
+<div class="highlight-box" style="text-align: center; background: #f0fdf4; border-color: #22c55e;">
+    <span style="font-size: 28px; font-weight: 700; color: #22c55e;">+₹100</span>
+    <br>Referral bonus credited!
+</div>
+
+<div class="stats-grid">
+    <div class="stat-box">
+        <div class="stat-value">{{ total_referrals }}</div>
+        <div class="stat-label">Total Referrals</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">₹{{ total_referral_earnings }}</div>
+        <div class="stat-label">Referral Earnings</div>
+    </div>
+</div>
+
+<h3>Keep sharing your referral link:</h3>
+<div class="highlight-box">
+    <code style="word-break: break-all;">https://mixmint.in/join?ref={{ referral_code }}</code>
+</div>
+
+<p>Share on social media to earn more:</p>
+<p style="text-align: center;">
+    <a href="{{ whatsapp_url }}" style="margin: 0 5px;">WhatsApp</a> |
+    <a href="{{ twitter_url }}" style="margin: 0 5px;">Twitter</a> |
+    <a href="{{ telegram_url }}" style="margin: 0 5px;">Telegram</a>
+</p>
+
+<p style="text-align: center;">
+    <a href="https://mixmint.in/dashboard/referrals" class="btn">View Referral Stats</a>
+</p>
+{% endblock %}

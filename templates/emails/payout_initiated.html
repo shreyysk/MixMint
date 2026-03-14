@@ -1,0 +1,36 @@
+{% extends "emails/base.html" %}
+{% block title %}Your payout is on the way!{% endblock %}
+
+{% block content %}
+<h2>Payout Initiated! 💸</h2>
+
+<p>Hey {{ dj_name }},</p>
+
+<p>Your weekly payout has been processed:</p>
+
+<div class="highlight-box" style="text-align: center;">
+    <span style="font-size: 32px; font-weight: 700; color: #22c55e;">₹{{ payout_amount }}</span>
+    <br><small>Processing to your bank account</small>
+</div>
+
+<table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Bank Account</td>
+        <td style="padding: 10px 0; text-align: right;">****{{ bank_last_4 }}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Payout ID</td>
+        <td style="padding: 10px 0; text-align: right;">#{{ payout_id }}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; color: #666;">Expected By</td>
+        <td style="padding: 10px 0; text-align: right;">{{ expected_date }}</td>
+    </tr>
+</table>
+
+<p><strong>Note:</strong> Bank transfers typically take 2-3 business days. You'll receive a confirmation once the amount is credited.</p>
+
+<p style="text-align: center;">
+    <a href="https://mixmint.in/dashboard/payouts" class="btn">View Payout History</a>
+</p>
+{% endblock %}

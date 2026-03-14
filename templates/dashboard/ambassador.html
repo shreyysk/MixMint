@@ -7,8 +7,7 @@
     <div class="mb-16 border-b border-[var(--border)] pb-8">
         <h1 class="font-display text-[48px] font-black text-white tracking-tight leading-none mb-4">Ambassador Program
         </h1>
-        <p class="font-body text-[14px] text-[var(--text-muted)]">Help grow MixMint and earn bonuses for every DJ or
-            buyer you refer.</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Earn ₹100 for every DJ you refer who makes their first sale!</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -24,6 +23,48 @@
                     <button onclick="copyReferralUrl()"
                         class="px-6 py-2 bg-[var(--accent-mint)] text-black font-bold rounded-lg hover:scale-105 transition-transform text-xs">Copy</button>
                 </div>
+                
+                <!-- Social Sharing Buttons -->
+                <div class="mb-8">
+                    <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-4">Share on Social Media</p>
+                    <div class="flex flex-wrap gap-3">
+                        <a href="https://wa.me/?text=Join%20MixMint%20and%20start%20selling%20your%20tracks!%20Use%20my%20code%20{{ ambassador.code }}%20to%20get%20₹50%20bonus.%20🎵%20{{ referral_url }}" 
+                           target="_blank"
+                           class="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-lg hover:opacity-90 transition-opacity">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            WhatsApp
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?text=Join%20MixMint%20and%20start%20selling%20your%20tracks!%20Use%20my%20code%20{{ ambassador.code }}%20to%20get%20₹50%20bonus.&url={{ referral_url }}" 
+                           target="_blank"
+                           class="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:opacity-90 transition-opacity">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                            Twitter
+                        </a>
+                        <a href="https://t.me/share/url?url={{ referral_url }}&text=Join%20MixMint!%20Use%20code%20{{ ambassador.code }}%20for%20₹50%20bonus" 
+                           target="_blank"
+                           class="flex items-center gap-2 px-4 py-2 bg-[#0088cc] text-white rounded-lg hover:opacity-90 transition-opacity">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                            Telegram
+                        </a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ referral_url }}&quote=Join%20MixMint!" 
+                           target="_blank"
+                           class="flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-lg hover:opacity-90 transition-opacity">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            Facebook
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Instagram Bio Text -->
+                <div class="mb-8 p-4 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl">
+                    <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-2">Copy for Instagram Bio</p>
+                    <pre class="text-sm text-[var(--text-secondary)] whitespace-pre-wrap" id="instaBio">🎧 Sell your tracks on MixMint
+💰 Use code: {{ ambassador.code }}
+🎁 Get ₹50 bonus!
+👇 {{ referral_url }}</pre>
+                    <button onclick="copyInstaBio()" class="mt-3 px-4 py-2 bg-[var(--bg-elevated)] text-[var(--accent-mint)] rounded-lg text-xs font-bold hover:bg-[var(--border)] transition-colors">Copy Bio Text</button>
+                </div>
+                
                 <div class="flex items-center gap-8">
                     <div>
                         <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-1">Referral Code</p>
@@ -32,6 +73,10 @@
                     <div>
                         <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-1">Total Referrals</p>
                         <p class="text-2xl font-bold text-[var(--accent-mint)]">{{ ambassador.referral_count }}</p>
+                    </div>
+                    <div>
+                        <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-1">Earnings</p>
+                        <p class="text-2xl font-bold text-[#22c55e]">₹{{ ambassador.total_earnings|default:0 }}</p>
                     </div>
                 </div>
             </div>
@@ -67,7 +112,7 @@
                 <div class="text-6xl mb-8">🤝</div>
                 <h3 class="font-display text-2xl font-bold text-white mb-4">Become an Ambassador</h3>
                 <p class="font-body text-[var(--text-muted)] mb-10 max-w-sm mx-auto">Generate your unique referral code
-                    to start tracking your impact and earning bonuses.</p>
+                    to start earning ₹100 per successful referral.</p>
                 <form action="{% url 'generate_ambassador_code' %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="btn-mm btn-mint h-14 px-12 font-bold text-lg">Join the Program</button>
@@ -79,23 +124,38 @@
         <!-- RIGHT: BENEFITS -->
         <div class="space-y-6">
             <div class="p-8 border border-[var(--border)] rounded-[24px]">
-                <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Program
-                    Benefits</h4>
+                <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Rewards</h4>
                 <div class="space-y-8">
                     <div>
-                        <p class="font-bold text-white mb-2">Growth Bonus</p>
-                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Earn a % of the lifetime revenue
-                            generated by DJs you refer.</p>
+                        <p class="font-bold text-white mb-2">₹100 Per Referral</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Earn ₹100 when a DJ you refer makes their first sale.</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white mb-2">₹50 for New DJs</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">The DJ you refer also gets ₹50 bonus on their first sale!</p>
                     </div>
                     <div>
                         <p class="font-bold text-white mb-2">Verified Badge</p>
-                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Reach 50 referrals to instantly
-                            unlock the Priority Verified status.</p>
+                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Reach 50 referrals to unlock Priority Verified status.</p>
                     </div>
-                    <div>
-                        <p class="font-bold text-white mb-2">Early Access</p>
-                        <p class="text-sm text-[var(--text-muted)] leading-relaxed">Be the first to test new platform
-                            features and tools.</p>
+                </div>
+            </div>
+            
+            <!-- Quick Stats Card -->
+            <div class="p-8 border border-[var(--border)] rounded-[24px] bg-gradient-to-br from-[var(--accent-mint)]/10 to-transparent">
+                <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Your Impact</h4>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[var(--text-muted)]">Total Referrals</span>
+                        <span class="font-bold text-white">{{ ambassador.referral_count|default:0 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[var(--text-muted)]">Successful</span>
+                        <span class="font-bold text-[#22c55e]">{{ ambassador.successful_count|default:0 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[var(--text-muted)]">Total Earned</span>
+                        <span class="font-bold text-[var(--accent-mint)]">₹{{ ambassador.total_earnings|default:0 }}</span>
                     </div>
                 </div>
             </div>
@@ -109,7 +169,21 @@
         copyText.select();
         copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value);
-        alert("Referral link copied to clipboard!");
+        showToast("Referral link copied!");
+    }
+    
+    function copyInstaBio() {
+        const bioText = document.getElementById("instaBio").textContent;
+        navigator.clipboard.writeText(bioText);
+        showToast("Bio text copied!");
+    }
+    
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-[var(--accent-mint)] text-black px-6 py-3 rounded-lg font-bold z-50 animate-fade-in';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
     }
 </script>
 {% endblock %}

@@ -1,0 +1,32 @@
+{% extends "emails/base.html" %}
+{% block title %}Welcome to MixMint!{% endblock %}
+
+{% block content %}
+<h2>Welcome aboard, {{ dj_name }}! 🎧</h2>
+
+<p>Congratulations! Your DJ application has been <strong>approved</strong>. You're now part of India's growing DJ music marketplace.</p>
+
+<div class="highlight-box">
+    <strong>🎁 Welcome Bonus:</strong> Upload your first track and receive <strong>₹50</strong> credited to your wallet!
+</div>
+
+<h3>Quick Start Checklist:</h3>
+<ol>
+    <li>✅ Complete your DJ profile</li>
+    <li>📤 Upload your first track</li>
+    <li>💰 Set your pricing (min ₹29)</li>
+    <li>🎨 Customize your storefront</li>
+    <li>🏦 Add bank details for payouts</li>
+</ol>
+
+<p style="text-align: center;">
+    <a href="https://mixmint.in/dashboard" class="btn">Go to Dashboard</a>
+</p>
+
+<h3>Earn More with Referrals:</h3>
+<p>Share your referral code <strong>{{ referral_code }}</strong> with other DJs. You earn <strong>₹100</strong> when they make their first sale!</p>
+
+<p>Questions? Reply to this email or check our <a href="https://mixmint.in/help">Help Center</a>.</p>
+
+<p>Let's make some music! 🎵</p>
+{% endblock %}
