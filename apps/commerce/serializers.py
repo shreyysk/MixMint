@@ -58,11 +58,11 @@ class CartItemSerializer(serializers.ModelSerializer):
             if obj.content_type == 'track':
                 from apps.tracks.models import Track
                 track = Track.objects.get(id=obj.content_id)
-                return track.artwork.url if track.artwork else None
+                return track.cover_url
             elif obj.content_type == 'album':
                 from apps.albums.models import AlbumPack
                 album = AlbumPack.objects.get(id=obj.content_id)
-                return album.cover_art.url if album.cover_art else None
+                return album.cover_image
         except Exception:
             pass
         return None

@@ -21,7 +21,7 @@ class PurchaseViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return Purchase.objects.filter(
             user=self.request.user.profile,
-            is_completed=True,
+            status='paid',
         ).order_by('-created_at')
 
 
@@ -121,9 +121,12 @@ def my_library(request):
     """
     purchases = Purchase.objects.filter(
         user=request.user.profile,
-        is_completed=True,
+        status='paid',  # Only show successful purchases [Spec §3.1]
         is_revoked=False
     ).order_by('-created_at')
+    
+    serializer = PurchaseSerializer(purchases, many=True)
+    return Response(serializer.data)
     
 @login_required
 def pro_landing(request):
@@ -270,7 +273,7 @@ def toggle_wishlist(request):
     else:
         # Prevent wishlisting owned tracks [Spec P3 §1.2]
         from .models import Purchase
-        if Purchase.objects.filter(user=request.user.profile, content_id=track.id, content_type='track', is_completed=True).exists():
+        if Purchase.objects.filter(user=request.user.profile, content_id=track.id, content_type='track', status='paid').exists():
             return Response({'error': 'You already own this track.'}, status=400)
             
         Wishlist.objects.create(user=request.user.profile, track=track)
@@ -319,7 +322,7 @@ class CartViewSet(viewsets.ModelViewSet):
             user=request.user.profile,
             content_type=content_type,
             content_id=content_id,
-            is_completed=True,
+            status='paid',
             is_revoked=False
         ).exists():
             return Response({'error': 'You already own this item.'}, status=400)

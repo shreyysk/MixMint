@@ -66,7 +66,7 @@ def dj_earnings_overview(request):
 
     # Sales earnings
     lifetime = Purchase.objects.filter(
-        seller=dj, is_completed=True
+        seller=dj, status='paid'
     ).aggregate(
         total_dj_earnings=Sum('dj_earnings'),
         total_sales=Sum('price_paid'),
@@ -74,11 +74,11 @@ def dj_earnings_overview(request):
     )
 
     weekly = Purchase.objects.filter(
-        seller=dj, is_completed=True, created_at__gte=week_start
+        seller=dj, status='paid', created_at__gte=week_start
     ).aggregate(earnings=Sum('dj_earnings'), count=Count('id'))
 
     monthly = Purchase.objects.filter(
-        seller=dj, is_completed=True, created_at__gte=month_start
+        seller=dj, status='paid', created_at__gte=month_start
     ).aggregate(earnings=Sum('dj_earnings'), count=Count('id'))
 
     # Ad revenue
@@ -151,7 +151,7 @@ def earnings_by_track(request):
     data = []
     for track in tracks:
         purchases = Purchase.objects.filter(
-            seller=dj, content_type='track', content_id=track.id, is_completed=True
+            seller=dj, content_type='track', content_id=track.id, status='paid'
         ).aggregate(
             earnings=Sum('dj_earnings'),
             sales=Count('id'),
@@ -189,7 +189,7 @@ def earnings_by_album(request):
     data = []
     for album in albums:
         purchases = Purchase.objects.filter(
-            seller=dj, content_type='album', content_id=album.id, is_completed=True
+            seller=dj, content_type='album', content_id=album.id, status='paid'
         ).aggregate(
             earnings=Sum('dj_earnings'),
             sales=Count('id'),
@@ -223,7 +223,7 @@ def weekly_earnings_chart(request):
     twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
 
     weekly = Purchase.objects.filter(
-        seller=dj, is_completed=True, created_at__gte=twelve_weeks_ago
+        seller=dj, status='paid', created_at__gte=twelve_weeks_ago
     ).annotate(week=TruncWeek('created_at')).values('week').annotate(
         earnings=Sum('dj_earnings'),
         sales=Count('id'),

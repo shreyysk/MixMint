@@ -1,0 +1,28 @@
+﻿python : C:\Users\shrey\
+AppData\Roaming\Python\P
+ython314\site-packages\r
+equests\__init__.py:113:
+ RequestsDependencyWarni
+ng: urllib3 (2.6.3) or 
+chardet (7.0.0)/charset_
+normalizer (3.4.4) 
+doesn't match a 
+supported version!
+At line:1 char:1
++ python manage.py 
+check > 
+check_out_v2.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : (C:\Users\shrey\.   
+ ..ported version!:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+  warnings.warn(
+System check identified no issues (0 silenced).

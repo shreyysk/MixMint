@@ -12,7 +12,7 @@ def dashboard_view(request):
     
     # Fetch all completed purchases
     purchases = profile.purchases.filter(
-        is_completed=True,
+        status='paid',
     ).order_by('-created_at')
 
     # Resolve content objects (Tracks / Albums)
@@ -127,7 +127,7 @@ def dj_dashboard_view(request):
         
         # Fetch Recent Sales for DJ Dashboard (Phase 3 Feature 2)
         from apps.commerce.models import Purchase
-        recent_sales = Purchase.objects.filter(seller=dj_profile, is_completed=True).select_related('user', 'user__dj_profile').order_by('-created_at')[:10]
+        recent_sales = Purchase.objects.filter(seller=dj_profile, status='paid').select_related('user', 'user__dj_profile').order_by('-created_at')[:10]
     else:
         offload_notifications = []
         recent_sales = []

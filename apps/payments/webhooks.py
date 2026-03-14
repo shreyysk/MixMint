@@ -87,19 +87,23 @@ def _process_successful_payment(transaction_id, payload):
     gateway_payment_id = data.get('transactionId')
     
     with transaction.atomic():
-        try:
-            purchase = Purchase.objects.get(gateway_order_id=transaction_id)
+        purchases = Purchase.objects.filter(gateway_order_id=transaction_id)
+        if not purchases.exists():
+            logger.error(f"PhonePe webhook: purchases not found for Transaction ID {transaction_id}")
+            return
+
+        for purchase in purchases:
             if purchase.status != 'paid':
                 purchase.status = 'paid'
                 purchase.gateway_payment_id = gateway_payment_id
                 purchase.gateway_response = payload
-                purchase.paid_at = timezone.now() # Need to import timezone or use django.utils.timezone
+                purchase.paid_at = timezone.now()
                 purchase.is_completed = True
                 purchase.save()
                 
-                # TODO: Trigger post-purchase actions (email, invoice, earnings)
-        except Purchase.DoesNotExist:
-            logger.error(f"PhonePe webhook: purchase not found for Transaction ID {transaction_id}")
+                # Post-purchase processing [Spec P2 §4, §5, §6]
+                from apps.commerce.services import MonetizationService
+                MonetizationService.complete_purchase(purchase)
 
 def _process_failed_payment(transaction_id, payload):
     try:

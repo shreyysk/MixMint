@@ -19,7 +19,7 @@ def check_verification_eligibility(dj_profile):
     
     # 2. Sales check
     from apps.commerce.models import Purchase
-    sales_count = Purchase.objects.filter(seller=dj_profile, is_completed=True).count()
+    sales_count = Purchase.objects.filter(seller=dj_profile, status='paid').count()
     if sales_count < 50:
         return False
         

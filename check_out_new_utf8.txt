@@ -1,0 +1,48 @@
+﻿python : C:\Users\shrey
+\AppData\Roaming\Python
+\Python314\site-package
+s\requests\__init__.py:
+113: RequestsDependency
+Warning: urllib3 
+(2.6.3) or chardet (7.0
+.0)/charset_normalizer 
+(3.4.4) doesn't match 
+a supported version!
+At line:1 char:1
++ python manage.py 
+check > 
+check_out_new.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo     
+         : 
+NotSpecified: (C:\    
+Users\shrey\...ported  
+   version!:String) 
+[], R    emoteException
+    + 
+FullyQualifiedErrorI   
+ d : NativeCommandError
+ 
+  warnings.warn(
+System check 
+identified some issues:
+
+WARNINGS:
+<django.template.backen
+ds.django.DjangoTemplat
+es object at 
+0x0000019FD7856E40>: 
+(templates.W003) 
+'custom_filters' is 
+used for multiple 
+template tag modules: '
+apps.accounts.templatet
+ags.custom_filters', 'a
+pps.tracks.templatetags
+.custom_filters'
+
+System check 
+identified 1 issue (0 
+silenced).

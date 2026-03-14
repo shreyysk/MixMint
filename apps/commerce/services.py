@@ -154,3 +154,38 @@ class MonetizationService:
                 jurisdiction='India'
             )
             return invoice
+
+    @staticmethod
+    def complete_purchase(purchase):
+        """
+        Main entry point for post-payment processing [Spec P2 §4, §5, §6].
+        1. Distribute revenue
+        2. Generate invoice
+        3. Check verification status
+        """
+        from apps.accounts.utils import check_verification_eligibility
+        
+        with transaction.atomic():
+            # 1. Distribute revenue
+            track_obj = None
+            if purchase.content_type == 'track':
+                from apps.tracks.models import Track
+                try:
+                    track_obj = Track.objects.get(id=purchase.content_id)
+                except Track.DoesNotExist:
+                    pass
+
+            MonetizationService.record_revenue(
+                dj_profile=purchase.seller,
+                amount=purchase.price_paid,
+                sale_type=purchase.content_type,
+                reference_id=str(purchase.id),
+                track=track_obj
+            )
+
+            # 2. Generate invoice
+            MonetizationService.generate_invoice(purchase)
+
+            # 3. Check verification status for the seller
+            if purchase.seller:
+                check_verification_eligibility(purchase.seller)

@@ -14,6 +14,12 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['dj', 'processing_status']
 
+    def perform_create(self, serializer):
+        """Process album ZIP upon upload [Spec §5]."""
+        album = serializer.save()
+        from .tasks import process_album_task
+        process_album_task.delay(album.id)
+
     @action(detail=True, methods=['post'], url_path='download-token',
             permission_classes=[permissions.IsAuthenticated])
     def get_download_token(self, request, pk=None):

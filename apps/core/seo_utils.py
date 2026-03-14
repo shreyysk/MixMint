@@ -14,11 +14,12 @@ def get_track_og_tags(track):
 
 def get_dj_storefront_og_tags(dj_profile):
     """Generate OG tags for DJ storefront."""
-    bio = dj_profile.bio[:120] + "..." if len(dj_profile.bio) > 120 else dj_profile.bio
+    bio = dj_profile.bio or ""
+    bio_trimmed = bio[:120] + "..." if len(bio) > 120 else bio
     return {
         'og:title': f"{dj_profile.dj_name} — DJ Storefront | MixMint",
         'og:description': (
-            f"{bio} "
+            f"{bio_trimmed} "
             f"Discover music from {dj_profile.dj_name} on MixMint."
         ),
         'og:image': dj_profile.profile.avatar_url if hasattr(dj_profile.profile, 'avatar_url') and dj_profile.profile.avatar_url else 'https://mixmint.site/static/img/default-dj-og.png',

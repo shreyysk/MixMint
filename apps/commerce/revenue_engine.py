@@ -185,7 +185,8 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
         buyer_role=buyer_role,
         is_redownload=is_redownload,
         has_download_insurance=kwargs.get('with_insurance', False),
-        is_completed=True,  # Payment verified
+        is_completed=True,  # Legacy field
+        status='paid',      # Canonical field
         download_completed=False,  # Not yet downloaded
     )
 

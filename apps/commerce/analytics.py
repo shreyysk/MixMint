@@ -21,7 +21,7 @@ def get_platform_monthly_revenue():
     revenue = Purchase.objects.filter(
         created_at__month=now.month,
         created_at__year=now.year,
-        is_completed=True
+        status='paid'
     ).aggregate(
         commission=Sum('commission'),
         fees=Sum('checkout_fee')
@@ -39,7 +39,7 @@ def get_platform_lifetime_revenue():
     if cached is not None:
         return cached
 
-    totals = Purchase.objects.filter(is_completed=True).aggregate(
+    totals = Purchase.objects.filter(status='paid').aggregate(
         sales=Sum('price_paid'),
         comm=Sum('commission'),
         fees=Sum('checkout_fee'),
@@ -74,7 +74,7 @@ def get_dj_monthly_earnings(dj_id):
 
     earnings = Purchase.objects.filter(
         seller_id=dj_id, 
-        is_completed=True, 
+        status='paid', 
         download_completed=True,
         created_at__month=now.month,
         created_at__year=now.year
@@ -93,7 +93,7 @@ def get_dj_lifetime_earnings(dj_id):
 
     lifetime = Purchase.objects.filter(
         seller_id=dj_id, 
-        is_completed=True, 
+        status='paid', 
         download_completed=True
     ).aggregate(total=Sum('dj_earnings'))['total'] or Decimal('0.00')
 
@@ -134,7 +134,7 @@ def get_last_month_earnings(dj_id):
     
     earnings = Purchase.objects.filter(
         seller_id=dj_id,
-        is_completed=True,
+        status='paid',
         download_completed=True,
         created_at__month=last_day_of_prev_month.month,
         created_at__year=last_day_of_prev_month.year
@@ -151,7 +151,7 @@ def get_best_month_earnings(dj_id):
 
     monthly_stats = Purchase.objects.filter(
         seller_id=dj_id,
-        is_completed=True,
+        status='paid',
         download_completed=True
     ).annotate(
         month=TruncMonth('created_at')

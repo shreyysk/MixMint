@@ -46,7 +46,7 @@ def update_dj_popularity_scores():
         # Get successful sales in last 30d
         sales_count = Purchase.objects.filter(
             seller=dj,
-            is_completed=True,
+            status='paid',
             created_at__gte=thirty_days_ago
         ).count()
         

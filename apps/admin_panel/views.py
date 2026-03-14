@@ -328,7 +328,7 @@ def revenue_dashboard(request):
 
     # Weekly breakdown
     weekly = Purchase.objects.filter(
-        is_completed=True,
+        status='paid',
         created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
     ).annotate(
         week=TruncWeek('created_at')
@@ -364,7 +364,7 @@ def high_value_alerts(request):
     threshold = Decimal(request.query_params.get('threshold', '5000'))
 
     high_value = Purchase.objects.filter(
-        is_completed=True,
+        status='paid',
         price_paid__gte=threshold,
     ).select_related('user', 'seller').order_by('-created_at')[:50]
 
@@ -500,7 +500,7 @@ def investor_report(request):
     from apps.accounts.models import DJProfile
     from django.shortcuts import render
 
-    total_stats = Purchase.objects.filter(is_completed=True).aggregate(
+    total_stats = Purchase.objects.filter(status='paid').aggregate(
         gmv=Sum('price_paid'),
         comm=Sum('commission')
     )
@@ -542,7 +542,7 @@ def investor_report_pdf(request):
     from apps.commerce.models import Purchase, AdRevenueLog
     from apps.accounts.models import DJProfile
 
-    total_stats = Purchase.objects.filter(is_completed=True).aggregate(
+    total_stats = Purchase.objects.filter(status='paid').aggregate(
         gmv=Sum('price_paid'),
         comm=Sum('commission'),
         purchase_count=Count('id'),

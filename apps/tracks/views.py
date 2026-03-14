@@ -49,6 +49,9 @@ class TrackViewSet(viewsets.ModelViewSet):
             return qs.order_by('-rank_score', '-created_at')
             
         return qs
+
+    def perform_create(self, serializer):
+        """Process track metadata upon upload [Gap 04]."""
         track = serializer.save()
         process_track_metadata(track)
 

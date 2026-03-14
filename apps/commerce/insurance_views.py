@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 
 from apps.commerce.models import Purchase
-from apps.downloads.insurance import DownloadInsurance
+from apps.downloads.models import DownloadInsurance
 from apps.payments.utils import create_order, verify_payment
 
 @login_required

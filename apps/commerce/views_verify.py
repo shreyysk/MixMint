@@ -100,6 +100,7 @@ def verify_purchase_view(request):
                 payment_order_id=order_id,
                 seller=seller,
                 is_redownload=is_redownload,
+                status='paid',
                 is_completed=True,
             )
 

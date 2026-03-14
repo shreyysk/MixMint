@@ -1,66 +1,109 @@
 {% extends 'base.html' %}
 
-{% block title %}Platform Status — MixMint{% endblock %}
+{% block title %}
+{% if mode == 'maintenance' %}Maintenance{% else %}Safety Protocol{% endif %} — MixMint
+{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
-    <div class="mb-8 relative">
+<div class="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+    <!-- Status Icon Sphere -->
+    <div class="mb-10 relative">
         <div
-            class="w-32 h-32 rounded-full flex items-center justify-center bg-{{ theme_color }}-500/10 border-2 border-{{ theme_color }}-500 animate-pulse">
-            {% if mode == 'maintenance' %}
-            <span class="text-4xl">🛠️</span>
-            {% else %}
-            <span class="text-4xl">🚨</span>
-            {% endif %}
+            class="w-40 h-40 rounded-full flex items-center justify-center bg-{{ theme_color }}-500/10 border-2 border-{{ theme_color }}-500/30 relative overflow-hidden group">
+            <!-- Pulsing Rings -->
+            <div class="absolute inset-0 border-4 border-{{ theme_color }}-500/20 rounded-full animate-ping opacity-20">
+            </div>
+            <div class="absolute inset-0 border-2 border-{{ theme_color }}-500/40 rounded-full animate-pulse-slow">
+            </div>
+
+            <div class="relative z-10 transition-transform duration-500 group-hover:scale-110">
+                {% if mode == 'maintenance' %}
+                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,184,0,0.4)]">🛠️</span>
+                {% else %}
+                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,51,85,0.4)]">🚨</span>
+                {% endif %}
+            </div>
         </div>
+
+        <!-- Mode Badge -->
         <div
-            class="absolute -top-2 -right-2 px-3 py-1 bg-{{ theme_color }}-500 text-black text-xs font-mono font-bold rounded-full uppercase tracking-widest">
-            {{ mode }}
+            class="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-{{ theme_color }}-500 text-black text-[10px] font-mono font-black rounded-full uppercase tracking-[0.2em] shadow-lg shadow-{{ theme_color }}-500/20">
+            {{ mode|replace:"_, " }}
         </div>
     </div>
 
-    <h1 class="text-5xl font-display mb-4">
-        {% if mode == 'maintenance' %}
-        Mending the Mix
-        {% else %}
-        Safety Protocol Active
-        {% endif %}
-    </h1>
+    <!-- Typography Section -->
+    <div class="max-w-2xl mx-auto mb-10">
+        <h1
+            class="text-6xl md:text-7xl font-display mb-6 tracking-tight leading-none bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+            {% if mode == 'maintenance' %}
+            Mending<br>the Mix
+            {% else %}
+            Safety Protocol<br>Engaged
+            {% endif %}
+        </h1>
 
-    <p class="text-xl text-[var(--text-muted)] max-w-lg mb-8">
-        {{ message }}
-    </p>
+        <p class="text-xl text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto">
+            {{ message|default:"We're performing scheduled upgrades to ensure the highest fidelity experience." }}
+        </p>
+    </div>
 
+    <!-- ETA Card -->
     {% if estimated_return %}
-    <div class="glow-card border-{{ theme_color }}-500/30 p-6 mb-8 max-w-sm">
-        <p class="text-xs font-mono text-{{ theme_color }}-500 uppercase tracking-widest mb-2">Estimated Return</p>
-        <p class="text-2xl font-display">{{ estimated_return|date:"d M, H:i" }} IST</p>
+    <div
+        class="glow-card border-{{ theme_color }}-500/20 p-8 mb-12 max-w-sm w-full bg-white/[0.02] backdrop-blur-xl group hover:border-{{ theme_color }}-500/50 transition-all">
+        <p class="text-[10px] font-mono text-{{ theme_color }}-500 uppercase tracking-[0.3em] mb-3 opacity-80">System
+            Re-Entry</p>
+        <div class="flex items-baseline justify-center gap-2">
+            <p class="text-3xl font-display font-bold">{{ estimated_return|date:"d M" }}</p>
+            <p class="text-xl font-display text-[var(--text-muted)]">/</p>
+            <p class="text-3xl font-display font-bold">{{ estimated_return|date:"H:i" }}</p>
+            <span class="text-xs font-mono text-[var(--text-muted)] ml-1">IST</span>
+        </div>
     </div>
     {% endif %}
 
-    <div class="flex gap-4">
-        <a href="https://twitter.com/mixmint_status" class="btn-mm btn-ghost">Check Status Page</a>
-        <a href="/" class="btn-mm btn-mint">Try Again</a>
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+        <a href="/" class="btn-mm btn-mint min-w-[180px]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                class="mr-1">
+                <path d="M23 4v6h-6M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+            </svg>
+            Attempt Reconnect
+        </a>
+        <a href="https://twitter.com/mixmint_status" target="_blank" class="btn-mm btn-ghost min-w-[180px]">
+            Live Status Page
+        </a>
     </div>
 
+    <!-- Security Context -->
     {% if mode == 'kill_switch' %}
-    <div class="mt-12 notice-danger max-w-md">
-        <p class="font-bold mb-1">Safety First</p>
-        <p>The platform is still browseable, but downloads and payments are locked until further notice to protect our
-            users.</p>
+    <div
+        class="mt-16 p-6 rounded-2xl border border-red-500/10 bg-red-500/5 max-w-md mx-auto group hover:bg-red-500/10 transition-colors">
+        <div class="flex items-center gap-3 mb-2 justify-center">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <p class="font-mono text-[10px] text-red-500 uppercase tracking-widest font-black">Security Advisory</p>
+        </div>
+        <p class="text-sm text-[var(--text-muted)] leading-relaxed">
+            MixMint core remains browseable, but <span class="text-white font-medium">transactions and downloads</span>
+            are currently locked to protect the ecosystem.
+        </p>
     </div>
     {% endif %}
 </div>
 
 <style>
-    /* Dynamic theme overrides [Fix 14] */
+    /* Dynamic theme overrides logic [Fix 14] */
         {
         % if theme_color=='amber' %
     }
 
     :root {
-        --accent-mint: var(--accent-amber);
-        --border-focus: var(--accent-amber);
+        --accent-mint: #FFB800;
+        --border-focus: #FFB800;
+        --shadow-glow: 0 0 30px rgba(255, 184, 0, 0.15);
     }
 
         {
@@ -68,8 +111,9 @@
     }
 
     :root {
-        --accent-mint: var(--accent-red);
-        --border-focus: var(--accent-red);
+        --accent-mint: #FF3355;
+        --border-focus: #FF3355;
+        --shadow-glow: 0 0 30px rgba(255, 51, 85, 0.15);
     }
 
         {
@@ -99,5 +143,14 @@
     .text-red-500 {
         color: #FF3355;
     }
+
+    .shadow-amber-500\/20 {
+        box-shadow: 0 10px 15px -3px rgba(255, 184, 0, 0.2);
+    }
+
+    .shadow-red-500\/20 {
+        box-shadow: 0 10px 15px -3px rgba(255, 51, 85, 0.2);
+    }
 </style>
+{% endblock %}
 {% endblock %}

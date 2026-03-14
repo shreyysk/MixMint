@@ -52,7 +52,7 @@ def dj_earnings_overview(request):
 
     # Weekly earnings (kept real-time for now as per Fix 11 NEAR-REAL-TIME requirement, but monthly/lifetime are cached)
     weekly = Purchase.objects.filter(
-        seller=dj_profile, is_completed=True, download_completed=True,
+        seller=dj_profile, status='paid', download_completed=True,
         created_at__gte=week_ago,
     ).aggregate(total=Sum('dj_earnings'))
 
@@ -88,7 +88,7 @@ def dj_earnings_per_track(request):
 
     track_earnings = Purchase.objects.filter(
         seller=dj_profile, content_type='track',
-        is_completed=True, download_completed=True,
+        status='paid', download_completed=True,
     ).values('content_id').annotate(
         total_earned=Sum('dj_earnings'),
         sale_count=Count('id'),
@@ -124,7 +124,7 @@ def dj_earnings_per_album(request):
 
     album_earnings = Purchase.objects.filter(
         seller=dj_profile, content_type='album',
-        is_completed=True, download_completed=True,
+        status='paid', download_completed=True,
     ).values('content_id').annotate(
         total_earned=Sum('dj_earnings'),
         sale_count=Count('id'),
@@ -181,7 +181,7 @@ def dj_weekly_chart(request):
     twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
 
     weekly = Purchase.objects.filter(
-        seller=dj_profile, is_completed=True, download_completed=True,
+        seller=dj_profile, status='paid', download_completed=True,
         created_at__gte=twelve_weeks_ago,
     ).annotate(week=TruncWeek('created_at')).values('week').annotate(
         earnings=Sum('dj_earnings'),

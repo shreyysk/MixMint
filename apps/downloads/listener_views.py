@@ -51,7 +51,7 @@ def purchase_history(request):
 
     purchases = Purchase.objects.filter(
         user=profile,
-        is_completed=True,
+        status='paid',
         download_completed=True,
     ).order_by('-created_at')[:50]
 
