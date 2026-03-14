@@ -264,3 +264,120 @@ class IPBlacklist(models.Model):
 
     def __str__(self):
         return f"{self.type}: {self.value}"
+
+
+
+# ============================================
+# PUSH NOTIFICATIONS & A/B TESTING MODELS
+# ============================================
+
+class PushSubscription(models.Model):
+    """Store user's push notification subscriptions."""
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField()
+    p256dh_key = models.TextField()
+    auth_key = models.TextField()
+    device_type = models.CharField(max_length=20, default='web')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ('user', 'endpoint')
+
+
+class NotificationPreference(models.Model):
+    """User notification preferences."""
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='notification_prefs')
+    email_sales = models.BooleanField(default=True)
+    email_payouts = models.BooleanField(default=True)
+    email_milestones = models.BooleanField(default=True)
+    email_marketing = models.BooleanField(default=False)
+    push_sales = models.BooleanField(default=True)
+    push_new_followers = models.BooleanField(default=True)
+    push_milestones = models.BooleanField(default=True)
+    push_promotions = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class InAppNotification(models.Model):
+    """In-app notification storage."""
+    TYPES = (
+        ('sale', 'New Sale'),
+        ('payout', 'Payout'),
+        ('milestone', 'Milestone'),
+        ('referral', 'Referral'),
+        ('system', 'System'),
+        ('promo', 'Promotion'),
+    )
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='in_app_notifications')
+    notification_type = models.CharField(max_length=20, choices=TYPES)
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    data = models.JSONField(default=dict)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+
+
+class Experiment(models.Model):
+    """A/B test experiment definition."""
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('running', 'Running'),
+        ('paused', 'Paused'),
+        ('completed', 'Completed'),
+    )
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    target_audience = models.CharField(max_length=50, default='all')
+    traffic_percentage = models.IntegerField(default=100)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def is_active(self):
+        if self.status != 'running':
+            return False
+        now = timezone.now()
+        if self.start_date and now < self.start_date:
+            return False
+        if self.end_date and now > self.end_date:
+            return False
+        return True
+
+
+class Variant(models.Model):
+    """Variant within an experiment."""
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='variants')
+    name = models.CharField(max_length=50)
+    weight = models.IntegerField(default=50)
+    config = models.JSONField(default=dict)
+    
+    class Meta:
+        unique_together = ('experiment', 'name')
+
+
+class UserExperiment(models.Model):
+    """Track which variant a user is assigned to."""
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='ab_experiments')
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'experiment')
+
+
+class ExperimentEvent(models.Model):
+    """Track events/conversions for experiments."""
+    user_experiment = models.ForeignKey(UserExperiment, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=50)
+    value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    metadata = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
