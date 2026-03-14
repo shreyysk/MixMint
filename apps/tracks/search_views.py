@@ -12,11 +12,13 @@ Supports:
 - Top partnered DJs (by total revenue)
 """
 
+import html
 from datetime import timedelta
 
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.tracks.models import Track
@@ -27,13 +29,16 @@ from apps.albums.serializers import AlbumPackSerializer
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def advanced_search(request):
     """
     Advanced search endpoint [Spec §8].
     Supports partial spelling, genre, year, date range.
+    [CP-02.04 FIX] XSS sanitization applied to all query params.
     """
-    query = request.query_params.get('q', '').strip()
-    genre = request.query_params.get('genre', '').strip()
+    # Sanitize all query parameters to prevent XSS [CP-02.04 FIX]
+    query = html.escape(request.query_params.get('q', '').strip())
+    genre = html.escape(request.query_params.get('genre', '').strip())
     year = request.query_params.get('year', '')
     date_from = request.query_params.get('date_from', '')
     content_type = request.query_params.get('type', 'all')  # 'all', 'tracks', 'albums', 'djs'
@@ -124,6 +129,7 @@ def advanced_search(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def popular_this_week(request):
     """Tracks popular this week by download count [Spec §8]."""
     tracks = Track.objects.filter(
@@ -136,6 +142,7 @@ def popular_this_week(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def new_releases(request):
     """New releases in the last 30 days [Spec §8]."""
     thirty_days_ago = timezone.now() - timedelta(days=30)
@@ -157,6 +164,7 @@ def new_releases(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def top_partnered_djs(request):
     """Top partnered DJs by total revenue [Spec §8]."""
     djs = DJProfile.objects.filter(

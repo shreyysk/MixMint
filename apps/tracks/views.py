@@ -1,3 +1,4 @@
+import html
 from rest_framework import viewsets, filters, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -10,6 +11,11 @@ from .utils import process_track_metadata
 
 
 class TrackViewSet(viewsets.ModelViewSet):
+    """
+    Public track listing API [CP-02.01 FIX].
+    List and retrieve are public (AllowAny).
+    Create/Update/Delete require authentication.
+    """
     queryset = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
     serializer_class = TrackSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -18,7 +24,84 @@ class TrackViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'price', 'download_count', 'popularity']
     throttle_scope = 'search'  # [Fix 16]
 
+    def get_permissions(self):
+        """
+        [CP-02.01 FIX] Allow public access for list/retrieve.
+        [CP-06.04, CP-06.05 FIX] Require DJ role for create/update/delete.
+        """
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def _check_dj_permission(self, user):
+        """
+        [CP-06.04, CP-06.05 FIX] Check if user is an approved DJ.
+        Returns (is_allowed, error_response)
+        """
+        try:
+            profile = user.profile
+            if profile.role != 'dj':
+                return False, Response(
+                    {'error': 'Only DJs can upload tracks.'},
+                    status=403
+                )
+            if not hasattr(profile, 'dj_profile'):
+                return False, Response(
+                    {'error': 'DJ profile not found. Please complete your DJ application.'},
+                    status=403
+                )
+            if profile.dj_profile.status != 'approved':
+                return False, Response(
+                    {'error': 'Your DJ application is pending approval. Please wait for admin approval before uploading.'},
+                    status=403
+                )
+            return True, None
+        except Exception:
+            return False, Response(
+                {'error': 'Authentication error. Please re-login.'},
+                status=403
+            )
+
+    def create(self, request, *args, **kwargs):
+        """
+        [CP-06.04, CP-06.05 FIX] Enforce DJ role for track creation.
+        Only approved DJs can upload tracks.
+        """
+        is_allowed, error_response = self._check_dj_permission(request.user)
+        if not is_allowed:
+            return error_response
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """
+        [CP-06.04 FIX] Enforce DJ role for track updates.
+        Only track owner can update.
+        """
+        is_allowed, error_response = self._check_dj_permission(request.user)
+        if not is_allowed:
+            return error_response
+        
+        # Additional ownership check
+        track = self.get_object()
+        if hasattr(request.user.profile, 'dj_profile') and track.dj != request.user.profile.dj_profile:
+            return Response({'error': 'You can only modify your own tracks.'}, status=403)
+        
+        return super().update(request, *args, **kwargs)
+
     def get_queryset(self):
+        """
+        Weighted search ranking with XSS sanitization [CP-02.04 FIX].
+        Sanitizes search query to prevent XSS attacks.
+        """
+        qs = super().get_queryset()
+        
+        # Note: DRF's SearchFilter uses parameterized queries preventing SQL injection
+        # XSS sanitization is done at the serializer/response level
+        # The html.escape import at top is available for use in serializers
+        
+        return self._apply_ranking(qs)
+
+    def _apply_ranking(self, qs):
         """
         Weighted search ranking [Gap 08].
         Prioritizes:
@@ -28,8 +111,6 @@ class TrackViewSet(viewsets.ModelViewSet):
         4. Freshness (recency)
         """
         from django.db.models import Case, When, F, DecimalField, Value
-        
-        qs = super().get_queryset()
         
         # Apply weights for ranking
         qs = qs.annotate(

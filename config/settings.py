@@ -213,7 +213,7 @@ DJ_AD_REVENUE_SHARE = 0.15       # 15% ad revenue to DJ [Spec P3 §1.2]
 CHECKOUT_FEE = 5.00              # ₹5 service fee [Spec P3 §1.3]
 MIN_PAYOUT_THRESHOLD = 500.00    # ₹500 [Spec P2 §9]
 DJ_APPLICATION_FEE = 99.00       # ₹99 [Spec §7]
-MIN_TRACK_PRICE = 19.00          # ₹19 [Spec §3.2]
+MIN_TRACK_PRICE = 29.00          # ₹29 [CP-06.02 FIX]
 MIN_ALBUM_PRICE = 49.00          # ₹49 [Spec §3.2]
 DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5  # [Spec §4.5]
 IP_LOCK_DAYS = 2                 # [Spec §4.3]
@@ -225,18 +225,34 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Active Payment Gateway Selection
-if ENVIRONMENT == 'production':
-    from apps.payments.phonepe import PhonePeGateway
-    ACTIVE_GATEWAY = PhonePeGateway()
-else:
-    from apps.payments.razorpay_gateway import RazorpayGateway
-    ACTIVE_GATEWAY = RazorpayGateway()
+# Active Payment Gateway Selection (Lazy loaded to avoid import errors)
+# The actual gateway is imported when first accessed via get_payment_gateway()
+def get_payment_gateway():
+    """Get the active payment gateway based on environment."""
+    if ENVIRONMENT == 'production':
+        from apps.payments.phonepe import PhonePeGateway
+        return PhonePeGateway()
+    else:
+        from apps.payments.phonepe import PhonePeGateway
+        # Use PhonePe in dev too for consistency
+        return PhonePeGateway()
 
-# Production Safety Guards
+# For backwards compatibility - lazy loaded
+class LazyGateway:
+    _gateway = None
+    
+    def __getattr__(self, name):
+        if self._gateway is None:
+            self._gateway = get_payment_gateway()
+        return getattr(self._gateway, name)
+
+ACTIVE_GATEWAY = LazyGateway()
+
+# Production Safety Guards (only run in production)
 if ENVIRONMENT == 'production':
+    _gateway = get_payment_gateway()
     from apps.payments.phonepe import PhonePeGateway
-    assert isinstance(ACTIVE_GATEWAY, PhonePeGateway), "Production must use PhonePeGateway"
+    assert isinstance(_gateway, PhonePeGateway), "Production must use PhonePeGateway"
     assert 'preprod' not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
 
 # Vercel Configuration [Phase 1 Section C Fix 02]

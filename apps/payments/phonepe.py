@@ -77,9 +77,21 @@ class PhonePeGateway(PaymentGateway):
         else:
             raise Exception(f"PhonePe order creation failed: {data.get('message', 'Unknown error')}")
 
-    def verify_payment(self, payload, signature):
-        expected = self._generate_checksum(payload, "/pg/v1/pay")
-        return hmac.compare_digest(expected, signature)
+    def verify_payment(self, payload_base64, x_verify_header):
+        """
+        Verify PhonePe webhook signature [BUG-001 FIX].
+        PhonePe S2S callback sends X-VERIFY header = SHA256(response + salt_key) + "###" + salt_index
+        Note: For callbacks, the checksum is computed differently than for API requests.
+        """
+        if not x_verify_header:
+            return False
+        
+        # PhonePe callback signature format: SHA256(base64_payload + salt_key) + "###" + salt_index
+        data = payload_base64 + self.salt_key
+        sha256_hash = hashlib.sha256(data.encode()).hexdigest()
+        expected_signature = sha256_hash + "###" + self.salt_index
+        
+        return hmac.compare_digest(expected_signature, x_verify_header)
 
     def get_payment_status(self, merchant_transaction_id):
         endpoint = f"/pg/v1/status/{self.merchant_id}/{merchant_transaction_id}"

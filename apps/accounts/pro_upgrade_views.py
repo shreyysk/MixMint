@@ -2,12 +2,11 @@
 Pro DJ upgrade view [Spec P3 §1.5].
 
 Endpoint: POST /api/v1/accounts/dj/upgrade-pro/
-- Creates a Razorpay order for the Pro subscription fee.
-- On payment verification (via Razorpay webhook or verify endpoint),
-  sets is_pro_dj=True on the Profile, unlocking 8% commission and custom domain.
+- Creates a payment order for the Pro subscription fee.
+- On payment verification, sets is_pro_dj=True on the Profile,
+  unlocking 8% commission and custom domain.
 """
 
-import razorpay
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,7 +16,7 @@ from rest_framework.response import Response
 from apps.accounts.models import DJProfile
 
 # Pro Plan pricing
-PRO_PLAN_PRICE_PAISE = 99900  # ₹999 in paise (Razorpay unit)
+PRO_PLAN_PRICE_PAISE = 99900  # ₹999 in paise
 PRO_PLAN_PRICE_INR = 999.00
 
 
@@ -27,9 +26,7 @@ def upgrade_to_pro(request):
     """
     Initiate a Pro DJ upgrade order [Spec P3 §1.5].
 
-    Creates a Razorpay order for the annual Pro subscription.
-    Frontend must complete payment then call /payments/verify/ with this order.
-
+    Creates a payment order for the annual Pro subscription.
     After verified payment:
     - Profile.is_pro_dj = True
     - Commission drops from 15% → 8%
@@ -62,19 +59,14 @@ def upgrade_to_pro(request):
             status=status.HTTP_200_OK
         )
 
-    # Create Razorpay order
+    # Create payment order using active gateway
     try:
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-        order = client.order.create({
-            'amount': PRO_PLAN_PRICE_PAISE,
-            'currency': 'INR',
-            'receipt': f'pro_upgrade_{profile.user.id}',
-            'notes': {
-                'upgrade_type': 'pro_dj',
-                'dj_profile_id': str(dj_profile.id),
-                'user_email': profile.user.email,
-            }
-        })
+        gateway = settings.ACTIVE_GATEWAY
+        result = gateway.create_subscription_order(
+            dj_id=str(dj_profile.id),
+            plan_type='annual',
+            amount_paise=PRO_PLAN_PRICE_PAISE
+        )
     except Exception as e:
         return Response(
             {'error': 'Failed to create payment order. Please try again.', 'detail': str(e)},
@@ -82,11 +74,11 @@ def upgrade_to_pro(request):
         )
 
     return Response({
-        'order_id': order['id'],
+        'order_id': result.get('order_id'),
+        'redirect_url': result.get('redirect_url'),
         'amount': PRO_PLAN_PRICE_PAISE,
         'amount_inr': PRO_PLAN_PRICE_INR,
         'currency': 'INR',
-        'razorpay_key': settings.RAZORPAY_KEY_ID,
         'message': f'Complete ₹{PRO_PLAN_PRICE_INR:.0f} payment to activate Pro DJ.',
         'features': [
             '8% platform commission (vs 15% standard)',
