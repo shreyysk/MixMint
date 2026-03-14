@@ -25,7 +25,7 @@ from .dj_conversion import (
 @permission_classes([IsAuthenticated])
 def get_referral_code(request):
     """
-    Get or generate DJ's unique referral code.
+    Get or generate DJ's unique referral code with social sharing links.
     DJs earn ₹100 when their referral makes first sale.
     """
     if request.user.profile.role != 'dj':
@@ -43,9 +43,22 @@ def get_referral_code(request):
     # Get referral stats
     referrals = DJReferralProgram.objects.filter(referrer=dj_profile)
     
+    # Build referral URL
+    referral_url = f"https://mixmint.in/join?ref={code.code}"
+    
+    # Social sharing messages
+    share_message = f"Join MixMint and start selling your tracks! Use my code {code.code} to get ₹50 bonus. 🎵"
+    
+    # Social sharing URLs
+    whatsapp_url = f"https://wa.me/?text={share_message} {referral_url}".replace(" ", "%20")
+    instagram_bio_text = f"🎧 Sell your tracks on MixMint\n💰 Use code: {code.code}\n🎁 Get ₹50 bonus!\n👇 {referral_url}"
+    twitter_url = f"https://twitter.com/intent/tweet?text={share_message}&url={referral_url}".replace(" ", "%20")
+    facebook_url = f"https://www.facebook.com/sharer/sharer.php?u={referral_url}&quote={share_message}".replace(" ", "%20")
+    telegram_url = f"https://t.me/share/url?url={referral_url}&text={share_message}".replace(" ", "%20")
+    
     return Response({
         'referral_code': code.code,
-        'referral_url': f"https://mixmint.in/join?ref={code.code}",
+        'referral_url': referral_url,
         'stats': {
             'total_referrals': referrals.count(),
             'successful_referrals': referrals.filter(first_sale_achieved=True).count(),
@@ -55,6 +68,14 @@ def get_referral_code(request):
         'rewards': {
             'referrer_bonus': '₹100 when your referral makes their first sale',
             'referred_bonus': '₹50 bonus for the new DJ',
+        },
+        'social_sharing': {
+            'whatsapp': whatsapp_url,
+            'instagram_bio': instagram_bio_text,
+            'twitter': twitter_url,
+            'facebook': facebook_url,
+            'telegram': telegram_url,
+            'copy_message': share_message,
         }
     })
 

@@ -32,6 +32,9 @@ urlpatterns = [
     path('api/v1/downloads/', include('apps.downloads.urls')),
     path('api/v1/admin/', include('apps.admin_panel.urls')),
     
+    # Platform Improvements API
+    path('api/v1/platform/', include('apps.core.urls')),
+    
     # Public Legal Pages
     path('legal/', include('apps.commerce.legal_urls')),
     
