@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import viewsets, permissions, status
@@ -360,6 +361,73 @@ class CartViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Item not found in cart.'}, status=404)
 
         return Response(self.get_serializer(cart).data)
+
+    @action(detail=False, methods=['POST'])
+    def merge_guest_cart(self, request):
+        """
+        [P2-11.08 FIX] Merge guest cart into user cart on login.
+        Called from frontend after login with guest_cart_items.
+        """
+        guest_items = request.data.get('guest_cart_items', [])
+        if not guest_items:
+            return Response({'message': 'No items to merge'})
+
+        cart, _ = Cart.objects.get_or_create(user=request.user.profile, is_active=True)
+        merged_count = 0
+        
+        for item in guest_items:
+            content_type = item.get('content_type')
+            content_id = item.get('content_id')
+            
+            if not content_type or not content_id:
+                continue
+                
+            # Skip if already owns the item
+            if Purchase.objects.filter(
+                user=request.user.profile,
+                content_type=content_type,
+                content_id=content_id,
+                status='paid',
+                is_revoked=False
+            ).exists():
+                continue
+                
+            # Skip if already in cart
+            if cart.items.filter(content_type=content_type, content_id=content_id).exists():
+                continue
+                
+            # Validate content exists
+            try:
+                if content_type == 'track':
+                    from apps.tracks.models import Track
+                    content = Track.objects.get(id=content_id, is_active=True, is_deleted=False)
+                elif content_type == 'album':
+                    from apps.albums.models import AlbumPack
+                    content = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
+                else:
+                    continue
+            except Exception:
+                continue
+                
+            # Skip own content for DJs
+            if hasattr(request.user.profile, 'dj_profile') and request.user.profile.dj_profile == content.dj:
+                continue
+                
+            try:
+                CartItem.objects.create(
+                    cart=cart,
+                    content_type=content_type,
+                    content_id=content_id,
+                    price=int(float(content.price) * 100)
+                )
+                merged_count += 1
+            except Exception:
+                pass
+                
+        return Response({
+            'message': f'Merged {merged_count} items into your cart',
+            'cart': self.get_serializer(cart).data
+        })
 
     @action(detail=False, methods=['POST'])
     def clear(self, request):

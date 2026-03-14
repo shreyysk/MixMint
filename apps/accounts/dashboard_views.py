@@ -37,6 +37,17 @@ def dashboard_view(request):
     # Fetch wishlist items [Imp 13]
     wishlist_tracks = profile.wishlist_items.select_related('track', 'track__dj')
 
+    # [P2-01.02 FIX] Get wallet info for buyer
+    wallet = None
+    if hasattr(profile, 'dj_profile'):
+        try:
+            wallet = profile.dj_profile.wallet
+        except Exception:
+            pass
+
+    # Check if user is a DJ
+    is_dj = profile.role == 'dj'
+
     context = {
         'profile': profile,
         'tracks': tracks,

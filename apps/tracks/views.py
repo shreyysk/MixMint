@@ -356,3 +356,32 @@ class TrackViewSet(viewsets.ModelViewSet):
             'status': 'success', 
             'message': 'Track converted to external link successfully.'
         })
+
+    @action(detail=False, methods=['get'], url_path='my-tracks',
+            permission_classes=[permissions.IsAuthenticated])
+    def my_tracks(self, request):
+        """
+        [P2-02.02 FIX] DJ-only endpoint to list their own tracks.
+        Ensures DJs can only access their own tracks for editing.
+        """
+        if request.user.profile.role != 'dj':
+            return Response({'error': 'Only DJs can access this endpoint.'}, status=403)
+        
+        try:
+            dj_profile = request.user.profile.dj_profile
+        except Exception:
+            return Response({'error': 'DJ profile not found.'}, status=404)
+        
+        # Get only this DJ's tracks, including inactive/deleted for management
+        tracks = Track.objects.filter(dj=dj_profile).order_by('-created_at')
+        
+        # Optional filtering
+        include_deleted = request.query_params.get('include_deleted', 'false').lower() == 'true'
+        if not include_deleted:
+            tracks = tracks.filter(is_deleted=False)
+            
+        serializer = TrackSerializer(tracks, many=True)
+        return Response({
+            'count': tracks.count(),
+            'tracks': serializer.data
+        })
