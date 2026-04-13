@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% load tracks_filters %}
 {% block title %}Home | MixMint{% endblock %}
 
@@ -144,15 +145,15 @@
         </h1>
 
         <p class="font-body text-[18px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.6] mb-12">
-            India's only DJ music marketplace where you truly own what you buy.
+            India's only DJ music marketplace where you truly support your favorite artists. No subscriptions, no streaming.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <a href="/explore/" class="btn-mm btn-mint w-full sm:w-[200px] text-[15px] font-[600]"
+            <a href="{% url 'explore' %}" class="btn-mm btn-mint w-full sm:w-[200px] text-[15px] font-[600]"
                 style="height: 52px; border-radius: 8px;">
                 Browse Music
             </a>
-            <a href="/signup/" class="btn-mm btn-ghost w-full sm:w-[240px] text-[15px] font-[600]"
+            <a href="{% url 'signup' %}" class="btn-mm btn-ghost w-full sm:w-[240px] text-[15px] font-[600]"
                 style="height: 52px; border-radius: 8px;">
                 Become a DJ Partner
             </a>
@@ -189,32 +190,37 @@
     </div>
 
     <div class="flex overflow-x-auto hide-scroll gap-6 pb-4 cursor-grab active:cursor-grabbing snap-x">
-        {% for i in "123456"|make_list %}
-        <a href="#" class="dj-card snap-center group">
+        {% for dj in featured_djs %}
+        <a href="{% url 'dj_profile' dj.slug %}" class="dj-card snap-center group">
             <div class="relative h-[60%] w-full overflow-hidden border-b border-[var(--border)]">
                 <div class="w-full h-full bg-[var(--bg-elevated)] flex items-center justify-center dj-photo">
+                    {% if dj.profile.avatar_url %}
+                    <img src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">
+                    {% else %}
                     <span class="text-4xl opacity-20">🎧</span>
+                    {% endif %}
                 </div>
                 <!-- Verified Badge -->
+                {% if dj.is_verified %}
                 <div class="absolute top-2 right-2 text-[var(--accent-mint)]" title="Verified DJ">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                         <path
                             d="M12 2L15.09 5.09L19.5 4.5L20.09 8.91L23.18 12L20.09 15.09L19.5 19.5L15.09 18.91L12 22L8.91 18.91L4.5 19.5L3.91 15.09L0.82 12L3.91 8.91L4.5 4.5L8.91 5.09L12 2ZM10.96 15.48L17.32 9.12L15.91 7.71L10.96 12.66L8.14 9.84L6.73 11.25L10.96 15.48Z" />
                     </svg>
                 </div>
+                {% endif %}
             </div>
             <div class="h-[40%] p-3 flex flex-col justify-between" style="background: var(--bg-surface);">
                 <div>
-                    <h3 class="font-body text-[15px] font-[600] text-[var(--text-primary)] truncate">DJ Creator {{ i }}
-                    </h3>
-                    <div class="flex gap-1 mt-1">
-                        <span
-                            class="px-1.5 py-0.5 rounded-sm bg-[var(--bg-elevated)] text-[var(--text-muted)] font-mono text-[9px] uppercase">Tech
-                            House</span>
+                    <h3 class="font-body text-[15px] font-[600] text-[var(--text-primary)] truncate">{{ dj.dj_name }}</h3>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {% for genre in dj.genres|slice:":2" %}
+                        <span class="px-1.5 py-0.5 rounded-sm bg-[var(--bg-elevated)] text-[var(--text-muted)] font-mono text-[9px] uppercase">{{ genre }}</span>
+                        {% endfor %}
                     </div>
                 </div>
                 <div class="font-mono text-[11px] text-[var(--text-muted)]">
-                    12 Tracks
+                    {{ dj.tracks.count }} Tracks
                 </div>
             </div>
         </a>
@@ -229,7 +235,7 @@
             <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em] mb-2 block">🔥
                 POPULAR THIS WEEK</span>
         </div>
-        <a href="/explore/?sort=popular"
+        <a href="{% url 'explore' %}?sort=popular"
             class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
             All →</a>
     </div>
@@ -265,23 +271,26 @@
                 <!-- Info block -->
                 <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
                     <div>
-                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title
-                            }}</h3>
+                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title }}</h3>
                         <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
                             {{ track.dj.dj_name }}
                         </p>
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money
-                            }}</span>
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money }}</span>
                     </div>
 
                     <!-- Buy CTA -->
-                    <div class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint"
+                    <button @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})" 
+                        class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint group/btn relative overflow-hidden"
                         style="height: 40px; font-size: 13px;">
-                        Buy Now
-                    </div>
+                        <span class="relative z-10">Add to Support Cart</span>
+                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                    </button>
+                    <p class="mt-2 text-[10px] font-mono text-[var(--text-muted)] text-center uppercase tracking-tighter">
+                        🎁 Bundle 3+ for <span class="text-[var(--accent-mint)]">5% OFF</span>
+                    </p>
                 </div>
             </a>
         </div>
@@ -301,7 +310,7 @@
             <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.1em] mb-2 block">NEW
                 RELEASES</span>
         </div>
-        <a href="/explore/"
+        <a href="{% url 'explore' %}"
             class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
             All →</a>
     </div>
@@ -337,23 +346,26 @@
                 <!-- Info block -->
                 <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
                     <div>
-                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title
-                            }}</h3>
+                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title }}</h3>
                         <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
                             {{ track.dj.dj_name }}
                         </p>
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money
-                            }}</span>
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money }}</span>
                     </div>
 
                     <!-- Buy CTA -->
-                    <div class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint"
+                    <button @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})" 
+                        class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint group/btn relative overflow-hidden"
                         style="height: 40px; font-size: 13px;">
-                        Buy Now
-                    </div>
+                        <span class="relative z-10">Add to Support Cart</span>
+                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                    </button>
+                    <p class="mt-2 text-[10px] font-mono text-[var(--text-muted)] text-center uppercase tracking-tighter">
+                        🎁 Bundle 3+ for <span class="text-[var(--accent-mint)]">5% OFF</span>
+                    </p>
                 </div>
             </a>
         </div>
@@ -388,10 +400,10 @@
             class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
             <span
                 class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">02</span>
-            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay Once, Own
+            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay Once, Keep
                 Forever</h3>
             <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
-                Instant checkout. One-time payment for permanent ownership. No subscriptions or recurring fees.
+                Instant checkout. One-time payment for permanent access. No subscriptions or recurring fees.
             </p>
         </div>
         <div
@@ -455,8 +467,7 @@
         </h3>
 
         {% if active_promotional_offer.sub_text %}
-        <p class="font-body text-[14px] text-[var(--text-muted)] mb-5 relative z-10">{{
-            active_promotional_offer.sub_text }}</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-5 relative z-10">{{ active_promotional_offer.sub_text }}</p>
         {% endif %}
 
         <button @click="showFloatingOffer = false; window.scrollTo({ top: 0, behavior: 'smooth' })"

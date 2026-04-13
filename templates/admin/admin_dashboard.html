@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Admin Command Center — MixMint{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-[1200px] mx-auto px-4">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] text-[10px] font-mono font-bold uppercase tracking-widest rounded-full border border-[var(--accent-mint)]/20">
+                    Administrator
+                </span>
+                <span class="text-[12px] text-[var(--text-muted)] font-mono">
+                    System Hub v2.0
+                </span>
+            </div>
+            <h1 class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none uppercase">
+                Admin <span class="text-[var(--accent-mint)]">Command Center</span>
+            </h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Server Status</p>
+                <p class="font-mono text-[13px] text-[var(--accent-mint)] flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-mint)] animate-pulse"></span>
+                    ONLINE
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Revenue Analytics (Investor Intelligence) -->
+        <a href="{% url 'admin_revenue_dashboard' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">📊</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Revenue Analytics</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Growth metrics, platform GMV, commission breakdown, and trend analysis.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Financial Ops</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Offers & Pricing -->
+        <a href="{% url 'admin_offers_pricing' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎁</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Offers & Pricing</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Manage commission rates, platform fees, GST status, and promotional homepage banners.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Live Controls</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Platform Health -->
+        <a href="{% url 'admin_health' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">⚡</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Platform Health</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Monitor active traffic, security audit logs, content integrity, and server status.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">System Ops</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- DJ Management -->
+        <a href="{% url 'admin_dj_management' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎧</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">DJ Management</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Verify seller applications, manage ID compliance, and control partner payouts.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Seller Ops</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Content Moderation -->
+        <a href="{% url 'admin_moderation_hub' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🛡️</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Moderation Hub</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Soft-delete violations, archive content, and manage DMCA takedown requests.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Content Ops</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Security Controls -->
+        <a href="{% url 'admin_security_dashboard' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🚨</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-red)] transition-colors">Security Ops</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Manage IP bans, account freezes, and platform-wide security protocols.
+                </p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-red)]">Security Ops</span>
+                <span class="text-[var(--accent-red)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+    </div>
+    
+    <div class="mt-12 text-center">
+        <a href="/admin/" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Standard Django Admin
+        </a>
+    </div>
+</div>
+{% endblock %}

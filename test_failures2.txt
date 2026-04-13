@@ -1,0 +1,117 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+django: version: 6.0.2, settings: config.settings_test (from ini)
+rootdir: D:\mixmint2.0
+configfile: pytest.ini
+plugins: base-url-2.1.0, django-4.12.0, playwright-0.7.2
+collecting ... collected 177 items / 175 deselected / 2 selected
+run-last-failure: rerun previous 2 failures
+
+tests/test_api.py::TestAPIErrorHandling::test_confirm_age_works_when_authenticated FAILED [ 50%]
+tests/test_billing.py::TestWalletConsistency::test_wallet_balance_after_multiple_credits FAILED [100%]
+
+================================== FAILURES ===================================
+_______ TestAPIErrorHandling.test_confirm_age_works_when_authenticated ________
+tests\test_api.py:110: in test_confirm_age_works_when_authenticated
+    assert response.status_code in [200, 404]  # allow 404 if endpoint doesn't exist
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 403 in [200, 404]
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stdout setup ----------------------------
+Operations to perform:
+  Synchronize unmigrated apps: corsheaders, django_filters, messages, payments, postgres, rest_framework, rest_framework_simplejwt, rewards, sitemaps, social, staticfiles, storages
+  Apply all migrations: accounts, admin, admin_panel, albums, auth, commerce, contenttypes, downloads, sessions, social_django, tracks
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_enable_trgm_extension... OK
+  Applying accounts.0002_initial... OK
+  Applying accounts.0003_djapplication_bio_djapplication_dj_name_and_more... OK
+  Applying accounts.0004_alter_djapplication_status... OK
+  Applying accounts.0005_missing_items_update... OK
+  Applying accounts.0006_missing_item_02... OK
+  Applying accounts.0007_push_ab_testing... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying tracks.0001_initial... OK
+  Applying albums.0001_initial... OK
+  Applying admin_panel.0001_initial... OK
+  Applying admin_panel.0002_initial... OK
+  Applying admin_panel.0003_initial... OK
+  Applying admin_panel.0004_contentarchive... OK
+  Applying admin_panel.0005_platformsettings_promotionaloffer... OK
+  Applying admin_panel.0006_maintenancemode_estimated_return_at_contentreport... OK
+  Applying admin_panel.0007_platformsettings_offload_low_sales_count_and_more... OK
+  Applying admin_panel.0008_dj_conversion_system... OK
+  Applying albums.0002_albumpack_converted_at_and_more... OK
+  Applying tracks.0002_track_checksum_track_tracks_trac_is_acti_f0fe18_idx_and_more... OK
+  Applying tracks.0003_missing_items_update... OK
+  Applying commerce.0001_initial... OK
+  Applying commerce.0002_purchase_commerce_pu_payment_76df54_idx_and_more... OK
+  Applying commerce.0003_missing_items_update... OK
+  Applying commerce.0004_purchase_buyer_role_purchase_cart_id_and_more... OK
+  Applying commerce.0005_add_cart_items... OK
+  Applying commerce.0006_dj_conversion_system... OK
+  Applying downloads.0001_initial... OK
+  Applying downloads.0002_downloadlog_checksum_hex_downloadtoken_checksum_hex... OK
+  Applying sessions.0001_initial... OK
+  Applying social_django.0001_initial... OK
+  Applying social_django.0002_add_related_name... OK
+  Applying social_django.0003_alter_email_max_length... OK
+  Applying social_django.0004_auto_20160423_0400... OK
+  Applying social_django.0005_auto_20160727_2333... OK
+  Applying social_django.0006_partial... OK
+  Applying social_django.0007_code_timestamp... OK
+  Applying social_django.0008_partial_timestamp... OK
+  Applying social_django.0009_auto_20191118_0520... OK
+  Applying social_django.0010_uid_db_index... OK
+  Applying social_django.0011_alter_id_fields... OK
+  Applying social_django.0012_usersocialauth_extra_data_new... OK
+  Applying social_django.0013_migrate_extra_data... OK
+  Applying social_django.0014_remove_usersocialauth_extra_data... OK
+  Applying social_django.0015_rename_extra_data_new_usersocialauth_extra_data... OK
+  Applying social_django.0016_alter_usersocialauth_extra_data... OK
+  Applying social_django.0017_usersocialauth_user_social_auth_uid_required... OK
+  Applying tracks.0004_track_converted_at_track_external_link_broken_and_more... OK
+---------------------------- Captured stderr setup ----------------------------
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:249 Forbidden: /api/v1/accounts/confirm-age/
+______ TestWalletConsistency.test_wallet_balance_after_multiple_credits _______
+tests\test_billing.py:177: in test_wallet_balance_after_multiple_credits
+    wallet.total_earnings += Decimal('85.00')
+E   TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+============================== warnings summary ===============================
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\requests\__init__.py:113
+  C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\requests\__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.0.0)/charset_normalizer (3.4.4) doesn't match a supported version!
+    warnings.warn(
+
+tests/test_api.py::TestAPIErrorHandling::test_confirm_age_works_when_authenticated
+  C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py:62: UserWarning: No directory at: D:\mixmint2.0\staticfiles\
+    mw_instance = middleware(adapted_handler)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_api.py::TestAPIErrorHandling::test_confirm_age_works_when_authenticated - assert 403 in [200, 404]
+ +  where 403 = <Response status_code=403, "application/json">.status_code
+FAILED tests/test_billing.py::TestWalletConsistency::test_wallet_balance_after_multiple_credits - TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+=============== 2 failed, 175 deselected, 2 warnings in 12.19s ================

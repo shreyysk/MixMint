@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}404 // Signal_Lost - MixMint{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+    <div class="mb-12 relative">
+        <div class="text-[120px] md:text-[180px] font-display font-black text-[var(--bg-elevated)] leading-none select-none">
+            404
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-32 h-32 border-2 border-[var(--accent-red)]/20 border-t-[var(--accent-red)] rounded-full animate-spin"></div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto">
+        <p class="font-mono text-[10px] text-[var(--accent-red)] uppercase tracking-[0.4em] mb-4">// Transmission_Failure</p>
+        <h1 class="font-display text-3xl md:text-5xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-tight">
+            Signal_Lost_<br>In_The_Vault
+        </h1>
+        <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed mb-10">
+            The node you're looking for was either de-indexed or moved to an encrypted sector. Please re-verify your coordinates.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="{% url 'home' %}" class="btn-mm btn-mint h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
+                Return_Home
+            </a>
+            <a href="{% url 'explore' %}" class="btn-mm btn-ghost h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
+                Browse_Vault
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-20 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest opacity-50">
+        Trace_ID: <span class="text-[var(--text-primary)]">{{ request.path }}</span>
+    </div>
+</div>
+{% endblock %}

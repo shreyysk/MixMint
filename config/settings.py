@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.postgres',
     'django.contrib.sitemaps',
     
     # Third-party apps
@@ -45,6 +44,7 @@ INSTALLED_APPS = [
     'apps.admin_panel',
     'apps.social',    # Stub: wishlists + follows (no gamification) [Spec §6]
     'apps.rewards',   # Stub: referral tracking only [Spec §8]
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -85,6 +85,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.admin_panel.context_processors.global_settings',
                 'apps.core.context_processors.seo_context',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -99,6 +101,11 @@ DATABASES = {
 
 # Auth & JWT Configuration
 AUTH_USER_MODEL = 'accounts.User'
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 # Supabase Auth [Spec §13]
 # ----------------------
@@ -262,3 +269,26 @@ if ENVIRONMENT == 'production':
 VERCEL_TOKEN = os.getenv('VERCEL_TOKEN')
 VERCEL_PROJECT_ID = os.getenv('VERCEL_PROJECT_ID')
 VERCEL_TEAM_ID = os.getenv('VERCEL_TEAM_ID') # Optional
+
+# Social Auth Google Configuration
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env('GOOGLE_CLIENT_ID', default='')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
+
+# Social Auth Pipeline
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+# Conditionally add django.contrib.postgres when using PostgreSQL
+if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+    INSTALLED_APPS.append('django.contrib.postgres')

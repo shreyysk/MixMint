@@ -1,72 +1,64 @@
-<footer class="border-t border-[var(--border)] pt-16 pb-8 mt-20 relative z-10"
-    style="background-color: var(--bg-base);">
-    <div class="container mx-auto px-6 max-w-[1280px]">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
-            <!-- Left: Brand & Tagline -->
+<footer class="mt-20 border-t border-[var(--border)] pt-20 pb-12 bg-[var(--bg-base)]">
+    <div class="max-w-[1280px] mx-auto px-6">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
+            <!-- Left: Brand -->
             <div class="md:col-span-4">
-                <div class="font-display text-[22px] font-bold tracking-tight text-[var(--text-primary)] mb-4">
-                    MixMint<span class="text-[var(--accent-mint)]">.</span>
+                <div class="flex items-center gap-3 mb-6">
+                    <img src="/static/logo/MIXMINT_WHITE.png" alt="MixMint" class="w-8 h-8 dark-logo-only">
+                    <img src="/static/logo/MIXMINT_BLACK.png" alt="MixMint" class="w-8 h-8 light-logo-only hidden">
+                    <span class="font-display text-[22px] font-black tracking-tight text-[var(--text-primary)] uppercase">MixMint</span>
                 </div>
-                <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed max-w-sm mb-6">
-                    India's only DJ music marketplace where you truly own what you buy. No subscriptions, no streaming.
+                <p class="font-body text-[14px] text-[var(--text-muted)] leading-relaxed max-w-sm mb-6">
+                    India's only DJ music marketplace where you truly support your favorite artists. No subscriptions, no streaming.
                 </p>
                 <div class="flex items-center gap-2">
                     <span class="text-xl">🇮🇳</span>
-                    <p class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-wider">
-                        India-only. Prices in INR.
+                    <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">
+                        Operated from India.
                     </p>
                 </div>
             </div>
 
             <!-- Center: Links -->
             <div class="md:col-span-3">
-                <nav class="flex flex-col gap-4 font-body text-[15px] font-medium">
-                    <a href="{% url 'explore' %}"
-                        class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Browse</a>
-                    <a href="{% url 'signup' %}"
-                        class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Become a
-                        DJ</a>
-                    <a href="/legal/transparency/"
-                        class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Security</a>
-                    <a href="/legal/terms/"
-                        class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Legal &
-                        GST</a>
-                    <a href="#"
-                        class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Contact</a>
+                <nav class="flex flex-col gap-5 font-display text-[15px] font-bold uppercase tracking-tight">
+                    <a href="{% url 'explore' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Browse_Vault</a>
+                    <a href="{% url 'signup' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Become_a_DJ</a>
+                    <a href="/legal/transparency/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Legal_&_GST</a>
+                    <a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Support_Node</a>
                 </nav>
             </div>
 
-            <!-- Right: Disclaimer -->
+            <!-- Right: Secondary Legal -->
             <div class="md:col-span-5">
-                <div class="p-6 rounded-[var(--radius-md)]"
-                    style="background-color: var(--bg-surface); border: 1px solid var(--border);">
-                    <p class="font-body text-[12px] text-[var(--text-muted)] italic leading-relaxed">
-                        All music on MixMint is independently uploaded and sold by DJs. MixMint is not responsible for
-                        the content, licensing, or copyright of uploaded files.
-                    </p>
+                <div class="p-8 rounded-[20px] bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-card)]">
+                    <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">// Marketplace_Policy</p>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-3 font-body text-[13px]">
+                        <a href="{% url 'privacy' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Privacy_Protocol</a>
+                        <a href="{% url 'terms' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Terms_of_Service</a>
+                        <a href="{% url 'refund' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Refund_Policy</a>
+                        <a href="{% url 'dmca' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors text-[var(--accent-red)]/80">Copyright_&_DMCA</a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Bottom Bar -->
-        <div class="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="flex items-center gap-6 font-body text-[13px] text-[var(--text-muted)]">
-                <span>© 2026 MixMint</span>
-                <a href="/legal/privacy/" class="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
-                <a href="/legal/terms/" class="hover:text-[var(--text-primary)] transition-colors">Terms</a>
-                <a href="/legal/refund/" class="hover:text-[var(--text-primary)] transition-colors">Refund Policy</a>
+        <div class="pt-8 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-8 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+                <span>© 2026 MixMint_Distribution</span>
+                <span class="opacity-30">//</span>
+                <span class="text-[var(--accent-mint)]">Secure_Vault_v2.0.4</span>
             </div>
 
             <!-- Theme Toggle Footer -->
             <button onclick="toggleTheme()" data-theme-toggle
-                class="flex items-center gap-2 text-[13px] font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors uppercase tracking-widest"
-                aria-label="Switch to light mode">
-                <svg class="w-4 h-4 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] font-mono text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-mint)] transition-all uppercase tracking-widest shadow-sm"
+                aria-label="Switch Theme">
+                <svg class="w-4 h-4 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                Toggle Theme
+                <span>Cycle_Theme</span>
             </button>
         </div>
     </div>

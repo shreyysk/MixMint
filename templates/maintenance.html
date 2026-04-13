@@ -96,29 +96,19 @@
 
 <style>
     /* Dynamic theme overrides logic [Fix 14] */
-        {
-        % if theme_color=='amber' %
-    }
-
+    {% if theme_color == 'amber' %}
     :root {
         --accent-mint: #FFB800;
         --border-focus: #FFB800;
         --shadow-glow: 0 0 30px rgba(255, 184, 0, 0.15);
     }
-
-        {
-        % elif theme_color=='red' %
-    }
-
+    {% elif theme_color == 'red' %}
     :root {
         --accent-mint: #FF3355;
         --border-focus: #FF3355;
         --shadow-glow: 0 0 30px rgba(255, 51, 85, 0.15);
     }
-
-        {
-        % endif %
-    }
+    {% endif %}
 
     .bg-amber-500 {
         background-color: #FFB800;

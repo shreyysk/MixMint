@@ -105,7 +105,7 @@
     <div class="bg-[var(--bg-elevated)] border-b border-[var(--border)] px-5 py-3 rounded-[8px]">
         <p class="font-body text-[12px] text-[var(--text-muted)] italic">
             All music on this page is independently uploaded by {{ dj.dj_name }}. MixMint is not responsible for content
-            licensing or ownership.
+            licensing or rights.
         </p>
     </div>
 </div>
@@ -128,8 +128,7 @@
             :class="tab === 'updates' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
             class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
             Updates
-            {% if announcements %}<span class="ml-2 w-2 h-2 rounded-full bg-[var(--accent-mint)] inline-block"></span>{%
-            endif %}
+            {% if announcements %}<span class="ml-2 w-2 h-2 rounded-full bg-[var(--accent-mint)] inline-block"></span>{% endif %}
         </button>
     </div>
 

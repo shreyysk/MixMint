@@ -20,13 +20,11 @@
     <!-- ANNOUNCEMENTS LIST -->
     <div class="space-y-6">
         {% for post in announcements %}
-        <div
-            class="border border-[var(--border)] bg-[var(--bg-surface)] p-8 rounded-[20px] hover:border-[var(--accent-mint)] transition-all">
+        <div class="glow-card p-8 transition-all">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="font-display text-2xl font-bold text-white">{{ post.title }}</h3>
                 <div class="flex items-center gap-4">
-                    <span class="font-mono text-[11px] text-[var(--text-muted)]">{{ post.created_at|date:"M d, Y"
-                        }}</span>
+                    <span class="font-mono text-[11px] text-[var(--text-muted)]">{{ post.created_at|date:"M d, Y" }}</span>
                     <form action="{% url 'delete_announcement' post.id %}" method="POST"
                         onsubmit="return confirm('Delete this post?')">
                         {% csrf_token %}

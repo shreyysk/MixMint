@@ -4,6 +4,8 @@ from .email_blocklist import validate_email_domain
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source='profile.role', read_only=True)
+
     class Meta:
         model = User
         fields = ('id', 'email', 'role', 'date_joined')

@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% load tracks_filters %}
 {% block title %}My Bundles | MixMint{% endblock %}
 
@@ -20,25 +21,19 @@
     <!-- BUNDLES LIST -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
         {% for bundle in bundles %}
-        <div
-            class="border border-[var(--border)] bg-[var(--bg-surface)] p-8 rounded-[16px] group hover:border-[var(--accent-mint)] transition-all">
+        <div class="glow-card p-8 group transition-all">
             <div class="flex justify-between items-start mb-6">
                 <div>
                     <h3 class="font-display text-xl font-bold text-white mb-1">{{ bundle.title }}</h3>
-                    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest font-bold">{{
-                        bundle.price|money }} • {{ bundle.bundle_tracks.count }} Tracks</p>
+                    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest font-bold">{{ bundle.price|money }} • {{ bundle.bundle_tracks.count }} Tracks</p>
                 </div>
-                <form action="{% url 'delete_bundle' bundle.id %}" method="POST"
-                    onsubmit="return confirm('Delete this bundle?')">
-                    {% csrf_token %}
-                    <button type="submit"
-                        class="text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </form>
+                <button type="button" onclick="alert('Bundle deletion coming soon.');"
+                    class="text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
             </div>
 
             <div class="space-y-3 mb-8">
@@ -103,8 +98,7 @@
                                     <input type="checkbox" name="tracks" value="{{ track.id }}"
                                         class="w-5 h-5 rounded accent-[var(--accent-mint)]">
                                     <span class="text-[14px] text-white font-medium">{{ track.title }}</span>
-                                    <span class="ml-auto font-mono text-[12px] text-[var(--accent-mint)]">{{
-                                        track.price|money }}</span>
+                                    <span class="ml-auto font-mono text-[12px] text-[var(--accent-mint)]">{{ track.price|money }}</span>
                                 </label>
                                 {% endfor %}
                             </div>

@@ -63,7 +63,8 @@ class SecurityMiddleware:
     def _is_maintenance_mode(self):
         """Check if platform is in maintenance mode."""
         from apps.admin_panel.models import MaintenanceMode
-        return MaintenanceMode.objects.filter(is_active=True).exists()
+        latest = MaintenanceMode.objects.last()
+        return latest and latest.mode != 'normal'
     
     def _is_admin(self, request):
         """Check if request is from admin."""

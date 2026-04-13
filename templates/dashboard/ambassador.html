@@ -14,7 +14,7 @@
         <!-- LEFT: CODE & LINK -->
         <div class="md:col-span-2 space-y-8">
             {% if ambassador %}
-            <div class="bg-[var(--bg-surface)] border border-[var(--border)] p-10 rounded-[24px]">
+            <div class="glow-card p-10">
                 <h3 class="font-display text-xl font-bold text-white mb-6">Your Personal Invite Link</h3>
                 <div
                     class="flex items-center gap-4 p-4 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl mb-6">
@@ -86,8 +86,7 @@
                 <h3 class="font-display text-xl font-bold text-white mb-8">Recent Referrals</h3>
                 <div class="space-y-4">
                     {% for person in referrals %}
-                    <div
-                        class="flex items-center justify-between p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl">
+                    <div class="glow-card flex items-center justify-between p-6">
                         <div class="flex items-center gap-4">
                             <div
                                 class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center font-bold text-[var(--accent-mint)]">
@@ -107,8 +106,7 @@
                 </div>
             </div>
             {% else %}
-            <div
-                class="py-20 text-center border-2 border-dashed border-[var(--border)] rounded-[24px] bg-[var(--bg-surface)]">
+            <div class="glow-card py-20 text-center">
                 <div class="text-6xl mb-8">🤝</div>
                 <h3 class="font-display text-2xl font-bold text-white mb-4">Become an Ambassador</h3>
                 <p class="font-body text-[var(--text-muted)] mb-10 max-w-sm mx-auto">Generate your unique referral code
@@ -123,7 +121,7 @@
 
         <!-- RIGHT: BENEFITS -->
         <div class="space-y-6">
-            <div class="p-8 border border-[var(--border)] rounded-[24px]">
+            <div class="glow-card p-8">
                 <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Rewards</h4>
                 <div class="space-y-8">
                     <div>
@@ -142,7 +140,7 @@
             </div>
             
             <!-- Quick Stats Card -->
-            <div class="p-8 border border-[var(--border)] rounded-[24px] bg-gradient-to-br from-[var(--accent-mint)]/10 to-transparent">
+            <div class="glow-card p-8 bg-gradient-to-br from-[var(--accent-mint)]/5 to-transparent border-[var(--accent-mint)]/20">
                 <h4 class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-6">Your Impact</h4>
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">

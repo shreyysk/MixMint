@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Security & Access Control — MixMint Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto py-10 px-4 font-body" x-data="securityDashboard()">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <div class="flex items-center gap-3 mb-6">
+                <a href="{% url 'admin_dashboard' %}" class="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg text-[var(--accent-mint)] hover:bg-[var(--border)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all group">
+                    <svg class="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+            <h1 class="font-display text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none uppercase">
+                Security <span class="text-[var(--accent-red)]">Dashboard</span>
+            </h1>
+            <p class="text-[var(--text-muted)] text-sm mt-4 font-mono uppercase tracking-[0.2em]">
+                Access Control & Emergency Protocols
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+             <div class="text-right">
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Global Filter</p>
+                <div class="flex items-center gap-2 justify-end">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-red)] animate-pulse"></span>
+                    <p class="font-mono text-[13px] text-[var(--text-primary)] uppercase tracking-tighter">Active Monitoring</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Tools Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        
+        <!-- Account Freeze Section -->
+        <div class="glow-card p-10 border-[var(--accent-amber)]/20">
+            <h2 class="font-display text-xl font-bold uppercase mb-6 flex items-center gap-3">
+                <span class="text-2xl">❄️</span> Account Freeze
+            </h2>
+            <div class="space-y-6">
+                <div class="relative">
+                    <input type="text" x-model="freezeUserEmail" placeholder="User email to freeze..." 
+                           class="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-6 py-4 text-sm focus:border-[var(--accent-amber)] outline-none">
+                    <button @click="performFreeze" class="absolute right-2 top-1/2 -translate-y-1/2 btn-mm bg-[var(--accent-amber)] text-black px-6 py-2">Freeze</button>
+                </div>
+                <p class="text-xs text-[var(--text-muted)] font-mono">Freezing an account prevents all logins and transactions immediately.</p>
+            </div>
+        </div>
+
+        <!-- IP Ban Section -->
+        <div class="glow-card p-10 border-[var(--accent-red)]/20">
+            <h2 class="font-display text-xl font-bold uppercase mb-6 flex items-center gap-3">
+                <span class="text-2xl">🚫</span> IP / Device Ban
+            </h2>
+            <div class="space-y-6">
+                <div class="flex gap-4">
+                    <select x-model="banType" class="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
+                        <option value="ip">IP Address</option>
+                        <option value="device">Device ID</option>
+                    </select>
+                    <input type="text" x-model="banValue" placeholder="Address or ID..." 
+                           class="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-6 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
+                    <button @click="performBan" class="btn-mm bg-[var(--accent-red)] text-white px-8">Ban</button>
+                </div>
+                <p class="text-xs text-[var(--text-muted)] font-mono">Banned entities are blocked from accessing the site at the firewall/edge level.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Bans Table -->
+    <div class="flex items-center gap-4 mb-8">
+        <h2 class="font-display text-[24px] font-[700] uppercase tracking-tight text-[var(--accent-red)]">Active Ban List</h2>
+        <div class="flex-1 h-[1px] bg-[var(--border)]"></div>
+    </div>
+
+    <div class="glow-card overflow-hidden p-0 mb-16">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-[var(--bg-base)]/50">
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Type</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Value</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Reason</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)] text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)] font-body text-[15px]">
+                <template x-for="ban in bans" :key="ban.id">
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-6">
+                            <span class="font-mono text-[11px] uppercase p-1 bg-[var(--border)] rounded" x-text="ban.type"></span>
+                        </td>
+                        <td class="p-6 font-mono text-[13px] text-[var(--text-primary)]" x-text="ban.value"></td>
+                        <td class="p-6 text-[var(--text-muted)] text-sm" x-text="ban.reason"></td>
+                        <td class="p-6 text-right">
+                            <button @click="removeBan(ban)" class="text-xs font-mono uppercase tracking-widest text-[#ef4444] hover:underline">Revoke</button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function securityDashboard() {
+    return {
+        freezeUserEmail: '',
+        banType: 'ip',
+        banValue: '',
+        bans: [],
+
+        init() {
+            this.fetchBans();
+        },
+
+        async fetchBans() {
+            // Sample data for now, real implementation would fetch from API
+            this.bans = JSON.parse('{{ bans_json|escapejs|default:"[]" }}');
+        },
+
+        async performFreeze() {
+            if (!this.freezeUserEmail) return;
+            const reason = prompt("Enter freeze reason:", "Security investigation");
+            if (!reason) return;
+
+            try {
+                const res = await fetch("{% url 'admin_freeze' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ email: this.freezeUserEmail, reason: reason })
+                });
+                if (res.ok) {
+                    alert("Account frozen successfully.");
+                    this.freezeUserEmail = '';
+                } else {
+                    const data = await res.json();
+                    alert(data.error || "Freeze failed.");
+                }
+            } catch (e) {
+                alert("Network error.");
+            }
+        },
+
+        async performBan() {
+            if (!this.banValue) return;
+            const reason = prompt("Enter ban reason:", "Policy violation");
+            if (!reason) return;
+
+            try {
+                const res = await fetch("{% url 'admin_ban' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ action: 'add', ban_type: this.banType, value: this.banValue, reason: reason })
+                });
+                if (res.ok) {
+                    alert(`${this.banType.toUpperCase()} banned successfully.`);
+                    location.reload();
+                }
+            } catch (e) {
+                alert("Action failed.");
+            }
+        },
+
+        async removeBan(ban) {
+            if (!confirm(`Revoke ban for ${ban.value}?`)) return;
+
+            try {
+                const res = await fetch("{% url 'admin_ban' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ action: 'remove', ban_type: ban.type, value: ban.value })
+                });
+                if (res.ok) {
+                    alert("Ban revoked.");
+                    location.reload();
+                }
+            } catch (e) {
+                alert("Action failed.");
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

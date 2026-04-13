@@ -2,88 +2,132 @@
 {% block title %}Refund_Policy // MixMint Vault{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto py-20 px-6">
+<div class="max-w-4xl mx-auto py-20 px-6">
     <!-- ── Header ── -->
-    <div class="mb-16 border-b border-white/5 pb-12 text-center md:text-left">
-        <p class="font-mono text-[10px] text-var(--color-mint) uppercase tracking-[0.4em] mb-4">//
+    <div class="mb-16 border-b border-[var(--border)] pb-12 text-center md:text-left">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
             Transmission_Reversal_Policy</p>
-        <h1 class="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-6">Refund
-            Protocols</h1>
-        <p class="font-body text-xs text-white/30 uppercase tracking-widest leading-relaxed">Effective_Date: March 1,
-            2026</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-none">
+            Refund Protocols
+        </h1>
+        <p class="font-body text-xs text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Effective_Date: <span class="text-[var(--text-primary)]">March 1, 2026</span>
+        </p>
     </div>
 
     <!-- ── Content ── -->
     <div class="space-y-16">
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[01]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">General_Statute</h2>
-            </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>MixedMint distributes digital-only nodes. Under Indian Law, digital assets are non-reversal items
-                    once a sync token has been issued. All sales are final.</p>
+        <section class="glow-card p-1">
+            <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
+                <div class="flex items-center gap-4 mb-8">
+                    <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">General_Statute</h2>
+                </div>
+                <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                    <p>
+                        MixMint distributes <span class="text-[var(--text-primary)] font-medium">digital-only nodes</span>. Under Indian Law, digital assets are non-reversal items once a sync token has been issued. All sales are final.
+                    </p>
+                </div>
             </div>
         </section>
 
         <section class="grid md:grid-cols-2 gap-8 ml-10">
-            <div class="border border-red-500/10 p-8 bg-red-500/5">
-                <h3 class="font-mono text-[10px] font-bold text-red-400 uppercase tracking-widest mb-6">REVERSAL_DENIED
-                </h3>
-                <ul class="font-mono text-[9px] text-red-200/40 space-y-3 uppercase tracking-widest list-none">
-                    <li>- Operator Error</li>
-                    <li>- Mind State Change</li>
-                    <li>- Hardware Mismatch</li>
-                    <li>- Sub-par Sonic Quality</li>
-                    <li>- Permanent Lockouts</li>
+            <!-- Denial Section -->
+            <div class="border border-[var(--accent-red)]/10 p-8 bg-[var(--accent-red)]/5 rounded-[var(--radius-md)] relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-1 h-full bg-[var(--accent-red)] opacity-30"></div>
+                <h3 class="font-mono text-[10px] font-bold text-[var(--accent-red)] uppercase tracking-widest mb-6">REVERSAL_DENIED</h3>
+                <ul class="font-mono text-[11px] text-[var(--text-muted)] space-y-3 uppercase tracking-widest list-none">
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-red)] rounded-full"></span>
+                        Operator Error
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-red)] rounded-full"></span>
+                        Mind State Change
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-red)] rounded-full"></span>
+                        Hardware Mismatch
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-red)] rounded-full"></span>
+                        Sub-par Sonic Quality
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-red)] rounded-full"></span>
+                        Permanent Lockouts
+                    </li>
                 </ul>
             </div>
-            <div class="border border-white/5 p-8 bg-white/[0.01]">
-                <h3 class="font-mono text-[10px] font-bold text-var(--color-mint) uppercase tracking-widest mb-6">
-                    REVERSAL_AUTHORIZED</h3>
-                <ul class="font-mono text-[9px] text-white/40 space-y-3 uppercase tracking-widest list-none">
-                    <li>- Duplicate Payments</li>
-                    <li>- Failed Node Sync</li>
-                    <li>- Legal Asset Removal</li>
-                    <li>- Valid Fraud Detection</li>
+
+            <!-- Approval Section -->
+            <div class="border border-[var(--accent-mint)]/10 p-8 bg-[var(--accent-mint)]/5 rounded-[var(--radius-md)] relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-1 h-full bg-[var(--accent-mint)] opacity-30"></div>
+                <h3 class="font-mono text-[10px] font-bold text-[var(--accent-mint)] uppercase tracking-widest mb-6">REVERSAL_AUTHORIZED</h3>
+                <ul class="font-mono text-[11px] text-[var(--text-muted)] space-y-3 uppercase tracking-widest list-none">
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-mint)] rounded-full"></span>
+                        Duplicate Payments
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-mint)] rounded-full"></span>
+                        Failed Node Sync
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-mint)] rounded-full"></span>
+                        Legal Asset Removal
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-[var(--accent-mint)] rounded-full"></span>
+                        Valid Fraud Detection
+                    </li>
                 </ul>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[02]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Re-Sync_Mechanism</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Re-Sync_Mechanism</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
                 <p>If a previously synchronized asset is lost, a re-authorization token can be generated at 50% of the
                     original asset value. This is a re-licensing fee, not a refund.</p>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[03]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Request_Sequence</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Request_Sequence</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>Submit reversal requests to <a href="mailto:support@mixmint.site"
-                        class="text-var(--color-mint)">support@mixmint.site</a> within 48 hours of original
-                    transmission. Include Order_ID and Telemetry logs.</p>
+            <div class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-md)] ml-10">
+                <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed mb-6">
+                    Submit reversal requests to our synchronization support protocol within 48 hours of original transmission.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="mailto:support@mixmint.site" class="btn-mm btn-mint h-12 px-6 flex items-center justify-center gap-2 font-bold text-[13px] uppercase tracking-wider">
+                        support@mixmint.site
+                    </a>
+                </div>
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-6 opacity-60">
+                    Include Order_ID and Telemetry logs in transmission payload.
+                </p>
             </div>
         </section>
 
     </div>
 
     <!-- ── Footer ── -->
-    <div
-        class="mt-24 pt-12 border-t border-white/5 border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[9px] text-white/20 uppercase tracking-[0.2em]">
-        <span>&copy; 2026 MixMint_Distribution // REVERSAL_NODE</span>
-        <div class="flex gap-6">
-            <a href="/legal/terms/" class="hover:text-var(--color-mint) transition-colors">Terms</a>
-            <a href="/legal/privacy/" class="hover:text-var(--color-mint) transition-colors">Privacy</a>
-            <a href="/" class="hover:text-var(--color-mint) transition-colors">Home</a>
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
         </div>
     </div>
 </div>

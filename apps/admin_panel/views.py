@@ -68,6 +68,45 @@ def list_pending_djs(request):
     return Response(data)
 
 
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def dj_management_view(request):
+    """Premium UI for DJ management [Spec §3.3]."""
+    import json
+    from django.shortcuts import render
+    from django.core.serializers.json import DjangoJSONEncoder
+    
+    # 1. Pending DJs
+    pending = DJProfile.objects.filter(status='pending').select_related('profile__user')
+    pending_list = []
+    for dj in pending:
+        pending_list.append({
+            'id': dj.id,
+            'dj_name': dj.dj_name,
+            'email': dj.profile.user.email,
+            'status': dj.status,
+            'created_at': dj.created_at.isoformat(),
+        })
+
+    # 2. Active DJs (Verified)
+    active = DJProfile.objects.filter(status='verified').select_related('profile__user', 'wallet')
+    active_list = []
+    for dj in active:
+        active_list.append({
+            'id': dj.id,
+            'dj_name': dj.dj_name,
+            'email': dj.profile.user.email,
+            'status': dj.status,
+            'pending_earnings': str(dj.wallet.pending_earnings if hasattr(dj, 'wallet') else 0),
+        })
+
+    ctx = {
+        'pending_json': json.dumps(pending_list, cls=DjangoJSONEncoder),
+        'active_json': json.dumps(active_list, cls=DjangoJSONEncoder),
+    }
+    return render(request, 'admin/dj_management.html', ctx)
+
+
 # ─── Content Moderation ──────────────────────────────────────────
 
 @api_view(['POST'])
@@ -141,6 +180,47 @@ def soft_delete_content(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def moderation_hub_view(request):
+    """Premium UI for content moderation [Spec §3.3]."""
+    import json
+    from django.shortcuts import render
+    from django.core.serializers.json import DjangoJSONEncoder
+    
+    # Fetch active tracks and albums for moderation
+    tracks = Track.objects.filter(is_deleted=False).select_related('dj').values(
+        'id', 'title', 'dj__dj_name', 'is_active'
+    )
+    # Rename dj__dj_name to dj_name for the template
+    tracks_list = []
+    for t in tracks:
+        tracks_list.append({
+            'id': t['id'],
+            'title': t['title'],
+            'dj_name': t['dj__dj_name'],
+            'is_active': t['is_active']
+        })
+
+    albums = AlbumPack.objects.filter(is_deleted=False).select_related('dj').values(
+        'id', 'title', 'dj__dj_name', 'is_active'
+    )
+    albums_list = []
+    for a in albums:
+        albums_list.append({
+            'id': a['id'],
+            'title': a['title'],
+            'dj_name': a['dj__dj_name'],
+            'is_active': a['is_active']
+        })
+
+    ctx = {
+        'tracks_json': json.dumps(tracks_list, cls=DjangoJSONEncoder),
+        'albums_json': json.dumps(albums_list, cls=DjangoJSONEncoder),
+    }
+    return render(request, 'admin/moderation_hub.html', ctx)
+
+
 # ─── Security Controls ───────────────────────────────────────────
 
 @api_view(['POST'])
@@ -148,10 +228,16 @@ def soft_delete_content(request):
 def freeze_account(request):
     """Freeze a user account [Spec §3.3, §11]."""
     user_id = request.data.get('user_id')
+    email = request.data.get('email')
     reason = request.data.get('reason', 'Account frozen by admin.')
 
     try:
-        profile = Profile.objects.get(user_id=user_id)
+        if user_id:
+            profile = Profile.objects.get(user_id=user_id)
+        elif email:
+            profile = Profile.objects.get(user__email=email)
+        else:
+            return Response({'error': 'user_id or email required.'}, status=status.HTTP_400_BAD_REQUEST)
     except Profile.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -212,6 +298,34 @@ def manage_ban(request):
         return Response({'status': 'unbanned', 'ban_type': ban_type, 'value': value})
 
     return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def security_dashboard_view(request):
+    """Premium UI for security controls [Spec §3.3]."""
+    import json
+    from django.shortcuts import render
+    from django.core.serializers.json import DjangoJSONEncoder
+    
+    # Fetch active bans
+    active_bans = BanList.objects.filter(is_active=True).values(
+        'id', 'ban_type', 'value', 'reason'
+    )
+    # Map fields for template consistency
+    bans_list = []
+    for b in active_bans:
+        bans_list.append({
+            'id': b['id'],
+            'type': b['ban_type'],
+            'value': b['value'],
+            'reason': b['reason']
+        })
+
+    ctx = {
+        'bans_json': json.dumps(bans_list, cls=DjangoJSONEncoder),
+    }
+    return render(request, 'admin/security_dashboard.html', ctx)
 
 
 @api_view(['POST'])
@@ -368,16 +482,74 @@ def high_value_alerts(request):
         price_paid__gte=threshold,
     ).select_related('user', 'seller').order_by('-created_at')[:50]
 
-    data = [{
-        'id': p.id,
-        'buyer': p.user.full_name,
-        'dj': p.seller.dj_name,
-        'amount': str(p.price_paid),
-        'content_type': p.content_type,
-        'created_at': p.created_at.isoformat(),
-    } for p in high_value]
-
     return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def revenue_analytics_view(request):
+    """Unified UI for financial analytics [Spec P2 §12]."""
+    import json
+    from django.shortcuts import render
+    from django.core.serializers.json import DjangoJSONEncoder
+    from apps.commerce.analytics import get_platform_lifetime_revenue
+    
+    # 1. Totals
+    totals_data = get_platform_lifetime_revenue()
+    ad_totals = AdRevenueLog.objects.aggregate(total_ad_revenue=Sum('ad_impression_value'))
+    pending_payouts = Payout.objects.filter(status='pending').aggregate(total=Sum('amount'))
+    
+    analytics_data = {
+        'totals': {
+            'total_sales': str(totals_data['total_sales']),
+            'total_commission': str(totals_data['total_commission']),
+            'total_checkout_fees': str(totals_data['total_checkout_fees']),
+            'total_ad_revenue': str(ad_totals['total_ad_revenue'] or 0),
+            'purchase_count': totals_data.get('purchase_count', 0),
+        },
+        'pending_payouts': str(pending_payouts['total'] or 0),
+        'weekly_breakdown': []
+    }
+    
+    # 2. Weekly breakdown (12 weeks)
+    weekly = Purchase.objects.filter(
+        status='paid',
+        created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
+    ).annotate(
+        week=TruncWeek('created_at')
+    ).values('week').annotate(
+        revenue=Sum('price_paid'),
+        commission=Sum('commission')
+    ).order_by('week')
+    
+    for w in weekly:
+        analytics_data['weekly_breakdown'].append({
+            'week': w['week'].isoformat(),
+            'revenue': float(w['revenue']),
+            'commission': float(w['commission'])
+        })
+        
+    # 3. High-Value Alerts
+    threshold = Decimal('5000')
+    high_value = Purchase.objects.filter(
+        status='paid', price_paid__gte=threshold
+    ).select_related('user', 'seller').order_by('-created_at')[:10]
+    
+    alerts_list = []
+    for p in high_value:
+        alerts_list.append({
+            'id': p.id,
+            'buyer': p.user.full_name,
+            'dj': p.seller.dj_name,
+            'amount': str(p.price_paid),
+            'created_at': p.created_at.strftime('%d %b, %H:%M')
+        })
+
+    ctx = {
+        'analytics_json': json.dumps(analytics_data, cls=DjangoJSONEncoder),
+        'alerts_json': json.dumps(alerts_list, cls=DjangoJSONEncoder),
+    }
+    return render(request, 'admin/revenue_analytics.html', ctx)
 
 
 # ─── DMCA ─────────────────────────────────────────────────────────
@@ -510,11 +682,14 @@ def investor_report(request):
     active_djs = DJProfile.objects.filter(status='approved').count()
     pro_djs = DJProfile.objects.filter(profile__is_pro_dj=True).count()
     
-    # Calculate effective avg rate: (pro * 8 + (total-pro)*15) / total
+    settings = PlatformSettings.load()
+    std_rate = float(settings.platform_commission_rate)
+    
+    # Calculate effective avg rate: (pro * 8 + (total-pro)*std_rate) / total
     if total_djs > 0:
-        eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * 15) / total_djs
+        eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs
     else:
-        eff_rate = 15
+        eff_rate = std_rate
 
     ctx = {
         'total_gmv': str(total_stats['gmv'] or 0.00),
@@ -523,6 +698,7 @@ def investor_report(request):
         'total_dj_count': total_djs,
         'active_djs': active_djs,
         'pro_dj_count': pro_djs,
+        'std_commission_rate': std_rate,
         'avg_commission_rate': round(eff_rate, 2)
     }
     
@@ -548,11 +724,10 @@ def investor_report_pdf(request):
         purchase_count=Count('id'),
     )
     ad_revenue = AdRevenueLog.objects.aggregate(total=Sum('ad_impression_value'))['total'] or 0
-    total_djs = DJProfile.objects.count()
-    active_djs = DJProfile.objects.filter(status='approved').count()
-    pro_djs = DJProfile.objects.filter(profile__is_pro_dj=True).count()
-    eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * 15) / total_djs if total_djs > 0 else 15
-
+    settings = PlatformSettings.load()
+    std_rate = float(settings.platform_commission_rate)
+    eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs if total_djs > 0 else std_rate
+    
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -600,7 +775,7 @@ def investor_report_pdf(request):
         elements.append(Spacer(1, 1*cm))
         elements.append(Paragraph(
             "MixMint is a DJ-first digital music distribution platform operating in India. "
-            "Revenue is generated through track/album sales commissions (15% standard, 8% Pro) "
+            f"Revenue is generated through track/album sales commissions ({std_rate}% standard, 8% Pro) "
             "and programmatic advertising. All financial data is real-time from the platform database.",
             subtitle_style
         ))
@@ -771,3 +946,10 @@ def health_dashboard(request):
         return render(request, 'admin/health.html', ctx)
         
     return Response(ctx)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_command_center(request):
+    """Central hub for all specialized admin dashboards."""
+    return render(request, 'admin/admin_dashboard.html')

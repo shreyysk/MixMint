@@ -1,3 +1,4 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 
@@ -653,21 +654,21 @@
         <script>
             // Toast notifications from Django messages
             (() => {
-                const messages = [
-                    {% for message in messages %}
-                    {
-                tags: '{{ message.tags }}',
+                const messages = [];
+                {% for message in messages %}
+                messages.push({
+                    tags: '{{ message.tags|escapejs }}',
                     text: '{{ message|escapejs }}'
-            },
-            {% endfor %}
-                ];
-            messages.forEach(m => {
-                const type = m.tags === 'error' ? 'error' : (m.tags === 'warning' ? 'warning' : 'success');
-                window.dispatchEvent(new CustomEvent('show-toast', {
-                    detail: { type, text: m.text }
-                }));
-            });
-            }) ();
+                });
+                {% endfor %}
+                
+                messages.forEach(m => {
+                    const type = m.tags === 'error' ? 'error' : (m.tags === 'warning' ? 'warning' : 'success');
+                    window.dispatchEvent(new CustomEvent('show-toast', {
+                        detail: { type, text: m.text }
+                    }));
+                });
+            })();
         </script>
         {% endif %}
 
@@ -778,6 +779,101 @@
                     .catch(err => console.log('SW Error', err));
             });
         }
+    </script>
+    <!-- Cart Drawer [Phase 3] -->
+    {% include 'components/cart_drawer.html' %}
+
+    <script>
+        // MixMint Global Cart Store
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('cartStore', () => ({
+                show: false,
+                cartData: { items: [], total_items: 0, subtotal: 0, discount_amount: 0, discount_percentage: 0, final_total: 0, next_tier_info: null },
+                loading: false,
+
+                init() {
+                    this.fetchCart();
+                },
+
+                async fetchCart() {
+                    try {
+                        const response = await fetch('/api/v1/commerce/cart/current/');
+                        if (response.ok) {
+                            this.cartData = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Error fetching cart:', error);
+                    }
+                },
+
+                async addItem(type, id) {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/api/v1/commerce/cart/add_item/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': this.getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify({ content_type: type, content_id: id })
+                        });
+                        
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.cartData = data;
+                            this.show = true; // Open drawer on success
+                            
+                            // Success Toast
+                            window.dispatchEvent(new CustomEvent('show-toast', {
+                                detail: { text: 'Added to your Support Cart!', type: 'success' }
+                            }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('show-toast', {
+                                detail: { text: data.error || 'Could not add item', type: 'error' }
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Error adding item:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async removeItem(itemId) {
+                    try {
+                        const response = await fetch('/api/v1/commerce/cart/remove_item/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': this.getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify({ item_id: itemId })
+                        });
+                        
+                        if (response.ok) {
+                            this.cartData = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Error removing item:', error);
+                    }
+                },
+
+                getCookie(name) {
+                    let cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+            }));
+        });
     </script>
 </body>
 

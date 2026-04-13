@@ -2,110 +2,119 @@
 {% block title %}Security_Transparency // MixMint Vault{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto py-20 px-6 font-body">
+<div class="max-w-4xl mx-auto py-20 px-6 font-body">
     <!-- ── Header ── -->
     <div class="mb-16 border-b border-[var(--border)] pb-12">
         <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
-            System_Infrastructure_Report</p>
-        <h1
-            class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
-            Security Standards</h1>
-        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">Controlled
-            Ownership Architecture (v2.0)</p>
+            Infrastructure_Report_&_Tax_Compliance</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
+            Transparency
+        </h1>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Marketplace_Operations: <span class="text-[var(--text-primary)]">v2.0.4</span>
+        </p>
     </div>
 
     <!-- ── Content ── -->
-    <div class="space-y-16">
+    <div class="space-y-24">
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">[01]</span>
-                <h2 class="font-display text-[24px] font-[600] text-[var(--text-primary)] uppercase tracking-tight">
-                    Secure_Proxy_Engine</h2>
+        <!-- Section 01: Security -->
+        <section class="ml-10">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Security_Architecture</h2>
             </div>
-            <div class="font-body text-[14px] text-[var(--text-muted)] leading-[1.6] space-y-4 ml-10">
-                <p>MixedMint uses a proprietary proxy layer to handle all asset distribution. Direct file URIs are NEVER
-                    exposed to the public node or the client browser.</p>
-                <ul class="list-disc list-inside space-y-2 opacity-80">
-                    <li>One-Time sync tokens with immediate expiration.</li>
-                    <li>IP-Binding verification per session.</li>
-                    <li>Hardware-level fingerprinting for sync authorization.</li>
-                </ul>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-6 ml-10">
+                <p>MixedMint uses a proprietary proxy layer to handle all asset distribution. Direct file URIs are NEVER exposed to the public node or the client browser.</p>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
+                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">Sync_Tokens</p>
+                        <p class="text-[12px]">One-Time tokens with immediate expiration upon successful handshake.</p>
+                    </div>
+                    <div class="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
+                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">Session_Binding</p>
+                        <p class="text-[12px]">IP-Binding and hardware fingerprinting verification per sync session.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">[02]</span>
-                <h2 class="font-display text-[24px] font-[600] text-[var(--text-primary)] uppercase tracking-tight">
-                    Piracy_Resistance</h2>
+        <!-- Section 02: GST -->
+        <section class="glow-card p-1">
+            <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
+                <div class="flex items-center gap-4 mb-8">
+                    <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">GST_&_Tax_Compliance</h2>
+                </div>
+                <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-6 ml-10">
+                    <p>MixMint is an <span class="text-[var(--text-primary)] font-medium">ECO (Electronic Commerce Operator)</span> compliant with Indian Indirect Tax laws. All transactions are processed with applicable GST according to the Nature of Service (NOS).</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="border border-[var(--border)] p-5 rounded-lg bg-[var(--bg-base)]">
+                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">Sac_Code_997331</h4>
+                            <p class="text-[12px] opacity-70">Licensing services for the right to use entertainment assets and digital productions.</p>
+                        </div>
+                        <div class="border border-[var(--border)] p-5 rounded-lg bg-[var(--bg-base)]">
+                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">B2C_Invoicing</h4>
+                            <p class="text-[12px] opacity-70">Automated invoices are generated for every sync, including applicable IGST/CGST/SGST components.</p>
+                        </div>
+                    </div>
+
+                    <p class="p-4 bg-[var(--accent-mint)]/5 border-l-2 border-[var(--accent-mint)] text-[13px] italic">
+                        DJs operating on the platform are responsible for their own income tax filings. MixMint provides comprehensive transaction ledgers for annual audit compliance.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 03: Piracy -->
+        <section class="ml-10">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Piracy_Resistance</h2>
             </div>
             <div class="grid md:grid-cols-2 gap-8 ml-10">
-                <div
-                    class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
-                    <h3
-                        class="font-mono text-[11px] font-[700] text-[var(--text-primary)] uppercase tracking-widest mb-3">
-                        Asset_Watermarking</h3>
-                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Every downloaded node
-                        contains immutable metadata pulses linking the asset to the operator's vault ledger.</p>
+                <div class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
+                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Asset_Watermarking</h3>
+                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Every downloaded node contains immutable metadata pulses linking the asset to the operator's vault ledger.</p>
                 </div>
-                <div
-                    class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
-                    <h3
-                        class="font-mono text-[11px] font-[700] text-[var(--text-primary)] uppercase tracking-widest mb-3">
-                        Integrity_Check</h3>
-                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Server-side SHA-256 byte
-                        verification ensures 100% completion before marking a sync as valid.</p>
+                <div class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
+                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Integrity_Check</h3>
+                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Server-side SHA-256 byte verification ensures 100% completion before marking a sync as valid.</p>
                 </div>
             </div>
         </section>
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">[03]</span>
-                <h2 class="font-display text-[24px] font-[600] text-[var(--text-primary)] uppercase tracking-tight">
-                    Fraud_Throttling</h2>
-            </div>
-            <div
-                class="font-body text-[14px] text-[var(--text-muted)] leading-[1.6] ml-10 mt-2 border-l-2 border-[var(--accent-mint)]/30 pl-4 py-1">
-                <p>Active pattern detection blocks automated scraping. Any detected non-human interaction triggers
-                    immediate vault lockout and speed throttling.</p>
-            </div>
-        </section>
-
-        <!-- DJ Liability Disclaimer -->
-        <section class="border-t border-[var(--border)] pt-12">
-            <div
-                class="p-8 bg-[var(--accent-red)]/5 border border-[var(--accent-red)]/20 rounded-[12px] shadow-[var(--shadow-card)] relative overflow-hidden">
+        <!-- Liability Disclaimer -->
+        <section class="border-t border-[var(--border)] pt-16">
+            <div class="p-8 bg-[var(--accent-red)]/5 border border-[var(--accent-red)]/20 rounded-[12px] shadow-[var(--shadow-card)] relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1 h-full bg-[var(--accent-red)]"></div>
-
-                <h3 class="font-mono text-[11px] font-[700] text-[var(--accent-red)] uppercase tracking-widest mb-4">
+                <h3 class="font-mono text-[11px] font-bold text-[var(--accent-red)] uppercase tracking-widest mb-4">
                     ⚠️ Legal Liability & DJ Responsibility
                 </h3>
-
                 <div class="space-y-4">
                     <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
-                        MixMint operates strictly as a secure distribution infrastructure, providing encrypted sync
-                        capabilities between independent Creator Nodes (DJs) and their audience. All digital assets
-                        hosted on the platform are uploaded, controlled, and directly verified by the respective
-                        uploader.
+                        MixMint operates strictly as a secure distribution infrastructure. All digital assets hosted on the platform are uploaded, controlled, and directly verified by the respective uploader.
                     </p>
-                    <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
-                        We enforce a <span class="font-[600] text-[var(--text-primary)]">zero-tolerance</span> policy
-                        for DMCA violations or unauthorized distribution of intellectual property. Upon receiving a
-                        valid DMCA request, MixMint acts as an automated mediator to terminate the offending node,
-                        permanently archive the infringement payload, and forfeit all pending yields to the copyright
-                        holder.
-                    </p>
-                    <p class="font-body text-[12px] text-[var(--accent-red)] leading-[1.6] italic font-[500] mt-4">
-                        By initializing a download or utilizing this infrastructure, all liability regarding content
-                        legality remains exclusively with the deploying DJ. MixMint is held harmless from copyright
-                        disputes under DMCA Safe Harbor protocols.
+                    <p class="font-body text-xs text-[var(--accent-red)] leading-[1.6] italic font-[500] mt-4">
+                        By initializing a download, all liability regarding content legality remains exclusively with the deploying DJ. MixMint is held harmless under DMCA Safe Harbor protocols.
                     </p>
                 </div>
             </div>
         </section>
 
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% load tracks_filters %}
 {% block title %}My Library | MixMint{% endblock %}
 
@@ -13,7 +14,7 @@
                     Your Library
                 </h1>
                 <p class="font-body text-[14px] text-[var(--text-muted)] mt-3">
-                    Everything you've purchased on MixMint. Download anytime from your verified device.
+                    Everything you've supported on MixMint. Download anytime from your verified device.
                 </p>
             </div>
             <div class="flex gap-4">
@@ -35,12 +36,12 @@
         <button @click="tab = 'tracks'"
             :class="tab === 'tracks' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
             class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
-            Owned Tracks
+            Purchased Tracks
         </button>
         <button @click="tab = 'albums'"
             :class="tab === 'albums' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
             class="px-6 py-4 font-body text-[15px] font-[600] transition-colors hover:text-[var(--text-primary)]">
-            Owned Albums
+            Purchased Albums
         </button>
         <button @click="tab = 'wishlist'"
             :class="tab === 'wishlist' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'"
@@ -112,7 +113,7 @@
                 No tracks yet
             </h3>
             <p class="font-body text-[14px] text-[var(--text-muted)] max-w-sm mx-auto mb-8">
-                Your purchased tracks will appear here. Start exploring and own your first track.
+                Your supported tracks will appear here. Start exploring and support your first artist.
             </p>
             <a href="{% url 'explore' %}" class="btn-mm btn-mint h-[44px] px-8 text-[14px]">
                 Browse Music

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load tracks_filters %}
+{% block title %}My Library — MixMint{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-[1000px] mx-auto" x-data="libraryApp()" x-init="loadLibrary()">
+
+    <!-- Header -->
+    <div class="mb-10 border-b border-[var(--border)] pb-6">
+        <h1 class="font-display text-[36px] font-[700] text-[var(--text-primary)] tracking-tight">My Library</h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mt-2">Your purchased tracks, albums, and download history.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[10px] p-1 mb-8 w-fit">
+        <button @click="activeTab = 'tracks'"
+            :class="activeTab === 'tracks' ? 'bg-[var(--accent-mint)] text-[var(--text-inverse)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'"
+            class="px-5 py-2 rounded-[8px] font-mono text-[11px] uppercase tracking-widest transition-all font-[500]">
+            Tracks
+        </button>
+        <button @click="activeTab = 'albums'"
+            :class="activeTab === 'albums' ? 'bg-[var(--accent-mint)] text-[var(--text-inverse)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'"
+            class="px-5 py-2 rounded-[8px] font-mono text-[11px] uppercase tracking-widest transition-all font-[500]">
+            Albums
+        </button>
+    </div>
+
+    <!-- Loading -->
+    <div x-show="loading" class="text-center py-20">
+        <div class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest animate-pulse">Loading library…</div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && filteredItems.length === 0" class="py-24 text-center">
+        <div class="text-6xl mb-8 opacity-20">📀</div>
+        <p class="font-display text-[22px] font-[600] text-[var(--text-primary)] mb-3">Nothing here yet</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-8">Your purchased tracks and albums will appear here.</p>
+        <a href="/explore/" class="btn-mm btn-mint h-12 px-8 font-[600]">Explore Tracks</a>
+    </div>
+
+    <!-- Library Items -->
+    <div x-show="!loading && filteredItems.length > 0" class="space-y-4">
+        <template x-for="item in filteredItems" :key="item.id">
+            <div class="flex items-center gap-5 border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-5 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)]/30 transition-colors group">
+
+                <!-- Artwork -->
+                <div class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
+                    <span class="text-3xl opacity-20" x-text="item.content_type === 'track' ? '🎵' : '💿'"></span>
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <p class="font-display font-[600] text-[15px] text-[var(--text-primary)] truncate" x-text="item.content_title || 'Track #' + item.content_id"></p>
+                    <div class="flex items-center gap-3 mt-1.5">
+                        <span class="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded"
+                            :class="item.download_completed ? 'bg-[var(--accent-mint)]/10 text-[var(--accent-mint)]' : 'bg-[var(--accent-amber)]/10 text-[var(--accent-amber)]'"
+                            x-text="item.download_completed ? '✓ Downloaded' : '⏳ Pending'"></span>
+                        <template x-if="item.has_download_insurance">
+                            <span class="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-[var(--accent-blue)]/10 text-[var(--accent-blue)]">🛡 Insured</span>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Price Paid -->
+                <div class="text-right shrink-0">
+                    <div class="font-mono text-[16px] font-bold text-[var(--accent-mint)]" x-text="'₹' + (item.price_paid / 1).toFixed(2)"></div>
+                    <div class="font-mono text-[10px] text-[var(--text-muted)] mt-1" x-text="new Date(item.created_at).toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric'})"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <template x-if="item.download_completed">
+                        <a :href="'/api/v1/commerce/invoice/' + item.invoice_id + '/'" x-show="item.invoice_id"
+                            class="w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:border-[var(--accent-mint)] transition-all"
+                            title="Download Invoice">
+                            📄
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Re-download Info -->
+    <div class="mt-10 notice-info">
+        <p class="font-body text-[12px] text-[var(--text-muted)]">
+            🔁 Re-download: available 2 days after completion · 50% of original price. Insured downloads can be re-downloaded for free.
+        </p>
+    </div>
+</div>
+
+<script>
+function libraryApp() {
+    return {
+        activeTab: 'tracks',
+        items: [],
+        loading: true,
+
+        get filteredItems() {
+            return this.items.filter(i => i.content_type === (this.activeTab === 'tracks' ? 'track' : 'album'));
+        },
+
+        async loadLibrary() {
+            this.loading = true;
+            try {
+                const res = await fetch('/api/v1/commerce/my-library/', {
+                    headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+                });
+                if (res.ok) {
+                    this.items = await res.json();
+                }
+            } catch (e) {
+                console.error('Failed to load library:', e);
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

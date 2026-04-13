@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Contact_Support // MixMint Vault{% endblock %}
+
+{% block content %}
+<div class="max-w-[800px] mx-auto py-20 px-6 font-body">
+    <!-- ── Header ── -->
+    <div class="mb-16 border-b border-[var(--border)] pb-12">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">// System_Support_Protocol</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
+            Contact Us
+        </h1>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Transmission_Status: <span class="text-[var(--accent-mint)]">ONLINE</span>
+        </p>
+    </div>
+
+    <div class="grid md:grid-cols-5 gap-16">
+        <!-- ── Sidebar Info ── -->
+        <div class="md:col-span-2 space-y-12">
+            <section>
+                <h4 class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Support_Vault</h4>
+                <div class="space-y-2">
+                    <p class="text-[14px] text-[var(--text-primary)] font-bold">General Inquiries</p>
+                    <a href="mailto:support@mixmint.site" class="text-[var(--accent-mint)] hover:underline text-[13px] font-mono">support@mixmint.site</a>
+                </div>
+            </section>
+
+            <section>
+                <h4 class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Security_Node</h4>
+                <div class="space-y-2">
+                    <p class="text-[14px] text-[var(--text-primary)] font-bold">Vulnerability Reports</p>
+                    <a href="mailto:security@mixmint.site" class="text-[var(--accent-mint)] hover:underline text-[13px] font-mono">security@mixmint.site</a>
+                </div>
+            </section>
+
+            <section class="p-6 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[16px] glow-card-mm">
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase leading-relaxed">
+                    Expected Response Latency:<br>
+                    <span class="text-[var(--text-primary)] font-bold">12–24_HOURS</span>
+                </p>
+            </section>
+        </div>
+
+        <!-- ── Contact Form ── -->
+        <div class="md:col-span-3">
+            <div class="bg-[var(--bg-surface)] border border-[var(--border)] p-8 rounded-[24px] shadow-[var(--shadow-card)]">
+                <form class="space-y-8">
+                    <div>
+                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Operator_Name</label>
+                        <input type="text" placeholder="e.g. ALPHA_USER" class="input-mm w-full">
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Handshake_Email</label>
+                        <input type="email" placeholder="user@domain.com" class="input-mm w-full">
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Transmission_Body</label>
+                        <textarea rows="5" placeholder="Describe your inquiry..." class="input-mm w-full" style="height: auto; min-height: 160px;"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-mm btn-mint w-full h-[56px] text-[14px] font-bold rounded-[12px] uppercase tracking-widest">
+                        Initialize_Transmission
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // SUPPORT_CHANNEL</span>
+        <div class="flex gap-8">
+            <a href="/legal/transparency/" class="hover:text-[var(--accent-mint)] transition-colors">Transparency</a>
+            <a href="/legal/security/" class="hover:text-[var(--accent-mint)] transition-colors">Security</a>
+            <a href="/" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

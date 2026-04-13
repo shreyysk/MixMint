@@ -73,8 +73,10 @@ class CartSerializer(serializers.ModelSerializer):
     total_items = serializers.ReadOnlyField()
     subtotal = serializers.ReadOnlyField()
     discount_amount = serializers.ReadOnlyField()
+    discount_percentage = serializers.ReadOnlyField()
     final_total = serializers.ReadOnlyField()
+    next_tier_info = serializers.ReadOnlyField()
 
     class Meta:
         model = Cart
-        fields = ['id', 'items', 'total_items', 'subtotal', 'discount_amount', 'final_total', 'updated_at']
+        fields = ['id', 'items', 'total_items', 'subtotal', 'discount_amount', 'discount_percentage', 'final_total', 'next_tier_info', 'updated_at']

@@ -1,0 +1,9 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0
+rootdir: D:\mixmint2.0
+plugins: base-url-2.1.0, playwright-0.7.2
+collected 1 item
+
+test_auth.py .                                                           [100%]
+
+======================== 1 passed, 1 warning in 6.68s =========================

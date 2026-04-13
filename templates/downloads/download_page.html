@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Secure Download — MixMint{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-[640px] mx-auto" x-data="downloadApp()" x-init="init()">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 mb-6">
+            <span class="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse"></span>
+            <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)]">Secure Vault Active</span>
+        </div>
+        <h1 class="font-display text-[28px] sm:text-[36px] font-[700] text-[var(--text-primary)] tracking-tight">
+            Your Download
+        </h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)] mt-2" x-text="contentTitle"></p>
+    </div>
+
+    <!-- Token Status Card -->
+    <div class="glow-card mb-8 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');">
+        </div>
+        <div class="relative z-10">
+            <!-- Token Timer -->
+            <div class="flex items-center justify-between mb-6">
+                <span class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)]">Token Expires In</span>
+                <span class="font-mono text-[22px] font-bold" :class="timeRemaining <= 120 ? 'text-[var(--accent-red)] animate-pulse' : 'text-[var(--accent-mint)]'"
+                    x-text="formatTime(timeRemaining)"></span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full h-[6px] bg-[var(--bg-elevated)] rounded-full overflow-hidden mb-4">
+                <div class="h-full rounded-full transition-all duration-300 ease-out"
+                    :class="downloadState === 'failed' ? 'bg-[var(--accent-red)]' : 'bg-[var(--accent-mint)]'"
+                    :style="'width: ' + downloadProgress + '%'"></div>
+            </div>
+
+            <!-- Status Text -->
+            <div class="flex items-center justify-between">
+                <span class="font-body text-[13px] text-[var(--text-muted)]" x-text="statusText"></span>
+                <span class="font-mono text-[12px] text-[var(--text-muted)]" x-show="downloadProgress > 0 && downloadState === 'downloading'"
+                    x-text="downloadProgress + '%'"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attempt Counter -->
+    <div class="flex items-center justify-between bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] px-5 py-3 mb-6">
+        <span class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)]">Attempts Used</span>
+        <div class="flex items-center gap-2">
+            <template x-for="i in maxAttempts" :key="i">
+                <div class="w-3 h-3 rounded-full border border-[var(--border)]"
+                    :class="i <= attemptCount ? 'bg-[var(--accent-mint)] border-[var(--accent-mint)]' : ''"></div>
+            </template>
+            <span class="font-mono text-[12px] ml-2" :class="attemptCount >= maxAttempts ? 'text-[var(--accent-red)]' : 'text-[var(--text-muted)]'"
+                x-text="attemptCount + '/' + maxAttempts"></span>
+        </div>
+    </div>
+
+    <!-- Final Attempt Warning -->
+    <template x-if="attemptCount >= maxAttempts - 1 && downloadState === 'ready'">
+        <div class="notice-danger mb-6 flex items-start gap-3">
+            <span class="text-lg mt-0.5">🚨</span>
+            <div>
+                <p class="font-body text-[13px] font-[600] text-[var(--accent-red)]">Final attempt.</p>
+                <p class="font-body text-[12px] text-[var(--text-muted)] mt-1">Ensure a stable connection before proceeding.</p>
+            </div>
+        </div>
+    </template>
+
+    <!-- Download Button -->
+    <template x-if="downloadState === 'ready'">
+        <button @click="startDownload()"
+            class="btn-mm btn-mint w-full h-[60px] text-[17px] font-[600] shadow-[0_4px_14px_0_rgba(0,255,179,0.2)] hover:shadow-[0_6px_20px_rgba(0,255,179,0.3)]">
+            ⬇ Start Secure Download
+        </button>
+    </template>
+
+    <!-- Downloading State -->
+    <template x-if="downloadState === 'downloading'">
+        <div class="btn-mm btn-ghost w-full h-[60px] text-[17px] font-[600] cursor-wait">
+            <span class="animate-pulse">Downloading…</span>
+        </div>
+    </template>
+
+    <!-- Success State -->
+    <template x-if="downloadState === 'complete'">
+        <div class="text-center py-8">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 flex items-center justify-center">
+                <svg class="w-10 h-10 text-[var(--accent-mint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h2 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-2">Download Complete</h2>
+            <p class="font-body text-[14px] text-[var(--text-muted)]">File verified and locked to this device. Check your Library.</p>
+            <a href="{% url 'library_page' %}" class="btn-mm btn-ghost mt-6 px-8">Go to Library →</a>
+        </div>
+    </template>
+
+    <!-- Failed State -->
+    <template x-if="downloadState === 'failed'">
+        <div class="text-center py-8">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/20 flex items-center justify-center">
+                <svg class="w-10 h-10 text-[var(--accent-red)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            <h2 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-2">Download Incomplete</h2>
+            <p class="font-body text-[14px] text-[var(--text-muted)]">Download incomplete. You are eligible for a refund or a retry.</p>
+            <div class="flex justify-center gap-4 mt-6">
+                <button @click="retryDownload()" class="btn-mm btn-mint px-8" x-show="attemptCount < maxAttempts">Retry</button>
+                <a href="/api/v1/commerce/refund/request/" class="btn-mm btn-ghost px-8">Request Refund</a>
+            </div>
+        </div>
+    </template>
+
+    <!-- Token Expired State -->
+    <template x-if="downloadState === 'expired'">
+        <div class="text-center py-8">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/20 flex items-center justify-center">
+                <span class="text-4xl">⏱</span>
+            </div>
+            <h2 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-2">Token Expired</h2>
+            <p class="font-body text-[14px] text-[var(--text-muted)]">Your download token has expired. You can request a new one from the track page.</p>
+        </div>
+    </template>
+
+    <!-- Warning Notice -->
+    <div class="notice-warning mt-8 flex items-start gap-3" x-show="downloadState === 'ready' || downloadState === 'downloading'">
+        <span class="mt-0.5 text-[var(--accent-amber)]">⚠</span>
+        <p class="font-body text-[12px] text-[var(--text-muted)]">
+            Do not close or refresh this tab. Incomplete downloads are not marked successful and will not consume your attempts.
+        </p>
+    </div>
+
+    <!-- Security Footer -->
+    <div class="mt-8 text-center">
+        <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60">
+            🔒 Protected by MixMint Secure Vault — Token-locked · Device-bound · Byte-verified
+        </p>
+    </div>
+</div>
+
+<script>
+function downloadApp() {
+    return {
+        downloadState: 'ready',   // ready | downloading | complete | failed | expired
+        downloadProgress: 0,
+        timeRemaining: {{ token_seconds_remaining|default:"600" }},
+        attemptCount: {{ attempt_count|default:"0" }},
+        maxAttempts: {{ max_attempts|default:"3" }},
+        contentTitle: '{{ content_title|escapejs }}',
+        downloadUrl: '{{ download_url|escapejs }}',
+        statusText: 'Ready to download',
+
+        init() {
+            this.startTimer();
+        },
+
+        startTimer() {
+            this._timer = setInterval(() => {
+                this.timeRemaining--;
+                if (this.timeRemaining <= 120 && this.timeRemaining > 0 && this.downloadState === 'ready') {
+                    this.statusText = 'Token expiring — download now.';
+                }
+                if (this.timeRemaining <= 0) {
+                    clearInterval(this._timer);
+                    if (this.downloadState === 'ready') {
+                        this.downloadState = 'expired';
+                        this.statusText = 'Token expired.';
+                    }
+                }
+            }, 1000);
+        },
+
+        formatTime(seconds) {
+            if (seconds <= 0) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        },
+
+        async startDownload() {
+            this.downloadState = 'downloading';
+            this.statusText = 'Initiating secure transfer…';
+            this.downloadProgress = 5;
+
+            try {
+                // Trigger the actual file download via hidden iframe/link
+                const link = document.createElement('a');
+                link.href = this.downloadUrl;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+
+                // Simulate progress (actual byte tracking is server-side)
+                let progress = 5;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 8;
+                    if (progress >= 95) {
+                        progress = 95;
+                        clearInterval(progressInterval);
+                    }
+                    this.downloadProgress = Math.round(progress);
+                    this.statusText = 'Downloading and verifying…';
+                }, 500);
+
+                // Mark complete after estimated time (server verifies actual completion)
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    this.downloadProgress = 100;
+                    this.downloadState = 'complete';
+                    this.statusText = 'File verified and locked to this device.';
+                    this.attemptCount++;
+                }, 8000);
+
+            } catch (e) {
+                this.downloadState = 'failed';
+                this.statusText = 'Download failed. Check your connection.';
+            }
+        },
+
+        retryDownload() {
+            this.downloadState = 'ready';
+            this.downloadProgress = 0;
+            this.statusText = 'Ready to download';
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,9 +1,15 @@
-from django.shortcuts import render, redirect
+import json
+from datetime import timedelta
+from decimal import Decimal
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-import json
-
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncWeek
+from django.utils import timezone
+# Force reload - debugging dashboard errors
 
 @login_required
 def dashboard_view(request):
@@ -15,29 +21,36 @@ def dashboard_view(request):
         status='paid',
     ).order_by('-created_at')
 
-    # Resolve content objects (Tracks / Albums)
-    # This avoids hitting the DB in a loop in the template
-    tracks = []
-    albums = []
+    purchased_tracks = []
+    purchased_albums = []
     
     for purchase in purchases:
         try:
             if purchase.content_type == 'track':
                 from apps.tracks.models import Track
                 content = Track.objects.get(id=purchase.content_id)
-                tracks.append({'purchase': purchase, 'content': content})
+                purchased_tracks.append({
+                    'id': purchase.id,
+                    'track': content,
+                    'purchase_date': purchase.paid_at or purchase.created_at,
+                    'can_download': not purchase.is_revoked,
+                    'has_insurance': purchase.has_download_insurance
+                })
             elif purchase.content_type in ('album', 'zip'):
                 from apps.albums.models import AlbumPack
                 content = AlbumPack.objects.get(id=purchase.content_id)
-                albums.append({'purchase': purchase, 'content': content})
+                purchased_albums.append({
+                    'id': purchase.id,
+                    'album': content,
+                    'purchase_date': purchase.paid_at or purchase.created_at,
+                    'can_download': not purchase.is_revoked,
+                    'has_insurance': purchase.has_download_insurance
+                })
         except Exception:
-            # Skip if content is fully deleted/missing
             continue
 
-    # Fetch wishlist items [Imp 13]
     wishlist_tracks = profile.wishlist_items.select_related('track', 'track__dj')
 
-    # [P2-01.02 FIX] Get wallet info for buyer
     wallet = None
     if hasattr(profile, 'dj_profile'):
         try:
@@ -45,16 +58,13 @@ def dashboard_view(request):
         except Exception:
             pass
 
-    # Check if user is a DJ
-    is_dj = profile.role == 'dj'
-
     context = {
         'profile': profile,
-        'tracks': tracks,
-        'albums': albums,
+        'purchased_tracks': purchased_tracks,
+        'purchased_albums': purchased_albums,
         'wishlist_tracks': wishlist_tracks,
         'wallet': wallet,
-        'is_dj': is_dj,
+        'is_dj': profile.role == 'dj',
     }
     return render(request, 'dashboard/index.html', context)
 
@@ -139,13 +149,37 @@ def dj_dashboard_view(request):
         # Fetch Recent Sales for DJ Dashboard (Phase 3 Feature 2)
         from apps.commerce.models import Purchase
         recent_sales = Purchase.objects.filter(seller=dj_profile, status='paid').select_related('user', 'user__dj_profile').order_by('-created_at')[:10]
+
+        # Aggregate Weekly Revenue (Last 12 Weeks) [Imp 11]
+        weekly_stats = Purchase.objects.filter(
+            seller=dj_profile,
+            status='paid',
+            created_at__gte=timezone.now() - timezone.timedelta(weeks=12)
+        ).annotate(
+            week=TruncWeek('created_at')
+        ).values('week').annotate(
+            revenue=Sum('price_paid')
+        ).order_by('week')
+        
+        revenue_chart_data = []
+        for stat in weekly_stats:
+            revenue_chart_data.append({
+                'week': stat['week'].strftime('%d %b'),
+                'revenue': float(stat['revenue'])
+            })
     else:
         offload_notifications = []
         recent_sales = []
+        revenue_chart_data = []
 
     storage_used_mb = total_bytes / (1024 * 1024)
     storage_quota_mb = profile.storage_quota_mb
     storage_percent = (storage_used_mb / storage_quota_mb) * 100 if storage_quota_mb > 0 else 0
+
+    # Calculate total downloads across all DJ tracks
+    total_downloads = 0
+    if dj_profile:
+        total_downloads = Track.objects.filter(dj=dj_profile, is_deleted=False).aggregate(total=Sum('download_count'))['total'] or 0
 
     context = {
         'profile': profile,
@@ -158,6 +192,8 @@ def dj_dashboard_view(request):
         'forecast': forecast,
         'offload_notifications': offload_notifications,
         'recent_sales': recent_sales,
+        'revenue_chart_json': json.dumps(revenue_chart_data),
+        'total_downloads': total_downloads,
     }
     return render(request, 'dashboard/dj_content.html', context)
 
@@ -225,7 +261,9 @@ def verify_2fa_setup(request):
     if success:
         # 2FA is now active
         return JsonResponse({'status': 'success', 'message': '2FA successfully enabled.'})
-    return JsonResponse({'error': message}, status=400)@login_required
+    return JsonResponse({'error': message}, status=400)
+
+@login_required
 def dj_onboarding(request):
     """DJ Onboarding Wizard [Fix 07]."""
     profile = request.user.profile
@@ -425,10 +463,9 @@ def create_bundle_view(request):
     
     for track_id in selected_tracks:
         BundleTrack.objects.create(bundle=bundle, track_id=track_id)
-        
-    return redirect('bundle_management')
 
     return redirect('bundle_management')
+
 
 @login_required
 def announcement_management_view(request):
@@ -462,11 +499,11 @@ def create_announcement_view(request):
 
 @login_required
 @require_POST
-def delete_announcement_view(request, announcement_id):
+def delete_announcement_view(request, post_id):
     """Delete an announcement."""
     dj_profile = request.user.profile.dj_profile
     try:
-        announcement = dj_profile.announcements.get(id=announcement_id)
+        announcement = dj_profile.announcements.get(id=post_id)
         announcement.delete()
     except:
         pass
@@ -481,7 +518,10 @@ def ambassador_management_view(request):
     dj_profile = request.user.profile.dj_profile
     ambassador = getattr(dj_profile, 'ambassador_code', None)
     
-    referrals = dj_profile.referrals.select_related('profile__user').order_by('-created_at')[:20]
+    # Standard profile fields are: user, referred_by, etc.
+    # The error 'profile' might have come from a typo or misconfiguration.
+    # We use select_related('user') to get the User model data.
+    referrals = dj_profile.referrals.select_related('user').order_by('-created_at')[:20]
     
     context = {
         'ambassador': ambassador,

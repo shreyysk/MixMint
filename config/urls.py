@@ -42,6 +42,7 @@ urlpatterns = [
     path('', include('apps.accounts.frontend_urls')),
     path('tracks/', include('apps.tracks.frontend_urls')),
     path('albums/', include('apps.albums.frontend_urls')),
+    path('social-auth/', include('social_django.urls', namespace='social')),
 ]
 
 if settings.DEBUG:

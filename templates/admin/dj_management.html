@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}DJ Management — MixMint Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto py-10 px-4 font-body" x-data="djManagement()">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <div class="flex items-center gap-3 mb-6">
+                <a href="{% url 'admin_dashboard' %}" class="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg text-[var(--accent-mint)] hover:bg-[var(--border)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all group">
+                    <svg class="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+            <h1 class="font-display text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none uppercase">
+                DJ <span class="text-[var(--accent-mint)]">Partners</span>
+            </h1>
+            <p class="text-[var(--text-muted)] text-sm mt-4 font-mono uppercase tracking-[0.2em]">
+                Seller Verification & Payout Control
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="relative">
+                <input type="text" x-model="searchQuery" placeholder="Search DJs or IDs..." 
+                       class="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-full px-6 py-3 text-sm w-[300px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-8 mb-8 border-b border-[var(--border)]">
+        <button @click="activeTab = 'pending'" :class="activeTab === 'pending' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'" class="pb-4 font-mono text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2">
+            Pending Approval
+            <span class="px-2 py-0.5 bg-[var(--accent-mint)] text-black rounded-full text-[9px]" x-text="pending.length"></span>
+        </button>
+        <button @click="activeTab = 'active'" :class="activeTab === 'active' ? 'border-b-2 border-[var(--accent-mint)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'" class="pb-4 font-mono text-[10px] uppercase tracking-widest font-bold transition-all">
+            Active Sellers
+        </button>
+    </div>
+
+    <!-- DJ List -->
+    <div class="glow-card overflow-hidden p-0 mb-12">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-[var(--bg-base)]/50">
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Partner Details</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Economics</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Compliance</th>
+                    <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)] text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)] font-body text-[15px]">
+                <template x-for="dj in filteredDjs" :key="dj.id">
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-6">
+                            <div class="font-medium text-[var(--text-primary)]" x-text="dj.dj_name"></div>
+                            <div class="text-[11px] text-[var(--text-muted)] font-mono" x-text="dj.email"></div>
+                        </td>
+                        <td class="p-6">
+                            <div class="text-[13px] text-[var(--text-primary)] font-mono" x-text="'₹' + (dj.pending_earnings || '0')"></div>
+                            <div class="text-[10px] text-[var(--text-muted)] uppercase font-mono">Pending</div>
+                        </td>
+                        <td class="p-6">
+                            <span :class="dj.status === 'verified' ? 'pill-success' : 'pill-warning'" x-text="dj.status"></span>
+                        </td>
+                        <td class="p-6 text-right">
+                            <div class="flex justify-end gap-3">
+                                <template x-if="dj.status === 'pending'">
+                                     <button @click="verifyDj(dj)" class="text-xs font-mono uppercase tracking-widest text-[var(--accent-mint)] hover:underline">Verify</button>
+                                </template>
+                                <button @click="holdPayout(dj)" class="text-xs font-mono uppercase tracking-widest text-[#f87171] hover:underline">Hold Payout</button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function djManagement() {
+    return {
+        activeTab: 'pending',
+        searchQuery: '',
+        pending: [],
+        active: [],
+
+        init() {
+            this.fetchData();
+        },
+
+        async fetchData() {
+            this.pending = JSON.parse('{{ pending_json|escapejs|default:"[]" }}');
+            this.active = JSON.parse('{{ active_json|escapejs|default:"[]" }}');
+        },
+
+        get filteredDjs() {
+            const list = this.activeTab === 'pending' ? this.pending : this.active;
+            if (!this.searchQuery) return list;
+            return list.filter(dj => 
+                dj.dj_name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                dj.email.toLowerCase().includes(this.searchQuery.toLowerCase())
+            );
+        },
+
+        async verifyDj(dj) {
+            if (!confirm(`Verify ${dj.dj_name}?`)) return;
+            // API call logic would go here
+            alert("Verification logic pending implementation on backend for specific ID flow.");
+        },
+
+        async holdPayout(dj) {
+            const reason = prompt("Reason for payout hold:", "Inactivity check");
+            if (!reason) return;
+            try {
+                const res = await fetch("{% url 'admin_payout_hold' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ dj_id: dj.id, reason: reason })
+                });
+                if (res.ok) alert("Payouts held.");
+            } catch (e) { alert("Action failed."); }
+        }
+    }
+}
+</script>
+{% endblock %}

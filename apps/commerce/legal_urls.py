@@ -23,12 +23,17 @@ def security_page(request):
     return render(request, 'legal/security.html')
 
 
+def dmca_page(request):
+    return render(request, 'legal/dmca.html')
+
+
 urlpatterns = [
     path('terms/', terms_page, name='terms'),
     path('privacy/', privacy_page, name='privacy'),
     path('refund/', refund_page, name='refund'),
     path('transparency/', transparency_page, name='transparency'),
     path('security/', security_page, name='security'),
+    path('copyright/', dmca_page, name='dmca'),
     # GST Invoice download — JSON and PDF
     path('invoice/<int:invoice_id>/', download_invoice, name='download_invoice'),
     path('invoice/<int:invoice_id>/pdf/', download_invoice_pdf, name='download_invoice_pdf'),

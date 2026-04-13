@@ -375,14 +375,42 @@ class Cart(models.Model):
         return sum(item.price for item in self.items.all())
 
     @property
+    def discount_percentage(self):
+        count = self.total_items
+        if count >= 15:
+            return 30
+        if count >= 10:
+            return 20
+        if count >= 5:
+            return 10
+        if count >= 3:
+            return 5
+        return 0
+
+    @property
     def discount_amount(self):
-        if self.total_items >= 5:
-            return round(self.subtotal * (BULK_DISCOUNT_PERCENTAGE / 100))
+        percentage = self.discount_percentage
+        if percentage > 0:
+            return round(self.subtotal * (percentage / 100))
         return 0
 
     @property
     def final_total(self):
         return self.subtotal - self.discount_amount
+
+    @property
+    def next_tier_info(self):
+        """Returns info about the next discount tier for UI guidance."""
+        count = self.total_items
+        if count < 3:
+            return {'needed': 3 - count, 'discount': 5}
+        if count < 5:
+            return {'needed': 5 - count, 'discount': 10}
+        if count < 10:
+            return {'needed': 10 - count, 'discount': 20}
+        if count < 15:
+            return {'needed': 15 - count, 'discount': 30}
+        return None
 
 class CartItem(models.Model):
     """Individual items within a Cart."""

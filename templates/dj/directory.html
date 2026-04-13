@@ -28,10 +28,10 @@
                 <select name="genre"
                     class="w-full h-[56px] bg-[var(--bg-surface)] border-2 border-[var(--border)] rounded-[8px] px-4 font-body text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-mint)] transition-colors">
                     <option value="">All Genres</option>
-                    <option value="Techno" {% if genre=='Techno' %}selected{% endif %}>Techno</option>
-                    <option value="House" {% if genre=='House' %}selected{% endif %}>House</option>
-                    <option value="Trance" {% if genre=='Trance' %}selected{% endif %}>Trance</option>
-                    <option value="Dubstep" {% if genre=='Dubstep' %}selected{% endif %}>Dubstep</option>
+                    <option value="Techno" {% if genre == 'Techno' %}selected{% endif %}>Techno</option>
+                    <option value="House" {% if genre == 'House' %}selected{% endif %}>House</option>
+                    <option value="Trance" {% if genre == 'Trance' %}selected{% endif %}>Trance</option>
+                    <option value="Dubstep" {% if genre == 'Dubstep' %}selected{% endif %}>Dubstep</option>
                 </select>
             </div>
 
@@ -91,8 +91,7 @@
             <div class="flex flex-wrap justify-center gap-2 mb-4">
                 {% for genre in dj.genres|slice:":3" %}
                 <span
-                    class="px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-muted)] font-mono text-[10px] uppercase">{{
-                    genre }}</span>
+                    class="px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-muted)] font-mono text-[10px] uppercase">{{ genre }}</span>
                 {% endfor %}
             </div>
 

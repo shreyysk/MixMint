@@ -87,14 +87,11 @@
             <!-- Center: Navigation Links (Desktop) -->
             <div class="hidden md:flex items-center gap-8 font-body text-[15px] font-medium">
                 <a href="{% url 'explore' %}"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans
-                    "Browse" %}</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Browse" %}</a>
                 <a href="{% url 'explore' %}?sort=new"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "New
-                    Releases" %}</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "New Releases" %}</a>
                 <a href="{% url 'dj_directory' %}"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "DJs"
-                    %}</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "DJs" %}</a>
             </div>
 
             <!-- Right: Actions (Desktop) -->
@@ -104,8 +101,7 @@
                     <button @click="showLang = !showLang"
                         class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--border-focus)] transition-all overflow-hidden focus:outline-none"
                         aria-label="Change language">
-                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{
-                            request.LANGUAGE_CODE|slice:":2"|upper }}</span>
+                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{ request.LANGUAGE_CODE|slice:":2"|upper }}</span>
                     </button>
                     <div x-show="showLang" @click.outside="showLang = false"
                         x-transition:enter="transition ease-out duration-200"
@@ -143,11 +139,11 @@
                 <div class="w-px h-6 bg-[var(--border)] mx-1"></div>
 
                 {% if user.is_authenticated %}
-                {% if user.is_dj %}
-                <a href="{% url 'my_library' %}"
+                {% if user.profile.role == 'dj' %}
+                <a href="{% url 'dashboard' %}"
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
                     Library</a>
-                <a href="{% url 'dashboard' %}"
+                <a href="{% url 'dj_dashboard' %}"
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">DJ
                     Panel</a>
                 {% else %}
@@ -155,20 +151,23 @@
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
                     Library</a>
                 {% endif %}
-                <!-- Phase 3 Feature 3: Cart Icon -->
-                <a href="{% url 'cart_page' %}"
+                <!-- Phase 3 Feature 3: Cart Indicator -->
+                <button @click="$dispatch('open-cart')"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:bg-[var(--border)] transition-all relative"
                     title="My Cart" aria-label="Shopping Cart">
-                    🛒
-                </a>
+                    <span class="text-xl">🛒</span>
+                    <template x-if="cartData.total_items > 0">
+                        <span class="absolute -top-1 -right-1 bg-[var(--accent-mint)] text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[var(--bg-base)]"
+                              x-text="cartData.total_items"></span>
+                    </template>
+                </button>
 
                 <!-- Account Dropdown -->
                 <div class="relative ml-2">
                     <button @click="showMenu = !showMenu"
                         class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--border-focus)] transition-all overflow-hidden focus:outline-none"
                         aria-label="Account menu">
-                        <span class="font-mono text-[12px] text-[var(--accent-mint)] font-bold">{{
-                            user.email|slice:":1"|upper }}</span>
+                        <span class="font-mono text-[12px] text-[var(--accent-mint)] font-bold">{{ user.email|slice:":1"|upper }}</span>
                     </button>
 
                     <div x-show="showMenu" @click.outside="showMenu = false"
@@ -180,8 +179,7 @@
                         <div class="px-4 py-3 border-b border-[var(--border)] mb-2">
                             <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">
                                 Account</p>
-                            <p class="text-[13px] font-body font-semibold text-[var(--text-primary)] truncate">{{
-                                user.email }}</p>
+                            <p class="text-[13px] font-body font-semibold text-[var(--text-primary)] truncate">{{ user.email }}</p>
                         </div>
                         <form action="{% url 'logout' %}" method="post">
                             {% csrf_token %}
@@ -195,8 +193,7 @@
                 {% else %}
                 <button
                     @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login'}}))"
-                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{%
-                    trans "Login" %}</button>
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{% trans "Login" %}</button>
                 <button
                     @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup'}}))"
                     class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">{% trans "Sign Up" %}</button>

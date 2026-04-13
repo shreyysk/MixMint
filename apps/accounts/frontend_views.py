@@ -80,7 +80,7 @@ def signup_view(request):
             
             profile.save(update_fields=['full_name', 'role', 'referred_by'])
 
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
             # Bind IP to session [Spec §13]
             request.session['bound_ip'] = _get_client_ip(request)
@@ -107,7 +107,7 @@ def login_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        email = request.POST.get('username', '').strip().lower()
+        email = (request.POST.get('email') or request.POST.get('username', '')).strip().lower()
         password = request.POST.get('password', '')
         user = authenticate(request, username=email, password=password)
 
@@ -171,8 +171,33 @@ class HomeView:
     def as_view():
         def view(request):
             from apps.tracks.models import Track
-            popular_tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False).order_by('-sales_last_7_days', '-created_at')[:4]
-            return render(request, 'home.html', {'popular_tracks': popular_tracks})
+            from apps.accounts.models import DJProfile
+            
+            # Popular tracks: Highest sales in last 7 days
+            popular_tracks = Track.objects.filter(
+                is_active=True, 
+                is_deleted=False, 
+                dj__profile__store_paused=False
+            ).order_by('-sales_last_7_days', '-created_at')[:4]
+            
+            # New Releases: Latest uploaded tracks
+            featured_tracks = Track.objects.filter(
+                is_active=True, 
+                is_deleted=False, 
+                dj__profile__store_paused=False
+            ).order_by('-created_at')[:4]
+            
+            # Featured DJs: approved DJs sorted by popularity
+            featured_djs = DJProfile.objects.filter(
+                status='approved', 
+                profile__store_paused=False
+            ).select_related('profile').order_by('-popularity_score')[:6]
+            
+            return render(request, 'home.html', {
+                'popular_tracks': popular_tracks,
+                'featured_tracks': featured_tracks,
+                'featured_djs': featured_djs
+            })
         return view
 
 
@@ -188,10 +213,37 @@ class ExploreView:
             genre = (request.GET.get('genre') or '').strip()
             year = (request.GET.get('year') or '').strip()
             sort = (request.GET.get('sort') or 'latest').strip()
+            
+            # New Filters [Gap Analysis Fix]
+            asset_type = (request.GET.get('type') or 'all').strip()
+            price_min = request.GET.get('price_min')
+            price_max = request.GET.get('price_max')
+            bpm_min = request.GET.get('bpm_min')
+            bpm_max = request.GET.get('bpm_max')
 
             tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
             albums = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
             djs = DJProfile.objects.filter(status='approved', profile__store_paused=False).select_related('profile', 'profile__user')
+
+            # BPM Filter
+            if bpm_min:
+                try: tracks = tracks.filter(bpm__gte=int(bpm_min))
+                except: pass
+            if bpm_max:
+                try: tracks = tracks.filter(bpm__lte=int(bpm_max))
+                except: pass
+
+            # Price Filter
+            if price_min:
+                try: 
+                    tracks = tracks.filter(price__gte=float(price_min))
+                    albums = albums.filter(price__gte=float(price_min))
+                except: pass
+            if price_max:
+                try: 
+                    tracks = tracks.filter(price__lte=float(price_max))
+                    albums = albums.filter(price__lte=float(price_max))
+                except: pass
 
             if genre:
                 tracks = tracks.filter(genre__icontains=genre)
@@ -229,11 +281,23 @@ class ExploreView:
             else:
                 tracks = tracks.order_by('-created_at')
 
+            # Filter by Type
+            if asset_type == 'track':
+                albums = AlbumPack.objects.none()
+            elif asset_type == 'album':
+                tracks = Track.objects.none()
+
             ctx = {
                 'q': q,
                 'genre': genre,
                 'year': year,
                 'sort': sort,
+                'type': asset_type,
+                'price_min': price_min,
+                'price_max': price_max,
+                'bpm_min': bpm_min,
+                'bpm_max': bpm_max,
+                'sort_options': [('latest', 'Latest'), ('popular', 'Popular'), ('price_low', 'Price: Low to High')],
                 'tracks': tracks.select_related('dj', 'dj__profile')[:24],
                 'albums': albums.select_related('dj', 'dj__profile')[:24],
                 'djs': djs[:24],
@@ -316,4 +380,3 @@ class WaitlistSignupView(View):
             return JsonResponse({'message': 'Success! You have been added to the waitlist.'})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
-        return view

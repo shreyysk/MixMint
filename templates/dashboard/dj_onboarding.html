@@ -2,84 +2,139 @@
 {% block title %}DJ Onboarding — MixMint{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-5">
-                    <h2 class="fw-bold mb-4">Welcome to MixMint, {{ dj_profile.dj_name }}!</h2>
+<div class="max-w-[700px] mx-auto py-20 px-4">
+    <div class="glow-card p-12 relative overflow-hidden">
+        <!-- Background Glow -->
+        <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,var(--accent-mint),transparent_70%)]"></div>
+        
+        <div class="relative z-10">
+            <h2 class="font-display text-[32px] font-[700] text-[var(--text-primary)] tracking-tight mb-8">
+                Welcome to MixMint, {{ dj_profile.dj_name }}!
+            </h2>
 
-                    <!-- Progress Bar -->
-                    <div class="progress mb-5" style="height: 10px;">
-                        {% if step == 'profile_setup' %}
-                        <div class="progress-bar bg-primary" style="width: 25%;"></div>
-                        {% elif step == 'payout_setup' %}
-                        <div class="progress-bar bg-primary" style="width: 50%;"></div>
-                        {% elif step == 'first_track' %}
-                        <div class="progress-bar bg-primary" style="width: 75%;"></div>
-                        {% endif %}
+            <!-- Progress Indicator -->
+            <div class="flex gap-2 mb-12">
+                {% for s in "123" %}
+                <div class="h-1.5 flex-1 rounded-full bg-[var(--border)] relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[var(--accent-mint)] transition-all duration-700"
+                         style="width: {% if step == 'profile_setup' and forloop.counter == 1 %}100%{% elif step == 'payout_setup' and forloop.counter <= 2 %}100%{% elif step == 'first_track' or step == 'completed' %}100%{% else %}0%{% endif %}">
                     </div>
+                </div>
+                {% endfor %}
+            </div>
 
-                    {% if step == 'profile_setup' %}
-                    <div id="step-profile">
-                        <h4>Step 1: Complete Your Profile</h4>
-                        <p class="text-muted">Tell your fans more about yourself.</p>
-                        <form id="profile-form">
-                            <div class="mb-3">
-                                <label class="form-label">Bio</label>
-                                <textarea class="form-control" name="bio" rows="3">{{ dj_profile.bio }}</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Location</label>
-                                <input type="text" class="form-control" name="location"
-                                    value="{{ dj_profile.location }}">
-                            </div>
-                            <button type="button" class="btn btn-primary w-100" onclick="nextStep('payout_setup')">Next:
-                                Payout Setup</button>
-                        </form>
+            {% if step == 'profile_setup' %}
+            <div id="step-profile" class="space-y-8 animate-in fade-in duration-700">
+                <div>
+                    <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 1: Bio & Location</h4>
+                    <p class="font-body text-[14px] text-[var(--text-muted)]">Tell your fans more about yourself.</p>
+                </div>
+                
+                <form id="profile-form" class="space-y-6">
+                    <div>
+                        <label class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2 block">Artist Bio</label>
+                        <textarea class="input-mm h-32" name="bio" placeholder="Describe your sound, journey, and vibe...">{{ dj_profile.bio }}</textarea>
                     </div>
+                    <div>
+                        <label class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2 block">Base City</label>
+                        <input type="text" class="input-mm" name="location" value="{{ dj_profile.location }}" placeholder="e.g. Mumbai, India">
+                    </div>
+                    <button type="button" class="btn-mm btn-mint w-full py-4 text-[14px] font-[600] rounded-lg" onclick="nextStep('payout_setup')">
+                        Next: Secure Your Payouts
+                    </button>
+                    <p class="text-center font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest opacity-60">Step 1 of 3</p>
+                </form>
+            </div>
 
-                    {% elif step == 'payout_setup' %}
-                    <div id="step-payout">
-                        <h4>Step 2: Payout & Security</h4>
-                        <p class="text-muted">Set up how you'll get paid and enable 2FA.</p>
-                        <div class="alert alert-info">
-                            <strong>Note:</strong> 2FA (Google Authenticator) is required for all payouts.
+            {% elif step == 'payout_setup' %}
+            <div id="step-payout" x-data="{ open: false, verified: false, showQR: false, secret: '' }" class="space-y-8 animate-in slide-in-from-right duration-700">
+                <div>
+                    <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 2: Security & Liquidity</h4>
+                    <p class="font-body text-[14px] text-[var(--text-muted)]">Configure your payout gateway and activate hardware-grade security.</p>
+                </div>
+
+                <div class="p-6 bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20 rounded-[12px]">
+                    <p class="font-body text-[13px] text-[var(--accent-blue)] leading-relaxed">
+                        <strong class="font-display">Platform Protocol:</strong> 2FA (Google Authenticator) is mandatory for all withdrawal operations to protect your earnings.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <button type="button" class="btn-mm border border-[var(--border)] hover:border-[var(--accent-mint)] w-full py-4 text-[14px] font-[600] transition-all rounded-lg flex items-center justify-center gap-3" 
+                            @click="showQR = true; load2FAInAlpine($data)" x-show="!verified">
+                        <span x-show="!showQR">Link Google Authenticator</span>
+                        <span x-show="showQR">Synchronizing...</span>
+                    </button>
+                    
+                    <div x-show="showQR && !verified" class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] space-y-6 text-center">
+                        <p class="font-body text-[13px] text-[var(--text-primary)]">Scan this QR code with Google Authenticator:</p>
+                        <div id="qrcode-container" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg flex items-center justify-center">
+                            <span class="text-black text-[10px] font-mono">[QR CODE]</span>
                         </div>
-                        <button type="button" class="btn btn-outline-primary mb-3" onclick="load2FASetup()">Setup 2FA
-                            Now</button>
-                        <div id="2fa-container" style="display:none;">
-                            <!-- QR code will load here -->
+                        <div class="text-left">
+                            <label class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Manual Secret Key</label>
+                            <code class="block bg-[var(--bg-base)] p-3 rounded border border-[var(--border)] text-[var(--accent-mint)] text-center tracking-widest" x-text="secret"></code>
                         </div>
-                        <button type="button" class="btn btn-primary w-100" onclick="nextStep('first_track')">Next:
-                            Upload First Track</button>
+                        <div class="text-left">
+                            <label class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Verification Token</label>
+                            <input type="text" id="2fa-code-input" class="input-mm text-center tracking-[0.5em]" placeholder="000000">
+                        </div>
+                        <button type="button" class="btn-mm btn-mint w-full py-3 text-[13px] font-[600]" @click="verify2FAInAlpine($data)">
+                            Verify & Link Account
+                        </button>
                     </div>
 
-                    {% elif step == 'first_track' %}
-                    <div id="step-track">
-                        <h4>Step 3: Upload Your First Track</h4>
-                        <p class="text-muted">Let's get some music on your storefront!</p>
-                        <a href="{% url 'dj_dashboard' %}?upload=true" class="btn btn-success w-100 mb-3">Upload First
-                            Track</a>
-                        <button type="button" class="btn btn-primary w-100" onclick="nextStep('completed')">Finish
-                            Onboarding</button>
+                    <div x-show="verified" class="p-6 bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 rounded-[12px] text-center">
+                        <p class="text-[var(--accent-mint)] font-display font-[600]">Hardware Bridge Synchronized ✓</p>
                     </div>
-                    {% endif %}
+
+                    <button type="button" class="btn-mm btn-mint w-full py-4 text-[14px] font-[600] rounded-lg" onclick="nextStep('first_track')">
+                        Next: Deploy Your First Track
+                    </button>
+                    <p class="text-center font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest opacity-60">Step 2 of 3</p>
                 </div>
             </div>
+
+            {% elif step == 'first_track' %}
+            <div id="step-track" class="space-y-8 animate-in scale-in duration-700 text-center">
+                <div class="py-6">
+                    <div class="text-6xl mb-8 animate-bounce">🎵</div>
+                    <h4 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-3">System Online</h4>
+                    <p class="font-body text-[15px] text-[var(--text-muted)] mb-12 max-w-[400px] mx-auto">Your artist profile is now fully integrated into the MixMint grid. Ready for your first transmission?</p>
+                    
+                    <a href="{% url 'dj_dashboard' %}?upload=true" class="btn-mm btn-mint w-full py-4 text-[15px] font-[700] rounded-lg mb-4 inline-block shadow-lg shadow-[var(--accent-mint)]/20">
+                        Deploy First Track
+                    </a>
+                    
+                    <button type="button" class="w-full font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] hover:text-[var(--text-primary)] transition-colors py-4" onclick="nextStep('completed')">
+                        Finalize Initialization
+                    </button>
+                </div>
+                <p class="text-center font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest opacity-60">Step 3 of 3</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
     function nextStep(nextStep) {
+        const payload = { step: nextStep };
+        // If on profile step, collect form data
+        if(nextStep === 'payout_setup') {
+            const form = document.getElementById('profile-form');
+            const formData = new FormData(form);
+            payload.bio = formData.get('bio');
+            payload.location = formData.get('location');
+        }
+
         fetch('{% url "update_onboarding" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify({ step: nextStep })
+            body: JSON.stringify(payload)
         }).then(r => r.json()).then(data => {
             if (data.status === 'success') {
                 location.reload();
@@ -87,25 +142,16 @@
         });
     }
 
-    function load2FASetup() {
-        fetch('{% url "enable_2fa" %}').then(r => r.json()).then(data => {
-            const container = document.getElementById('2fa-container');
-            container.style.display = 'block';
-            container.innerHTML = `
-            <p>Scan this QR code with Google Authenticator:</p>
-            <div id="qrcode"></div>
-            <p class="mt-2Small">Secret: <code>${data.secret}</code></p>
-            <div class="mb-3">
-                <input type="text" id="2fa-code" class="form-control" placeholder="Enter 6-digit code">
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="verify2FA()">Verify & Link</button>
-        `;
-            // In a real app, generate QR code PNG here or use library
+    function load2FAInAlpine(data) {
+        fetch('{% url "enable_2fa" %}').then(r => r.json()).then(res => {
+            data.secret = res.secret;
+            // In a production app, we would use a library like qrcode.js here
+            // For this UI polish, we'll keep the placeholder container
         });
     }
 
-    function verify2FA() {
-        const code = document.getElementById('2fa-code').value;
+    function verify2FAInAlpine(data) {
+        const code = document.getElementById('2fa-code-input').value;
         fetch('{% url "verify_2fa" %}', {
             method: 'POST',
             headers: {
@@ -113,13 +159,22 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({ code: code })
-        }).then(r => r.json()).then(data => {
-            if (data.status === 'success') {
-                alert('2FA Linked!');
+        }).then(r => r.json()).then(res => {
+            if (res.status === 'success') {
+                data.verified = true;
+                data.showQR = false;
             } else {
-                alert(data.error);
+                alert(res.error || 'Verification failed. Please try again.');
             }
         });
     }
 </script>
+
+<style>
+    .scale-in { animation: scale-in 0.5s ease-out; }
+    @keyframes scale-in {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>
 {% endblock %}

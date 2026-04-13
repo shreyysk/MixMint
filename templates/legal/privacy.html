@@ -2,94 +2,103 @@
 {% block title %}Privacy_Policy // MixMint Vault{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto py-20 px-6">
+<div class="max-w-4xl mx-auto py-20 px-6">
     <!-- ── Header ── -->
-    <div class="mb-16 border-b border-white/5 pb-12 text-center md:text-left">
-        <p class="font-mono text-[10px] text-var(--color-mint) uppercase tracking-[0.4em] mb-4">//
+    <div class="mb-16 border-b border-[var(--border)] pb-12 text-center md:text-left">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
             Data_Security_Protocols</p>
-        <h1 class="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-6">Privacy
-            Policy</h1>
-        <p class="font-body text-xs text-white/30 uppercase tracking-widest leading-relaxed">Effective_Date: March 1,
-            2026</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-none">
+            Privacy Policy
+        </h1>
+        <p class="font-body text-xs text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Effective_Date: <span class="text-[var(--text-primary)]">March 1, 2026</span>
+        </p>
     </div>
 
     <!-- ── Content ── -->
     <div class="space-y-16">
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[01]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Data_Ingestion_Registry</h2>
-            </div>
-            <div class="border border-white/5 overflow-hidden ml-10">
-                <table class="w-full text-left font-mono text-[10px] uppercase tracking-widest">
-                    <thead class="bg-white/[0.02] border-b border-white/5">
-                        <tr class="text-white/40">
-                            <th class="px-6 py-4">Category</th>
-                            <th class="px-6 py-4">Purpose</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/5 text-white/60">
-                        <tr>
-                            <td class="px-6 py-4">Account_Node</td>
-                            <td class="px-6 py-4">Auth & Sync Rights</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4">Telemetry</td>
-                            <td class="px-6 py-4">Fraud Detection</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4">Financial_ID</td>
-                            <td class="px-6 py-4">Vault Payouts</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[02]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Sync_Fingerprinting</h2>
-            </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>MixedMint uses hardware identifiers to bind sync tokens to a specific terminal. This data is hashed
-                    immutably and NEVER shared for advertising purposes.</p>
+        <section class="glow-card p-1">
+            <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
+                <div class="flex items-center gap-4 mb-8">
+                    <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Data_Ingestion_Registry</h2>
+                </div>
+                <div class="border border-[var(--border)] overflow-hidden ml-10 rounded-xl bg-[var(--bg-base)]">
+                    <table class="w-full text-left font-mono text-[11px] uppercase tracking-widest">
+                        <thead class="bg-[var(--bg-elevated)] border-b border-[var(--border)]">
+                            <tr class="text-[var(--text-muted)]">
+                                <th class="px-6 py-4 font-bold">Category</th>
+                                <th class="px-6 py-4 font-bold">Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--border)] text-[var(--text-primary)]/80">
+                            <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
+                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Account_Node</td>
+                                <td class="px-6 py-4">Auth & Sync Rights</td>
+                            </tr>
+                            <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
+                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Telemetry</td>
+                                <td class="px-6 py-4">Fraud Detection</td>
+                            </tr>
+                            <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
+                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Financial_ID</td>
+                                <td class="px-6 py-4">Vault Payouts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[03]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Encryption_Standards</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Sync_Fingerprinting</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>All sensitive nodes are transmitted over TLS 1.3. User passwords undergo high-entropy salting. Vault
-                    assets are stored in private, isolated buckets with no public egress.</p>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                <p>
+                    MixedMint uses <span class="text-[var(--text-primary)] font-medium">hardware identifiers</span> to bind sync tokens to a specific terminal. This data is hashed immutably and NEVER shared for advertising purposes.
+                </p>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[04]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Node_Deletion</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Encryption_Standards</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>Operators may request account decommissioning. Financial logs are retained for 7 years as per Indian
-                    tax protocols. Sync logs are purged every 12 months.</p>
+            <div class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-md)] ml-10 flex flex-col md:flex-row gap-8 items-center">
+                <div class="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--accent-mint)]/10 flex items-center justify-center">
+                    <span class="text-[var(--accent-mint)] text-xl">🔒</span>
+                </div>
+                <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed">
+                    All sensitive nodes are transmitted over <span class="text-[var(--text-primary)] font-medium">TLS 1.3</span>. User passwords undergo high-entropy salting. Vault assets are stored in private, isolated buckets with no public egress.
+                </p>
+            </div>
+        </section>
+
+        <section class="ml-10">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[04]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Node_Deletion</h2>
+            </div>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                <p>Operators may request account decommissioning. Financial logs are retained for 7 years as per Indian tax protocols. Sync logs are purged every 12 months.</p>
             </div>
         </section>
 
     </div>
 
     <!-- ── Footer ── -->
-    <div
-        class="mt-24 pt-12 border-t border-white/5 border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[9px] text-white/20 uppercase tracking-[0.2em]">
-        <span>&copy; 2026 MixMint_Distribution // DATA_SECURE</span>
-        <div class="flex gap-6">
-            <a href="/legal/terms/" class="hover:text-var(--color-mint) transition-colors">Terms</a>
-            <a href="/legal/refund/" class="hover:text-var(--color-mint) transition-colors">Refund</a>
-            <a href="/" class="hover:text-var(--color-mint) transition-colors">Home</a>
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
         </div>
     </div>
 </div>

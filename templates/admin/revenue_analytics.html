@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Revenue Analytics — MixMint Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto py-10 px-4 font-body" x-data="revenueAnalytics()">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[var(--border)] pb-8">
+        <div>
+            <div class="flex items-center gap-3 mb-6">
+                <a href="{% url 'admin_dashboard' %}" class="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg text-[var(--accent-mint)] hover:bg-[var(--border)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all group">
+                    <svg class="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+            <h1 class="font-display text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none uppercase">
+                Revenue <span class="text-[#facc15]">Analytics</span>
+            </h1>
+            <p class="text-[var(--text-muted)] text-sm mt-4 font-mono uppercase tracking-[0.2em]">
+                Financial Performance & Transaction Alerts
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+             <div class="text-right">
+                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Fiscal Update</p>
+                <p class="font-mono text-[13px] text-[var(--text-primary)] uppercase tracking-tighter">Live Financial Feed</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="glow-card p-8">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Total Sales</div>
+            <div class="font-display text-[32px] font-[700] text-[var(--text-primary)] leading-none mb-2" x-text="'₹' + totals.total_sales"></div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]" x-text="totals.purchase_count + ' Transactions'"></div>
+        </div>
+        <div class="glow-card p-8">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Platform Gross</div>
+            <div class="font-display text-[32px] font-[700] text-[#a78bfa] leading-none mb-2" x-text="'₹' + totals.total_commission"></div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">From Content Sales</div>
+        </div>
+        <div class="glow-card p-8">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Ad Revenue</div>
+            <div class="font-display text-[32px] font-[700] text-[#38bdf8] leading-none mb-2" x-text="'₹' + totals.total_ad_revenue"></div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">Platform Share (85%)</div>
+        </div>
+        <div class="glow-card p-8">
+            <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Pending Payouts</div>
+            <div class="font-display text-[32px] font-[700] text-[#f472b6] leading-none mb-2" x-text="'₹' + pending_payouts"></div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">Owed to DJ Partners</div>
+        </div>
+    </div>
+
+    <!-- Revenue Trend Chart -->
+    <div class="glow-card p-10 mb-12">
+        <h2 class="font-display text-xl font-bold uppercase mb-8">Weekly Revenue Profile</h2>
+        <div class="h-[400px] w-full">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Alerts section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        <div>
+            <h2 class="font-display text-[24px] font-[700] uppercase tracking-tight mb-6">High-Value Alerts</h2>
+            <div class="glow-card p-0 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <tbody class="divide-y divide-[var(--border)] font-body text-[14px]">
+                        <template x-for="alert in alerts" :key="alert.id">
+                            <tr class="hover:bg-white/[0.02] transition-colors">
+                                <td class="p-6">
+                                    <div class="font-medium text-[var(--text-primary)]" x-text="alert.buyer + ' → ' + alert.dj"></div>
+                                    <div class="text-[11px] text-[var(--text-muted)] font-mono" x-text="alert.created_at"></div>
+                                </td>
+                                <td class="p-6 text-right font-mono font-bold text-[var(--accent-mint)]" x-text="'₹' + alert.amount"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <div x-show="alerts.length === 0" class="p-20 text-center opacity-40">
+                    <p class="text-sm font-mono">No high-value alerts current.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <h2 class="font-display text-[24px] font-[700] uppercase tracking-tight mb-6">Commercial Status</h2>
+            <div class="glow-card p-8 border-[#facc15]/20">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase">Platform Profitability</span>
+                    <span class="pill-success bg-[#facc15] text-black">HEALTHY</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-[var(--text-muted)]">Blended Comm Rate</span>
+                        <span class="font-mono font-bold text-[var(--text-primary)]">11.4%</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-[var(--text-muted)]">ARPU (Per Seller)</span>
+                        <span class="font-mono font-bold text-[var(--text-primary)]">₹1,240</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-[var(--text-muted)]">Checkout Fee Yield</span>
+                        <span class="font-mono font-bold text-[var(--text-primary)]" x-text="'₹' + totals.total_checkout_fees"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+function revenueAnalytics() {
+    return {
+        totals: {
+            total_sales: '0.00',
+            total_commission: '0.00',
+            total_ad_revenue: '0.00',
+            total_checkout_fees: '0.00',
+            purchase_count: 0
+        },
+        pending_payouts: '0.00',
+        weekly: [],
+        alerts: [],
+
+        init() {
+            this.fetchData();
+        },
+
+        async fetchData() {
+            const data = JSON.parse('{{ analytics_json|escapejs|default:"{}" }}');
+            this.totals = data.totals || this.totals;
+            this.pending_payouts = data.pending_payouts || '0.00';
+            this.weekly = data.weekly_breakdown || [];
+            this.alerts = JSON.parse('{{ alerts_json|escapejs|default:"[]" }}');
+            
+            this.$nextTick(() => this.initChart());
+        },
+
+        initChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            const labels = this.weekly.map(w => 'Week ' + w.week.substring(5, 10));
+            const revenueData = this.weekly.map(w => w.revenue);
+            const commData = this.weekly.map(w => w.commission);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Gross Sales (GMV)',
+                            data: revenueData,
+                            borderColor: '#00FFB3',
+                            backgroundColor: 'rgba(0, 255, 179, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#00FFB3'
+                        },
+                        {
+                            label: 'Platform Gross',
+                            data: commData,
+                            borderColor: '#a78bfa',
+                            backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#a78bfa'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { family: 'JetBrains Mono' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { family: 'JetBrains Mono' } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: 'white', font: { family: 'Outfit', weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

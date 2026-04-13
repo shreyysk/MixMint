@@ -1,65 +1,35 @@
 {% extends 'base.html' %}
-
-{% block title %}Security & Trust — MixMint{% endblock %}
+{% block title %}Security_Protocols // MixMint Vault{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-12">
-    <div class="mb-12 text-center">
-        <h1 class="text-6xl font-display mb-6">Security & Trust</h1>
-        <p class="text-xl text-[var(--text-muted)]">How we protect DJs and Buyers on India's premier music marketplace.
+<div class="max-w-4xl mx-auto py-20 px-6 font-body">
+    <!-- ── Header ── -->
+    <div class="mb-16 border-b border-[var(--border)] pb-12">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
+            Infrastructure_Hardening_Report</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
+            Vault Security
+        </h1>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">System_Version:
+            <span class="text-[var(--text-primary)]">2.0.4-STABLE</span>
         </p>
     </div>
-
-    <div class="grid gap-8">
-        <!-- Section 1: Buyer Protection -->
-        <div class="glow-card p-8">
-            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
-                <span class="text-mint-500">🛡️</span> Buyer Protection
-            </h2>
-            <div class="space-y-4 text-[var(--text-muted)] leading-relaxed">
-                <p>
-                    <strong class="text-[var(--text-primary)]">Ownership, Not Access:</strong> When you buy on MixMint,
-                    you are purchasing a perpetual license. No subscriptions, no DRM, and no "revoked access" due to
-                    licensing changes.
+    <!-- ── Content ── -->
+    <div class="space-y-16">
+        <!-- Section 1: Data Encryption -->
+        <div class="glow-card p-1">
+             <div class="bg-[var(--bg-surface)] rounded-[14px] p-8">
+                <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                    <span class="text-mint-500">🛡️</span> Data Protection
+                </h2>
+                <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed">
+                    MixedMint utilizes military-grade AES-256 encryption for all stored assets. Your files are encrypted at rest and transmitted via secure TLS channels.
                 </p>
-                <p>
-                    <strong class="text-[var(--text-primary)]">Download Insurance:</strong> Our optional ₹15 insurance
-                    guarantees that even if a DJ removes a track from the store, you can still download your purchase
-                    from our encrypted archive.
-                </p>
-                <p>
-                    <strong class="text-[var(--text-primary)]">Byte-Level Verification:</strong> Every download is
-                    verified via SHA-256 checksums to ensure the file you receive is exactly what the DJ uploaded, with
-                    no corruption or tampering.
-                </p>
-            </div>
-        </div>
-
-        <!-- Section 2: DJ Security -->
-        <div class="glow-card p-8">
-            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
-                <span class="text-mint-500">🎧</span> DJ Security
-            </h2>
-            <div class="space-y-4 text-[var(--text-muted)] leading-relaxed">
-                <p>
-                    <strong class="text-[var(--text-primary)]">Anti-Piracy (IP Lock):</strong> To prevent link sharing,
-                    every download link is locked to the buyer's IP address and device fingerprint for 48 hours.
-                </p>
-                <p>
-                    <strong class="text-[var(--text-primary)]">Escrow Policy:</strong> All earnings are held in a secure
-                    escrow account (24-48 hours) to protect against chargebacks and fraudulent behavior, ensuring a
-                    clean marketplace.
-                </p>
-                <p>
-                    <strong class="text-[var(--text-primary)]">Secure R2 Storage:</strong> Your tracks are stored in
-                    private, cryptographically secured buckets (Cloudflare R2). No public URLs ever exist for your
-                    high-quality files.
-                </p>
-            </div>
+             </div>
         </div>
 
         <!-- Section 3: Technical Integrity -->
-        <div class="glow-card p-8">
+        <div class="glow-card p-8 bg-[var(--bg-surface)] rounded-[14px]">
             <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
                 <span class="text-mint-500">🔒</span> Technical Integrity
             </h2>
@@ -89,6 +59,18 @@
     <div class="mt-16 text-center text-[var(--text-muted)]">
         <p>Found a security vulnerability? <a href="mailto:security@mixmint.site"
                 class="text-mint-500 hover:underline">Report via our Bug Bounty Program.</a></p>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
+        </div>
     </div>
 </div>
 {% endblock %}

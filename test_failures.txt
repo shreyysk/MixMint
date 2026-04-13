@@ -1,0 +1,708 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0
+django: version: 6.0.2, settings: config.settings_test (from ini)
+rootdir: D:\mixmint2.0
+configfile: pytest.ini
+plugins: base-url-2.1.0, django-4.12.0, playwright-0.7.2
+collected 177 items
+
+tests\test_api.py ..FFFF..F                                              [  5%]
+tests\test_availability.py .............                                 [ 12%]
+tests\test_billing.py ..........F...                                     [ 20%]
+tests\test_database.py ...............                                   [ 28%]
+tests\test_integration.py F..F..FF..                                     [ 34%]
+tests\test_multitenancy.py ...FF....                                     [ 39%]
+tests\test_performance.py F......FF                                      [ 44%]
+tests\test_regression.py ..........                                      [ 50%]
+tests\test_security.py .......................                           [ 63%]
+tests\test_smoke.py ............                                         [ 70%]
+tests\test_system.py F.F..F...                                           [ 75%]
+tests\test_unit.py .........................                             [ 89%]
+tests\test_webhook_signatures.py .......                                 [ 93%]
+tests\test_unit.py ............                                          [100%]
+
+================================== FAILURES ===================================
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/users/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/djs/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/profiles/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/profiles/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   assert 403 == 200
+     +  where 403 = <Response status_code=403, "application/json">.status_code
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:249 Forbidden: /api/v1/accounts/confirm-age/
+D:\mixmint2.0\tests\test_api.py:110: assert 403 == 200
+E   TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+D:\mixmint2.0\tests\test_billing.py:177: TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+E   AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+E   ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /signup/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 57, in _get_backend_from_user
+    backend = backend or user.backend
+                         ^^^^^^^^^^^^
+AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 83, in signup_view
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 189, in login
+    backend = _get_backend_from_user(user=user, backend=backend)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 63, in _get_backend_from_user
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py:63: ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+E   AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+E   ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /signup/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 57, in _get_backend_from_user
+    backend = backend or user.backend
+                         ^^^^^^^^^^^^
+AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 83, in signup_view
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 189, in login
+    backend = _get_backend_from_user(user=user, backend=backend)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 63, in _get_backend_from_user
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py:63: ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+E   AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+E   ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /signup/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 57, in _get_backend_from_user
+    backend = backend or user.backend
+                         ^^^^^^^^^^^^
+AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 83, in signup_view
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 189, in login
+    backend = _get_backend_from_user(user=user, backend=backend)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 63, in _get_backend_from_user
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py:63: ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+E   TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+D:\mixmint2.0\apps\commerce\revenue_engine.py:312: TypeError: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/profiles/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /api/v1/accounts/profiles/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 716, in to_representation
+    self.child.to_representation(item) for item in iterable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 525, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 386, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 374, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1105, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1251, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py", line 1369, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\rest_framework\serializers.py:1369: django.core.exceptions.ImproperlyConfigured: Field name `role` is not valid for model `User` in `apps.accounts.serializers.UserSerializer`.
+E   AssertionError: Home page used 19 queries (expected \u226415)
+    assert 19 <= 15
+     +  where 19 = len(<django.test.utils.CaptureQueriesContext object at 0x000001361EAFACF0>)
+D:\\mixmint2.0\\tests\\test_performance.py:43: AssertionError: Home page used 19 queries (expected \u226415)
+E   AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+E   ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /signup/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 57, in _get_backend_from_user
+    backend = backend or user.backend
+                         ^^^^^^^^^^^^
+AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 83, in signup_view
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 189, in login
+    backend = _get_backend_from_user(user=user, backend=backend)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 63, in _get_backend_from_user
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py:63: ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+E   django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /explore/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 250, in view
+    albums = albums.filter(genre__icontains=genre)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1542, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1560, in _filter_or_exclude
+    clone._filter_or_exclude_inplace(negate, args, kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1570, in _filter_or_exclude_inplace
+    self._query.add_q(Q(*args, **kwargs))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1676, in add_q
+    clause, _ = self._add_q(q_object, can_reuse)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1708, in _add_q
+    child_clause, needed_inner = self.build_filter(
+                                 ~~~~~~~~~~~~~~~~~^
+        child,
+        ^^^^^^
+    ...<7 lines>...
+        update_join_types=update_join_types,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1556, in build_filter
+    lookups, parts, reffed_expression = self.solve_lookup_type(arg, summarize)
+                                        ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1363, in solve_lookup_type
+    _, field, _, lookup_parts = self.names_to_path(lookup_splitted, self.get_meta())
+                                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1842, in names_to_path
+    raise FieldError(
+    ...<2 lines>...
+    )
+django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py:1842: django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+E   AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+E   ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /signup/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 57, in _get_backend_from_user
+    backend = backend or user.backend
+                         ^^^^^^^^^^^^
+AttributeError: 'User' object has no attribute 'backend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 83, in signup_view
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 189, in login
+    backend = _get_backend_from_user(user=user, backend=backend)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py", line 63, in _get_backend_from_user
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\contrib\auth\__init__.py:63: ValueError: You have multiple authentication backends configured and therefore must provide the `backend` argument or set the `backend` attribute on the user.
+E   django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:249 Internal Server Error: /explore/
+Traceback (most recent call last):
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\mixmint2.0\apps\accounts\frontend_views.py", line 250, in view
+    albums = albums.filter(genre__icontains=genre)
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1542, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1560, in _filter_or_exclude
+    clone._filter_or_exclude_inplace(negate, args, kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\query.py", line 1570, in _filter_or_exclude_inplace
+    self._query.add_q(Q(*args, **kwargs))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1676, in add_q
+    clause, _ = self._add_q(q_object, can_reuse)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1708, in _add_q
+    child_clause, needed_inner = self.build_filter(
+                                 ~~~~~~~~~~~~~~~~~^
+        child,
+        ^^^^^^
+    ...<7 lines>...
+        update_join_types=update_join_types,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1556, in build_filter
+    lookups, parts, reffed_expression = self.solve_lookup_type(arg, summarize)
+                                        ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1363, in solve_lookup_type
+    _, field, _, lookup_parts = self.names_to_path(lookup_splitted, self.get_meta())
+                                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py", line 1842, in names_to_path
+    raise FieldError(
+    ...<2 lines>...
+    )
+django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\db\models\sql\query.py:1842: django.core.exceptions.FieldError: Cannot resolve keyword 'genre' into field. Choices are: converted_at, copyrightreport, cover_image, created_at, description, dj, dj_id, external_link_broken, external_link_error, external_link_provider, external_link_url, file_key, file_size, id, instagram_url, is_active, is_deleted, is_external_link, original_file_key, preview_type, price, processing_completed_at, processing_error, processing_started_at, processing_status, queue_items, title, total_duration, track_count, tracks, upload_method, youtube_url
+E   assert 404 == 200
+     +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:249 Not Found: /admin-panel/
+D:\mixmint2.0\tests\test_system.py:106: assert 404 == 200
+============================== warnings summary ===============================
+C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\requests\__init__.py:113
+  C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\requests\__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.0.0)/charset_normalizer (3.4.4) doesn't match a supported version!
+    warnings.warn(
+
+tests/test_api.py: 9 warnings
+tests/test_availability.py: 7 warnings
+tests/test_integration.py: 9 warnings
+tests/test_multitenancy.py: 8 warnings
+tests/test_performance.py: 7 warnings
+tests/test_regression.py: 2 warnings
+tests/test_security.py: 14 warnings
+tests/test_smoke.py: 9 warnings
+tests/test_system.py: 9 warnings
+  C:\Users\shrey\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py:62: UserWarning: No directory at: D:\mixmint2.0\staticfiles\
+    mw_instance = middleware(adapted_handler)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_api.py::TestUserViewSetAPI::test_admin_can_list_users - dja...
+FAILED tests/test_api.py::TestDJProfileViewSetAPI::test_list_djs_returns_only_approved
+FAILED tests/test_api.py::TestProfileViewSetAPI::test_user_sees_own_profile
+FAILED tests/test_api.py::TestProfileViewSetAPI::test_admin_sees_all_profiles
+FAILED tests/test_api.py::TestAPIErrorHandling::test_confirm_age_works_when_authenticated
+FAILED tests/test_billing.py::TestWalletConsistency::test_wallet_balance_after_multiple_credits
+FAILED tests/test_integration.py::TestAuthFlowIntegration::test_signup_creates_user_and_profile
+FAILED tests/test_integration.py::TestAuthFlowIntegration::test_signup_records_login_history
+FAILED tests/test_integration.py::TestReferralIntegration::test_referral_code_tracked_on_signup
+FAILED tests/test_integration.py::TestWalletCreditIntegration::test_purchase_credits_dj_wallet
+FAILED tests/test_multitenancy.py::TestProfileDataIsolation::test_regular_user_cannot_see_other_profiles_via_api
+FAILED tests/test_multitenancy.py::TestProfileDataIsolation::test_admin_can_see_all_profiles
+FAILED tests/test_performance.py::TestQueryPerformance::test_home_page_query_count
+FAILED tests/test_performance.py::TestStressScenarios::test_rapid_signups - V...
+FAILED tests/test_performance.py::TestStressScenarios::test_concurrent_explore_requests
+FAILED tests/test_system.py::TestBuyerJourney::test_buyer_can_signup_and_explore
+FAILED tests/test_system.py::TestBuyerJourney::test_buyer_search_by_genre - d...
+FAILED tests/test_system.py::TestAdminJourney::test_admin_full_flow - assert ...
+================ 18 failed, 159 passed, 75 warnings in 13.77s =================

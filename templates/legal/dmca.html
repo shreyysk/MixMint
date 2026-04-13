@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Copyright_&_DMCA // MixMint Vault{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-20 px-6 font-body">
+    <!-- ── Header ── -->
+    <div class="mb-16 border-b border-[var(--border)] pb-12">
+        <p class="font-mono text-[10px] text-[var(--accent-red)] uppercase tracking-[0.4em] mb-4">// Intellectual_Property_Hardening</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
+            Copyright & DMCA
+        </h1>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Protocol_ID: <span class="text-[var(--text-primary)]">MM-DMCA-2026</span>
+        </p>
+    </div>
+
+    <!-- ── Content ── -->
+    <div class="space-y-16">
+
+        <section class="ml-10">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="font-mono text-xs text-[var(--accent-red)] font-bold">[01]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">DMCA_Safe_Harbor</h2>
+            </div>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-4 ml-10">
+                <p>MixedMint respect the intellectual property rights of others. We operate as an automated service provider under the Digital Millennium Copyright Act (DMCA).</p>
+                <div class="p-6 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] shadow-[var(--shadow-card)]">
+                    <p class="opacity-80 italic">"MixMint follows the 'Notice and Takedown' procedure for digital assets reported as infringing. We do not proactively monitor content but respond immediately to valid legal notifications."</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="glow-card p-1">
+            <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
+                <div class="flex items-center gap-4 mb-8">
+                    <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Reporting_Infringement</h2>
+                </div>
+                <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-6 ml-10">
+                    <p>To initialize a takedown request, the notification must include:</p>
+                    <ul class="space-y-4 font-mono text-[12px] opacity-80">
+                        <li class="flex gap-3">
+                            <span class="text-[var(--accent-mint)]">/01</span> 
+                            <span>Physical or electronic signature of the copyright owner.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="text-[var(--accent-mint)]">/02</span>
+                            <span>Identification of the copyrighted work claimed to have been infringed.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="text-[var(--accent-mint)]">/03</span>
+                            <span>Direct transmission URIs (MixMint asset IDs/links) of the infringing node.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="text-[var(--accent-mint)]">/04</span>
+                            <span>Contact coordinates: Email address and physical address.</span>
+                        </li>
+                    </ul>
+                    <div class="mt-8 pt-6 border-t border-[var(--border)]">
+                        <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-3">Deploy_Takedown_Request:</p>
+                        <a href="mailto:dmca@mixmint.site" class="btn-mm btn-mint h-12 px-8 flex items-center justify-center gap-2 font-bold text-[13px] uppercase tracking-wider w-fit">
+                            dmca@mixmint.site
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ml-10">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="font-mono text-xs text-[var(--accent-red)] font-bold">[03]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Counter_Notification</h2>
+            </div>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-4 ml-10">
+                <p>If a DJ believes their asset was removed by mistake or misidentification, a counter-notification can be submitted to the same address. False claims are subject to immediate vault forfeiture.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

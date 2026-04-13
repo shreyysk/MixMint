@@ -132,7 +132,7 @@
             async loadCart() {
                 this.loading = true;
                 try {
-                    const res = await fetch('/api/commerce/cart/current/', {
+                    const res = await fetch('/api/v1/commerce/cart/current/', {
                         headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
                     });
                     if (res.ok) {
@@ -146,7 +146,7 @@
             },
 
             async removeItem(itemId) {
-                const res = await fetch('/api/commerce/cart/remove_item/', {
+                const res = await fetch('/api/v1/commerce/cart/remove_item/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -160,7 +160,7 @@
             },
 
             async clearCart() {
-                const res = await fetch('/api/commerce/cart/clear/', {
+                const res = await fetch('/api/v1/commerce/cart/clear/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

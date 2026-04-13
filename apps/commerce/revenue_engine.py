@@ -97,14 +97,13 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
                     payment_order_id=None, is_redownload=False, **kwargs):
     """
     Create a Purchase record after payment verification [Spec P2 §5].
-
-    This is the master function called after Razorpay payment confirmation.
-    Handles commission, splits, wallet crediting, and invoice generation.
+    Handles both single purchases and bulk cart-based itemizations.
     """
     from apps.commerce.models import Bundle, BundlePurchase
 
-    # Price override for bundles or promotional cases
+    # Price override or discount logic
     price_override = kwargs.get('price_override')
+    discount_percentage = kwargs.get('discount_applied', Decimal('0.00'))
 
     # Resolve content
     if content_type == 'track':
@@ -117,13 +116,12 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
         content = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
         dj_profile = content.dj
         price = price_override if price_override is not None else content.price
-        content_type = 'album'  # Normalize
+        content_type = 'album'
     elif content_type == 'bundle':
         content = Bundle.objects.get(id=content_id, is_active=True, is_deleted=False)
         dj_profile = content.dj
         price = content.price
         
-        # Create master BundlePurchase record
         bundle_purchase = BundlePurchase.objects.create(
             bundle=content,
             user=user_profile,
@@ -132,7 +130,6 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
             dj_revenue=Decimal('0.00'),
         )
         
-        # Distribute price across tracks
         tracks_in_bundle = content.bundle_tracks.all()
         track_count = tracks_in_bundle.count()
         if track_count > 0:
@@ -152,6 +149,10 @@ def create_purchase(user_profile, content_id, content_type, payment_id,
         return bundle_purchase
     else:
         raise ValueError(f'Invalid content_type: {content_type}')
+
+    # Apply bulk discount if applicable (from Cart checkout)
+    if discount_percentage > 0:
+        price = (price * (Decimal('100.00') - discount_percentage) / Decimal('100.00')).quantize(Decimal('0.01'))
 
     # Re-download pricing [Spec §4.3]
     original_price = price
@@ -305,14 +306,14 @@ def credit_dj_wallets(purchase, primary_dj, split):
         net_amount = gross_amount - tds_amount
 
         if primary_dj.is_deleted:
-            wallet.escrow_amount += net_amount
+            wallet.escrow_amount = Decimal(str(wallet.escrow_amount)) + net_amount
             description = f'Revenue from purchase #{purchase.id} (ESCROW - DELETED DJ)'
         else:
-            wallet.pending_earnings += net_amount
-            wallet.available_for_payout += net_amount
+            wallet.pending_earnings = Decimal(str(wallet.pending_earnings)) + net_amount
+            wallet.available_for_payout = Decimal(str(wallet.available_for_payout)) + net_amount
             description = f'Revenue from purchase #{purchase.id}'
             
-        wallet.total_earnings += net_amount
+        wallet.total_earnings = Decimal(str(wallet.total_earnings)) + net_amount
         wallet.save()
 
         LedgerEntry.objects.create(

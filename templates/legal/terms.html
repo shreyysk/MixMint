@@ -2,89 +2,92 @@
 {% block title %}Terms_&_Conditions // MixMint Vault{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto py-20 px-6">
+<div class="max-w-4xl mx-auto py-20 px-6">
     <!-- ── Header ── -->
-    <div class="mb-16 border-b border-white/5 pb-12 text-center md:text-left">
-        <p class="font-mono text-[10px] text-var(--color-mint) uppercase tracking-[0.4em] mb-4">// Legal_Framework_v1.0
+    <div class="mb-16 border-b border-[var(--border)] pb-12 text-center md:text-left">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">// Legal_Framework_v1.1</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-none">
+            Terms of Service
+        </h1>
+        <p class="font-body text-xs text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
+            Effective_Date: <span class="text-[var(--text-primary)]">March 1, 2026</span>
         </p>
-        <h1 class="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-6">Terms of
-            Service</h1>
-        <p class="font-body text-xs text-white/30 uppercase tracking-widest leading-relaxed">Effective_Date: March 1,
-            2026</p>
     </div>
 
     <!-- ── Content ── -->
     <div class="space-y-16">
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[01]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Platform_Governance</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Platform_Governance</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>MixMint operates as a secure digital asset marketplace. By authorizing a session, you agree to the
-                    protocols outlined in this registry.</p>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                <p>
+                    MixMint operates as a secure digital asset marketplace for DJ edits and original productions. By authorizing a session, you agree to the protocols outlined in this registry.
+                </p>
             </div>
         </section>
 
-        <section class="p-8 bg-red-500/5 border border-red-500/10 mb-12">
-            <h3 class="font-mono text-[11px] font-bold text-red-400 uppercase tracking-widest mb-4">
-                CRITICAL_DISCLAIMER_DJ_RESPONSIBILITY</h3>
-            <p class="font-body text-[11px] text-red-400/70 uppercase tracking-widest leading-relaxed">
+        <section class="p-8 bg-[var(--accent-red)]/5 border border-[var(--accent-red)]/20 rounded-[var(--radius-md)] mb-12 ml-10 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-[var(--accent-red)]"></div>
+            <h3 class="font-mono text-[11px] font-bold text-[var(--accent-red)] uppercase tracking-widest mb-4">
+                CRITICAL_DISCLAIMER_DJ_RESPONSIBILITY
+            </h3>
+            <p class="font-body text-[12px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
                 MIXMINIT DOES NOT CLAIM OWNERSHIP OR LEGAL RESPONSIBILITY FOR UPLOADED ASSETS. THE DJ/CREATOR IS SOLELY
                 RESPONSIBLE FOR THE LEGALITY, COPYRIGHT COMPLIANCE, AND AUTHENTICITY OF ALL NODES DEPLOYED TO THE VAULT.
             </p>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[02]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Vault_Sync_Protocols</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Vault_Sync_Protocols</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>Purchases grant a "Personal_Sync_License". Redistribution or extraction for public playback is a
-                    breach of security terms.</p>
-                <div class="border border-white/5 p-6 bg-white/[0.01]">
-                    <p class="font-mono text-[10px] text-var(--color-mint) uppercase tracking-widest mb-2">//
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-6 ml-10">
+                <p>Purchases grant a <span class="text-[var(--text-primary)] font-medium">"Personal_Sync_License"</span>. Redistribution or extraction for public playback is a breach of security terms.</p>
+                <div class="border border-[var(--border)] p-8 bg-[var(--bg-elevated)] rounded-[var(--radius-md)] shadow-[var(--shadow-card)]">
+                    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest mb-4">//
                         Sync_Policy</p>
-                    <p class="text-[11px] text-white/30">Single hardware sync per token. Re-authorization (re-download)
-                        requires a 50% re-sync fee after 48-hour hardware lockout.</p>
+                    <p class="text-[13px] text-[var(--text-muted)] leading-relaxed">
+                        Single hardware sync per token. Re-authorization (re-download) requires a <span class="text-[var(--text-primary)]">50% re-sync fee</span> after 48-hour hardware lockout, unless download insurance was acquired.
+                    </p>
                 </div>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[03]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Financial_Transmission</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Financial_Transmission</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>All pricing is in INR. Platform fee of ₹5–₹10 applies per checkout. Service is provided "as-is" with
-                    no guarantee of node availability beyond 12 months post-purchase.</p>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                <p>All pricing is in <span class="text-[var(--text-primary)] font-medium">INR</span>. Platform fee of ₹5–₹20 applies per checkout. Service is provided "as-is" with no guarantee of node availability beyond 12 months post-purchase.</p>
             </div>
         </section>
 
-        <section>
+        <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
-                <span class="font-mono text-xs text-var(--color-mint)">[04]</span>
-                <h2 class="font-display text-xl text-white uppercase tracking-tight">Terminal_Lockout</h2>
+                <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[04]</span>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Terminal_Lockout</h2>
             </div>
-            <div class="font-body text-[13px] text-white/50 leading-relaxed uppercase tracking-wider space-y-4 ml-10">
-                <p>We reserve the right to terminate access for any account engaging in link-sharing, scraping, or
-                    scraping attempts. No refunds are issued for terminated accounts.</p>
+            <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
+                <p>We reserve the right to terminate access for any account engaging in link-sharing, scraping, or scraping attempts. No refunds are issued for terminated accounts.</p>
             </div>
         </section>
 
     </div>
 
     <!-- ── Footer ── -->
-    <div
-        class="mt-24 pt-12 border-t border-white/5 border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[9px] text-white/20 uppercase tracking-[0.2em]">
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
         <span>&copy; 2026 MixMint_Distribution // INDIA</span>
-        <div class="flex gap-6">
-            <a href="/legal/privacy/" class="hover:text-var(--color-mint) transition-colors">Privacy</a>
-            <a href="/legal/refund/" class="hover:text-var(--color-mint) transition-colors">Refund</a>
-            <a href="/" class="hover:text-var(--color-mint) transition-colors">Home</a>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
         </div>
     </div>
 </div>
