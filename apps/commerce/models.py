@@ -357,7 +357,6 @@ class OffloadNotification(models.Model):
     def __str__(self):
         return f"Offload {self.content_type} {self.content_id} for {self.dj}"
 
-BULK_DISCOUNT_PERCENTAGE = 20  # 20% discount for 5+ items [Phase 3 Feature 3]
 
 class Cart(models.Model):
     """Shopping Cart for multi-item checkout [Phase 3 Feature 3]."""

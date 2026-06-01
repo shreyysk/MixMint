@@ -178,6 +178,17 @@ class AmbassadorCode(models.Model):
     def __str__(self):
         return f"{self.dj.dj_name} ({self.code})"
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            import secrets, string
+            alphabet = string.ascii_uppercase + string.digits
+            while True:
+                code_str = ''.join(secrets.choice(alphabet) for _ in range(8))
+                if not AmbassadorCode.objects.filter(code=code_str).exists():
+                    self.code = code_str
+                    break
+        super().save(*args, **kwargs)
+
 
 class LoginHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_history')
