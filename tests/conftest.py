@@ -6,6 +6,18 @@ import pytest
 from decimal import Decimal
 from django.test import Client
 
+# Monkeypatch Django BaseContext.__copy__ for Python 3.14 compatibility
+from django.template.context import BaseContext
+
+def patched_copy(self):
+    duplicate = self.__class__.__new__(self.__class__)
+    duplicate.__dict__.update(self.__dict__)
+    duplicate.dicts = self.dicts[:]
+    return duplicate
+
+BaseContext.__copy__ = patched_copy
+
+
 
 @pytest.fixture
 def client():

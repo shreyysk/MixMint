@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 from uuid import uuid4
 from apps.accounts.models import Profile, DJProfile
 
@@ -9,10 +10,10 @@ DEFAULT_CHECKOUT_FEE = 5.00  # ₹5
 class DJWallet(models.Model):
     """DJ earnings wallet with breakdown [Spec P2 §9]"""
     dj = models.OneToOneField(DJProfile, on_delete=models.CASCADE, primary_key=True, related_name='wallet')
-    total_earnings = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    pending_earnings = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    escrow_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Chargeback reserve
-    available_for_payout = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_earnings = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    pending_earnings = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    escrow_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))  # Chargeback reserve
+    available_for_payout = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -29,14 +30,14 @@ class Purchase(models.Model):
     content_id = models.PositiveBigIntegerField()
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)  # Pre-discount price [Spec P2 §5]
-    checkout_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5.00)  # Platform service fee [Spec P3 §1.3]
-    commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 15% platform commission
+    checkout_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5.00'))  # Platform service fee [Spec P3 §1.3]
+    commission = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # 15% platform commission
     # Canonical per spec is dj_revenue; keep dj_earnings for backwards compatibility.
-    dj_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 85% DJ revenue [Spec P2 §5]
-    dj_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Back-compat alias
-    ad_revenue_allocated = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Ad revenue share
+    dj_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # 85% DJ revenue [Spec P2 §5]
+    dj_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Back-compat alias
+    ad_revenue_allocated = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Ad revenue share
     price_paid = models.DecimalField(max_digits=10, decimal_places=2)  # Final amount charged to buyer
-    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     # Gateway-agnostic payment fields
     payment_gateway = models.CharField(max_length=20, default='phonepe')
     gateway_order_id = models.CharField(max_length=100, null=True, blank=True)
@@ -95,7 +96,7 @@ class Invoice(models.Model):
     dj = models.ForeignKey(DJProfile, on_delete=models.CASCADE, related_name='invoices')
     invoice_number = models.CharField(max_length=100, unique=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=10, default='INR')
     status = models.CharField(max_length=20, default='issued')
@@ -139,7 +140,7 @@ class DJApplicationFee(models.Model):
         ('refunded', 'Refunded'),
     )
     dj = models.OneToOneField(DJProfile, on_delete=models.CASCADE, related_name='application_fee')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=99.00)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('99.00'))
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_id = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

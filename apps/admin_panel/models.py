@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 from apps.accounts.models import Profile, DJProfile
 
 
@@ -134,15 +135,15 @@ class ContentArchive(models.Model):
 class PlatformSettings(models.Model):
     """Singleton model for global pricing and platform features [Spec P3 v3]"""
     # Pricing controls
-    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
+    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('15.00'))
     
     buyer_platform_fee_enabled = models.BooleanField(default=False)
-    buyer_platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5.00)
+    buyer_platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5.00'))
     
     gst_charging_enabled = models.BooleanField(default=False)
     
     dj_application_fee_enabled = models.BooleanField(default=False)
-    dj_application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=99.00)
+    dj_application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('99.00'))
     
     # Phase 3: Offload System Thresholds
     offload_zero_sales_days = models.IntegerField(default=60)

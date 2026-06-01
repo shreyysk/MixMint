@@ -27,13 +27,28 @@ def dmca_page(request):
     return render(request, 'legal/dmca.html')
 
 
+def anti_resale_page(request):
+    return render(request, 'legal/anti-resale.html')
+
+
 urlpatterns = [
+    # Mapped names for legal templates
+    path('terms/', terms_page, name='legal_terms'),
+    path('privacy/', privacy_page, name='legal_privacy'),
+    path('refund/', refund_page, name='legal_refund'),
+    path('transparency/', transparency_page, name='legal_transparency'),
+    path('security/', security_page, name='legal_security'),
+    path('copyright/', dmca_page, name='legal_dmca'),
+    path('anti-resale/', anti_resale_page, name='legal_anti_resale'),
+
+    # Legacy flat names for the global footer component
     path('terms/', terms_page, name='terms'),
     path('privacy/', privacy_page, name='privacy'),
     path('refund/', refund_page, name='refund'),
     path('transparency/', transparency_page, name='transparency'),
     path('security/', security_page, name='security'),
     path('copyright/', dmca_page, name='dmca'),
+
     # GST Invoice download — JSON and PDF
     path('invoice/<int:invoice_id>/', download_invoice, name='download_invoice'),
     path('invoice/<int:invoice_id>/pdf/', download_invoice_pdf, name='download_invoice_pdf'),

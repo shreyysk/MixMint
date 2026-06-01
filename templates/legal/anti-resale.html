@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Anti-Resale_Policy // MixMint Vault{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-20 px-6 font-body">
+    <!-- ── Header ── -->
+    <div class="mb-16 border-b border-[var(--border)] pb-12">
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
+            Artist_Protection_Notice</p>
+        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
+            Anti-Resale Policy
+        </h1>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">Policy_Version:
+            <span class="text-[var(--text-primary)]">2.0.0-STABLE</span>
+        </p>
+    </div>
+    <!-- ── Content ── -->
+    <div class="space-y-16">
+        <!-- Section 1: Watermarking -->
+        <div class="glow-card p-1">
+             <div class="bg-[var(--bg-surface)] rounded-[14px] p-8">
+                <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                    <span class="text-mint-500">🔊</span> Platform Attribution & Watermarking
+                </h2>
+                <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed">
+                    To protect our artists' intellectual property, every track purchased through MixMint features secure platform ownership metadata. This metadata includes the buyer's identifier, transaction timestamp, and a traceable digital fingerprint embedded into the file.
+                </p>
+             </div>
+        </div>
+
+        <!-- Section 2: License Limitations -->
+        <div class="glow-card p-8 bg-[var(--bg-surface)] rounded-[14px]">
+            <h2 class="text-3xl font-display mb-4 flex items-center gap-3">
+                <span class="text-mint-500">❌</span> Non-Distribution & Resale Limits
+            </h2>
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="notice-info">
+                        <p class="font-bold mb-1">No Public Sharing</p>
+                        <p>Purchased tracks are licensed exclusively for your personal use or performance sets. Publicly distributing raw audio files on filesharing networks is strictly prohibited.</p>
+                    </div>
+                    <div class="notice-info">
+                        <p class="font-bold mb-1">No Re-commercialization</p>
+                        <p>You may not package, resell, or distribute audio tracks purchased on MixMint. Any unauthorized commercial redistribution will result in immediate profile ban and legal action.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
+        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <div class="flex gap-8 flex-wrap justify-center">
+            <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
+            <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>
+            <a href="{% url 'legal_refund' %}" class="hover:text-[var(--accent-mint)] transition-colors">Refund</a>
+            <a href="{% url 'legal_dmca' %}" class="hover:text-[var(--accent-mint)] transition-colors">DMCA</a>
+            <a href="{% url 'home' %}" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
