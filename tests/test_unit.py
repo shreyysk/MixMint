@@ -222,7 +222,7 @@ class TestTrackModel:
     def test_paid_track_at_minimum_accepted(self):
         from apps.tracks.models import Track
         dj = self._make_dj()
-        t = Track(dj=dj, title='Min Price', price=Decimal('19.00'), file_key='t.wav',
+        t = Track(dj=dj, title='Min Price', price=Decimal('29.00'), file_key='t.wav',
                   preview_type='youtube', youtube_url='https://youtube.com/watch?v=x')
         t.full_clean()  # Should not raise
 

@@ -33,6 +33,17 @@ class TrackSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_description(self, value):
+        if not value:
+            return value
+        try:
+            import bleach
+            ALLOWED_TAGS = ['b', 'i', 'em', 'strong', 'a', 'br']
+            return bleach.clean(value, tags=ALLOWED_TAGS, strip=True)
+        except ImportError:
+            from django.utils.html import strip_tags
+            return strip_tags(value)
+
     def validate_file_key(self, value):
         """Enforce file format standards [Gap 10]."""
         ext = value.split('.')[-1].lower()

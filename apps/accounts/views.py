@@ -17,6 +17,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -26,7 +27,9 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class DJProfileViewSet(viewsets.ModelViewSet):
     queryset = DJProfile.objects.all()
     serializer_class = DJProfileSerializer
+    permission_classes = [permissions.AllowAny]
     lookup_field = 'slug'
+    # ... placeholder
     throttle_scope = 'search'  # [Fix 16]
     
     def get_queryset(self):

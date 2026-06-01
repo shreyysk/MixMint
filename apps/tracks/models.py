@@ -70,9 +70,11 @@ class Track(models.Model):
         if self.price is None:
             raise ValidationError({"price": "Price is required."})
 
-        # Allow free (₹0). If paid, enforce ₹19 minimum [Spec §3.2].
-        if self.price > 0 and self.price < Decimal("19.00"):
-            raise ValidationError({"price": "Paid track price must be at least ₹19."})
+        # Allow free (₹0). If paid, enforce dynamic settings.MIN_TRACK_PRICE minimum [Spec §3.2].
+        from django.conf import settings
+        min_price = Decimal(str(getattr(settings, 'MIN_TRACK_PRICE', '29.00')))
+        if self.price > 0 and self.price < min_price:
+            raise ValidationError({"price": f"Paid track price must be at least ₹{min_price}."})
 
         # External preview is mandatory; no streaming allowed [Spec §2.1]
         if not self.preview_type:

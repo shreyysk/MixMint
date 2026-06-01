@@ -7,15 +7,19 @@ import requests
 from django.conf import settings
 from .base import PaymentGateway
 
+from django.core.exceptions import ImproperlyConfigured
+
 class PhonePeGateway(PaymentGateway):
     """
     PhonePe Production Payment Gateway Integration.
     """
 
     def __init__(self):
-        self.merchant_id = getattr(settings, 'PHONEPE_MERCHANT_ID', 'PGTESTPAYUAT')
-        self.salt_key = getattr(settings, 'PHONEPE_SALT_KEY', '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399')
+        self.merchant_id = getattr(settings, 'PHONEPE_MERCHANT_ID', '')
+        self.salt_key = getattr(settings, 'PHONEPE_SALT_KEY', '')
         self.salt_index = getattr(settings, 'PHONEPE_SALT_INDEX', '1')
+        if not self.merchant_id or not self.salt_key:
+            raise ImproperlyConfigured("PhonePe credentials not configured. Set PHONEPE_MERCHANT_ID and PHONEPE_SALT_KEY.")
         self.base_url = getattr(settings, 'PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox')
 
     def _generate_checksum(self, payload_base64, endpoint):

@@ -114,26 +114,41 @@ AUTHENTICATION_BACKENDS = (
 # SUPABASE_URL and SUPABASE_KEY are handled by the client.
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ),
-    'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',
-    ),
-    'DEFAULT_THROTTLE_CLASSES': (
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'apps.accounts.permissions.IsNotBanned',
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
-    ),
+    ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
-        'search': '20/minute',  # Custom rate for intensive queries [Fix 16]
-        'burst': '10/minute',   # Mitigation for scrapers
-    }
+        'search': '60/min',
+        'auth': '10/min',        # For login/register endpoints
+        'payment': '20/hour',    # For checkout endpoints
+        'download': '30/hour',   # For download endpoints
+    },
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # Password validation
@@ -189,8 +204,8 @@ RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
 
 # PhonePe Config [Spec P1 Section A]
-PHONEPE_MERCHANT_ID = env('PHONEPE_MERCHANT_ID', default='PGTESTPAYUAT')
-PHONEPE_SALT_KEY = env('PHONEPE_SALT_KEY', default='099eb0cd-02cf-4e2a-8aca-3e6c6aff0399')
+PHONEPE_MERCHANT_ID = env('PHONEPE_MERCHANT_ID', default='')
+PHONEPE_SALT_KEY = env('PHONEPE_SALT_KEY', default='')
 PHONEPE_SALT_INDEX = env('PHONEPE_SALT_INDEX', default='1')
 # Environment-based base URL
 ENVIRONMENT = env('ENVIRONMENT', default='development')
@@ -205,7 +220,14 @@ BASE_URL = env('BASE_URL', default='http://localhost:8000')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True  # Update for production
+if ENVIRONMENT == 'production':
+    CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+        'https://mix-mint.vercel.app',
+        'https://mixmint.site',
+    ])
+    CORS_ALLOW_ALL_ORIGINS = False
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # Resend Email Config [Spec Tech Stack]
 RESEND_API_KEY = env('RESEND_API_KEY', default='')
@@ -292,3 +314,36 @@ SOCIAL_AUTH_URL_NAMESPACE = 'social'
 # Conditionally add django.contrib.postgres when using PostgreSQL
 if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
     INSTALLED_APPS.append('django.contrib.postgres')
+
+# Obfuscated Admin URL configuration
+ADMIN_URL = env('ADMIN_URL', default='admin/')
+
+# Production Security and Hardening Block
+if ENVIRONMENT == 'production':
+    # HTTPS Security
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Cookie Security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Session Expiry
+    SESSION_COOKIE_AGE = 86400  # 24 hours
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+    
+    # Logging
+    ADMINS = [('MixMint Admin', env('ADMIN_EMAIL', default='admin@mixmint.site'))]
+

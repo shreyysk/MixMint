@@ -61,3 +61,59 @@ class FraudDetectionMiddleware:
         if x_forwarded:
             return x_forwarded.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR')
+
+
+class FraudDetector:
+    @staticmethod
+    def check_purchase(user_id, data):
+        """
+        Runs fraud checks on a purchase transaction [BUG-07 FIX].
+        Returns: (is_valid: bool, risk_level: str, flags: list)
+        """
+        ip = data.get('ip_address')
+        device_hash = data.get('device_hash')
+        content_id = data.get('content_id')
+
+        flags = []
+        risk_level = 'low'
+
+        # Rate check: Max 5 checkout transactions in a 5-minute window per user
+        user_purchase_key = f"purchase_velocity_{user_id}"
+        recent_purchases = cache.get(user_purchase_key, 0)
+        if recent_purchases >= 5:
+            flags.append("High checkout velocity")
+            risk_level = 'high'
+        cache.set(user_purchase_key, recent_purchases + 1, timeout=300)
+
+        # IP abuse checks
+        if ip:
+            ip_users_key = f"fraud_ip_users_{ip.replace(':', '_')}"
+            users = cache.get(ip_users_key, set())
+            if len(users) > 3:
+                flags.append("Multiple distinct users from same IP")
+                if risk_level != 'high':
+                    risk_level = 'medium'
+
+        # If high risk pattern detected, create a FraudAlert record
+        if risk_level in ('medium', 'high'):
+            try:
+                from apps.accounts.models import Profile
+                profile = Profile.objects.get(user_id=user_id)
+                FraudAlert.objects.get_or_create(
+                    user=profile,
+                    alert_type='ip_abuse' if 'IP' in "".join(flags) else 'velocity',
+                    status='pending',
+                    defaults={
+                        'severity': risk_level,
+                        'details': {'ip': ip, 'flags': flags, 'device_hash': device_hash, 'content_id': content_id}
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error creating FraudAlert in FraudDetector: {str(e)}")
+
+        # Block only if velocity is extremely abused
+        if recent_purchases >= 10:
+            return False, 'high', flags + ["Extremely high checkout velocity (BLOCKED)"]
+
+        return True, risk_level, flags
+

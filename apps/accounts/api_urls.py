@@ -7,6 +7,8 @@ from .dj_application_views import (
 )
 from .pro_upgrade_views import upgrade_to_pro, admin_grant_pro
 
+from .registration_views import RegisterView
+
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'profiles', ProfileViewSet)
@@ -14,6 +16,7 @@ router.register(r'djs', DJProfileViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('register/', RegisterView.as_view(), name='register'),
     # DJ Application Flow [Spec §7]
     path('dj/apply/', apply_as_dj, name='dj_apply'),
     path('dj/<int:dj_profile_id>/approve/', admin_approve_dj, name='dj_approve'),

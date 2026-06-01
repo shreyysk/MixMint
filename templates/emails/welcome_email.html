@@ -1,0 +1,27 @@
+{% extends "emails/base.html" %}
+{% block title %}Welcome to MixMint!{% endblock %}
+
+{% block content %}
+<h2>Welcome to MixMint, {{ name }}! 🎧</h2>
+
+<p>Thank you for joining India's digital music marketplace. You can now discover, purchase, and securely download tracks from the best DJs across the country.</p>
+
+<div class="highlight-box">
+    <strong>🎵 Explore the Storefronts:</strong> Discover custom remix packs, original beats, and WAV/MP3 tracks curated by verified DJs.
+</div>
+
+<h3>Next Steps to Get Started:</h3>
+<ol>
+    <li>🔍 Explore tracks on the <a href="https://mixmint.in/explore">Explore page</a></li>
+    <li>❤️ Add your favorite tracks to your wishlist</li>
+    <li>🛒 Add tracks to your cart to get tier discounts (up to 30% off!)</li>
+</ol>
+
+<p style="text-align: center;">
+    <a href="https://mixmint.in/explore" class="btn">Explore MixMint</a>
+</p>
+
+<p>Questions? Reply to this email or check our <a href="https://mixmint.in/help">Help Center</a>.</p>
+
+<p>Keep the beat going! 🎵</p>
+{% endblock %}

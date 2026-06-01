@@ -109,3 +109,27 @@ def calculate_storage_overages():
             )
             
     return f"Calculated overages for {pro_profiles.count()} Pro DJs."
+
+@shared_task
+def send_welcome_email(user_id):
+    """
+    Send welcome email to a new user [Phase 7.2].
+    """
+    from apps.accounts.models import User
+    from apps.core.email_service import EmailService
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        user = User.objects.get(id=user_id)
+        return EmailService.send_email(
+            to_email=user.email,
+            subject="Welcome to MixMint! 🎧 Let's get started",
+            template_name='welcome_email',
+            context={
+                'name': user.profile.full_name or user.email,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to send welcome email for user {user_id}: {str(e)}")
+        return False

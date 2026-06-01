@@ -117,7 +117,7 @@ class TestExploreFilters:
         u.profile.role = 'dj'
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Price DJ', slug='pricefilt-dj', status='approved')
-        Track.objects.create(dj=dj, title='Cheap Track', price=Decimal('19.00'), file_key='t.wav',
+        Track.objects.create(dj=dj, title='Cheap Track', price=Decimal('29.00'), file_key='t.wav',
                               preview_type='youtube', youtube_url='https://youtube.com/watch?v=p')
         Track.objects.create(dj=dj, title='Expensive Track', price=Decimal('999.00'), file_key='t2.wav',
                               preview_type='youtube', youtube_url='https://youtube.com/watch?v=p2')
