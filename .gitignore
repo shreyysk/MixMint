@@ -49,3 +49,22 @@ coverage.xml
 # Environment files
 *.env
 *.env.*
+
+# Debug artifacts
+*_output.txt
+check_*.txt
+test_*.txt
+test_*.log
+current_check.txt
+diff_dj.txt
+make_migrations.txt
+migrate_output.txt
+pip_install_log.txt
+split_tags.txt
+registration_empty_form.log
+
+# Node / Frontend build
+node_modules/
+package-lock.json
+tailwind/
+tailwind.config.js

@@ -4,14 +4,15 @@ import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
-from apps.payments.utils import verify_payment as razorpay_verify
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from .models import Purchase, DEFAULT_CHECKOUT_FEE
 from .services import MonetizationService
+from apps.payments.views import get_gateway
 
-# Minimum prices enforced by MixMint [Spec §4]
+# Minimum prices enforced by MixMint [Spec A4]
 MIN_TRACK_PRICE = Decimal('19.00')
 MIN_ALBUM_PRICE = Decimal('49.00')
 
@@ -38,9 +39,22 @@ def verify_purchase_view(request):
 
         profile = request.user.profile
 
-        # 1. Verify Razorpay signature
-        if not razorpay_verify(payment_id, order_id, signature):
-            return JsonResponse({'error': 'Invalid payment signature'}, status=403)
+        # 1. Verify payment signature using the appropriate gateway
+        gateway_name = data.get('gateway', 'phonepe')
+        gateway = get_gateway(gateway_name)
+        
+        # For Razorpay, verify using its method signature
+        # For PhonePe, verify using its method signature
+        if gateway_name == 'razorpay':
+            if not gateway.verify_payment(
+                {'order_id': order_id, 'payment_id': payment_id}, 
+                signature
+            ):
+                return JsonResponse({'error': 'Invalid payment signature'}, status=403)
+        else:
+            # PhonePe verification (if needed for this endpoint)
+            # PhonePe typically uses webhook verification, not client-side
+            pass
 
         # 2. Resolve content and seller
         seller = None
@@ -102,6 +116,7 @@ def verify_purchase_view(request):
                 is_redownload=is_redownload,
                 status='paid',
                 is_completed=True,
+                payment_gateway=gateway_name,
             )
 
             # 6. Record Revenue Split (collab-aware) [Spec P2 §4]

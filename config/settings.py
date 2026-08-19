@@ -15,7 +15,14 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+
+# Environment detection (must be before production block)
+ENVIRONMENT = env('ENVIRONMENT', default='development')
+
+# Production Safety Assertion - ALLOWED_HOSTS must be configured
+if ENVIRONMENT == 'production' and not ALLOWED_HOSTS:
+    raise ValueError("ALLOWED_HOSTS must be configured in production")
 
 # Application definition
 INSTALLED_APPS = [
@@ -33,6 +40,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'storages',
+    'django_celery_beat',
+    'csp',
     
     # Local apps
     'apps.accounts',
@@ -42,8 +51,6 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.downloads',
     'apps.admin_panel',
-    'apps.social',    # Stub: wishlists + follows (no gamification) [Spec §6]
-    'apps.rewards',   # Stub: referral tracking only [Spec §8]
     'social_django',
 ]
 
@@ -58,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'csp.middleware.CSPMiddleware',
     # Custom MixMint Middleware [Spec §11, §13, P2 §15]
     'apps.accounts.middleware.MaintenanceModeMiddleware',
     'apps.accounts.middleware.BlacklistMiddleware',
@@ -177,6 +185,18 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Don't crash if a referenced static file is missing (e.g. conditional template assets)
+WHITENOISE_MANIFEST_STRICT = False
+
+# Django 5.1+ STORAGES setting (overrides STATICFILES_STORAGE)
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # Media files
 MEDIA_URL = '/media/'
@@ -208,7 +228,6 @@ PHONEPE_MERCHANT_ID = env('PHONEPE_MERCHANT_ID', default='')
 PHONEPE_SALT_KEY = env('PHONEPE_SALT_KEY', default='')
 PHONEPE_SALT_INDEX = env('PHONEPE_SALT_INDEX', default='1')
 # Environment-based base URL
-ENVIRONMENT = env('ENVIRONMENT', default='development')
 if ENVIRONMENT == 'production':
     PHONEPE_BASE_URL = 'https://api.phonepe.com/apis/hermes'
 else:
@@ -236,6 +255,7 @@ FROM_EMAIL = env('FROM_EMAIL', default='noreply@mixmint.site')
 # Celery Config [Spec Tech Stack]
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Platform Constants
 PLATFORM_LAUNCH_DATE = timezone.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
@@ -259,17 +279,20 @@ LOGOUT_REDIRECT_URL = 'home'
 
 # Active Payment Gateway Selection (Lazy loaded to avoid import errors)
 # The actual gateway is imported when first accessed via get_payment_gateway()
-def get_payment_gateway():
-    """Get the active payment gateway based on environment."""
-    if ENVIRONMENT == 'production':
-        from apps.payments.phonepe import PhonePeGateway
-        return PhonePeGateway()
+# Default gateway can be overridden per-request in views via get_gateway(gateway_name)
+DEFAULT_PAYMENT_GATEWAY = env('DEFAULT_PAYMENT_GATEWAY', default='phonepe')  # 'phonepe' or 'razorpay'
+
+def get_payment_gateway(gateway_name=None):
+    """Get the active payment gateway. If gateway_name is None, use DEFAULT_PAYMENT_GATEWAY."""
+    gateway_name = gateway_name or DEFAULT_PAYMENT_GATEWAY
+    if gateway_name == 'razorpay':
+        from apps.payments.razorpay_gateway import RazorpayGateway
+        return RazorpayGateway()
     else:
         from apps.payments.phonepe import PhonePeGateway
-        # Use PhonePe in dev too for consistency
         return PhonePeGateway()
 
-# For backwards compatibility - lazy loaded
+# For backwards compatibility - lazy loaded (uses DEFAULT_PAYMENT_GATEWAY)
 class LazyGateway:
     _gateway = None
     
@@ -282,10 +305,11 @@ ACTIVE_GATEWAY = LazyGateway()
 
 # Production Safety Guards (only run in production)
 if ENVIRONMENT == 'production':
-    _gateway = get_payment_gateway()
-    from apps.payments.phonepe import PhonePeGateway
-    assert isinstance(_gateway, PhonePeGateway), "Production must use PhonePeGateway"
-    assert 'preprod' not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
+    # Allow either gateway in production, but verify configuration
+    if DEFAULT_PAYMENT_GATEWAY == 'phonepe':
+        assert 'preprod' not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
+    elif DEFAULT_PAYMENT_GATEWAY == 'razorpay':
+        assert settings.RAZORPAY_KEY_ID and settings.RAZORPAY_KEY_SECRET, "Razorpay keys not configured for production"
 
 # Vercel Configuration [Phase 1 Section C Fix 02]
 VERCEL_TOKEN = os.getenv('VERCEL_TOKEN')
@@ -339,6 +363,19 @@ if ENVIRONMENT == 'production':
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
+    
+    # Content Security Policy (CSP)
+    CSP_DEFAULT_SRC = ("'self'",)
+    CSP_SCRIPT_SRC = ("'self'", 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net', 'https://unpkg.com')
+    CSP_STYLE_SRC = ("'self'", 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net', 'https://unpkg.com', "'unsafe-inline'")
+    CSP_FONT_SRC = ("'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net')
+    CSP_IMG_SRC = ("'self'", 'data:', 'https:', 'blob:')
+    CSP_CONNECT_SRC = ("'self'", 'https://api.phonepe.com', 'https://api-preprod.phonepe.com', 'https://api.razorpay.com')
+    CSP_FRAME_SRC = ("'self'", 'https://api.phonepe.com', 'https://api-preprod.phonepe.com', 'https://api.razorpay.com')
+    CSP_BASE_URI = ("'self'",)
+    CSP_FORM_ACTION = ("'self'",)
+    CSP_FRAME_ANCESTORS = ("'none'",)
+    CSP_REPORT_URI = '/csp-report/'
     
     # Session Expiry
     SESSION_COOKIE_AGE = 86400  # 24 hours

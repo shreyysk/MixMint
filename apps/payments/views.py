@@ -36,12 +36,12 @@ def calculate_total_price_paise(content, is_redownload=False):
     price = float(content.price)
     if is_redownload:
         price = price * 0.5
-    
+
     # Add platform fee
     from apps.admin_panel.models import PlatformSettings
     settings_obj = PlatformSettings.load()
     platform_fee = float(settings_obj.buyer_platform_fee) if settings_obj.buyer_platform_fee_enabled else 0.0
-    
+
     return int((price + platform_fee) * 100)
 
 def get_content_object(content_id, content_type):
@@ -50,6 +50,23 @@ def get_content_object(content_id, content_type):
     elif content_type in ('album', 'zip'):
         return AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
     raise ValueError(f"Invalid content type: {content_type}")
+
+
+def get_gateway(gateway_name=None):
+    """
+    Get the appropriate payment gateway instance.
+    If gateway_name is provided, use that specific gateway.
+    Otherwise, fall back to the default from settings.
+    """
+    if gateway_name == 'razorpay':
+        from apps.payments.razorpay_gateway import RazorpayGateway
+        return RazorpayGateway()
+    elif gateway_name == 'phonepe':
+        from apps.payments.phonepe import PhonePeGateway
+        return PhonePeGateway()
+    else:
+        # Use default from settings (LazyGateway)
+        return settings.ACTIVE_GATEWAY
 
 
 @login_required
@@ -113,6 +130,10 @@ def initiate_purchase(request):
     # 3. Create pending purchase record in atomic block
     order_id = f"MM_{uuid.uuid4().hex[:16].upper()}"
     
+    # Get gateway from request (default to phonepe if not specified)
+    gateway_name = data.get('gateway', 'phonepe')
+    gateway = get_gateway(gateway_name)
+    
     with transaction.atomic():
         purchase = Purchase.objects.create(
             user=request.user.profile,
@@ -120,7 +141,7 @@ def initiate_purchase(request):
             content_id=content_id,
             seller=content_obj.dj,
             gateway_order_id=order_id,
-            payment_gateway=settings.ACTIVE_GATEWAY.__class__.__name__.lower().replace('gateway', ''),
+            payment_gateway=gateway_name,
             amount_paise=amount_paise,
             original_price=content_obj.price,
             price_paid=amount_paise / 100.0,
@@ -128,7 +149,6 @@ def initiate_purchase(request):
         )
 
         # 4. Create Gateway order
-        gateway = settings.ACTIVE_GATEWAY
         try:
             result = gateway.create_order(
                 amount_paise=amount_paise,
@@ -150,28 +170,28 @@ def initiate_purchase(request):
 
 def payment_callback(request):
     """
-    User lands here after PhonePe payment page. [Section A Step 2]
+    User lands here after payment page (PhonePe or Razorpay). [Section A Step 2]
     Handles both single-item and cart-based purchases.
     """
     order_id = request.GET.get('order_id')
     if not order_id:
         return HttpResponseRedirect('/payment/failed/')
 
-    # Verify status via API
-    gateway = settings.ACTIVE_GATEWAY
-    status_data = gateway.get_payment_status(order_id)
-
     # Find all purchases with this order_id (could be one or many)
     purchases = Purchase.objects.filter(gateway_order_id=order_id)
     if not purchases.exists():
         return HttpResponseRedirect('/payment/failed/')
+
+    # Use the gateway from the first purchase record
+    first_purchase = purchases.first()
+    gateway = get_gateway(first_purchase.payment_gateway)
+    status_data = gateway.get_payment_status(order_id)
 
     if status_data['success'] and status_data['status'] == 'PAYMENT_SUCCESS':
         for purchase in purchases:
             handle_payment_success(purchase, status_data)
         
         # If it was a cart purchase, redirect to multi-purchase view or downloads
-        first_purchase = purchases.first()
         return HttpResponseRedirect(f'/downloads/?order_id={order_id}')
     else:
         for purchase in purchases:
@@ -247,6 +267,7 @@ def cart_checkout(request):
     try:
         data = json.loads(request.body)
         cart_id = data.get('cart_id')
+        gateway_name = data.get('gateway', 'phonepe')
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
@@ -266,6 +287,7 @@ def cart_checkout(request):
 
     order_id = f"MMC_{uuid.uuid4().hex[:14].upper()}"
     pending_purchases = []
+    gateway = get_gateway(gateway_name)
     
     with transaction.atomic():
         try:
@@ -277,7 +299,7 @@ def cart_checkout(request):
                     content_id=item.content_id,
                     seller=item_content.dj,
                     gateway_order_id=order_id,
-                    payment_gateway=settings.ACTIVE_GATEWAY.__class__.__name__.lower().replace('gateway', ''),
+                    payment_gateway=gateway_name,
                     amount_paise=item.price, # Stored as paise in CartItem
                     original_price=item_content.price,
                     price_paid=item.price / 100.0,
@@ -289,7 +311,6 @@ def cart_checkout(request):
         except Exception as e:
             return JsonResponse({'error': f'Error preparing checkout: {str(e)}'}, status=500)
 
-        gateway = settings.ACTIVE_GATEWAY
         try:
             result = gateway.create_order(
                 amount_paise=total_paise,

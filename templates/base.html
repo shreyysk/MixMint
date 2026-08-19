@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 
@@ -30,10 +30,10 @@
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS -->
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <!-- Alpine JS -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Tailwind CSS (compiled) -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Alpine JS (local) -->
+    <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
 
     {% block extra_head %}{% endblock %}
 

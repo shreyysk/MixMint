@@ -1,0 +1,13 @@
+{
+  "name": "mixmint2.0",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss build -i ./tailwind/input.css -o ./static/css/style.css --minify",
+    "watch:css": "tailwindcss build -i ./tailwind/input.css -o ./static/css/style.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

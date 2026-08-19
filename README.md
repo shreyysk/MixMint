@@ -7,9 +7,9 @@ Welcome to the Django-based version of MixMint. This project is a complete conve
 - **API**: Django REST Framework (DRF) with JWT Authentication (Supabase Service Role compatible)
 - **Database**: Supabase PostgreSQL (Production) / SQLite (Dev)
 - **Storage**: Cloudflare R2 / Supabase Storage (S3 Compatible)
-- **Payments**: Razorpay Integrated
+- **Payments**: PhonePe (UPI) + Razorpay (Cards/International) — dual gateway support
 - **Auth**: Custom User model (Synched with Supabase Auth)
-- **Frontend Layer**: Django Templates + HTMX (Ready for progressive enhancement)
+- **Frontend Layer**: Django Templates + Alpine.js + Tailwind CSS (compiled)
 
 ## Project Structure
 - `config/`: Project settings and core routing.
@@ -18,7 +18,7 @@ Welcome to the Django-based version of MixMint. This project is a complete conve
   - `tracks/`: Music track management and previews.
   - `albums/`: Album packs and ZIP processing.
   - `commerce/`: Wallets, purchases, and ledger entries.
-  - `payments/`: Razorpay integration.
+  - `payments/`: PhonePe + Razorpay integration (dual gateway).
   - `social/`: Follows, reviews, and wishlists.
   - `rewards/`: Points system and referrals.
   - `downloads/`: Secure download token generation.
@@ -57,10 +57,19 @@ python manage.py createsuperuser
 ```
 
 ### 5. Running the Project
+
+**Local Development:**
 ```bash
 python manage.py runserver
 ```
 Visit `http://localhost:8000/admin/` to access the admin dashboard or `http://localhost:8000/api/v1/` for the API.
+
+**Production Deployment (Railway):**
+See [DEPLOY.md](DEPLOY.md) for complete Railway deployment guide including:
+- PostgreSQL + Redis setup
+- Environment variables
+- Celery worker/beat configuration
+- Background job scheduling
 
 ## Features Implemented
 - [x] **Universal Auth**: Role-based access (User, DJ, Admin).
