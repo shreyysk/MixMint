@@ -34,6 +34,11 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <!-- Alpine JS (local) -->
     <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
+    <style>
+        /* Hide Alpine-cloaked elements until Alpine.js initializes.
+           Without this, modals/toasts render stuck-open if JS is slow/blocked. */
+        [x-cloak] { display: none !important; }
+    </style>
 
     {% block extra_head %}{% endblock %}
 

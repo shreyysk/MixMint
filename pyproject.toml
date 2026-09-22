@@ -1,0 +1,4 @@
+# Vercel reads this file for the Django build step (runs after pip install,
+# before deploy). Collects static files so the CDN can serve CSS/JS/vendor.
+[tool.vercel.scripts]
+build = "python manage.py collectstatic --noinput"
