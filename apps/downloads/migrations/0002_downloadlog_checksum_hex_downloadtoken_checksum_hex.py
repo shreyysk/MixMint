@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('downloads', '0001_initial'),
+        ("downloads", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='downloadlog',
-            name='checksum_hex',
+            model_name="downloadlog",
+            name="checksum_hex",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
         migrations.AddField(
-            model_name='downloadtoken',
-            name='checksum_hex',
+            model_name="downloadtoken",
+            name="checksum_hex",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
     ]

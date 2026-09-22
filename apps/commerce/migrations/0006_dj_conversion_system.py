@@ -29,9 +29,7 @@ class Migration(migrations.Migration):
                 ("description", models.TextField()),
                 (
                     "commission_discount",
-                    models.DecimalField(
-                        decimal_places=2, default=Decimal("5.00"), max_digits=5
-                    ),
+                    models.DecimalField(decimal_places=2, default=Decimal("5.00"), max_digits=5),
                 ),
                 ("valid_from", models.DateTimeField()),
                 ("valid_until", models.DateTimeField()),
@@ -89,9 +87,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "amount",
-                    models.DecimalField(
-                        decimal_places=2, default=Decimal("50.00"), max_digits=10
-                    ),
+                    models.DecimalField(decimal_places=2, default=Decimal("50.00"), max_digits=10),
                 ),
                 ("credited", models.BooleanField(default=False)),
                 ("credited_at", models.DateTimeField(blank=True, null=True)),
@@ -202,15 +198,11 @@ class Migration(migrations.Migration):
                 ("referral_code", models.CharField(max_length=20)),
                 (
                     "referrer_bonus",
-                    models.DecimalField(
-                        decimal_places=2, default=Decimal("100.00"), max_digits=10
-                    ),
+                    models.DecimalField(decimal_places=2, default=Decimal("100.00"), max_digits=10),
                 ),
                 (
                     "referred_bonus",
-                    models.DecimalField(
-                        decimal_places=2, default=Decimal("50.00"), max_digits=10
-                    ),
+                    models.DecimalField(decimal_places=2, default=Decimal("50.00"), max_digits=10),
                 ),
                 ("referrer_paid", models.BooleanField(default=False)),
                 ("referred_paid", models.BooleanField(default=False)),

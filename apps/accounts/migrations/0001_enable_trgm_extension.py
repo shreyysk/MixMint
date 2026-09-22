@@ -4,8 +4,7 @@ from django.contrib.postgres.operations import TrigramExtension
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         TrigramExtension(),

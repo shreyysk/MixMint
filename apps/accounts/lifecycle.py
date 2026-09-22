@@ -34,12 +34,12 @@ def expire_inactive_accounts():
     for profile in inactive_profiles:
         # Mark user as inactive
         profile.user.is_active = False
-        profile.user.save(update_fields=['is_active'])
+        profile.user.save(update_fields=["is_active"])
         expired_count += 1
 
     return {
-        'expired_count': expired_count,
-        'cutoff_date': cutoff.isoformat(),
+        "expired_count": expired_count,
+        "cutoff_date": cutoff.isoformat(),
     }
 
 
@@ -48,6 +48,6 @@ def update_last_active(user):
     try:
         profile = user.profile
         profile.last_active_at = timezone.now()
-        profile.save(update_fields=['last_active_at'])
+        profile.save(update_fields=["last_active_at"])
     except Profile.DoesNotExist:
         pass

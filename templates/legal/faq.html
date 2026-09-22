@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}FAQ — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[860px] mx-auto py-20 px-6 font-body">
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">// Questions_Answered</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-10">FAQ</h1>
+
+    <div class="space-y-8 text-[14px] leading-relaxed">
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">Is the price I see the final price?</h3>
+        <p class="text-[var(--text-muted)]">Yes. Every price on MixMint is all-inclusive — platform fee and taxes are inside the number. No extra charges appear at checkout.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do downloads work?</h3>
+        <p class="text-[var(--text-muted)]">After payment you get a personal, expiring download link served by MixMint itself. DJs host originals on their own Drive; you never see those links and files always arrive as proper downloads, never in-browser streams.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">What if my download fails or expires?</h3>
+        <p class="text-[var(--text-muted)]">Failed downloads retry free. Used links can be re-issued from your library. After a 3-day lock, re-downloads cost 50% — or 0 with Download Insurance.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do DJs get paid?</h3>
+        <p class="text-[var(--text-muted)]">15% platform commission (8% for Pro DJs). Earnings land in the DJ wallet and pay out to UPI or bank account above ₹500 with OTP confirmation.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">I'm a DJ — where do my files live?</h3>
+        <p class="text-[var(--text-muted)]">Your choice: upload to MixMint storage, or paste any Google Drive / MediaFire / direct link. We verify the link downloads before accepting it, cache it privately for 2 days per buyer wave, and never expose your original link.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do refunds work?</h3>
+        <p class="text-[var(--text-muted)]">Request from your library with a reason. Eligible cases auto-process; the rest are reviewed with a visible status tracker. See the Refunds page for the full policy.</p></div>
+        <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do I reach a human?</h3>
+        <p class="text-[var(--text-muted)]">File a support ticket from the Contact page or message us on Telegram — urgent order/download/payout issues get fastest response there.</p></div>
+    </div>
+</div>
+{% endblock %}

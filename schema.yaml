@@ -1,0 +1,5061 @@
+openapi: 3.0.3
+info:
+  title: MixMint 2.0 API
+  version: 2.0.0
+  description: Premium Marketplace for DJ Tool Kits & Exclusive Edits
+paths:
+  /api/v1/accounts/confirm-age/:
+    post:
+      operationId: accounts_confirm_age_create
+      description: Age confirmation is handled implicitly at signup (18+ ToS acceptance).
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/accounts/dj/{dj_profile_id}/approve/:
+    post:
+      operationId: accounts_dj_approve_create
+      description: |-
+        Admin approves a DJ application [Spec §3.3].
+        Creates DJWallet and updates user role.
+      parameters:
+      - in: path
+        name: dj_profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/{dj_profile_id}/grant-pro/:
+    post:
+      operationId: accounts_dj_grant_pro_create
+      description: |-
+        Admin manually grants Pro DJ status [Spec P3 §1.5].
+        Use for comped upgrades, influencer partnerships, etc.
+      parameters:
+      - in: path
+        name: dj_profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/{dj_profile_id}/reject/:
+    post:
+      operationId: accounts_dj_reject_create
+      description: Admin rejects a DJ application [Spec §3.3].
+      parameters:
+      - in: path
+        name: dj_profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/{dj_profile_id}/verify/:
+    post:
+      operationId: accounts_dj_verify_create
+      description: Grant Verified DJ badge [Spec P2 §2].
+      parameters:
+      - in: path
+        name: dj_profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/apply/:
+    post:
+      operationId: accounts_dj_apply_create
+      description: |-
+        Submit a DJ application [Spec §7].
+        Checks:
+        - User is not already a DJ
+        - No pending application exists
+        - Application fee paid (if enabled by admin)
+        - FREE for first 3 months [Spec §7]
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/payout-otp/:
+    post:
+      operationId: accounts_dj_payout_otp_create
+      description: |-
+        DJ requests a 2FA OTP for payout verification [Spec P2 §11, P3 §3.2].
+        OTP is sent to the DJ's registered email.
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/toggle-store/:
+    post:
+      operationId: accounts_dj_toggle_store_create
+      description: DJ pauses/unpauses their store [Spec §3.2].
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/dj/upgrade-pro/:
+    post:
+      operationId: accounts_dj_upgrade_pro_create
+      description: |-
+        Initiate a Pro DJ upgrade order [Spec P3 §1.5].
+
+        Creates a payment order for the annual Pro subscription.
+        After verified payment:
+        - Profile.is_pro_dj = True
+        - Commission drops from 15% → 8%
+        - Custom domain and ad reduction features unlocked
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/djs/:
+    get:
+      operationId: accounts_djs_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDJProfileList'
+          description: ''
+    post:
+      operationId: accounts_djs_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DJProfile'
+          description: ''
+  /api/v1/accounts/djs/{slug}/:
+    get:
+      operationId: accounts_djs_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DJProfile'
+          description: ''
+    put:
+      operationId: accounts_djs_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DJProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DJProfile'
+          description: ''
+    patch:
+      operationId: accounts_djs_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDJProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDJProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDJProfileRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DJProfile'
+          description: ''
+    delete:
+      operationId: accounts_djs_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/accounts/profiles/:
+    get:
+      operationId: accounts_profiles_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfileList'
+          description: ''
+    post:
+      operationId: accounts_profiles_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/v1/accounts/profiles/{user}/:
+    get:
+      operationId: accounts_profiles_retrieve
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    put:
+      operationId: accounts_profiles_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: accounts_profiles_partial_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    delete:
+      operationId: accounts_profiles_destroy
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/accounts/register/:
+    post:
+      operationId: accounts_register_create
+      description: |-
+        POST /api/v1/accounts/register/
+        Body: { email, password, full_name }
+        Returns: { access, refresh, user_id, role }
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistration'
+          description: ''
+  /api/v1/accounts/users/:
+    get:
+      operationId: accounts_users_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: accounts_users_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/accounts/users/{id}/:
+    get:
+      operationId: accounts_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: accounts_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: accounts_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: accounts_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/accounts/users/confirm_age/:
+    post:
+      operationId: accounts_users_confirm_age_create
+      description: Age confirmation is handled implicitly at signup (18+ ToS acceptance).
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/admin/analytics/high-value/:
+    get:
+      operationId: admin_analytics_high_value_retrieve
+      description: High-value transaction alerts [Spec P2 §12].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/analytics/investor-report/:
+    get:
+      operationId: admin_analytics_investor_report_retrieve
+      description: |-
+        Visual dashboard for platform transparency [Spec §12].
+        Shows GMV, commissions, and ad revenue.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/analytics/investor-report/pdf/:
+    get:
+      operationId: admin_analytics_investor_report_pdf_retrieve
+      description: |-
+        Export investor dashboard as downloadable PDF [Spec §12].
+        Suitable for sharing with investors or stakeholders.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/analytics/revenue/:
+    get:
+      operationId: admin_analytics_revenue_retrieve
+      description: Platform revenue analytics [Spec P2 §12].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/analytics/revenue-dashboard/:
+    get:
+      operationId: admin_analytics_revenue_dashboard_retrieve
+      description: Unified UI for financial analytics [Spec P2 §12].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/api/offers/save/:
+    post:
+      operationId: admin_api_offers_save_create
+      description: Create or update a promotional offer.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/api/settings/update/:
+    post:
+      operationId: admin_api_settings_update_create
+      description: Update global platform pricing settings.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/config/ad-floor/:
+    post:
+      operationId: admin_config_ad_floor_create
+      description: Dynamic ad floor pricing control [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/config/invoice-generation/:
+    post:
+      operationId: admin_config_invoice_generation_create
+      description: Enable or disable automatic invoice generation for purchases.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/config/payment-gateway/:
+    post:
+      operationId: admin_config_payment_gateway_create
+      description: Admin switch between Razorpay and PhonePe [Spec §10].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/content/delete/:
+    post:
+      operationId: admin_content_delete_create
+      description: |-
+        Soft delete track or album with DJ notification [Spec §3.3].
+        Archives content metadata before deletion [Spec §9].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/content/moderation/:
+    get:
+      operationId: admin_content_moderation_retrieve
+      description: Premium UI for content moderation [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dashboard/:
+    get:
+      operationId: admin_dashboard_retrieve
+      description: Central hub for all specialized admin dashboards.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dj/fee-toggle/:
+    post:
+      operationId: admin_dj_fee_toggle_create
+      description: Enable/disable ₹99 DJ application fee [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dj/management/:
+    get:
+      operationId: admin_dj_management_retrieve
+      description: Premium UI for DJ management [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dj/pending/:
+    get:
+      operationId: admin_dj_pending_retrieve
+      description: List pending DJ applications [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/health/:
+    get:
+      operationId: admin_health_retrieve
+      description: Platform health monitoring [Imp 09].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/legal/dmca-template/:
+    post:
+      operationId: admin_legal_dmca_template_create
+      description: Generate DMCA takedown notice [Spec §9].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/offers-pricing/:
+    get:
+      operationId: admin_offers_pricing_retrieve
+      description: Render the Offers & Pricing dashboard for admin.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payouts/escrow/:
+    post:
+      operationId: admin_payouts_escrow_create
+      description: Move DJ earnings to escrow [Spec P2 §9].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payouts/hold/:
+    post:
+      operationId: admin_payouts_hold_create
+      description: Hold DJ payout for legal review [Spec P2 §9].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payouts/release/:
+    post:
+      operationId: admin_payouts_release_create
+      description: Release held payout [Spec P2 §9].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/ban/:
+    post:
+      operationId: admin_security_ban_create
+      description: Add/remove IP or device ban [Spec §3.3, §4.6].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/dashboard/:
+    get:
+      operationId: admin_security_dashboard_retrieve
+      description: Premium UI for security controls [Spec §3.3].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/freeze/:
+    post:
+      operationId: admin_security_freeze_create
+      description: Freeze a user account [Spec §3.3, §11].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/kill-switch/:
+    post:
+      operationId: admin_security_kill_switch_create
+      description: Activate/deactivate emergency kill switch [Spec §3.3, §4.6].
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/maintenance/:
+    post:
+      operationId: admin_security_maintenance_create
+      description: 'Set platform mode: normal/maintenance/kill_switch [Spec P2 §15].'
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/security/unfreeze/:
+    post:
+      operationId: admin_security_unfreeze_create
+      description: Unfreeze a user account.
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/albums/:
+    get:
+      operationId: albums_list
+      parameters:
+      - in: query
+        name: dj
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: processing_status
+        schema:
+          type: string
+          enum:
+          - completed
+          - failed
+          - pending
+          - processing
+          - queued
+        description: |-
+          * `pending` - Pending
+          * `processing` - Processing
+          * `completed` - Completed
+          * `failed` - Failed
+          * `queued` - Queued
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlbumPackList'
+          description: ''
+    post:
+      operationId: albums_create
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumPack'
+          description: ''
+  /api/v1/albums/{id}/:
+    get:
+      operationId: albums_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this album pack.
+        required: true
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumPack'
+          description: ''
+    put:
+      operationId: albums_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this album pack.
+        required: true
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumPack'
+          description: ''
+    patch:
+      operationId: albums_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this album pack.
+        required: true
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumPackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumPackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumPackRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumPack'
+          description: ''
+    delete:
+      operationId: albums_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this album pack.
+        required: true
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/albums/{id}/download-token/:
+    post:
+      operationId: albums_download_token_create
+      description: |-
+        Generate a secure download token for album/ZIP.
+        Ownership-based access only. 3 attempts per IP.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this album pack.
+        required: true
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumPackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumPack'
+          description: ''
+  /api/v1/commerce/analytics/albums/:
+    get:
+      operationId: commerce_analytics_albums_retrieve
+      description: Earnings breakdown per album [Spec §3.2].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/analytics/chart/:
+    get:
+      operationId: commerce_analytics_chart_retrieve
+      description: Weekly earnings for the last 12 weeks for charting [Spec §3.2].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/analytics/overview/:
+    get:
+      operationId: commerce_analytics_overview_retrieve
+      description: |-
+        DJ earnings dashboard overview [Spec §3.2].
+        Returns lifetime, weekly, monthly earnings + pending payout.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/analytics/payouts/:
+    get:
+      operationId: commerce_analytics_payouts_retrieve
+      description: Paid payouts history [Spec §3.2].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/analytics/tracks/:
+    get:
+      operationId: commerce_analytics_tracks_retrieve
+      description: Earnings breakdown per track [Spec §3.2].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/cart/:
+    get:
+      operationId: commerce_cart_list
+      description: API for managing shopping cart [Phase 3 Feature 3].
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCartList'
+          description: ''
+    post:
+      operationId: commerce_cart_create
+      description: API for managing shopping cart [Phase 3 Feature 3].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/cart/{id}/:
+    get:
+      operationId: commerce_cart_retrieve
+      description: API for managing shopping cart [Phase 3 Feature 3].
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: commerce_cart_destroy
+      description: API for managing shopping cart [Phase 3 Feature 3].
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/commerce/cart/add_item/:
+    post:
+      operationId: commerce_cart_add_item_create
+      description: Add an item to the active cart.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/cart/clear/:
+    post:
+      operationId: commerce_cart_clear_create
+      description: Clear all items from the active cart.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/cart/current/:
+    get:
+      operationId: commerce_cart_current_retrieve
+      description: Get or create the user's active cart.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/cart/merge_guest_cart/:
+    post:
+      operationId: commerce_cart_merge_guest_cart_create
+      description: |-
+        [P2-11.08 FIX] Merge guest cart into user cart on login.
+        Called from frontend after login with guest_cart_items.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/cart/remove_item/:
+    post:
+      operationId: commerce_cart_remove_item_create
+      description: Remove an item from the active cart.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/v1/commerce/dispute/open/:
+    post:
+      operationId: commerce_dispute_open_create
+      description: Initiates a formal dispute for a purchase [Imp 01].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/dashboard-stats/:
+    get:
+      operationId: commerce_dj_dashboard_stats_retrieve
+      description: |-
+        Enhanced DJ dashboard with conversion-focused metrics.
+        Shows earnings, milestones, and growth opportunities.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/milestones/:
+    get:
+      operationId: commerce_dj_milestones_retrieve
+      description: Get DJ's milestone progress and rewards.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/onboarding/:
+    get:
+      operationId: commerce_dj_onboarding_retrieve
+      description: Get DJ onboarding progress.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/promo/apply/:
+    post:
+      operationId: commerce_dj_promo_apply_create
+      description: Apply a promotional code for commission discount.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/referral/:
+    get:
+      operationId: commerce_dj_referral_retrieve
+      description: |-
+        Get or generate DJ's unique referral code with social sharing links.
+        DJs earn ₹100 when their referral makes first sale.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/dj/referral/apply/:
+    post:
+      operationId: commerce_dj_referral_apply_create
+      description: |-
+        Apply a referral code when signing up as DJ.
+        Called during DJ application process.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/gst-export/:
+    get:
+      operationId: commerce_gst_export_retrieve
+      description: DJ GST export report as JSON [Spec §9].
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/invoice/{invoice_id}/:
+    get:
+      operationId: commerce_invoice_retrieve
+      description: Download GST invoice JSON for a purchase [Spec §9].
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/my-library/:
+    get:
+      operationId: commerce_my_library_retrieve
+      description: |-
+        List all tracks/albums purchased by the user [Spec §3.1].
+        Excludes revoked purchases.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/payouts/request/:
+    post:
+      operationId: commerce_payouts_request_create
+      description: |-
+        DJ manually initiates a payout [Spec P2 §11, P3 §3.2].
+        Requires 2FA verification code.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/pro/activate/:
+    post:
+      operationId: commerce_pro_activate_create
+      description: Activates 7-day free trial for Pro Plan [Section B Step 5]
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/purchases/:
+    get:
+      operationId: commerce_purchases_list
+      description: User's purchase history — only completed purchases [Spec §3.1].
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseList'
+          description: ''
+  /api/v1/commerce/purchases/{id}/:
+    get:
+      operationId: commerce_purchases_retrieve
+      description: User's purchase history — only completed purchases [Spec §3.1].
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase.
+        required: true
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purchase'
+          description: ''
+  /api/v1/commerce/refund/request/:
+    post:
+      operationId: commerce_refund_request_create
+      description: |-
+        Buyer requests a refund [Section C Fix 01].
+        Automated if download not completed.
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/commerce/wallets/:
+    get:
+      operationId: commerce_wallets_list
+      description: DJ earnings wallet — DJs only [Spec §3.2].
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDJWalletList'
+          description: ''
+  /api/v1/commerce/wallets/{dj}/:
+    get:
+      operationId: commerce_wallets_retrieve
+      description: DJ earnings wallet — DJs only [Spec §3.2].
+      parameters:
+      - in: path
+        name: dj
+        schema:
+          type: integer
+        description: A unique value identifying this dj wallet.
+        required: true
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DJWallet'
+          description: ''
+  /api/v1/commerce/wishlist/toggle/:
+    post:
+      operationId: commerce_wishlist_toggle_create
+      description: 'Imp 13: Toggle a track in/out of the buyer''s wishlist.'
+      tags:
+      - commerce
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/downloads/history/downloads/:
+    get:
+      operationId: downloads_history_downloads_retrieve
+      description: |-
+        View download history — only after successful completion [Spec §3.1].
+        Shows only completed downloads with checksum verification.
+      tags:
+      - downloads
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/downloads/history/purchases/:
+    get:
+      operationId: downloads_history_purchases_retrieve
+      description: |-
+        View purchase history — only completed purchases with download [Spec §3.1].
+        Purchase becomes visible only after download is complete.
+      tags:
+      - downloads
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/dj-approvals/:
+    get:
+      operationId: platform_admin_dj_approvals_retrieve
+      description: List DJs pending approval with relevant info.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/dj-approve/{dj_id}/:
+    post:
+      operationId: platform_admin_dj_approve_create
+      description: One-click DJ approval.
+      parameters:
+      - in: path
+        name: dj_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/experiments/:
+    get:
+      operationId: platform_admin_experiments_retrieve
+      description: List all experiments (admin only).
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/experiments/{experiment_id}/status/:
+    post:
+      operationId: platform_admin_experiments_status_create
+      description: Update experiment status (admin only).
+      parameters:
+      - in: path
+        name: experiment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/experiments/{experiment_name}/stats/:
+    get:
+      operationId: platform_admin_experiments_stats_retrieve
+      description: Get experiment statistics (admin only).
+      parameters:
+      - in: path
+        name: experiment_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/experiments/create/:
+    post:
+      operationId: platform_admin_experiments_create_create
+      description: Create a new experiment (admin only).
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/flagged/:
+    get:
+      operationId: platform_admin_flagged_retrieve
+      description: List content flagged for review.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/admin/stats/:
+    get:
+      operationId: platform_admin_stats_retrieve
+      description: |-
+        Admin dashboard with key platform metrics.
+        Cached for performance.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/dj/quick-stats/:
+    get:
+      operationId: platform_dj_quick_stats_retrieve
+      description: |-
+        Fast DJ dashboard stats with caching.
+        Returns key metrics in <100ms.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/dj/quick-upload/:
+    post:
+      operationId: platform_dj_quick_upload_create
+      description: |-
+        Simplified track upload with smart defaults.
+        Minimal required fields for faster uploads.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/experiment/{experiment_name}/:
+    get:
+      operationId: platform_experiment_retrieve
+      description: Get user's variant for an experiment.
+      parameters:
+      - in: path
+        name: experiment_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/experiment/{experiment_name}/track/:
+    post:
+      operationId: platform_experiment_track_create
+      description: Track an event for an experiment.
+      parameters:
+      - in: path
+        name: experiment_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/experiments/:
+    get:
+      operationId: platform_experiments_retrieve
+      description: Get all experiments a user is part of.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/feed/:
+    get:
+      operationId: platform_feed_retrieve
+      description: |-
+        Optimized homepage feed with cached sections.
+        Returns trending, new releases, and featured in single call.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/batch/:
+    post:
+      operationId: platform_m_batch_create
+      description: |-
+        Batch multiple API calls into one request.
+        Reduces round trips for mobile.
+
+        Request body:
+        {
+            "requests": [
+                {"id": "1", "endpoint": "home"},
+                {"id": "2", "endpoint": "library"},
+            ]
+        }
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/buy/:
+    post:
+      operationId: platform_m_buy_create
+      description: |-
+        One-tap purchase for mobile.
+        Minimal validation, fast checkout.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/dj/stats/:
+    get:
+      operationId: platform_m_dj_stats_retrieve
+      description: Minimal DJ stats for mobile dashboard.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/genres/:
+    get:
+      operationId: platform_m_genres_retrieve
+      description: |-
+        List of genres with counts for mobile filters.
+        Cached heavily.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/home/:
+    get:
+      operationId: platform_m_home_retrieve
+      description: |-
+        Ultra-light homepage for mobile.
+        Returns minimal data, heavily cached.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/library/:
+    get:
+      operationId: platform_m_library_retrieve
+      description: |-
+        User's purchased content for offline sync.
+        Returns IDs and metadata for offline storage.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/notifications/:
+    get:
+      operationId: platform_m_notifications_retrieve
+      description: |-
+        Unread notifications for mobile.
+        Supports pagination via cursor.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/search/:
+    get:
+      operationId: platform_m_search_retrieve
+      description: Fast search for mobile with minimal response.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/m/track/{track_id}/:
+    get:
+      operationId: platform_m_track_retrieve
+      description: |-
+        Single track detail for mobile.
+        Minimal fields, cached.
+      parameters:
+      - in: path
+        name: track_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/notifications/:
+    get:
+      operationId: platform_notifications_retrieve
+      description: Get user's in-app notifications.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/notifications/preferences/:
+    get:
+      operationId: platform_notifications_preferences_retrieve
+      description: Get or update notification preferences.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: platform_notifications_preferences_partial_update
+      description: Get or update notification preferences.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/notifications/read/:
+    post:
+      operationId: platform_notifications_read_create
+      description: Mark notifications as read.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/push/subscribe/:
+    post:
+      operationId: platform_push_subscribe_create
+      description: Register a push notification subscription.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/push/unsubscribe/:
+    delete:
+      operationId: platform_push_unsubscribe_destroy
+      description: Unregister a push subscription.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/platform/quick-checkout/:
+    post:
+      operationId: platform_quick_checkout_create
+      description: |-
+        One-click checkout for single item.
+        Skips cart for faster conversion.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/platform/search/:
+    get:
+      operationId: platform_search_retrieve
+      description: |-
+        Enhanced search with filters, sorting, and recommendations.
+        Optimized for speed with proper indexing.
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/:
+    get:
+      operationId: tracks_list
+      description: |-
+        Public track listing API [CP-02.01 FIX].
+        List and retrieve are public (AllowAny).
+        Create/Update/Delete require authentication.
+      parameters:
+      - in: query
+        name: dj
+        schema:
+          type: integer
+      - in: query
+        name: genre
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: preview_type
+        schema:
+          type: string
+          nullable: true
+          enum:
+          - instagram
+          - youtube
+        description: |-
+          * `youtube` - YouTube
+          * `instagram` - Instagram Reel
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: year
+        schema:
+          type: integer
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTrackList'
+          description: ''
+    post:
+      operationId: tracks_create
+      description: |-
+        [CP-06.04, CP-06.05 FIX] Enforce DJ role for track creation.
+        Only approved DJs can upload tracks.
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/{id}/:
+    get:
+      operationId: tracks_retrieve
+      description: |-
+        Public track listing API [CP-02.01 FIX].
+        List and retrieve are public (AllowAny).
+        Create/Update/Delete require authentication.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+    put:
+      operationId: tracks_update
+      description: |-
+        [CP-06.04 FIX] Enforce DJ role for track updates.
+        Only track owner can update.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+    patch:
+      operationId: tracks_partial_update
+      description: |-
+        Public track listing API [CP-02.01 FIX].
+        List and retrieve are public (AllowAny).
+        Create/Update/Delete require authentication.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTrackRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+    delete:
+      operationId: tracks_destroy
+      description: |-
+        Public track listing API [CP-02.01 FIX].
+        List and retrieve are public (AllowAny).
+        Create/Update/Delete require authentication.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tracks/{id}/convert-external/:
+    post:
+      operationId: tracks_convert_external_create
+      description: 'Phase 3 Feature 1: Convert an underperforming or free track to
+        an external link.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/{id}/download-token/:
+    post:
+      operationId: tracks_download_token_create
+      description: |-
+        Generate a secure download token.
+        Ownership-based access only. 3 attempts per IP. Device fingerprint bound.
+        [Spec §4]
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/{id}/rate/:
+    post:
+      operationId: tracks_rate_create
+      description: Unified rating system [Fix 09].
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/{id}/report/:
+    post:
+      operationId: tracks_report_create
+      description: User-driven content flagging [Fix 08].
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/{track_id}/collabs/:
+    get:
+      operationId: tracks_collabs_retrieve
+      description: List all collaborators and revenue split for a track [Spec P2 §4].
+      parameters:
+      - in: path
+        name: track_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/{track_id}/collabs/{collab_dj_id}/:
+    delete:
+      operationId: tracks_collabs_destroy
+      description: Remove a collaborator from a track [Spec P2 §4].
+      parameters:
+      - in: path
+        name: collab_dj_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: track_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tracks/{track_id}/collabs/invite/:
+    post:
+      operationId: tracks_collabs_invite_create
+      description: |-
+        Invite another MixMint DJ as a collaborator on a track [Spec P2 §4].
+
+        POST body:
+        {
+            "collab_dj_slug": "djname",
+            "revenue_percentage": 25.00
+        }
+
+        Rules:
+        - Only the track owner can invite collaborators
+        - Max 3 collaborators total (including owner's percentage)
+        - Cannot invite yourself
+        - Total percentages must sum to exactly 100.00 before track activates
+      parameters:
+      - in: path
+        name: track_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/my-tracks/:
+    get:
+      operationId: tracks_my_tracks_retrieve
+      description: |-
+        [P2-02.02 FIX] DJ-only endpoint to list their own tracks.
+        Ensures DJs can only access their own tracks for editing.
+        [Enhancement] Added pagination support.
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /api/v1/tracks/new-releases/:
+    get:
+      operationId: tracks_new_releases_retrieve
+      description: New releases in the last 30 days [Spec §8].
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/popular/:
+    get:
+      operationId: tracks_popular_retrieve
+      description: Tracks popular this week by download count [Spec §8].
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/search/:
+    get:
+      operationId: tracks_search_retrieve
+      description: |-
+        Advanced search endpoint [Spec §8].
+        Supports partial spelling, genre, year, date range.
+        [CP-02.04 FIX] XSS sanitization applied to all query params.
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/top-djs/:
+    get:
+      operationId: tracks_top_djs_retrieve
+      description: Top partnered DJs by total revenue [Spec §8].
+      tags:
+      - tracks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tracks/validate-preview/:
+    post:
+      operationId: tracks_validate_preview_create
+      description: |-
+        Imp 08: Preview Validation Tool.
+        Validates if a YouTube/Instagram URL is valid and embeddable.
+      tags:
+      - tracks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+          description: ''
+  /legal/gst-export/:
+    get:
+      operationId: legal_gst_export_retrieve
+      description: DJ GST export report as JSON [Spec §9].
+      tags:
+      - legal
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /legal/gst-export/csv/:
+    get:
+      operationId: legal_gst_export_csv_retrieve
+      description: DJ GST export report as downloadable CSV file [Spec §9].
+      tags:
+      - legal
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /legal/invoice/{invoice_id}/:
+    get:
+      operationId: legal_invoice_retrieve
+      description: Download GST invoice JSON for a purchase [Spec §9].
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - legal
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /legal/invoice/{invoice_id}/pdf/:
+    get:
+      operationId: legal_invoice_pdf_retrieve
+      description: |-
+        Download GST invoice as a PDF file [Spec §9].
+        Generated using reportlab. Returns Content-Disposition: attachment.
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - legal
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    AlbumPack:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlbumTrack'
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          maxLength: 500
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        upload_method:
+          $ref: '#/components/schemas/UploadMethodEnum'
+        original_file_key:
+          type: string
+          nullable: true
+          maxLength: 500
+        processing_status:
+          $ref: '#/components/schemas/ProcessingStatusEnum'
+        processing_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_error:
+          type: string
+          nullable: true
+        track_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        total_duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        dj:
+          type: integer
+      required:
+      - dj
+      - file_key
+      - price
+      - title
+    AlbumPackRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          minLength: 1
+          maxLength: 500
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        upload_method:
+          $ref: '#/components/schemas/UploadMethodEnum'
+        original_file_key:
+          type: string
+          nullable: true
+          maxLength: 500
+        processing_status:
+          $ref: '#/components/schemas/ProcessingStatusEnum'
+        processing_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_error:
+          type: string
+          nullable: true
+        track_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        total_duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        dj:
+          type: integer
+      required:
+      - dj
+      - file_key
+      - price
+      - title
+    AlbumTrack:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        track_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        title:
+          type: string
+          maxLength: 255
+        original_file_key:
+          type: string
+          nullable: true
+          maxLength: 500
+        processed_filename:
+          type: string
+          nullable: true
+          maxLength: 255
+        duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        format:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        album:
+          type: integer
+      required:
+      - album
+      - title
+      - track_order
+    AlbumTrackRequest:
+      type: object
+      properties:
+        track_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        original_file_key:
+          type: string
+          nullable: true
+          maxLength: 500
+        processed_filename:
+          type: string
+          nullable: true
+          maxLength: 255
+        duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        format:
+          type: string
+          minLength: 1
+          maxLength: 20
+        album:
+          type: integer
+      required:
+      - album
+      - title
+      - track_order
+    BlankEnum:
+      enum:
+      - ''
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          readOnly: true
+        total_items:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          readOnly: true
+        discount_amount:
+          type: string
+          readOnly: true
+        discount_percentage:
+          type: string
+          readOnly: true
+        final_total:
+          type: string
+          readOnly: true
+        next_tier_info:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        content_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        price:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Price at time of adding to cart
+        added_at:
+          type: string
+          format: date-time
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        dj_name:
+          type: string
+          readOnly: true
+        image_url:
+          type: string
+          readOnly: true
+      required:
+      - content_id
+      - content_type
+      - price
+    CartItemRequest:
+      type: object
+      properties:
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        content_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        price:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Price at time of adding to cart
+      required:
+      - content_id
+      - content_type
+      - price
+    ContentTypeEnum:
+      enum:
+      - track
+      - album
+      - bundle
+      type: string
+      description: |-
+        * `track` - Track
+        * `album` - Album
+        * `bundle` - Bundle
+    DJProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/Profile'
+          readOnly: true
+        dj_name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        bio:
+          type: string
+          nullable: true
+        social_links: {}
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        payout_details: {}
+        bank_account_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        bank_ifsc_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        upi_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        pan_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        is_pan_verified:
+          type: boolean
+        is_verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        popularity_score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        genres: {}
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        custom_domain:
+          type: string
+          nullable: true
+          maxLength: 255
+        ad_exposure_reduction:
+          type: boolean
+        weekly_views:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        ad_floor_cpm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        overage_enabled:
+          type: boolean
+        custom_storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        payout_otp_secret:
+          type: string
+          nullable: true
+          maxLength: 32
+        payout_otp_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        onboarding_step:
+          type: string
+          maxLength: 50
+        is_onboarding_complete:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - dj_name
+      - slug
+    DJProfileRequest:
+      type: object
+      properties:
+        dj_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        bio:
+          type: string
+          nullable: true
+        social_links: {}
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        payout_details: {}
+        bank_account_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        bank_ifsc_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        upi_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        pan_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        is_pan_verified:
+          type: boolean
+        is_verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        popularity_score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        genres: {}
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        custom_domain:
+          type: string
+          nullable: true
+          maxLength: 255
+        ad_exposure_reduction:
+          type: boolean
+        weekly_views:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        ad_floor_cpm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        overage_enabled:
+          type: boolean
+        custom_storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        payout_otp_secret:
+          type: string
+          nullable: true
+          maxLength: 32
+        payout_otp_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        onboarding_step:
+          type: string
+          minLength: 1
+          maxLength: 50
+        is_onboarding_complete:
+          type: boolean
+      required:
+      - dj_name
+      - slug
+    DJWallet:
+      type: object
+      properties:
+        dj:
+          type: integer
+        total_earnings:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        pending_earnings:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        escrow_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        available_for_payout:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - dj
+    FileFormatEnum:
+      enum:
+      - wav
+      - mp3
+      - studio
+      - aiff
+      type: string
+      description: |-
+        * `wav` - WAV (Lossless)
+        * `mp3` - MP3 (320kbps)
+        * `studio` - Studio Project (ZIP)
+        * `aiff` - AIFF
+    NullEnum:
+      enum:
+      - null
+    PaginatedAlbumPackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlbumPack'
+    PaginatedCartList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cart'
+    PaginatedDJProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DJProfile'
+    PaginatedDJWalletList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DJWallet'
+    PaginatedProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+    PaginatedPurchaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Purchase'
+    PaginatedTrackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedAlbumPackRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          minLength: 1
+          maxLength: 500
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        upload_method:
+          $ref: '#/components/schemas/UploadMethodEnum'
+        original_file_key:
+          type: string
+          nullable: true
+          maxLength: 500
+        processing_status:
+          $ref: '#/components/schemas/ProcessingStatusEnum'
+        processing_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_error:
+          type: string
+          nullable: true
+        track_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        total_duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        dj:
+          type: integer
+    PatchedDJProfileRequest:
+      type: object
+      properties:
+        dj_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        bio:
+          type: string
+          nullable: true
+        social_links: {}
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        payout_details: {}
+        bank_account_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        bank_ifsc_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        upi_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        pan_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        is_pan_verified:
+          type: boolean
+        is_verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        popularity_score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        genres: {}
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        custom_domain:
+          type: string
+          nullable: true
+          maxLength: 255
+        ad_exposure_reduction:
+          type: boolean
+        weekly_views:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        ad_floor_cpm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        overage_enabled:
+          type: boolean
+        custom_storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        payout_otp_secret:
+          type: string
+          nullable: true
+          maxLength: 32
+        payout_otp_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        onboarding_step:
+          type: string
+          minLength: 1
+          maxLength: 50
+        is_onboarding_complete:
+          type: boolean
+    PatchedProfileRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_verified_dj:
+          type: boolean
+        is_pro_dj:
+          type: boolean
+        pro_plan_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ProPlanTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        pro_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_trial_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_grace_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        store_paused:
+          type: boolean
+        is_banned:
+          type: boolean
+        is_frozen:
+          type: boolean
+        referred_by:
+          type: integer
+          nullable: true
+    PatchedTrackRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          minLength: 1
+          maxLength: 500
+        cover_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        duration_sec:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        bpm:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+          maxLength: 100
+        year:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        checksum:
+          type: string
+          nullable: true
+          maxLength: 64
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_format:
+          $ref: '#/components/schemas/FileFormatEnum'
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        download_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        sales_last_7_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        dj:
+          type: integer
+    PatchedUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+    PreviewTypeAc4Enum:
+      enum:
+      - youtube
+      - instagram
+      type: string
+      description: |-
+        * `youtube` - YouTube
+        * `instagram` - Instagram Reel
+    ProPlanTypeEnum:
+      enum:
+      - monthly
+      - annual
+      type: string
+      description: |-
+        * `monthly` - Monthly
+        * `annual` - Annual
+    ProcessingStatusEnum:
+      enum:
+      - pending
+      - processing
+      - completed
+      - failed
+      - queued
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `completed` - Completed
+        * `failed` - Failed
+        * `queued` - Queued
+    Profile:
+      type: object
+      properties:
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        full_name:
+          type: string
+          maxLength: 255
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_verified_dj:
+          type: boolean
+        is_pro_dj:
+          type: boolean
+        pro_plan_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ProPlanTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        pro_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_trial_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_grace_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        store_paused:
+          type: boolean
+        is_banned:
+          type: boolean
+        is_frozen:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        referred_by:
+          type: integer
+          nullable: true
+      required:
+      - full_name
+    ProfileRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_verified_dj:
+          type: boolean
+        is_pro_dj:
+          type: boolean
+        pro_plan_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ProPlanTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        pro_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_trial_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        pro_grace_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        storage_quota_mb:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        store_paused:
+          type: boolean
+        is_banned:
+          type: boolean
+        is_frozen:
+          type: boolean
+        referred_by:
+          type: integer
+          nullable: true
+      required:
+      - full_name
+    Purchase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        content_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        original_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        checkout_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        commission:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        dj_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        dj_earnings:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        ad_revenue_allocated:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        platform_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        payment_gateway:
+          type: string
+          maxLength: 20
+        gateway_order_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        gateway_payment_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        gateway_refund_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        gateway_response:
+          nullable: true
+        amount_paise:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        status:
+          type: string
+          maxLength: 20
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        refunded_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_redownload:
+          type: boolean
+        has_download_insurance:
+          type: boolean
+        is_escrow_released:
+          type: boolean
+        is_completed:
+          type: boolean
+        download_completed:
+          type: boolean
+        is_revoked:
+          type: boolean
+        download_method:
+          type: string
+          maxLength: 20
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        cart_id:
+          type: string
+          format: uuid
+          nullable: true
+        discount_applied:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        final_price:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        buyer_role:
+          type: string
+          maxLength: 10
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        seller:
+          type: integer
+      required:
+      - content_id
+      - content_type
+      - original_price
+      - price_paid
+      - seller
+      - user
+    RoleEnum:
+      enum:
+      - user
+      - dj
+      - admin
+      type: string
+      description: |-
+        * `user` - User
+        * `dj` - DJ
+        * `admin` - Admin
+    StatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      - banned
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `banned` - Banned
+    Track:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        previews:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackPreview'
+          readOnly: true
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackVersion'
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          maxLength: 500
+        cover_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        duration_sec:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        bpm:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+          maxLength: 100
+        year:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        checksum:
+          type: string
+          nullable: true
+          maxLength: 64
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_format:
+          $ref: '#/components/schemas/FileFormatEnum'
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        download_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        sales_last_7_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        dj:
+          type: integer
+      required:
+      - dj
+      - file_key
+      - price
+      - title
+    TrackPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        preview_type:
+          $ref: '#/components/schemas/TrackPreviewPreviewTypeEnum'
+        url:
+          type: string
+          format: uri
+          maxLength: 500
+        embed_id:
+          type: string
+          maxLength: 255
+        embed_html:
+          type: string
+          nullable: true
+        is_primary:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        track:
+          type: integer
+      required:
+      - embed_id
+      - preview_type
+      - track
+      - url
+    TrackPreviewPreviewTypeEnum:
+      enum:
+      - youtube
+      - instagram_reel
+      type: string
+      description: |-
+        * `youtube` - YouTube
+        * `instagram_reel` - Instagram Reel
+    TrackPreviewRequest:
+      type: object
+      properties:
+        preview_type:
+          $ref: '#/components/schemas/TrackPreviewPreviewTypeEnum'
+        url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 500
+        embed_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        embed_html:
+          type: string
+          nullable: true
+        is_primary:
+          type: boolean
+        is_active:
+          type: boolean
+        track:
+          type: integer
+      required:
+      - embed_id
+      - preview_type
+      - track
+      - url
+    TrackRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        file_key:
+          type: string
+          minLength: 1
+          maxLength: 500
+        cover_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        duration_sec:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        bpm:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+          maxLength: 100
+        year:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        checksum:
+          type: string
+          nullable: true
+          maxLength: 64
+        file_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        file_format:
+          $ref: '#/components/schemas/FileFormatEnum'
+        preview_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PreviewTypeAc4Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        youtube_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        instagram_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        download_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        sales_last_7_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_external_link:
+          type: boolean
+        external_link_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        external_link_provider:
+          type: string
+          nullable: true
+          maxLength: 20
+        external_link_broken:
+          type: boolean
+        external_link_error:
+          type: string
+          nullable: true
+          maxLength: 200
+        converted_at:
+          type: string
+          format: date-time
+          nullable: true
+        dj:
+          type: integer
+      required:
+      - dj
+      - file_key
+      - price
+      - title
+    TrackVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        version_label:
+          type: string
+          maxLength: 100
+        file_key:
+          type: string
+          maxLength: 500
+        checksum:
+          type: string
+          nullable: true
+          maxLength: 255
+        is_current:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        track:
+          type: integer
+      required:
+      - file_key
+      - track
+      - version_label
+    TrackVersionRequest:
+      type: object
+      properties:
+        version_label:
+          type: string
+          minLength: 1
+          maxLength: 100
+        file_key:
+          type: string
+          minLength: 1
+          maxLength: 500
+        checksum:
+          type: string
+          nullable: true
+          maxLength: 255
+        is_current:
+          type: boolean
+        track:
+          type: integer
+      required:
+      - file_key
+      - track
+      - version_label
+    UploadMethodEnum:
+      enum:
+      - system_generated
+      - direct_zip
+      type: string
+      description: |-
+        * `system_generated` - System Generated
+        * `direct_zip` - Direct ZIP
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - email
+    UserRegistration:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        full_name:
+          type: string
+      required:
+      - email
+      - full_name
+    UserRegistrationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        full_name:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - full_name
+      - password
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+      required:
+      - email
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+- url: https://mixmint.site/api/v1
+  description: Production
+- url: http://localhost:8000/api/v1
+  description: Local Development
+tags:
+- name: accounts
+  description: User authentication, profiles, DJ applications
+- name: tracks
+  description: Track management, previews, metadata
+- name: albums
+  description: Album packs, ZIP processing
+- name: commerce
+  description: Purchases, wallets, payouts, cart
+- name: payments
+  description: PhonePe + Razorpay checkout, webhooks
+- name: downloads
+  description: Secure download tokens, streaming
+- name: admin
+  description: 'Admin panel: moderation, settings, analytics'
+- name: platform
+  description: 'Core platform: notifications, A/B tests, mobile API'

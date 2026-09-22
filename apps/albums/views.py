@@ -12,16 +12,16 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
     queryset = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
     serializer_class = AlbumPackSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['dj', 'processing_status']
+    filterset_fields = ["dj", "processing_status"]
 
     def perform_create(self, serializer):
         """Process album ZIP upon upload [Spec §5]."""
         album = serializer.save()
         from .tasks import process_album_task
+
         process_album_task.delay(album.id)
 
-    @action(detail=True, methods=['post'], url_path='download-token',
-            permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=["post"], url_path="download-token", permission_classes=[permissions.IsAuthenticated])
     def get_download_token(self, request, pk=None):
         """
         Generate a secure download token for album/ZIP.
@@ -29,60 +29,68 @@ class AlbumPackViewSet(viewsets.ModelViewSet):
         """
         album = self.get_object()
         profile = request.user.profile
-        client_ip = request.META.get('REMOTE_ADDR')
-        user_agent = request.META.get('HTTP_USER_AGENT')
-        device_hash = request.data.get('device_hash') or request.META.get('HTTP_X_DEVICE_HASH')
+        client_ip = request.META.get("REMOTE_ADDR")
+        user_agent = request.META.get("HTTP_USER_AGENT")
+        device_hash = request.data.get("device_hash") or request.META.get("HTTP_X_DEVICE_HASH")
 
         # 1. Ownership + single-download lock enforcement [Spec §2.2, §4.3]
-        purchase = Purchase.objects.filter(
-            user=profile,
-            content_id=album.id,
-            content_type='album',
-            is_revoked=False,
-            is_redownload=False,
-        ).order_by('-created_at').first()
+        purchase = (
+            Purchase.objects.filter(
+                user=profile,
+                content_id=album.id,
+                content_type="album",
+                is_revoked=False,
+                is_redownload=False,
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
         if not purchase:
-            return Response({'error': 'You must purchase this album first.', 'price': str(album.price)}, status=403)
+            return Response({"error": "You must purchase this album first.", "price": str(album.price)}, status=403)
 
-        access_source = 'purchase'
+        access_source = "purchase"
         if purchase.download_completed:
-            if hasattr(purchase, 'insurance') and purchase.insurance.status == 'active':
-                access_source = 'insurance'
+            if hasattr(purchase, "insurance") and purchase.insurance.status == "active":
+                access_source = "insurance"
             else:
-                eligible, msg = DownloadManager.check_redownload_eligibility(profile, album.id, 'album')
+                eligible, msg = DownloadManager.check_redownload_eligibility(profile, album.id, "album")
                 if eligible:
-                    return Response({
-                        'error': 'Re-download requires payment.',
-                        'redownload_available': True,
-                        'redownload_price': str(album.price * 0.5),
-                        'message': msg,
-                    }, status=403)
-                return Response({'error': msg}, status=403)
+                    return Response(
+                        {
+                            "error": "Re-download requires payment.",
+                            "redownload_available": True,
+                            "redownload_price": str(album.price * 0.5),
+                            "message": msg,
+                        },
+                        status=403,
+                    )
+                return Response({"error": msg}, status=403)
 
         # 2. Check IP attempt limit [Spec §5: 3 per IP]
-        allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, album.id, 'album')
+        allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, album.id, "album")
         if not allowed:
-            eligible, redownload_msg = DownloadManager.check_redownload_eligibility(
-                profile, album.id, 'album'
-            )
+            eligible, redownload_msg = DownloadManager.check_redownload_eligibility(profile, album.id, "album")
             if eligible:
-                return Response({
-                    'error': msg,
-                    'redownload_available': True,
-                    'redownload_price': str(album.price * 0.5),
-                    'message': 'You can re-download at 50% price.'
-                }, status=403)
-            return Response({'error': msg}, status=403)
+                return Response(
+                    {
+                        "error": msg,
+                        "redownload_available": True,
+                        "redownload_price": str(album.price * 0.5),
+                        "message": "You can re-download at 50% price.",
+                    },
+                    status=403,
+                )
+            return Response({"error": msg}, status=403)
 
         # 3. Generate token (IP + device bound, like tracks)
         token = DownloadManager.generate_token(
-            profile, album.id, 'album', access_source, client_ip, user_agent, device_hash
+            profile, album.id, "album", access_source, client_ip, user_agent, device_hash
         )
-        response_data = {'download_url': f"/api/v1/downloads/{token.token}/"}
+        response_data = {"download_url": f"/api/v1/downloads/{token.token}/"}
         if msg:
-            response_data['warning'] = msg
+            response_data["warning"] = msg
         if remaining == 1:
-            response_data['warning'] = "WARNING: This is your last download attempt from this IP."
+            response_data["warning"] = "WARNING: This is your last download attempt from this IP."
 
         return Response(response_data)

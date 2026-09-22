@@ -4,12 +4,12 @@ from .email_blocklist import validate_email_domain
 
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(source='profile.role', read_only=True)
+    role = serializers.CharField(source="profile.role", read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'role', 'date_joined')
-        read_only_fields = ('id', 'date_joined')
+        fields = ("id", "email", "role", "date_joined")
+        read_only_fields = ("id", "date_joined")
 
     def validate_email(self, value):
         """Block temporary/disposable email domains [Spec P2 §13]."""
@@ -25,7 +25,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DJProfileSerializer(serializers.ModelSerializer):
@@ -33,7 +33,7 @@ class DJProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DJProfile
-        fields = '__all__'
+        fields = "__all__"
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -42,7 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'full_name')
+        fields = ("email", "password", "full_name")
 
     def validate_email(self, value):
         """Block temporary/disposable email domains."""
@@ -55,16 +55,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        email = validated_data['email']
-        password = validated_data['password']
-        full_name = validated_data['full_name']
-        
+        email = validated_data["email"]
+        password = validated_data["password"]
+        full_name = validated_data["full_name"]
+
         user = User.objects.create_user(email=email, password=password)
-        
+
         # Profile is created via post_save signal
         profile = user.profile
         profile.full_name = full_name
         profile.save()
-        
-        return user
 
+        return user

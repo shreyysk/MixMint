@@ -108,6 +108,19 @@
             licensing or rights.
         </p>
     </div>
+    {% if dj_offers %}
+    {% for offer in dj_offers %}
+    <div class="mt-4 p-4 bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 rounded-[12px] flex items-start gap-3">
+        <span class="mt-0.5">🎁</span>
+        <div>
+            <p class="font-bold text-[14px] text-[var(--text-primary)]">{% if offer.badge_label %}[{{ offer.badge_label }}] {% endif %}{{ offer.title }}</p>
+            {% if offer.tagline %}
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{ offer.tagline }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
 </div>
 
 <!-- ── Content Tabs ── -->

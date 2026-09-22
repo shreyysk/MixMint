@@ -13,18 +13,20 @@ def create_user_profile(sender, instance, created, **kwargs):
         profile, _ = Profile.objects.get_or_create(
             user=instance,
             defaults={
-                'full_name': (instance.first_name + " " + instance.last_name).strip() if instance.first_name else instance.email,
-                'role': 'admin' if instance.is_superuser else 'user'
-            }
+                "full_name": (
+                    (instance.first_name + " " + instance.last_name).strip() if instance.first_name else instance.email
+                ),
+                "role": "admin" if instance.is_superuser else "user",
+            },
         )
-        if instance.is_superuser and profile.role != 'admin':
-            profile.role = 'admin'
+        if instance.is_superuser and profile.role != "admin":
+            profile.role = "admin"
             profile.save()
 
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
+    if hasattr(instance, "profile"):
         instance.profile.save()
 
 

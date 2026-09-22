@@ -5,19 +5,19 @@ from .models import DJWallet, Purchase, LedgerEntry, Cart, CartItem
 class DJWalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = DJWallet
-        fields = '__all__'
+        fields = "__all__"
 
 
 class PurchaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Purchase
-        fields = '__all__'
+        fields = "__all__"
 
 
 class LedgerEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = LedgerEntry
-        fields = '__all__'
+        fields = "__all__"
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -27,15 +27,17 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id', 'content_type', 'content_id', 'price', 'added_at', 'title', 'dj_name', 'image_url']
+        fields = ["id", "content_type", "content_id", "price", "added_at", "title", "dj_name", "image_url"]
 
     def get_title(self, obj):
         try:
-            if obj.content_type == 'track':
+            if obj.content_type == "track":
                 from apps.tracks.models import Track
+
                 return Track.objects.get(id=obj.content_id).title
-            elif obj.content_type == 'album':
+            elif obj.content_type == "album":
                 from apps.albums.models import AlbumPack
+
                 return AlbumPack.objects.get(id=obj.content_id).title
         except Exception:
             pass
@@ -43,11 +45,13 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_dj_name(self, obj):
         try:
-            if obj.content_type == 'track':
+            if obj.content_type == "track":
                 from apps.tracks.models import Track
+
                 return Track.objects.get(id=obj.content_id).dj.dj_name
-            elif obj.content_type == 'album':
+            elif obj.content_type == "album":
                 from apps.albums.models import AlbumPack
+
                 return AlbumPack.objects.get(id=obj.content_id).dj.dj_name
         except Exception:
             pass
@@ -55,12 +59,14 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         try:
-            if obj.content_type == 'track':
+            if obj.content_type == "track":
                 from apps.tracks.models import Track
+
                 track = Track.objects.get(id=obj.content_id)
                 return track.cover_url
-            elif obj.content_type == 'album':
+            elif obj.content_type == "album":
                 from apps.albums.models import AlbumPack
+
                 album = AlbumPack.objects.get(id=obj.content_id)
                 return album.cover_image
         except Exception:
@@ -79,4 +85,14 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ['id', 'items', 'total_items', 'subtotal', 'discount_amount', 'discount_percentage', 'final_total', 'next_tier_info', 'updated_at']
+        fields = [
+            "id",
+            "items",
+            "total_items",
+            "subtotal",
+            "discount_amount",
+            "discount_percentage",
+            "final_total",
+            "next_tier_info",
+            "updated_at",
+        ]

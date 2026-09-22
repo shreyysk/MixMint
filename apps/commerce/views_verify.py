@@ -4,7 +4,6 @@ import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
 
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
@@ -13,8 +12,8 @@ from .services import MonetizationService
 from apps.payments.views import get_gateway
 
 # Minimum prices enforced by MixMint [Spec A4]
-MIN_TRACK_PRICE = Decimal('19.00')
-MIN_ALBUM_PRICE = Decimal('49.00')
+MIN_TRACK_PRICE = Decimal("19.00")
+MIN_ALBUM_PRICE = Decimal("49.00")
 
 
 @csrf_exempt
@@ -25,32 +24,29 @@ def verify_purchase_view(request):
     No subscriptions. No points. Ownership-based access only.
     [Spec P2 §5]
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
         data = json.loads(request.body)
-        order_id = data.get('orderId')
-        payment_id = data.get('paymentId')
-        signature = data.get('signature')
-        content_type = data.get('content_type')
-        content_id = data.get('content_id')
-        is_redownload = data.get('is_redownload', False)
+        order_id = data.get("orderId")
+        payment_id = data.get("paymentId")
+        signature = data.get("signature")
+        content_type = data.get("content_type")
+        content_id = data.get("content_id")
+        is_redownload = data.get("is_redownload", False)
 
         profile = request.user.profile
 
         # 1. Verify payment signature using the appropriate gateway
-        gateway_name = data.get('gateway', 'phonepe')
+        gateway_name = data.get("gateway", "phonepe")
         gateway = get_gateway(gateway_name)
-        
+
         # For Razorpay, verify using its method signature
         # For PhonePe, verify using its method signature
-        if gateway_name == 'razorpay':
-            if not gateway.verify_payment(
-                {'order_id': order_id, 'payment_id': payment_id}, 
-                signature
-            ):
-                return JsonResponse({'error': 'Invalid payment signature'}, status=403)
+        if gateway_name == "razorpay":
+            if not gateway.verify_payment({"order_id": order_id, "payment_id": payment_id}, signature):
+                return JsonResponse({"error": "Invalid payment signature"}, status=403)
         else:
             # PhonePe verification (if needed for this endpoint)
             # PhonePe typically uses webhook verification, not client-side
@@ -58,41 +54,43 @@ def verify_purchase_view(request):
 
         # 2. Resolve content and seller
         seller = None
-        original_price = Decimal('0.00')
+        original_price = Decimal("0.00")
         track_obj = None  # For collab lookup
 
         try:
-            if content_type == 'track':
+            if content_type == "track":
                 item = Track.objects.get(id=content_id, is_active=True, is_deleted=False)
                 seller = item.dj
                 original_price = item.price
                 track_obj = item
-            elif content_type in ('album', 'zip'):
+            elif content_type in ("album", "zip"):
                 item = AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
                 seller = item.dj
                 original_price = item.price
-                content_type = 'album'
+                content_type = "album"
             else:
-                return JsonResponse({'error': 'Invalid content type'}, status=400)
+                return JsonResponse({"error": "Invalid content type"}, status=400)
         except (Track.DoesNotExist, AlbumPack.DoesNotExist):
-            return JsonResponse({'error': 'Content not found or disabled'}, status=404)
+            return JsonResponse({"error": "Content not found or disabled"}, status=404)
 
         # 3. Calculate price
         price = original_price
         if is_redownload:
             existing = Purchase.objects.filter(
-                user=profile, content_id=content_id, content_type=content_type,
-                is_revoked=False, download_completed=True
+                user=profile,
+                content_id=content_id,
+                content_type=content_type,
+                is_revoked=False,
+                download_completed=True,
             ).first()
             if not existing:
-                return JsonResponse({'error': 'No completed purchase found for re-download'}, status=400)
-            price = original_price * Decimal('0.50')  # 50% re-download [Spec §5]
+                return JsonResponse({"error": "No completed purchase found for re-download"}, status=400)
+            price = original_price * Decimal("0.50")  # 50% re-download [Spec §5]
         else:
             if Purchase.objects.filter(
-                user=profile, content_id=content_id, content_type=content_type,
-                is_revoked=False, is_redownload=False
+                user=profile, content_id=content_id, content_type=content_type, is_revoked=False, is_redownload=False
             ).exists():
-                return JsonResponse({'error': 'You already own this content.'}, status=400)
+                return JsonResponse({"error": "You already own this content."}, status=400)
 
         # 4. Calculate revenue split
         checkout_fee = Decimal(str(DEFAULT_CHECKOUT_FEE))
@@ -107,31 +105,27 @@ def verify_purchase_view(request):
                 original_price=original_price,
                 price_paid=price,
                 checkout_fee=checkout_fee,
-                commission=split['platform_amount'],
-                dj_earnings=split['dj_amount'],
-                platform_fee=split['platform_amount'],
+                commission=split["platform_amount"],
+                dj_earnings=split["dj_amount"],
+                platform_fee=split["platform_amount"],
                 payment_id=payment_id,
                 payment_order_id=order_id,
                 seller=seller,
                 is_redownload=is_redownload,
-                status='paid',
+                status="paid",
                 is_completed=True,
                 payment_gateway=gateway_name,
             )
 
             # 6. Record Revenue Split (collab-aware) [Spec P2 §4]
-            MonetizationService.record_revenue(
-                seller, price, f"{content_type}_sale", payment_id, track=track_obj
-            )
+            MonetizationService.record_revenue(seller, price, f"{content_type}_sale", payment_id, track=track_obj)
 
             # 7. Generate Invoice with GST
             MonetizationService.generate_invoice(purchase)
 
-        return JsonResponse({
-            'success': True,
-            'message': 'Purchase verified and recorded successfully',
-            'purchase_id': purchase.id
-        })
+        return JsonResponse(
+            {"success": True, "message": "Purchase verified and recorded successfully", "purchase_id": purchase.id}
+        )
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)

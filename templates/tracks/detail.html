@@ -35,21 +35,55 @@
             <!-- Preview Module -->
             <div
                 class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
-                <div class="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
+                <div class="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between gap-2">
                     <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.1em]">
-                        {% if track.preview_type == 'instagram' %}INSTAGRAM PREVIEW{% else %}OFFICIAL PREVIEW{% endif %}
+                        DJ PREVIEW · PLAYS FROM ARTIST EMBED
                     </span>
-                </div>
-                <div class="aspect-video bg-[var(--bg-elevated)] flex items-center justify-center relative">
-                    {% if preview_embed_html %}
-                    {{ preview_embed_html|safe }}
-                    {% else %}
-                    <div class="text-center">
-                        <span class="text-4xl opacity-10 mb-4 block">🔇</span>
-                        <p class="font-body text-[13px] text-[var(--text-muted)]">No preview available</p>
+                    {% if preview_embeds|length > 1 %}
+                    <div class="flex gap-2" role="tablist" aria-label="Preview source">
+                        {% for key, label, html in preview_embeds %}
+                        <button type="button" data-preview-tab="{{ key }}"
+                            class="preview-tab font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--border)] {% if forloop.first %}bg-[var(--accent-mint)] text-black font-bold{% else %}text-[var(--text-muted)]{% endif %}">
+                            {{ label }}
+                        </button>
+                        {% endfor %}
                     </div>
                     {% endif %}
                 </div>
+                <div class="aspect-video bg-[var(--bg-elevated)] relative" id="preview-stage">
+                    {% if preview_embeds %}
+                    {% for key, label, html in preview_embeds %}
+                    <div data-preview-pane="{{ key }}"
+                        class="{% if not forloop.first %}hidden{% endif %} absolute inset-0">
+                        {{ html|safe }}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <div class="text-center">
+                            <span class="text-4xl opacity-10 mb-4 block">🔇</span>
+                            <p class="font-body text-[13px] text-[var(--text-muted)]">No preview available</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <script>
+                    document.querySelectorAll('.preview-tab').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const key = btn.dataset.previewTab;
+                            document.querySelectorAll('[data-preview-pane]').forEach(p => {
+                                p.classList.toggle('hidden', p.dataset.previewPane !== key);
+                            });
+                            document.querySelectorAll('.preview-tab').forEach(b => {
+                                const on = b === btn;
+                                b.classList.toggle('bg-[var(--accent-mint)]', on);
+                                b.classList.toggle('text-black', on);
+                                b.classList.toggle('font-bold', on);
+                                b.classList.toggle('text-[var(--text-muted)]', !on);
+                            });
+                        });
+                    });
+                </script>
             </div>
         </div>
 
@@ -144,11 +178,13 @@
                             <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost border border-[var(--border)] w-full h-[56px] text-[16px] font-[600] flex items-center justify-center hover:bg-[var(--bg-elevated)] transition-colors">
                                 Manage Your Track
                             </a>
-                            {% elif track.is_external_link %}
-                            <a href="{{ track.external_link_url }}" target="_blank" rel="noopener noreferrer"
-                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600] flex items-center justify-center">
-                                ⬇ Free Download
-                            </a>
+                            {% elif track.is_external_link or track.source_url %}
+                            <button id="external-download-btn" data-content-id="{{ track.id }}"
+                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                ⬇ Download Now
+                            </button>
+                            <p class="mt-2 text-[11px] font-mono text-[var(--text-muted)] text-center uppercase tracking-wider"
+                                id="external-download-note" style="display:none">Preparing your secure download…</p>
                             {% elif can_request_download %}
                             <button id="download-btn" data-content-id="{{ track.id }}" data-content-type="track"
                                 class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
@@ -167,7 +203,7 @@
                             <p class="mt-2 text-[11px] font-mono text-[var(--accent-mint)] text-center uppercase tracking-wider animate-pulse-slow">
                                 🎁 Support 3+ artists for a Bundle Discount!
                             </p>
-                            {% endif %}
+                {% endif %}
 
                             <button @click="showShareModal = true"
                                 class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
@@ -250,6 +286,23 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
+
+                <!-- DJ-given offer(s): shown whenever the DJ has a live one -->
+                {% if dj_offers %}
+                {% for offer in dj_offers %}
+                <div
+                    class="mt-5 p-3 bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 rounded-lg flex items-start gap-3 relative z-10">
+                    <span class="mt-0.5">🎁</span>
+                    <div>
+                        <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if offer.badge_label %}[{{ offer.badge_label }}] {% endif %}{{ offer.title }}</p>
+                        {% if offer.tagline %}
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{ offer.tagline }}</p>
+                        {% endif %}
+                        <p class="font-mono text-[10px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Offer by {{ track.dj.dj_name }}</p>
+                    </div>
+                </div>
+                {% endfor %}
                 {% endif %}
 
                 <div
@@ -361,6 +414,33 @@
     const buyBtn = document.getElementById('buy-now-btn');
     const rePayBtn = document.getElementById('redownload-pay-btn');
     const dlBtn = document.getElementById('download-btn');
+    const extBtn = document.getElementById('external-download-btn');
+
+    async function requestExternalDownloadAndStart() {
+        const btn = extBtn;
+        const note = document.getElementById('external-download-note');
+        try {
+            if (btn) btn.disabled = true;
+            if (note) note.style.display = 'block'; // "Preparing your download" state
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Preparing your secure download…' } }));
+            const res = await fetch('/api/v1/downloads/external/issue/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ content_type: 'track', content_id: {{ track.id }} })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not prepare download.');
+            window.location.href = data.download_url;
+        } catch (e) {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || 'Download failed.' } }));
+            if (btn) btn.disabled = false;
+            if (note) note.style.display = 'none';
+        }
+    }
+
+    if (extBtn) {
+        extBtn.addEventListener('click', requestExternalDownloadAndStart);
+    }
 
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {

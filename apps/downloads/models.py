@@ -1,4 +1,9 @@
+import secrets
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
+
 from apps.accounts.models import Profile
 
 
@@ -7,12 +12,13 @@ from apps.commerce.models import Purchase
 
 class DownloadToken(models.Model):
     """Secure one-time download token [Spec §4.5]"""
+
     token = models.CharField(max_length=255, primary_key=True)
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='download_tokens')
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="download_tokens")
     content_id = models.PositiveBigIntegerField()
     CONTENT_TYPES = (
-        ('track', 'Track'),
-        ('album', 'Album'),
+        ("track", "Track"),
+        ("album", "Album"),
     )
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -28,32 +34,64 @@ class DownloadToken(models.Model):
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # External-source flow (lazy fetch + temp cache). Buyer hits MixMint's own
+    # endpoint; source URL is never exposed. Supports limited re-use (e.g. retry).
+    cached_file_path = models.CharField(max_length=500, blank=True, default="")
+    max_downloads = models.PositiveIntegerField(default=1)
+    download_count = models.PositiveIntegerField(default=0)
+    is_expired = models.BooleanField(default=False)
+
     class Meta:
         indexes = [
-            models.Index(fields=['token']),
-            models.Index(fields=['expires_at'], condition=models.Q(is_used=False), name='idx_download_tokens_expiry'),
+            models.Index(fields=["token"]),
+            models.Index(fields=["expires_at"], condition=models.Q(is_used=False), name="idx_download_tokens_expiry"),
         ]
+
+    @property
+    def is_active(self):
+        """True if token can still be used (not expired/revoked/exhausted)."""
+        if self.is_expired or self.is_used:
+            return False
+        if self.expires_at and timezone.now() > self.expires_at:
+            return False
+        return self.download_count < self.max_downloads
+
+    @classmethod
+    def create_external_token(cls, user, content_type, content_id, expiry_minutes=15, max_downloads=1, **extra):
+        """Issue a cryptographically random, expiring, limited-use token for external-source downloads."""
+        return cls.objects.create(
+            token=secrets.token_urlsafe(32),
+            user=user,
+            content_type=content_type,
+            content_id=content_id,
+            access_source=extra.pop("access_source", "purchase"),
+            expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+            max_downloads=max_downloads,
+            **extra,
+        )
 
 
 class DownloadAttempt(models.Model):
     """Per-IP attempt tracking [Spec §4.2: 3 attempts per IP per content]"""
+
     ip_address = models.GenericIPAddressField()
     content_id = models.PositiveBigIntegerField()
     CONTENT_TYPES = (
-        ('track', 'Track'),
-        ('album', 'Album'),
+        ("track", "Track"),
+        ("album", "Album"),
     )
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     attempt_count = models.IntegerField(default=0)
     last_attempt_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('ip_address', 'content_id', 'content_type')
+        unique_together = ("ip_address", "content_id", "content_type")
 
 
 class DownloadLog(models.Model):
     """Detailed download audit log [Spec P2 §6]"""
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='download_logs')
+
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="download_logs")
     content_id = models.PositiveBigIntegerField()
     content_type = models.CharField(max_length=20)
     ip_address = models.GenericIPAddressField()
@@ -68,18 +106,19 @@ class DownloadLog(models.Model):
 
 class DownloadInsurance(models.Model):
     """Optional download insurance — unlimited re-downloads [Spec §4.3]."""
+
     STATUS_CHOICES = (
-        ('active', 'Active'),
-        ('expired', 'Expired'),
-        ('claimed', 'Claimed'),
+        ("active", "Active"),
+        ("expired", "Expired"),
+        ("claimed", "Claimed"),
     )
-    purchase = models.OneToOneField(Purchase, on_delete=models.CASCADE, related_name='insurance')
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='download_insurances')
+    purchase = models.OneToOneField(Purchase, on_delete=models.CASCADE, related_name="insurance")
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="download_insurances")
     content_id = models.PositiveBigIntegerField()
     content_type = models.CharField(max_length=20)
     insurance_price = models.DecimalField(max_digits=10, decimal_places=2)
     payment_id = models.CharField(max_length=255, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
     claims_used = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

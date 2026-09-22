@@ -7,39 +7,53 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_missing_items_update'),
-        ('tracks', '0002_track_checksum_track_tracks_trac_is_acti_f0fe18_idx_and_more'),
+        ("accounts", "0005_missing_items_update"),
+        ("tracks", "0002_track_checksum_track_tracks_trac_is_acti_f0fe18_idx_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='track',
-            name='file_format',
-            field=models.CharField(choices=[('wav', 'WAV (Lossless)'), ('mp3', 'MP3 (320kbps)'), ('studio', 'Studio Project (ZIP)'), ('aiff', 'AIFF')], default='wav', max_length=20),
+            model_name="track",
+            name="file_format",
+            field=models.CharField(
+                choices=[
+                    ("wav", "WAV (Lossless)"),
+                    ("mp3", "MP3 (320kbps)"),
+                    ("studio", "Studio Project (ZIP)"),
+                    ("aiff", "AIFF"),
+                ],
+                default="wav",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='track',
-            name='file_size',
+            model_name="track",
+            name="file_size",
             field=models.BigIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='track',
-            name='sales_last_7_days',
+            model_name="track",
+            name="sales_last_7_days",
             field=models.IntegerField(default=0),
         ),
         migrations.CreateModel(
-            name='StarRating',
+            name="StarRating",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content_type', models.CharField(choices=[('track', 'Track'), ('album', 'Album')], max_length=20)),
-                ('content_id', models.PositiveBigIntegerField()),
-                ('stars', models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')])),
-                ('review', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ratings_given', to='accounts.profile')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("content_type", models.CharField(choices=[("track", "Track"), ("album", "Album")], max_length=20)),
+                ("content_id", models.PositiveBigIntegerField()),
+                ("stars", models.IntegerField(choices=[(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")])),
+                ("review", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="ratings_given", to="accounts.profile"
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('user', 'content_type', 'content_id')},
+                "unique_together": {("user", "content_type", "content_id")},
             },
         ),
     ]

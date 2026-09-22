@@ -20,7 +20,7 @@ PRO_PLAN_PRICE_PAISE = 99900  # ₹999 in paise
 PRO_PLAN_PRICE_INR = 999.00
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def upgrade_to_pro(request):
     """
@@ -35,61 +35,55 @@ def upgrade_to_pro(request):
     profile = request.user.profile
 
     # Must be an approved DJ
-    if profile.role != 'dj':
-        return Response(
-            {'error': 'Only approved DJs can upgrade to Pro.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+    if profile.role != "dj":
+        return Response({"error": "Only approved DJs can upgrade to Pro."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
         dj_profile = profile.dj_profile
     except DJProfile.DoesNotExist:
-        return Response({'error': 'DJ profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "DJ profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if dj_profile.status != 'approved':
+    if dj_profile.status != "approved":
         return Response(
-            {'error': 'Your DJ application must be approved before upgrading.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Your DJ application must be approved before upgrading."}, status=status.HTTP_400_BAD_REQUEST
         )
 
     # Already Pro?
     if profile.is_pro_dj:
-        return Response(
-            {'message': 'You are already a Pro DJ.', 'is_pro_dj': True},
-            status=status.HTTP_200_OK
-        )
+        return Response({"message": "You are already a Pro DJ.", "is_pro_dj": True}, status=status.HTTP_200_OK)
 
-    # Create payment order using active gateway
+    # Create payment order via PhonePe (Pro upgrades always use PhonePe).
     try:
-        gateway = settings.ACTIVE_GATEWAY
+        gateway = settings.get_payment_gateway("phonepe")
         result = gateway.create_subscription_order(
-            dj_id=str(dj_profile.id),
-            plan_type='annual',
-            amount_paise=PRO_PLAN_PRICE_PAISE
+            dj_id=str(dj_profile.id), plan_type="annual", amount_paise=PRO_PLAN_PRICE_PAISE
         )
     except Exception as e:
         return Response(
-            {'error': 'Failed to create payment order. Please try again.', 'detail': str(e)},
-            status=status.HTTP_502_BAD_GATEWAY
+            {"error": "Failed to create payment order. Please try again.", "detail": str(e)},
+            status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    return Response({
-        'order_id': result.get('order_id'),
-        'redirect_url': result.get('redirect_url'),
-        'amount': PRO_PLAN_PRICE_PAISE,
-        'amount_inr': PRO_PLAN_PRICE_INR,
-        'currency': 'INR',
-        'message': f'Complete ₹{PRO_PLAN_PRICE_INR:.0f} payment to activate Pro DJ.',
-        'features': [
-            '8% platform commission (vs 15% standard)',
-            'Custom domain support (e.g. music.yourname.com)',
-            'Reduced ad exposure for your storefront',
-            'Priority support',
-        ]
-    }, status=status.HTTP_201_CREATED)
+    return Response(
+        {
+            "order_id": result.get("order_id"),
+            "redirect_url": result.get("redirect_url"),
+            "amount": PRO_PLAN_PRICE_PAISE,
+            "amount_inr": PRO_PLAN_PRICE_INR,
+            "currency": "INR",
+            "message": f"Complete ₹{PRO_PLAN_PRICE_INR:.0f} payment to activate Pro DJ.",
+            "features": [
+                "8% platform commission (vs 15% standard)",
+                "Custom domain support (e.g. music.yourname.com)",
+                "Reduced ad exposure for your storefront",
+                "Priority support",
+            ],
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def admin_grant_pro(request, dj_profile_id):
     """
@@ -97,16 +91,18 @@ def admin_grant_pro(request, dj_profile_id):
     Use for comped upgrades, influencer partnerships, etc.
     """
     try:
-        dj_profile = DJProfile.objects.get(id=dj_profile_id, status='approved')
+        dj_profile = DJProfile.objects.get(id=dj_profile_id, status="approved")
     except DJProfile.DoesNotExist:
-        return Response({'error': 'Approved DJ profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Approved DJ profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
     profile = dj_profile.profile
     profile.is_pro_dj = True
-    profile.save(update_fields=['is_pro_dj'])
+    profile.save(update_fields=["is_pro_dj"])
 
-    return Response({
-        'status': 'pro_granted',
-        'message': f'{dj_profile.dj_name} is now a Pro DJ (8% commission, custom domain).',
-        'dj_profile_id': dj_profile.id,
-    })
+    return Response(
+        {
+            "status": "pro_granted",
+            "message": f"{dj_profile.dj_name} is now a Pro DJ (8% commission, custom domain).",
+            "dj_profile_id": dj_profile.id,
+        }
+    )

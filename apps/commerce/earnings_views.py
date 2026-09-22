@@ -32,24 +32,20 @@ from apps.albums.models import AlbumPack
 def _get_dj_profile(request):
     """Helper to get the authenticated DJ's profile or raise 403."""
     profile = request.user.profile
-    if profile.role != 'dj':
-        return None, Response(
-            {'error': 'Only DJs can access earnings analytics.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+    if profile.role != "dj":
+        return None, Response({"error": "Only DJs can access earnings analytics."}, status=status.HTTP_403_FORBIDDEN)
     try:
         dj_profile = profile.dj_profile
-        if dj_profile.status != 'approved':
+        if dj_profile.status != "approved":
             return None, Response(
-                {'error': 'Your DJ application is not yet approved.'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Your DJ application is not yet approved."}, status=status.HTTP_403_FORBIDDEN
             )
         return dj_profile, None
     except DJProfile.DoesNotExist:
-        return None, Response({'error': 'DJ profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return None, Response({"error": "DJ profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dj_earnings_overview(request):
     """
@@ -65,77 +61,73 @@ def dj_earnings_overview(request):
     month_start = now - timedelta(days=30)
 
     # Sales earnings
-    lifetime = Purchase.objects.filter(
-        seller=dj, status='paid'
-    ).aggregate(
-        total_dj_earnings=Sum('dj_earnings'),
-        total_sales=Sum('price_paid'),
-        sale_count=Count('id'),
+    lifetime = Purchase.objects.filter(seller=dj, status="paid").aggregate(
+        total_dj_earnings=Sum("dj_earnings"),
+        total_sales=Sum("price_paid"),
+        sale_count=Count("id"),
     )
 
-    weekly = Purchase.objects.filter(
-        seller=dj, status='paid', created_at__gte=week_start
-    ).aggregate(earnings=Sum('dj_earnings'), count=Count('id'))
+    weekly = Purchase.objects.filter(seller=dj, status="paid", created_at__gte=week_start).aggregate(
+        earnings=Sum("dj_earnings"), count=Count("id")
+    )
 
-    monthly = Purchase.objects.filter(
-        seller=dj, status='paid', created_at__gte=month_start
-    ).aggregate(earnings=Sum('dj_earnings'), count=Count('id'))
+    monthly = Purchase.objects.filter(seller=dj, status="paid", created_at__gte=month_start).aggregate(
+        earnings=Sum("dj_earnings"), count=Count("id")
+    )
 
     # Ad revenue
-    ad_lifetime = AdRevenueLog.objects.filter(dj=dj).aggregate(
-        total=Sum('ad_impression_value')
+    ad_lifetime = AdRevenueLog.objects.filter(dj=dj).aggregate(total=Sum("ad_impression_value"))
+    ad_weekly = AdRevenueLog.objects.filter(dj=dj, created_at__gte=week_start).aggregate(
+        total=Sum("ad_impression_value")
     )
-    ad_weekly = AdRevenueLog.objects.filter(
-        dj=dj, created_at__gte=week_start
-    ).aggregate(total=Sum('ad_impression_value'))
 
     # Wallet state
     try:
         wallet = dj.wallet
         wallet_data = {
-            'total_earnings': str(wallet.total_earnings),
-            'pending_earnings': str(wallet.pending_earnings),
-            'escrow_amount': str(wallet.escrow_amount),
-            'available_for_payout': str(wallet.available_for_payout),
+            "total_earnings": str(wallet.total_earnings),
+            "pending_earnings": str(wallet.pending_earnings),
+            "escrow_amount": str(wallet.escrow_amount),
+            "available_for_payout": str(wallet.available_for_payout),
         }
     except Exception:
         wallet_data = {
-            'total_earnings': '0.00',
-            'pending_earnings': '0.00',
-            'escrow_amount': '0.00',
-            'available_for_payout': '0.00',
+            "total_earnings": "0.00",
+            "pending_earnings": "0.00",
+            "escrow_amount": "0.00",
+            "available_for_payout": "0.00",
         }
 
     # Pending payout
-    pending_payout = Payout.objects.filter(
-        dj=dj, status='pending'
-    ).aggregate(total=Sum('amount'))
+    pending_payout = Payout.objects.filter(dj=dj, status="pending").aggregate(total=Sum("amount"))
 
-    return Response({
-        'lifetime': {
-            'dj_earnings': str(lifetime['total_dj_earnings'] or 0),
-            'total_sales_volume': str(lifetime['total_sales'] or 0),
-            'sale_count': lifetime['sale_count'] or 0,
-        },
-        'weekly': {
-            'earnings': str(weekly['earnings'] or 0),
-            'sale_count': weekly['count'] or 0,
-        },
-        'monthly': {
-            'earnings': str(monthly['earnings'] or 0),
-            'sale_count': monthly['count'] or 0,
-        },
-        'ad_revenue': {
-            'lifetime': str(ad_lifetime['total'] or 0),
-            'this_week': str(ad_weekly['total'] or 0),
-        },
-        'wallet': wallet_data,
-        'pending_payout': str(pending_payout['total'] or 0),
-        'commission_rate': '8%' if request.user.profile.is_pro_dj else '15%',
-    })
+    return Response(
+        {
+            "lifetime": {
+                "dj_earnings": str(lifetime["total_dj_earnings"] or 0),
+                "total_sales_volume": str(lifetime["total_sales"] or 0),
+                "sale_count": lifetime["sale_count"] or 0,
+            },
+            "weekly": {
+                "earnings": str(weekly["earnings"] or 0),
+                "sale_count": weekly["count"] or 0,
+            },
+            "monthly": {
+                "earnings": str(monthly["earnings"] or 0),
+                "sale_count": monthly["count"] or 0,
+            },
+            "ad_revenue": {
+                "lifetime": str(ad_lifetime["total"] or 0),
+                "this_week": str(ad_weekly["total"] or 0),
+            },
+            "wallet": wallet_data,
+            "pending_payout": str(pending_payout["total"] or 0),
+            "commission_rate": "8%" if request.user.profile.is_pro_dj else "15%",
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def earnings_by_track(request):
     """
@@ -151,30 +143,32 @@ def earnings_by_track(request):
     data = []
     for track in tracks:
         purchases = Purchase.objects.filter(
-            seller=dj, content_type='track', content_id=track.id, status='paid'
+            seller=dj, content_type="track", content_id=track.id, status="paid"
         ).aggregate(
-            earnings=Sum('dj_earnings'),
-            sales=Count('id'),
-            revenue=Sum('price_paid'),
+            earnings=Sum("dj_earnings"),
+            sales=Count("id"),
+            revenue=Sum("price_paid"),
         )
-        data.append({
-            'track_id': track.id,
-            'title': track.title,
-            'genre': track.genre,
-            'price': str(track.price),
-            'download_count': track.download_count,
-            'earnings': str(purchases['earnings'] or 0),
-            'sale_count': purchases['sales'] or 0,
-            'gross_revenue': str(purchases['revenue'] or 0),
-            'is_active': track.is_active,
-        })
+        data.append(
+            {
+                "track_id": track.id,
+                "title": track.title,
+                "genre": track.genre,
+                "price": str(track.price),
+                "download_count": track.download_count,
+                "earnings": str(purchases["earnings"] or 0),
+                "sale_count": purchases["sales"] or 0,
+                "gross_revenue": str(purchases["revenue"] or 0),
+                "is_active": track.is_active,
+            }
+        )
 
     # Sort by earnings descending
-    data.sort(key=lambda x: Decimal(x['earnings']), reverse=True)
-    return Response({'tracks': data})
+    data.sort(key=lambda x: Decimal(x["earnings"]), reverse=True)
+    return Response({"tracks": data})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def earnings_by_album(request):
     """
@@ -189,27 +183,29 @@ def earnings_by_album(request):
     data = []
     for album in albums:
         purchases = Purchase.objects.filter(
-            seller=dj, content_type='album', content_id=album.id, status='paid'
+            seller=dj, content_type="album", content_id=album.id, status="paid"
         ).aggregate(
-            earnings=Sum('dj_earnings'),
-            sales=Count('id'),
-            revenue=Sum('price_paid'),
+            earnings=Sum("dj_earnings"),
+            sales=Count("id"),
+            revenue=Sum("price_paid"),
         )
-        data.append({
-            'album_id': album.id,
-            'title': album.title,
-            'price': str(album.price),
-            'earnings': str(purchases['earnings'] or 0),
-            'sale_count': purchases['sales'] or 0,
-            'gross_revenue': str(purchases['revenue'] or 0),
-            'is_active': album.is_active,
-        })
+        data.append(
+            {
+                "album_id": album.id,
+                "title": album.title,
+                "price": str(album.price),
+                "earnings": str(purchases["earnings"] or 0),
+                "sale_count": purchases["sales"] or 0,
+                "gross_revenue": str(purchases["revenue"] or 0),
+                "is_active": album.is_active,
+            }
+        )
 
-    data.sort(key=lambda x: Decimal(x['earnings']), reverse=True)
-    return Response({'albums': data})
+    data.sort(key=lambda x: Decimal(x["earnings"]), reverse=True)
+    return Response({"albums": data})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def weekly_earnings_chart(request):
     """
@@ -222,23 +218,32 @@ def weekly_earnings_chart(request):
 
     twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
 
-    weekly = Purchase.objects.filter(
-        seller=dj, status='paid', created_at__gte=twelve_weeks_ago
-    ).annotate(week=TruncWeek('created_at')).values('week').annotate(
-        earnings=Sum('dj_earnings'),
-        sales=Count('id'),
-    ).order_by('week')
+    weekly = (
+        Purchase.objects.filter(seller=dj, status="paid", created_at__gte=twelve_weeks_ago)
+        .annotate(week=TruncWeek("created_at"))
+        .values("week")
+        .annotate(
+            earnings=Sum("dj_earnings"),
+            sales=Count("id"),
+        )
+        .order_by("week")
+    )
 
-    return Response({
-        'chart_data': [{
-            'week': w['week'].isoformat(),
-            'earnings': str(w['earnings'] or 0),
-            'sales': w['sales'],
-        } for w in weekly]
-    })
+    return Response(
+        {
+            "chart_data": [
+                {
+                    "week": w["week"].isoformat(),
+                    "earnings": str(w["earnings"] or 0),
+                    "sales": w["sales"],
+                }
+                for w in weekly
+            ]
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def payout_history(request):
     """
@@ -248,15 +253,20 @@ def payout_history(request):
     if err:
         return err
 
-    payouts = Payout.objects.filter(dj=dj).order_by('-created_at')[:50]
+    payouts = Payout.objects.filter(dj=dj).order_by("-created_at")[:50]
 
-    return Response({
-        'payouts': [{
-            'id': p.id,
-            'amount': str(p.amount),
-            'status': p.status,
-            'payment_reference': p.payment_reference,
-            'created_at': p.created_at.isoformat(),
-            'processed_at': p.processed_at.isoformat() if p.processed_at else None,
-        } for p in payouts]
-    })
+    return Response(
+        {
+            "payouts": [
+                {
+                    "id": p.id,
+                    "amount": str(p.amount),
+                    "status": p.status,
+                    "payment_reference": p.payment_reference,
+                    "created_at": p.created_at.isoformat(),
+                    "processed_at": p.processed_at.isoformat() if p.processed_at else None,
+                }
+                for p in payouts
+            ]
+        }
+    )

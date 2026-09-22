@@ -14,7 +14,7 @@ from apps.downloads.models import DownloadLog
 from apps.commerce.models import Purchase
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def download_history(request):
     """
@@ -27,20 +27,25 @@ def download_history(request):
         user=profile,
         completed=True,
         checksum_verified=True,
-    ).order_by('-created_at')[:50]
+    ).order_by(
+        "-created_at"
+    )[:50]
 
-    data = [{
-        'content_id': log.content_id,
-        'content_type': log.content_type,
-        'ip_address': log.ip_address,
-        'attempt_number': log.attempt_number,
-        'downloaded_at': log.created_at.isoformat(),
-    } for log in logs]
+    data = [
+        {
+            "content_id": log.content_id,
+            "content_type": log.content_type,
+            "ip_address": log.ip_address,
+            "attempt_number": log.attempt_number,
+            "downloaded_at": log.created_at.isoformat(),
+        }
+        for log in logs
+    ]
 
-    return Response({'downloads': data})
+    return Response({"downloads": data})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def purchase_history(request):
     """
@@ -51,9 +56,11 @@ def purchase_history(request):
 
     purchases = Purchase.objects.filter(
         user=profile,
-        status='paid',
+        status="paid",
         download_completed=True,
-    ).order_by('-created_at')[:50]
+    ).order_by(
+        "-created_at"
+    )[:50]
 
     # Enrich with content titles
     from apps.tracks.models import Track
@@ -62,25 +69,25 @@ def purchase_history(request):
     data = []
     for p in purchases:
         entry = {
-            'id': p.id,
-            'content_type': p.content_type,
-            'content_id': p.content_id,
-            'price_paid': str(p.price_paid),
-            'is_redownload': p.is_redownload,
-            'purchased_at': p.created_at.isoformat(),
+            "id": p.id,
+            "content_type": p.content_type,
+            "content_id": p.content_id,
+            "price_paid": str(p.price_paid),
+            "is_redownload": p.is_redownload,
+            "purchased_at": p.created_at.isoformat(),
         }
         try:
-            if p.content_type == 'track':
+            if p.content_type == "track":
                 track = Track.objects.get(id=p.content_id)
-                entry['title'] = track.title
-                entry['dj_name'] = track.dj.dj_name
-            elif p.content_type == 'album':
+                entry["title"] = track.title
+                entry["dj_name"] = track.dj.dj_name
+            elif p.content_type == "album":
                 album = AlbumPack.objects.get(id=p.content_id)
-                entry['title'] = album.title
-                entry['dj_name'] = album.dj.dj_name
+                entry["title"] = album.title
+                entry["dj_name"] = album.dj.dj_name
         except (Track.DoesNotExist, AlbumPack.DoesNotExist):
-            entry['title'] = 'Content removed'
-            entry['dj_name'] = 'N/A'
+            entry["title"] = "Content removed"
+            entry["dj_name"] = "N/A"
         data.append(entry)
 
-    return Response({'purchases': data})
+    return Response({"purchases": data})

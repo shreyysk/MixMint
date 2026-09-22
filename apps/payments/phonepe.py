@@ -9,18 +9,21 @@ from .base import PaymentGateway
 
 from django.core.exceptions import ImproperlyConfigured
 
+
 class PhonePeGateway(PaymentGateway):
     """
     PhonePe Production Payment Gateway Integration.
     """
 
     def __init__(self):
-        self.merchant_id = getattr(settings, 'PHONEPE_MERCHANT_ID', '')
-        self.salt_key = getattr(settings, 'PHONEPE_SALT_KEY', '')
-        self.salt_index = getattr(settings, 'PHONEPE_SALT_INDEX', '1')
+        self.merchant_id = getattr(settings, "PHONEPE_MERCHANT_ID", "")
+        self.salt_key = getattr(settings, "PHONEPE_SALT_KEY", "")
+        self.salt_index = getattr(settings, "PHONEPE_SALT_INDEX", "1")
         if not self.merchant_id or not self.salt_key:
-            raise ImproperlyConfigured("PhonePe credentials not configured. Set PHONEPE_MERCHANT_ID and PHONEPE_SALT_KEY.")
-        self.base_url = getattr(settings, 'PHONEPE_BASE_URL', 'https://api-preprod.phonepe.com/apis/pg-sandbox')
+            raise ImproperlyConfigured(
+                "PhonePe credentials not configured. Set PHONEPE_MERCHANT_ID and PHONEPE_SALT_KEY."
+            )
+        self.base_url = getattr(settings, "PHONEPE_BASE_URL", "https://api-preprod.phonepe.com/apis/pg-sandbox")
 
     def _generate_checksum(self, payload_base64, endpoint):
         """
@@ -31,24 +34,22 @@ class PhonePeGateway(PaymentGateway):
         checksum = sha256_hash + "###" + self.salt_index
         return checksum
 
-    def create_order(self, amount_paise, currency='INR', order_id=None, metadata=None):
+    def create_order(self, amount_paise, currency="INR", order_id=None, metadata=None):
         if not order_id:
             order_id = f"MM_{uuid.uuid4().hex[:16].upper()}"
 
         metadata = metadata or {}
-        
+
         payload = {
             "merchantId": self.merchant_id,
             "merchantTransactionId": order_id,
-            "merchantUserId": metadata.get('user_id', 'unknown'),
+            "merchantUserId": metadata.get("user_id", "unknown"),
             "amount": int(amount_paise),
             "redirectUrl": f"{settings.BASE_URL}/payment/callback/?order_id={order_id}",
             "redirectMode": "REDIRECT",
             "callbackUrl": f"{settings.BASE_URL}/payment/webhook/phonepe/",
-            "mobileNumber": metadata.get('mobile', ''),
-            "paymentInstrument": {
-                "type": "PAY_PAGE"
-            }
+            "mobileNumber": metadata.get("mobile", ""),
+            "paymentInstrument": {"type": "PAY_PAGE"},
         }
 
         payload_json = json.dumps(payload)
@@ -59,25 +60,16 @@ class PhonePeGateway(PaymentGateway):
 
         response = requests.post(
             f"{self.base_url}{endpoint}",
-            headers={
-                "Content-Type": "application/json",
-                "X-VERIFY": checksum,
-                "X-MERCHANT-ID": self.merchant_id
-            },
+            headers={"Content-Type": "application/json", "X-VERIFY": checksum, "X-MERCHANT-ID": self.merchant_id},
             json={"request": payload_base64},
-            timeout=30
+            timeout=30,
         )
 
         data = response.json()
 
-        if data.get('success') and data.get('data', {}).get('instrumentResponse'):
-            redirect_url = data['data']['instrumentResponse']['redirectInfo']['url']
-            return {
-                'success': True,
-                'order_id': order_id,
-                'redirect_url': redirect_url,
-                'gateway_response': data
-            }
+        if data.get("success") and data.get("data", {}).get("instrumentResponse"):
+            redirect_url = data["data"]["instrumentResponse"]["redirectInfo"]["url"]
+            return {"success": True, "order_id": order_id, "redirect_url": redirect_url, "gateway_response": data}
         else:
             raise Exception(f"PhonePe order creation failed: {data.get('message', 'Unknown error')}")
 
@@ -89,12 +81,12 @@ class PhonePeGateway(PaymentGateway):
         """
         if not x_verify_header:
             return False
-        
+
         # PhonePe callback signature format: SHA256(base64_payload + salt_key) + "###" + salt_index
         data = payload_base64 + self.salt_key
         sha256_hash = hashlib.sha256(data.encode()).hexdigest()
         expected_signature = sha256_hash + "###" + self.salt_index
-        
+
         return hmac.compare_digest(expected_signature, x_verify_header)
 
     def get_payment_status(self, merchant_transaction_id):
@@ -107,21 +99,21 @@ class PhonePeGateway(PaymentGateway):
                 "Content-Type": "application/json",
                 "X-VERIFY": checksum,
                 "X-MERCHANT-ID": self.merchant_id,
-                "X-VERIFY-INDEX": self.salt_index
+                "X-VERIFY-INDEX": self.salt_index,
             },
-            timeout=30
+            timeout=30,
         )
 
         data = response.json()
         return {
-            'success': data.get('success', False),
-            'status': data.get('code', ''), # 'PAYMENT_SUCCESS' | 'PAYMENT_PENDING' | 'PAYMENT_DECLINED'
-            'amount': data.get('data', {}).get('amount', 0),
-            'transaction_id': data.get('data', {}).get('transactionId', ''),
-            'gateway_response': data
+            "success": data.get("success", False),
+            "status": data.get("code", ""),  # 'PAYMENT_SUCCESS' | 'PAYMENT_PENDING' | 'PAYMENT_DECLINED'
+            "amount": data.get("data", {}).get("amount", 0),
+            "transaction_id": data.get("data", {}).get("transactionId", ""),
+            "gateway_response": data,
         }
 
-    def process_refund(self, original_transaction_id, amount_paise, reason=''):
+    def process_refund(self, original_transaction_id, amount_paise, reason=""):
         refund_id = f"REFUND_{uuid.uuid4().hex[:16].upper()}"
 
         payload = {
@@ -130,7 +122,7 @@ class PhonePeGateway(PaymentGateway):
             "originalTransactionId": original_transaction_id,
             "merchantTransactionId": refund_id,
             "amount": int(amount_paise),
-            "callbackUrl": f"{settings.BASE_URL}/payment/webhook/phonepe/refund/"
+            "callbackUrl": f"{settings.BASE_URL}/payment/webhook/phonepe/refund/",
         }
 
         payload_json = json.dumps(payload)
@@ -141,44 +133,31 @@ class PhonePeGateway(PaymentGateway):
 
         response = requests.post(
             f"{self.base_url}{endpoint}",
-            headers={
-                "Content-Type": "application/json",
-                "X-VERIFY": checksum
-            },
+            headers={"Content-Type": "application/json", "X-VERIFY": checksum},
             json={"request": payload_base64},
-            timeout=30
+            timeout=30,
         )
 
         data = response.json()
 
-        if data.get('success'):
-            return {
-                'success': True,
-                'refund_id': refund_id,
-                'gateway_response': data
-            }
+        if data.get("success"):
+            return {"success": True, "refund_id": refund_id, "gateway_response": data}
         else:
             raise Exception(f"PhonePe refund failed: {data.get('message', 'Unknown error')}")
 
     def create_subscription_order(self, dj_id, plan_type, amount_paise):
         from django.utils import timezone
+
         order_id = f"PRO_{dj_id[:8].upper()}_{timezone.now().strftime('%Y%m%d')}"
-        metadata = {
-            'user_id': str(dj_id),
-            'purpose': 'pro_subscription',
-            'plan_type': plan_type
-        }
+        metadata = {"user_id": str(dj_id), "purpose": "pro_subscription", "plan_type": plan_type}
         return self.create_order(amount_paise=amount_paise, order_id=order_id, metadata=metadata)
 
     def create_overage_order(self, dj_id, overage_gb, amount_paise):
         from django.utils import timezone
+
         order_id = f"OVERAGE_{dj_id[:8].upper()}_{timezone.now().strftime('%Y%m')}"
         return self.create_order(
             amount_paise=amount_paise,
             order_id=order_id,
-            metadata={
-                'user_id': str(dj_id),
-                'purpose': 'storage_overage',
-                'overage_gb': overage_gb
-            }
+            metadata={"user_id": str(dj_id), "purpose": "storage_overage", "overage_gb": overage_gb},
         )

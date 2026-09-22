@@ -27,7 +27,7 @@ class DownloadManager:
             ip_address=ip_address,
             device_hash=device_hash,
             user_agent=user_agent,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
     @staticmethod
@@ -38,27 +38,23 @@ class DownloadManager:
         Token misuse triggers account freeze [Spec §4.5].
         """
         try:
-            token = DownloadToken.objects.get(
-                token=token_str,
-                is_used=False,
-                expires_at__gt=timezone.now()
-            )
+            token = DownloadToken.objects.get(token=token_str, is_used=False, expires_at__gt=timezone.now())
         except DownloadToken.DoesNotExist:
             raise ValueError("Invalid, expired, or already used token.")
 
         # IP binding check — misuse triggers freeze [Spec §4.5]
         if token.ip_address and token.ip_address != client_ip:
             DownloadManager._trigger_misuse_freeze(
-                token.user, 'ip_mismatch',
-                f'Token IP {token.ip_address} != request IP {client_ip}'
+                token.user, "ip_mismatch", f"Token IP {token.ip_address} != request IP {client_ip}"
             )
             raise ValueError("IP address mismatch. Token locked to another device. Account flagged.")
 
         # Device hash binding check [Spec §4.5]
         if token.device_hash and device_hash and token.device_hash != device_hash:
             DownloadManager._trigger_misuse_freeze(
-                token.user, 'device_mismatch',
-                f'Token device {token.device_hash[:8]}... != request device {device_hash[:8]}...'
+                token.user,
+                "device_mismatch",
+                f"Token device {token.device_hash[:8]}... != request device {device_hash[:8]}...",
             )
             raise ValueError("Device fingerprint mismatch. Token locked to another device. Account flagged.")
 
@@ -77,15 +73,15 @@ class DownloadManager:
         # Create fraud alert
         FraudAlert.objects.create(
             user=profile,
-            alert_type='suspicious_activity',
-            severity='high',
-            details={'misuse_type': misuse_type, 'details': details},
-            status='pending',
+            alert_type="suspicious_activity",
+            severity="high",
+            details={"misuse_type": misuse_type, "details": details},
+            status="pending",
         )
 
         # Freeze account temporarily [Spec §4.6]
         profile.is_frozen = True
-        profile.save(update_fields=['is_frozen'])
+        profile.save(update_fields=["is_frozen"])
 
     @staticmethod
     def check_ip_attempts(ip_address, content_id, content_type, max_attempts=3):
@@ -140,32 +136,39 @@ class DownloadManager:
     def check_redownload_eligibility(profile, content_id, content_type):
         """
         Check if user needs to pay for re-download [Spec §4.3].
-        - IP lock removed after 2 days
+        - IP lock removed after 3 days
         - Must pay 50% of original price for re-download
         """
         from apps.commerce.models import Purchase
 
-        purchase = Purchase.objects.filter(
-            user=profile,
-            content_id=content_id,
-            content_type=content_type,
-            is_revoked=False,
-            is_redownload=False,
-        ).order_by('-created_at').first()
+        purchase = (
+            Purchase.objects.filter(
+                user=profile,
+                content_id=content_id,
+                content_type=content_type,
+                is_revoked=False,
+                is_redownload=False,
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
         if not purchase:
             return False, "No completed purchase found."
 
         # Check for Download Insurance [Spec §4.3: Bypass lock and price]
-        if hasattr(purchase, 'insurance') and purchase.insurance.status == 'active':
+        if hasattr(purchase, "insurance") and purchase.insurance.status == "active":
             return True, "Download Insurance active. Unlimited free re-downloads available."
 
         if not purchase.download_completed:
             return True, "Previous download failed or not completed. Free retry available."
 
-        lock_expiry = purchase.created_at + timedelta(days=2)
+        lock_expiry = purchase.created_at + timedelta(days=3)
         if timezone.now() < lock_expiry:
-            return False, "Re-download lock active. Try again after 2 days from original purchase (or buy Download Insurance)."
+            return (
+                False,
+                "Re-download lock active. Try again after 3 days from original purchase (or buy Download Insurance).",
+            )
 
         return True, "Re-download available at 50% price."
 
@@ -184,12 +187,13 @@ class DownloadManager:
         # Mark purchase as download_completed ONLY if checksum is OK [Spec §4.4]
         if checksum_ok:
             from apps.commerce.models import Purchase
+
             Purchase.objects.filter(
                 user=token.user,
                 content_id=token.content_id,
                 content_type=token.content_type,
                 download_completed=False,
-            ).order_by('-created_at').update(download_completed=True)
+            ).order_by("-created_at").update(download_completed=True)
 
         # Update download log
         DownloadLog.objects.filter(
@@ -197,7 +201,7 @@ class DownloadManager:
             content_id=token.content_id,
             content_type=token.content_type,
             completed=False,
-        ).order_by('-created_at').update(
+        ).order_by("-created_at").update(
             completed=bool(checksum_ok),
             checksum_verified=bool(checksum_ok),
             checksum_hex=checksum_hex,
@@ -209,10 +213,10 @@ class DownloadManager:
         """Check if IP or device is banned [Spec §4.6]."""
         from apps.admin_panel.models import BanList
 
-        if BanList.objects.filter(ban_type='ip', value=ip_address, is_active=True).exists():
+        if BanList.objects.filter(ban_type="ip", value=ip_address, is_active=True).exists():
             return True, "Your IP address has been banned."
 
-        if device_hash and BanList.objects.filter(ban_type='device', value=device_hash, is_active=True).exists():
+        if device_hash and BanList.objects.filter(ban_type="device", value=device_hash, is_active=True).exists():
             return True, "Your device has been banned."
 
         return False, None

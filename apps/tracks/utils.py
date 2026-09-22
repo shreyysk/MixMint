@@ -13,14 +13,14 @@ def process_track_metadata(track):
     Includes platform ownership, DJ attribution, and anti-resale clause [Spec §8].
     """
     s3 = boto3.client(
-        's3',
+        "s3",
         endpoint_url=settings.AWS_S3_ENDPOINT_URL,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )
 
     temp_dir = tempfile.mkdtemp(prefix=f"mixmint-track-{track.id}-")
-    local_path = os.path.join(temp_dir, 'track.mp3')
+    local_path = os.path.join(temp_dir, "track.mp3")
 
     try:
         # 1. Download from R2
@@ -29,14 +29,16 @@ def process_track_metadata(track):
         # 2. Apply ID3 tags with watermark + anti-resale clause
         try:
             tags = ID3(local_path)
-        except:
+        except BaseException:
             tags = ID3()
 
         tags["TIT2"] = TIT2(encoding=3, text=track.title)
         tags["TPE1"] = TPE1(encoding=3, text=track.dj.dj_name)
         tags["TENC"] = TENC(encoding=3, text="MixMint Distribution")
         tags["COMM"] = COMM(
-            encoding=3, lang='eng', desc='MixMint Metadata',
+            encoding=3,
+            lang="eng",
+            desc="MixMint Metadata",
             text=(
                 f"Platform: MixMint | URL: https://mixmint.site | "
                 f"DJ_ID: {track.dj.id} | TS: {datetime.now().isoformat()} | "
@@ -45,7 +47,7 @@ def process_track_metadata(track):
                 f"Resale, redistribution, or public performance without "
                 f"authorization from the original DJ is strictly prohibited. "
                 f"All rights reserved by the original creator."
-            )
+            ),
         )
         tags.save(local_path)
 

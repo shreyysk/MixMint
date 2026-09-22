@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}DJ Asset Pack — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[860px] mx-auto py-20 px-6 font-body">
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">// DJ_Resources</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-6">DJ Asset Pack</h1>
+    <p class="text-[15px] text-[var(--text-muted)] leading-relaxed mb-10">Everything you need to look official on and off
+        MixMint: brand logo, flyer/thumbnail guidance, and the operations handbook (how uploads, previews, payouts and
+        support work).</p>
+
+    <div class="grid sm:grid-cols-2 gap-4 mb-10">
+        <a href="/static/img/icon-512.png" download
+            class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-6 hover:border-[var(--accent-mint)] transition-colors">
+            <p class="font-bold text-[var(--text-primary)] mb-1">MixMint logo (PNG 512)</p>
+            <p class="text-[12px] text-[var(--text-muted)]">For flyers, thumbnails and social posts. Keep clear space around it.</p>
+        </a>
+        <a href="{% url 'dj_asset_handbook' %}"
+            class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-6 hover:border-[var(--accent-mint)] transition-colors">
+            <p class="font-bold text-[var(--text-primary)] mb-1">Operations handbook (PDF)</p>
+            <p class="text-[12px] text-[var(--text-muted)]">Uploads, Drive links, previews, pricing, payouts, support — one page per topic.</p>
+        </a>
+    </div>
+
+    <h2 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-4">Flyer / thumbnail recipe</h2>
+    <ul class="space-y-3 text-[14px] text-[var(--text-muted)] leading-relaxed list-disc list-inside">
+        <li>1080×1080 for feed posts, 1920×1080 for YouTube/Reel covers. Title top-third, DJ name + MixMint logo bottom strip.</li>
+        <li>Preview: upload the same artwork frame as your Reel cover so fans recognize the drop instantly.</li>
+        <li>Caption kit: track title · BPM/key · "Out now on MixMint — link in bio". Tag @mixmint + your storefront URL.</li>
+    </ul>
+</div>
+{% endblock %}

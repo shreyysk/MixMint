@@ -6,21 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_initial'),
-        ('commerce', '0001_initial'),
+        ("accounts", "0002_initial"),
+        ("commerce", "0001_initial"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='purchase',
-            index=models.Index(fields=['payment_id'], name='commerce_pu_payment_76df54_idx'),
+            model_name="purchase",
+            index=models.Index(fields=["payment_id"], name="commerce_pu_payment_76df54_idx"),
         ),
         migrations.AddIndex(
-            model_name='purchase',
-            index=models.Index(fields=['payment_order_id'], name='commerce_pu_payment_da4968_idx'),
+            model_name="purchase",
+            index=models.Index(fields=["payment_order_id"], name="commerce_pu_payment_da4968_idx"),
         ),
         migrations.AddIndex(
-            model_name='purchase',
-            index=models.Index(fields=['user', 'is_completed', 'download_completed'], name='commerce_pu_user_id_d7107c_idx'),
+            model_name="purchase",
+            index=models.Index(
+                fields=["user", "is_completed", "download_completed"], name="commerce_pu_user_id_d7107c_idx"
+            ),
         ),
     ]

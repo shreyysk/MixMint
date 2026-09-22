@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
+
 class RewardsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.rewards'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.rewards"

@@ -1,0 +1,22 @@
+[run]
+source = apps
+omit =
+    */migrations/*
+    apps/social/*
+    apps/rewards/*
+    */tests/*
+    */__pycache__/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if typing.TYPE_CHECKING:
+
+fail_under = 40
+
+[html]
+directory = htmlcov

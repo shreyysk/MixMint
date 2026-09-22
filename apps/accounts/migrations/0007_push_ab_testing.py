@@ -167,9 +167,7 @@ class Migration(migrations.Migration):
                 ("event_type", models.CharField(max_length=50)),
                 (
                     "value",
-                    models.DecimalField(
-                        blank=True, decimal_places=2, max_digits=10, null=True
-                    ),
+                    models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
                 ),
                 ("metadata", models.JSONField(default=dict)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -214,9 +212,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="userexperiment",
             name="variant",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="accounts.variant"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="accounts.variant"),
         ),
         migrations.CreateModel(
             name="PushSubscription",

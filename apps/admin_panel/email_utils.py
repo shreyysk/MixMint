@@ -1,6 +1,7 @@
 import requests
 from django.conf import settings
 
+
 def send_email(to_email, subject, html_content):
     """
     Sends an email using the Resend API.
@@ -11,16 +12,8 @@ def send_email(to_email, subject, html_content):
         return None
 
     url = "https://api.resend.com/emails"
-    headers = {
-        "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "from": settings.FROM_EMAIL,
-        "to": [to_email],
-        "subject": subject,
-        "html": html_content
-    }
-    
+    headers = {"Authorization": f"Bearer {settings.RESEND_API_KEY}", "Content-Type": "application/json"}
+    payload = {"from": settings.FROM_EMAIL, "to": [to_email], "subject": subject, "html": html_content}
+
     response = requests.post(url, json=payload, headers=headers)
     return response.json()

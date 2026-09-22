@@ -9,66 +9,66 @@ def create_periodic_tasks(apps, schema_editor):
 
     # Payout cron - run daily at 2 AM
     payout_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute='0',
-        hour='2',
-        day_of_week='*',
-        day_of_month='*',
-        month_of_year='*',
-        timezone='UTC',
+        minute="0",
+        hour="2",
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
+        timezone="UTC",
     )
     PeriodicTask.objects.get_or_create(
         crontab=payout_schedule,
-        name='Process Pro renewals and storage overage',
-        task='apps.commerce.management.commands.payout_cron.Command.handle',
-        defaults={'enabled': True},
+        name="Process Pro renewals and storage overage",
+        task="apps.commerce.management.commands.payout_cron.Command.handle",
+        defaults={"enabled": True},
     )
 
     # Cleanup tokens - run daily at 3 AM
     cleanup_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute='0',
-        hour='3',
-        day_of_week='*',
-        day_of_month='*',
-        month_of_year='*',
-        timezone='UTC',
+        minute="0",
+        hour="3",
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
+        timezone="UTC",
     )
     PeriodicTask.objects.get_or_create(
         crontab=cleanup_schedule,
-        name='Cleanup expired download tokens',
-        task='apps.downloads.management.commands.cleanup_tokens.Command.handle',
-        defaults={'enabled': True},
+        name="Cleanup expired download tokens",
+        task="apps.downloads.management.commands.cleanup_tokens.Command.handle",
+        defaults={"enabled": True},
     )
 
     # Update weekly sales - run daily at 4 AM
     weekly_sales_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute='0',
-        hour='4',
-        day_of_week='*',
-        day_of_month='*',
-        month_of_year='*',
-        timezone='UTC',
+        minute="0",
+        hour="4",
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
+        timezone="UTC",
     )
     PeriodicTask.objects.get_or_create(
         crontab=weekly_sales_schedule,
-        name='Update weekly sales for tracks',
-        task='apps.tracks.management.commands.update_weekly_sales.Command.handle',
-        defaults={'enabled': True},
+        name="Update weekly sales for tracks",
+        task="apps.tracks.management.commands.update_weekly_sales.Command.handle",
+        defaults={"enabled": True},
     )
 
     # Detect offload candidates - run weekly on Monday at 5 AM
     offload_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute='0',
-        hour='5',
-        day_of_week='1',
-        day_of_month='*',
-        month_of_year='*',
-        timezone='UTC',
+        minute="0",
+        hour="5",
+        day_of_week="1",
+        day_of_month="*",
+        month_of_year="*",
+        timezone="UTC",
     )
     PeriodicTask.objects.get_or_create(
         crontab=offload_schedule,
-        name='Detect offload candidates',
-        task='apps.tracks.management.commands.detect_offload_candidates.Command.handle',
-        defaults={'enabled': True},
+        name="Detect offload candidates",
+        task="apps.tracks.management.commands.detect_offload_candidates.Command.handle",
+        defaults={"enabled": True},
     )
 
 
@@ -76,10 +76,10 @@ def remove_periodic_tasks(apps, schema_editor):
     """Remove periodic tasks."""
     PeriodicTask.objects.filter(
         name__in=[
-            'Process Pro renewals and storage overage',
-            'Cleanup expired download tokens',
-            'Update weekly sales for tracks',
-            'Detect offload candidates',
+            "Process Pro renewals and storage overage",
+            "Cleanup expired download tokens",
+            "Update weekly sales for tracks",
+            "Detect offload candidates",
         ]
     ).delete()
 
@@ -87,8 +87,8 @@ def remove_periodic_tasks(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('commerce', '0006_dj_conversion_system'),
-        ('django_celery_beat', '0019_alter_periodictasks_options'),
+        ("commerce", "0006_dj_conversion_system"),
+        ("django_celery_beat", "0019_alter_periodictasks_options"),
     ]
 
     operations = [

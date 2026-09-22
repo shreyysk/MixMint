@@ -39,21 +39,21 @@ def process_album_zip(album_id):
         return
 
     # Update processing status
-    album.processing_status = 'processing'
+    album.processing_status = "processing"
     album.processing_started_at = timezone.now()
-    album.save(update_fields=['processing_status', 'processing_started_at'])
+    album.save(update_fields=["processing_status", "processing_started_at"])
 
     s3 = boto3.client(
-        's3',
+        "s3",
         endpoint_url=settings.AWS_S3_ENDPOINT_URL,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )
 
-    temp_dir = tempfile.mkdtemp(prefix=f'mixmint-album-{album_id}-')
-    zip_path = os.path.join(temp_dir, 'original.zip')
-    extract_dir = os.path.join(temp_dir, 'extracted')
-    output_zip = os.path.join(temp_dir, 'processed.zip')
+    temp_dir = tempfile.mkdtemp(prefix=f"mixmint-album-{album_id}-")
+    zip_path = os.path.join(temp_dir, "original.zip")
+    extract_dir = os.path.join(temp_dir, "extracted")
+    output_zip = os.path.join(temp_dir, "processed.zip")
 
     try:
         # 1. Download original ZIP from R2
@@ -61,12 +61,12 @@ def process_album_zip(album_id):
 
         # 2. Extract
         os.makedirs(extract_dir, exist_ok=True)
-        with zipfile.ZipFile(zip_path, 'r') as zf:
+        with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extractall(extract_dir)
 
         # 3. Process each audio file
         track_order = 0
-        audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac'}
+        audio_extensions = {".mp3", ".wav", ".flac", ".m4a", ".aac"}
 
         for root, dirs, files in os.walk(extract_dir):
             for filename in sorted(files):
@@ -78,7 +78,7 @@ def process_album_zip(album_id):
                 filepath = os.path.join(root, filename)
 
                 # Inject metadata [Spec §5]
-                if ext == '.mp3':
+                if ext == ".mp3":
                     _inject_mp3_metadata(filepath, album, track_order)
 
                 # Get file info
@@ -95,7 +95,7 @@ def process_album_zip(album_id):
                 )
 
         # 4. Re-zip processed files
-        with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
+        with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
             for root, dirs, files in os.walk(extract_dir):
                 for filename in files:
                     filepath = os.path.join(root, filename)
@@ -106,17 +106,21 @@ def process_album_zip(album_id):
         s3.upload_file(output_zip, settings.AWS_STORAGE_BUCKET_NAME, album.file_key)
 
         # 6. Mark as completed
-        album.processing_status = 'completed'
+        album.processing_status = "completed"
         album.processing_completed_at = timezone.now()
         album.track_count = track_order
-        album.save(update_fields=[
-            'processing_status', 'processing_completed_at', 'track_count',
-        ])
+        album.save(
+            update_fields=[
+                "processing_status",
+                "processing_completed_at",
+                "track_count",
+            ]
+        )
 
     except Exception as e:
-        album.processing_status = 'failed'
+        album.processing_status = "failed"
         album.processing_error = str(e)
-        album.save(update_fields=['processing_status', 'processing_error'])
+        album.save(update_fields=["processing_status", "processing_error"])
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -134,7 +138,9 @@ def _inject_mp3_metadata(filepath, album, track_order):
     tags["TPE1"] = TPE1(encoding=3, text=album.dj.dj_name)
     tags["TENC"] = TENC(encoding=3, text="MixMint Distribution")
     tags["COMM"] = COMM(
-        encoding=3, lang='eng', desc='MixMint Metadata',
+        encoding=3,
+        lang="eng",
+        desc="MixMint Metadata",
         text=(
             f"Platform: MixMint | URL: https://mixmint.site | "
             f"DJ_ID: {album.dj.id} | TS: {datetime.now().isoformat()} | "
@@ -143,7 +149,7 @@ def _inject_mp3_metadata(filepath, album, track_order):
             f"Resale, redistribution, or public performance without "
             f"authorization from the original DJ is strictly prohibited. "
             f"All rights reserved by the original creator."
-        )
+        ),
     )
 
     try:

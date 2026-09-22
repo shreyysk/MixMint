@@ -173,6 +173,22 @@
                 </div>
                 {% endif %}
 
+                {% if dj_offers %}
+                {% for offer in dj_offers %}
+                <div
+                    class="mt-5 p-3 bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 rounded-lg flex items-start gap-3 relative z-10">
+                    <span class="mt-0.5">🎁</span>
+                    <div>
+                        <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if offer.badge_label %}[{{ offer.badge_label }}] {% endif %}{{ offer.title }}</p>
+                        {% if offer.tagline %}
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{ offer.tagline }}</p>
+                        {% endif %}
+                        <p class="font-mono text-[10px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Offer by {{ album.dj.dj_name }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
                 <div
                     class="mt-5 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10 w-full flex items-center justify-center gap-2">
                     <span class="font-mono uppercase tracking-wider">🔒 Protected by MixMint Secure Vault</span>

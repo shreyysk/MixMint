@@ -63,6 +63,12 @@ pip_install_log.txt
 split_tags.txt
 registration_empty_form.log
 
+# Stray local scripts
+test_*.py
+*_mock_data.py
+*_template.py
+scaffold_*.py
+
 # Node / Frontend build
 node_modules/
 package-lock.json

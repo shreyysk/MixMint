@@ -6,33 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_initial'),
+        ("accounts", "0002_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='djapplication',
-            name='bio',
+            model_name="djapplication",
+            name="bio",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='djapplication',
-            name='dj_name',
+            model_name="djapplication",
+            name="dj_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='djapplication',
-            name='genres',
+            model_name="djapplication",
+            name="genres",
             field=models.JSONField(blank=True, default=list),
         ),
         migrations.AddField(
-            model_name='djapplication',
-            name='social_links',
+            model_name="djapplication",
+            name="social_links",
             field=models.JSONField(blank=True, default=dict),
         ),
         migrations.AddField(
-            model_name='djapplication',
-            name='why_mixmint',
+            model_name="djapplication",
+            name="why_mixmint",
             field=models.TextField(blank=True, null=True),
         ),
     ]

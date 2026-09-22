@@ -2,11 +2,13 @@ from django import template
 
 register = template.Library()
 
-@register.filter(name='split')
+
+@register.filter(name="split")
 def split(value, arg):
     return value.split(arg)
 
-@register.filter(name='money')
+
+@register.filter(name="money")
 def money(value):
     """Formats decimal to ₹XX.XX"""
     try:
@@ -14,7 +16,8 @@ def money(value):
     except (ValueError, TypeError):
         return value
 
-@register.filter(name='duration')
+
+@register.filter(name="duration")
 def duration(value):
     """Formats seconds to MM:SS"""
     try:

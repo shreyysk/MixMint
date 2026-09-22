@@ -4,39 +4,43 @@ from rest_framework.response import Response
 from .models import User, Profile, DJProfile
 from .serializers import UserSerializer, ProfileSerializer, DJProfileSerializer
 
+
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by("-date_joined")
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def confirm_age(self, request):
         """Age confirmation is handled implicitly at signup (18+ ToS acceptance)."""
-        return Response({'status': 'ok', 'message': 'Age acknowledged via Terms of Service acceptance.'})
+        return Response({"status": "ok", "message": "Age acknowledged via Terms of Service acceptance."})
+
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get_queryset(self):
         if self.request.user.is_staff:
-            return Profile.objects.all()
-        return Profile.objects.filter(user=self.request.user)
+            return Profile.objects.all().order_by("-created_at")
+        return Profile.objects.filter(user=self.request.user).order_by("-created_at")
+
 
 class DJProfileViewSet(viewsets.ModelViewSet):
     queryset = DJProfile.objects.all()
     serializer_class = DJProfileSerializer
     permission_classes = [permissions.AllowAny]
-    lookup_field = 'slug'
+    lookup_field = "slug"
     # ... placeholder
-    throttle_scope = 'search'  # [Fix 16]
-    
-    def get_queryset(self):
-        return DJProfile.objects.filter(status='approved')
+    throttle_scope = "search"  # [Fix 16]
 
-@api_view(['POST'])
+    def get_queryset(self):
+        return DJProfile.objects.filter(status="approved").order_by("-created_at")
+
+
+@api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def confirm_age(request):
     """Age confirmation is handled at signup via Terms of Service acceptance."""
-    return Response({'status': 'ok', 'message': 'Age acknowledged via Terms of Service acceptance.'})
+    return Response({"status": "ok", "message": "Age acknowledged via Terms of Service acceptance."})

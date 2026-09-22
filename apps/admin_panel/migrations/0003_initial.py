@@ -9,39 +9,55 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('accounts', '0002_initial'),
-        ('admin_panel', '0002_initial'),
-        ('tracks', '0001_initial'),
+        ("accounts", "0002_initial"),
+        ("admin_panel", "0002_initial"),
+        ("tracks", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='copyrightreport',
-            name='track',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='tracks.track'),
+            model_name="copyrightreport",
+            name="track",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to="tracks.track"
+            ),
         ),
         migrations.AddField(
-            model_name='fraudalert',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='fraud_alerts', to='accounts.profile'),
+            model_name="fraudalert",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, related_name="fraud_alerts", to="accounts.profile"
+            ),
         ),
         migrations.AddField(
-            model_name='killswitch',
-            name='activated_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='kill_switches', to='accounts.profile'),
+            model_name="killswitch",
+            name="activated_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="kill_switches",
+                to="accounts.profile",
+            ),
         ),
         migrations.AddField(
-            model_name='maintenancemode',
-            name='activated_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='maintenance_modes', to='accounts.profile'),
+            model_name="maintenancemode",
+            name="activated_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="maintenance_modes",
+                to="accounts.profile",
+            ),
         ),
         migrations.AddField(
-            model_name='supportticket',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='support_tickets', to='accounts.profile'),
+            model_name="supportticket",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, related_name="support_tickets", to="accounts.profile"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='banlist',
-            unique_together={('ban_type', 'value')},
+            name="banlist",
+            unique_together={("ban_type", "value")},
         ),
     ]

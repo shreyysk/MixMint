@@ -50,12 +50,12 @@ def log_ad_impression_for_content(content_type, content_id, impression_value):
     if value <= 0:
         return []
 
-    if content_type == 'track':
-        collabs = TrackCollaborator.objects.filter(track_id=content_id).select_related('dj', 'dj__profile')
+    if content_type == "track":
+        collabs = TrackCollaborator.objects.filter(track_id=content_id).select_related("dj", "dj__profile")
         if collabs.exists():
             created = []
             for c in collabs:
-                portion = (value * (c.revenue_percentage / Decimal('100'))).quantize(Decimal('0.0001'))
+                portion = (value * (c.revenue_percentage / Decimal("100"))).quantize(Decimal("0.0001"))
                 created.append(log_ad_impression(c.dj_id, content_id, portion))
             return created
 
@@ -65,6 +65,7 @@ def log_ad_impression_for_content(content_type, content_id, impression_value):
 
     # album: credit the owner only
     from apps.albums.models import AlbumPack
+
     album = AlbumPack.objects.get(id=content_id)
     return [log_ad_impression(album.dj_id, content_id, value)]
 
@@ -80,7 +81,7 @@ def credit_ad_revenue_to_djs():
 
     # Get dynamic ad floor base price [Spec §3.3] — reserved for future floor enforcement
     try:
-        setting = SystemSetting.objects.get(key='ad_floor_pricing')
+        setting = SystemSetting.objects.get(key="ad_floor_pricing")
         # floor_price stored in setting.value['floor_price'] for future use
         _ = setting  # setting retrieved to confirm it exists
     except SystemSetting.DoesNotExist:
@@ -88,26 +89,24 @@ def credit_ad_revenue_to_djs():
 
     # DJ ad share rate — admin-configurable [Spec P3 §1.2]
     try:
-        rate_setting = SystemSetting.objects.get(key='ad_share_rate')
-        ad_share_rate = Decimal(str(rate_setting.value.get('rate', str(settings.DJ_AD_REVENUE_SHARE))))
+        rate_setting = SystemSetting.objects.get(key="ad_share_rate")
+        ad_share_rate = Decimal(str(rate_setting.value.get("rate", str(settings.DJ_AD_REVENUE_SHARE))))
     except SystemSetting.DoesNotExist:
         ad_share_rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))  # default 15%
 
     # Get all DJs with ad impressions
-    dj_totals = AdRevenueLog.objects.values('dj_id').annotate(
-        total_ad_revenue=Sum('ad_impression_value')
-    )
+    dj_totals = AdRevenueLog.objects.values("dj_id").annotate(total_ad_revenue=Sum("ad_impression_value"))
 
     credited = 0
     for entry in dj_totals:
-        dj_id = entry['dj_id']
-        total_revenue = entry['total_ad_revenue'] or Decimal('0')
+        dj_id = entry["dj_id"]
+        total_revenue = entry["total_ad_revenue"] or Decimal("0")
 
         if total_revenue <= 0:
             continue
 
         # DJ gets 15% of ad revenue tied to their content
-        dj_share = (total_revenue * ad_share_rate).quantize(Decimal('0.01'))
+        dj_share = (total_revenue * ad_share_rate).quantize(Decimal("0.01"))
 
         if dj_share <= 0:
             continue
@@ -123,16 +122,16 @@ def credit_ad_revenue_to_djs():
             LedgerEntry.objects.create(
                 wallet=wallet,
                 amount=dj_share,
-                entry_type='credit',
-                description=f'Ad revenue share (15% of ₹{total_revenue})',
+                entry_type="credit",
+                description=f"Ad revenue share (15% of ₹{total_revenue})",
                 metadata={
-                    'source': 'ad_revenue',
-                    'total_ad_revenue': str(total_revenue),
-                    'share_rate': str(ad_share_rate),
+                    "source": "ad_revenue",
+                    "total_ad_revenue": str(total_revenue),
+                    "share_rate": str(ad_share_rate),
                 },
             )
             credited += 1
         except DJWallet.DoesNotExist:
             continue
 
-    return {'djs_credited': credited}
+    return {"djs_credited": credited}

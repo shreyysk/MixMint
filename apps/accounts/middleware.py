@@ -7,6 +7,8 @@ Three middleware classes:
 3. MaintenanceModeMiddleware — Platform mode checking
 """
 
+import ipaddress
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.contrib.auth import logout
 from django.utils.deprecation import MiddlewareMixin
@@ -23,55 +25,48 @@ class IPSessionMiddleware(MiddlewareMixin):
             return None
 
         client_ip = self._get_client_ip(request)
-        session_ip = request.session.get('bound_ip')
+        session_ip = request.session.get("bound_ip")
 
         if session_ip is None:
             # First request after login — bind IP
-            request.session['bound_ip'] = client_ip
+            request.session["bound_ip"] = client_ip
         elif session_ip != client_ip:
             # IP changed mid-session — force logout [Spec §13]
             logout(request)
-            return JsonResponse({
-                'error': 'Session terminated: IP address changed.',
-                'code': 'IP_CHANGE_LOGOUT'
-            }, status=401)
+            return JsonResponse(
+                {"error": "Session terminated: IP address changed.", "code": "IP_CHANGE_LOGOUT"}, status=401
+            )
 
         return None
 
     @staticmethod
     def _get_client_ip(request):
-        x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded:
-            return x_forwarded.split(',')[0].strip()
-        return request.META.get('REMOTE_ADDR')
+            return x_forwarded.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")
 
-import ipaddress
-from django.core.cache import cache
 
 def get_blacklist():
-    cached = cache.get('ip_blacklist')
+    cached = cache.get("ip_blacklist")
     if cached:
         return cached
 
     from apps.accounts.models import IPBlacklist
 
-    ips = set(IPBlacklist.objects.filter(
-        type='ip', is_active=True
-    ).values_list('value', flat=True))
+    ips = set(IPBlacklist.objects.filter(type="ip", is_active=True).values_list("value", flat=True))
 
     cidrs = []
-    for cidr_str in IPBlacklist.objects.filter(type='cidr', is_active=True).values_list('value', flat=True):
+    for cidr_str in IPBlacklist.objects.filter(type="cidr", is_active=True).values_list("value", flat=True):
         try:
             cidrs.append(ipaddress.ip_network(cidr_str, strict=False))
         except ValueError:
             pass
 
-    devices = set(IPBlacklist.objects.filter(
-        type='device', is_active=True
-    ).values_list('value', flat=True))
+    devices = set(IPBlacklist.objects.filter(type="device", is_active=True).values_list("value", flat=True))
 
-    blacklist = {'ips': ips, 'cidrs': cidrs, 'devices': devices}
-    cache.set('ip_blacklist', blacklist, 300)  # 5 min cache
+    blacklist = {"ips": ips, "cidrs": cidrs, "devices": devices}
+    cache.set("ip_blacklist", blacklist, 300)  # 5 min cache
     return blacklist
 
 
@@ -83,36 +78,47 @@ class BlacklistMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
+        # Skip health check endpoint - it needs to be accessible without DB
+        if request.path == "/health/":
+            return None
+
         client_ip = self._get_client_ip(request)
-        device_hash = request.META.get('HTTP_X_DEVICE_HASH') or request.headers.get('X-Device-Fingerprint', '')
+        device_hash = request.META.get("HTTP_X_DEVICE_HASH") or request.headers.get("X-Device-Fingerprint", "")
         blacklist = get_blacklist()
 
         # Check exact IP
-        if client_ip and client_ip in blacklist['ips']:
-            return JsonResponse({'error': 'Access denied. Your IP has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
+        if client_ip and client_ip in blacklist["ips"]:
+            return JsonResponse(
+                {"error": "Access denied. Your IP has been blacklisted.", "code": "BLACKLISTED"}, status=403
+            )
 
         # Check CIDR ranges
         if client_ip:
             try:
                 ip_obj = ipaddress.ip_address(client_ip)
-                for cidr in blacklist['cidrs']:
+                for cidr in blacklist["cidrs"]:
                     if ip_obj in cidr:
-                        return JsonResponse({'error': 'Access denied. Your IP range has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
+                        return JsonResponse(
+                            {"error": "Access denied. Your IP range has been blacklisted.", "code": "BLACKLISTED"},
+                            status=403,
+                        )
             except ValueError:
                 pass
 
         # Check device
-        if device_hash and device_hash in blacklist['devices']:
-            return JsonResponse({'error': 'Access denied. Your device has been blacklisted.', 'code': 'BLACKLISTED'}, status=403)
+        if device_hash and device_hash in blacklist["devices"]:
+            return JsonResponse(
+                {"error": "Access denied. Your device has been blacklisted.", "code": "BLACKLISTED"}, status=403
+            )
 
         return None
 
     @staticmethod
     def _get_client_ip(request):
-        x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded:
-            return x_forwarded.split(',')[0].strip()
-        return request.META.get('REMOTE_ADDR')
+            return x_forwarded.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")
 
 
 class MaintenanceModeMiddleware(MiddlewareMixin):
@@ -122,7 +128,7 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
     """
 
     # Paths that bypass maintenance mode
-    BYPASS_PATHS = ['/admin/', '/api/v1/admin/']
+    BYPASS_PATHS = ["/admin/", "/api/v1/admin/"]
 
     def process_request(self, request):
         # Let admin paths through
@@ -134,41 +140,51 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
         from django.shortcuts import render
 
         try:
-            current_mode = MaintenanceMode.objects.order_by('-created_at').first()
+            current_mode = MaintenanceMode.objects.order_by("-created_at").first()
             if not current_mode:
                 return None
 
-            is_api = 'api/v1' in request.path or request.content_type == 'application/json'
+            is_api = "api/v1" in request.path or request.content_type == "application/json"
 
-            if current_mode.mode == 'maintenance':
+            if current_mode.mode == "maintenance":
                 if is_api:
-                    return JsonResponse({
-                        'error': 'Maintenance Mode Active.',
-                        'message': current_mode.message or 'Scheduled maintenance.',
-                        'code': 'MAINTENANCE_MODE'
-                    }, status=503)
-                
-                return render(request, 'maintenance.html', {
-                    'mode': 'maintenance',
-                    'message': current_mode.message or 'Scheduled maintenance in progress.',
-                    'estimated_return': current_mode.estimated_return_at,
-                    'theme_color': 'amber' # Maintenance = Amber [Fix 14]
-                }, status=503)
+                    return JsonResponse(
+                        {
+                            "error": "Maintenance Mode Active.",
+                            "message": current_mode.message or "Scheduled maintenance.",
+                            "code": "MAINTENANCE_MODE",
+                        },
+                        status=503,
+                    )
 
-            elif current_mode.mode == 'kill_switch':
+                return render(
+                    request,
+                    "maintenance.html",
+                    {
+                        "mode": "maintenance",
+                        "message": current_mode.message or "Scheduled maintenance in progress.",
+                        "estimated_return": current_mode.estimated_return_at,
+                        "theme_color": "amber",  # Maintenance = Amber [Fix 14]
+                    },
+                    status=503,
+                )
+
+            elif current_mode.mode == "kill_switch":
                 # Kill switch — block downloads
-                if '/downloads/' in request.path or '/download-token' in request.path:
+                if "/downloads/" in request.path or "/download-token" in request.path:
                     if is_api:
-                        return JsonResponse({
-                            'error': 'Downloads Disabled.',
-                            'code': 'KILL_SWITCH'
-                        }, status=503)
-                    
-                    return render(request, 'maintenance.html', {
-                        'mode': 'kill_switch',
-                        'message': 'Downloads area is temporarily closed for security.',
-                        'theme_color': 'red' # Kill Switch = Red [Fix 14]
-                    }, status=503)
+                        return JsonResponse({"error": "Downloads Disabled.", "code": "KILL_SWITCH"}, status=503)
+
+                    return render(
+                        request,
+                        "maintenance.html",
+                        {
+                            "mode": "kill_switch",
+                            "message": "Downloads area is temporarily closed for security.",
+                            "theme_color": "red",  # Kill Switch = Red [Fix 14]
+                        },
+                        status=503,
+                    )
         except Exception:
             pass
 
@@ -185,16 +201,18 @@ class InactivityMiddleware(MiddlewareMixin):
         if request.user.is_authenticated:
             try:
                 from django.utils import timezone
+
                 # Update but don't force save on every single request if it's very recent
                 # to save DB writes (e.g. only update if > 5 mins since last update)
                 profile = request.user.profile
                 now = timezone.now()
                 if not profile.last_active_at or (now - profile.last_active_at).total_seconds() > 300:
                     profile.last_active_at = now
-                    profile.save(update_fields=['last_active_at'])
+                    profile.save(update_fields=["last_active_at"])
             except Exception:
                 pass
         return None
+
 
 class ReferralMiddleware(MiddlewareMixin):
     """
@@ -203,7 +221,7 @@ class ReferralMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        ref_code = request.GET.get('ref')
+        ref_code = request.GET.get("ref")
         if ref_code:
-            request.session['ref_code'] = ref_code
+            request.session["ref_code"] = ref_code
         return None

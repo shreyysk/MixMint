@@ -18,36 +18,32 @@ def razorpay_webhook(request):
     """
     Razorpay server-to-server webhook handler.
     """
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     # Get signature from header
-    x_signature = request.headers.get('X-Razorpay-Signature', '')
+    x_signature = request.headers.get("X-Razorpay-Signature", "")
 
     # Get payload
     try:
-        body = request.body.decode('utf-8')
+        body = request.body.decode("utf-8")
         payload = json.loads(body)
     except (json.JSONDecodeError, UnicodeDecodeError):
         return HttpResponse(status=400)
 
     # Verify signature
-    expected_signature = hmac.new(
-        settings.RAZORPAY_KEY_SECRET.encode(),
-        body.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    expected_signature = hmac.new(settings.RAZORPAY_KEY_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(expected_signature, x_signature):
         logger.warning(f"Razorpay webhook: invalid signature received. X-Signature: {x_signature}")
         return HttpResponse(status=401)
 
     # Extract event details
-    event = payload.get('event', '')
-    payment_entity = payload.get('payload', {}).get('payment', {}).get('entity', {})
-    order_id = payment_entity.get('order_id')
-    payment_id = payment_entity.get('id')
-    payment_status = payment_entity.get('status')
+    event = payload.get("event", "")
+    payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+    order_id = payment_entity.get("order_id")
+    payment_id = payment_entity.get("id")
+    payment_status = payment_entity.get("status")
 
     # Idempotency check
     if WebhookLog.objects.filter(transaction_id=payment_id, processed=True).exists():
@@ -55,18 +51,13 @@ def razorpay_webhook(request):
 
     # Log webhook
     webhook_log, _ = WebhookLog.objects.get_or_create(
-        transaction_id=payment_id,
-        defaults={
-            'gateway': 'razorpay',
-            'payload': payload,
-            'status': payment_status
-        }
+        transaction_id=payment_id, defaults={"gateway": "razorpay", "payload": payload, "status": payment_status}
     )
 
     try:
-        if event == 'payment.captured':
+        if event == "payment.captured":
             _process_successful_payment(order_id, payment_id, payload)
-        elif event in ['payment.failed', 'payment.authorized']:
+        elif event in ["payment.failed", "payment.authorized"]:
             _process_failed_payment(order_id, payment_id, payload)
 
         webhook_log.processed = True
@@ -87,8 +78,8 @@ def _process_successful_payment(order_id, payment_id, payload):
             return
 
         for purchase in purchases:
-            if purchase.status != 'paid':
-                purchase.status = 'paid'
+            if purchase.status != "paid":
+                purchase.status = "paid"
                 purchase.gateway_payment_id = payment_id
                 purchase.gateway_response = payload
                 purchase.paid_at = timezone.now()
@@ -96,14 +87,15 @@ def _process_successful_payment(order_id, payment_id, payload):
                 purchase.save()
 
                 from apps.commerce.services import MonetizationService
+
                 MonetizationService.complete_purchase(purchase)
 
 
 def _process_failed_payment(order_id, payment_id, payload):
     try:
         purchase = Purchase.objects.get(gateway_order_id=order_id)
-        if purchase.status == 'pending':
-            purchase.status = 'failed'
+        if purchase.status == "pending":
+            purchase.status = "failed"
             purchase.gateway_response = payload
             purchase.save()
     except Purchase.DoesNotExist:

@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tracks', '0003_missing_items_update'),
+        ("tracks", "0003_missing_items_update"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='track',
-            name='converted_at',
+            model_name="track",
+            name="converted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='track',
-            name='external_link_broken',
+            model_name="track",
+            name="external_link_broken",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='track',
-            name='external_link_error',
+            model_name="track",
+            name="external_link_error",
             field=models.CharField(blank=True, max_length=200, null=True),
         ),
         migrations.AddField(
-            model_name='track',
-            name='external_link_provider',
+            model_name="track",
+            name="external_link_provider",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
         migrations.AddField(
-            model_name='track',
-            name='external_link_url',
+            model_name="track",
+            name="external_link_url",
             field=models.URLField(blank=True, max_length=1000, null=True),
         ),
         migrations.AddField(
-            model_name='track',
-            name='is_external_link',
+            model_name="track",
+            name="is_external_link",
             field=models.BooleanField(default=False),
         ),
     ]

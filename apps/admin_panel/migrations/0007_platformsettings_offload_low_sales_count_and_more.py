@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('admin_panel', '0006_maintenancemode_estimated_return_at_contentreport'),
+        ("admin_panel", "0006_maintenancemode_estimated_return_at_contentreport"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='platformsettings',
-            name='offload_low_sales_count',
+            model_name="platformsettings",
+            name="offload_low_sales_count",
             field=models.IntegerField(default=2),
         ),
         migrations.AddField(
-            model_name='platformsettings',
-            name='offload_low_sales_days',
+            model_name="platformsettings",
+            name="offload_low_sales_days",
             field=models.IntegerField(default=90),
         ),
         migrations.AddField(
-            model_name='platformsettings',
-            name='offload_zero_sales_days',
+            model_name="platformsettings",
+            name="offload_zero_sales_days",
             field=models.IntegerField(default=60),
         ),
     ]

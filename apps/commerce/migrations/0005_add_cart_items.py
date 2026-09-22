@@ -8,33 +8,48 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0006_missing_item_02'),
-        ('commerce', '0004_purchase_buyer_role_purchase_cart_id_and_more'),
+        ("accounts", "0006_missing_item_02"),
+        ("commerce", "0004_purchase_buyer_role_purchase_cart_id_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Cart',
+            name="Cart",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cart_items', to='accounts.profile')),
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="cart_items", to="accounts.profile"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='CartItem',
+            name="CartItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content_type', models.CharField(choices=[('track', 'Track'), ('album', 'Album'), ('bundle', 'Bundle')], max_length=10)),
-                ('content_id', models.PositiveBigIntegerField()),
-                ('price', models.IntegerField(help_text='Price at time of adding to cart')),
-                ('added_at', models.DateTimeField(auto_now_add=True)),
-                ('cart', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='commerce.cart')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "content_type",
+                    models.CharField(
+                        choices=[("track", "Track"), ("album", "Album"), ("bundle", "Bundle")], max_length=10
+                    ),
+                ),
+                ("content_id", models.PositiveBigIntegerField()),
+                ("price", models.IntegerField(help_text="Price at time of adding to cart")),
+                ("added_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "cart",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="items", to="commerce.cart"
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('cart', 'content_type', 'content_id')},
+                "unique_together": {("cart", "content_type", "content_id")},
             },
         ),
     ]

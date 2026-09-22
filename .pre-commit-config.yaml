@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+        name: gitleaks secrets scan
+        entry: gitleaks protect --staged --verbose
+        language: system
+        pass_filenames: false

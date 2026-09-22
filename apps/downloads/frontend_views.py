@@ -2,6 +2,7 @@
 Frontend view for the buyer-facing download page [Spec §8].
 Shows token countdown, progress bar, and attempt tracking.
 """
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
@@ -26,7 +27,7 @@ def download_page_view(request, token_str):
         raise Http404("Invalid or expired download token.")
 
     # Resolve content details for display
-    if token.content_type == 'track':
+    if token.content_type == "track":
         content = get_object_or_404(Track, id=token.content_id)
         content_title = content.title
     else:
@@ -42,19 +43,26 @@ def download_page_view(request, token_str):
 
     # Get attempt count for this content
     from django.core.cache import cache
+
     attempt_key = f"dl_attempts_{request.META.get('REMOTE_ADDR')}_{token.content_id}_{token.content_type}"
     attempt_count = cache.get(attempt_key, 0)
 
     # Build the actual download URL (streaming proxy)
     download_url = f"/downloads/{token_str}/"
 
+    # Expiry warning: flag when <10h remain so buyers hurry (short tokens warn immediately).
+    from django.conf import settings
+
+    warn_hours = getattr(settings, "DOWNLOAD_EXPIRY_WARNING_HOURS", 10)
+
     context = {
-        'token': token,
-        'content_title': content_title,
-        'content_type': token.content_type,
-        'download_url': download_url,
-        'token_seconds_remaining': max(0, seconds_remaining),
-        'attempt_count': attempt_count,
-        'max_attempts': 3,
+        "token": token,
+        "content_title": content_title,
+        "content_type": token.content_type,
+        "download_url": download_url,
+        "token_seconds_remaining": max(0, seconds_remaining),
+        "expiry_warning": bool(token.expires_at and token.expires_at > now) and seconds_remaining < warn_hours * 3600,
+        "attempt_count": attempt_count,
+        "max_attempts": 3,
     }
-    return render(request, 'downloads/download_page.html', context)
+    return render(request, "downloads/download_page.html", context)

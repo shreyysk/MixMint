@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}About, Mission & How MixMint Works{% endblock %}
+{% block content %}
+<div class="max-w-[860px] mx-auto py-20 px-6 font-body">
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">// Who_We_Are</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-6">About MixMint</h1>
+    <p class="text-[15px] text-[var(--text-muted)] leading-relaxed mb-12">MixMint is a DJ-first digital music distribution
+        platform operating in India. Our mission: <strong class="text-[var(--text-primary)]">every rupee a fan pays should
+        reach the artist it was meant for</strong> — no streaming fractions of a paisa, no black-box payouts.</p>
+
+    <h2 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-4">How it works</h2>
+    <ol class="space-y-4 text-[14px] text-[var(--text-muted)] leading-relaxed mb-12 list-decimal list-inside">
+        <li><strong class="text-[var(--text-primary)]">DJs upload or link.</strong> Upload a WAV/MP3, or paste a Google Drive / MediaFire / direct link. Previews play only from the DJ's own YouTube / Instagram embeds.</li>
+        <li><strong class="text-[var(--text-primary)]">Fans pay one all-inclusive price.</strong> The price you see is the price you pay — fees and taxes included, no surprises at checkout.</li>
+        <li><strong class="text-[var(--text-primary)]">Secure vault delivery.</strong> Files stream through MixMint's signed, expiring links. The DJ's original Drive link is never revealed.</li>
+        <li><strong class="text-[var(--text-primary)]">Artists get paid.</strong> Standard 15% platform commission, 8% for Pro DJs. Payouts to UPI/bank above ₹500.</li>
+    </ol>
+
+    <h2 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-4">Operations</h2>
+    <ul class="space-y-3 text-[14px] text-[var(--text-muted)] leading-relaxed mb-12 list-disc list-inside">
+        <li>Downloads are token-locked, device-bound and byte-verified.</li>
+        <li>Re-downloads open at 50% after a 3-day lock (free retry if a download fails; Download Insurance removes limits).</li>
+        <li>Refunds and disputes are handled in-app with SLA timers; chargeback-risk earnings can be held transparently.</li>
+        <li>Support: file a ticket or ping us on Telegram — fastest response there.</li>
+    </ul>
+
+    <div class="flex flex-wrap gap-4">
+        <a href="/legal/faq/" class="btn-mm btn-mint h-12 px-8 font-[600]">Read the FAQ</a>
+        <a href="{% url 'contact' %}" class="btn-mm btn-ghost h-12 px-8 font-[600]">Contact Support</a>
+    </div>
+</div>
+{% endblock %}

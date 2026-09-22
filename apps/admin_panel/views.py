@@ -10,6 +10,9 @@ Admin capabilities:
 - DMCA template generation
 """
 
+from django.shortcuts import render
+from django.utils.dateparse import parse_datetime
+from .models import PlatformSettings, PromotionalOffer
 from decimal import Decimal
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncWeek
@@ -21,125 +24,139 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Profile, DJProfile
 from apps.commerce.models import (
-    Purchase, DJWallet, Payout, AdRevenueLog,
+    Purchase,
+    DJWallet,
+    Payout,
+    AdRevenueLog,
 )
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from .models import (
-    SystemSetting, AuditLog, BanList,
-    KillSwitch, MaintenanceMode,
+    SystemSetting,
+    AuditLog,
+    BanList,
+    KillSwitch,
+    MaintenanceMode,
 )
-
 
 # ─── DJ Management ───────────────────────────────────────────────
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def toggle_application_fee(request):
     """Enable/disable ₹99 DJ application fee [Spec §3.3]."""
-    enabled = request.data.get('enabled', True)
+    enabled = request.data.get("enabled", True)
     setting, _ = SystemSetting.objects.update_or_create(
-        key='dj_application_fee_enabled',
-        defaults={'value': {'enabled': enabled}, 'description': 'DJ application fee toggle'}
+        key="dj_application_fee_enabled",
+        defaults={"value": {"enabled": enabled}, "description": "DJ application fee toggle"},
     )
     _log_admin_action(request, f"Set DJ application fee: {'enabled' if enabled else 'disabled'}")
-    return Response({'enabled': enabled})
+    return Response({"enabled": enabled})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def list_pending_djs(request):
     """List pending DJ applications [Spec §3.3]."""
-    pending = DJProfile.objects.filter(status='pending').select_related('profile__user')
+    pending = DJProfile.objects.filter(status="pending").select_related("profile__user")
     data = []
     for dj in pending:
         try:
-            fee_paid = dj.application_fee.status == 'paid'
+            fee_paid = dj.application_fee.status == "paid"
         except Exception:
             fee_paid = False
 
-        data.append({
-            'id': dj.id,
-            'dj_name': dj.dj_name,
-            'email': dj.profile.user.email,
-            'fee_paid': fee_paid,
-            'created_at': dj.created_at.isoformat(),
-        })
+        data.append(
+            {
+                "id": dj.id,
+                "dj_name": dj.dj_name,
+                "email": dj.profile.user.email,
+                "fee_paid": fee_paid,
+                "created_at": dj.created_at.isoformat(),
+            }
+        )
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def dj_management_view(request):
     """Premium UI for DJ management [Spec §3.3]."""
     import json
     from django.shortcuts import render
     from django.core.serializers.json import DjangoJSONEncoder
-    
+
     # 1. Pending DJs
-    pending = DJProfile.objects.filter(status='pending').select_related('profile__user')
+    pending = DJProfile.objects.filter(status="pending").select_related("profile__user")
     pending_list = []
     for dj in pending:
-        pending_list.append({
-            'id': dj.id,
-            'dj_name': dj.dj_name,
-            'email': dj.profile.user.email,
-            'status': dj.status,
-            'created_at': dj.created_at.isoformat(),
-        })
+        pending_list.append(
+            {
+                "id": dj.id,
+                "dj_name": dj.dj_name,
+                "email": dj.profile.user.email,
+                "status": dj.status,
+                "created_at": dj.created_at.isoformat(),
+            }
+        )
 
     # 2. Active DJs (Verified)
-    active = DJProfile.objects.filter(status='verified').select_related('profile__user', 'wallet')
+    active = DJProfile.objects.filter(status="verified").select_related("profile__user", "wallet")
     active_list = []
     for dj in active:
-        active_list.append({
-            'id': dj.id,
-            'dj_name': dj.dj_name,
-            'email': dj.profile.user.email,
-            'status': dj.status,
-            'pending_earnings': str(dj.wallet.pending_earnings if hasattr(dj, 'wallet') else 0),
-        })
+        active_list.append(
+            {
+                "id": dj.id,
+                "dj_name": dj.dj_name,
+                "email": dj.profile.user.email,
+                "status": dj.status,
+                "pending_earnings": str(dj.wallet.pending_earnings if hasattr(dj, "wallet") else 0),
+            }
+        )
 
     ctx = {
-        'pending_json': json.dumps(pending_list, cls=DjangoJSONEncoder),
-        'active_json': json.dumps(active_list, cls=DjangoJSONEncoder),
+        "pending_json": json.dumps(pending_list, cls=DjangoJSONEncoder),
+        "active_json": json.dumps(active_list, cls=DjangoJSONEncoder),
     }
-    return render(request, 'admin/dj_management.html', ctx)
+    return render(request, "admin/dj_management.html", ctx)
 
 
 # ─── Content Moderation ──────────────────────────────────────────
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def soft_delete_content(request):
     """
     Soft delete track or album with DJ notification [Spec §3.3].
     Archives content metadata before deletion [Spec §9].
     """
-    content_id = request.data.get('content_id')
-    content_type = request.data.get('content_type', 'track')
-    reason = request.data.get('reason', 'Content removed by admin.')
+    content_id = request.data.get("content_id")
+    content_type = request.data.get("content_type", "track")
+    reason = request.data.get("reason", "Content removed by admin.")
 
-    if content_type == 'track':
+    if content_type == "track":
         try:
             content = Track.objects.get(id=content_id)
         except Track.DoesNotExist:
-            return Response({'error': 'Track not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Track not found."}, status=status.HTTP_404_NOT_FOUND)
         dj = content.dj
-    elif content_type in ('album', 'zip'):
+    elif content_type in ("album", "zip"):
         try:
             content = AlbumPack.objects.get(id=content_id)
         except AlbumPack.DoesNotExist:
-            return Response({'error': 'Album not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Album not found."}, status=status.HTTP_404_NOT_FOUND)
         dj = content.dj
     else:
-        return Response({'error': 'Invalid content_type.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid content_type."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Archive before delete [Spec §9: Automatic archive of deleted content]
     from .content_archive import archive_content
+
     archive_content(
         content=content,
-        content_type=content_type if content_type != 'zip' else 'album',
+        content_type=content_type if content_type != "zip" else "album",
         reason=reason,
         deleted_by=request.user.email,
     )
@@ -147,7 +164,7 @@ def soft_delete_content(request):
     # Soft delete [Spec: Soft delete only]
     content.is_deleted = True
     content.is_active = False
-    content.save(update_fields=['is_deleted', 'is_active'])
+    content.save(update_fields=["is_deleted", "is_active"])
 
     # Notify DJ [Spec §3.3]
     try:
@@ -169,67 +186,66 @@ def soft_delete_content(request):
     _log_admin_action(
         request,
         f"Soft deleted {content_type} #{content_id}: {content.title}",
-        metadata={'content_id': content_id, 'content_type': content_type, 'reason': reason},
+        metadata={"content_id": content_id, "content_type": content_type, "reason": reason},
     )
 
-    return Response({
-        'status': 'deleted',
-        'message': f'{content.title} has been soft-deleted and archived.',
-        'archived': True,
-        'dj_notified': True,
-    })
+    return Response(
+        {
+            "status": "deleted",
+            "message": f"{content.title} has been soft-deleted and archived.",
+            "archived": True,
+            "dj_notified": True,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def moderation_hub_view(request):
     """Premium UI for content moderation [Spec §3.3]."""
     import json
     from django.shortcuts import render
     from django.core.serializers.json import DjangoJSONEncoder
-    
+
     # Fetch active tracks and albums for moderation
-    tracks = Track.objects.filter(is_deleted=False).select_related('dj').values(
-        'id', 'title', 'dj__dj_name', 'is_active'
+    tracks = (
+        Track.objects.filter(is_deleted=False).select_related("dj").values("id", "title", "dj__dj_name", "is_active")
     )
     # Rename dj__dj_name to dj_name for the template
     tracks_list = []
     for t in tracks:
-        tracks_list.append({
-            'id': t['id'],
-            'title': t['title'],
-            'dj_name': t['dj__dj_name'],
-            'is_active': t['is_active']
-        })
+        tracks_list.append(
+            {"id": t["id"], "title": t["title"], "dj_name": t["dj__dj_name"], "is_active": t["is_active"]}
+        )
 
-    albums = AlbumPack.objects.filter(is_deleted=False).select_related('dj').values(
-        'id', 'title', 'dj__dj_name', 'is_active'
+    albums = (
+        AlbumPack.objects.filter(is_deleted=False)
+        .select_related("dj")
+        .values("id", "title", "dj__dj_name", "is_active")
     )
     albums_list = []
     for a in albums:
-        albums_list.append({
-            'id': a['id'],
-            'title': a['title'],
-            'dj_name': a['dj__dj_name'],
-            'is_active': a['is_active']
-        })
+        albums_list.append(
+            {"id": a["id"], "title": a["title"], "dj_name": a["dj__dj_name"], "is_active": a["is_active"]}
+        )
 
     ctx = {
-        'tracks_json': json.dumps(tracks_list, cls=DjangoJSONEncoder),
-        'albums_json': json.dumps(albums_list, cls=DjangoJSONEncoder),
+        "tracks_json": json.dumps(tracks_list, cls=DjangoJSONEncoder),
+        "albums_json": json.dumps(albums_list, cls=DjangoJSONEncoder),
     }
-    return render(request, 'admin/moderation_hub.html', ctx)
+    return render(request, "admin/moderation_hub.html", ctx)
 
 
 # ─── Security Controls ───────────────────────────────────────────
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def freeze_account(request):
     """Freeze a user account [Spec §3.3, §11]."""
-    user_id = request.data.get('user_id')
-    email = request.data.get('email')
-    reason = request.data.get('reason', 'Account frozen by admin.')
+    user_id = request.data.get("user_id")
+    email = request.data.get("email")
+    reason = request.data.get("reason", "Account frozen by admin.")
 
     try:
         if user_id:
@@ -237,103 +253,97 @@ def freeze_account(request):
         elif email:
             profile = Profile.objects.get(user__email=email)
         else:
-            return Response({'error': 'user_id or email required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "user_id or email required."}, status=status.HTTP_400_BAD_REQUEST)
     except Profile.DoesNotExist:
-        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
     profile.is_frozen = True
-    profile.save(update_fields=['is_frozen'])
+    profile.save(update_fields=["is_frozen"])
 
-    _log_admin_action(request, f"Froze account: {profile.user.email}", metadata={'reason': reason})
-    return Response({'status': 'frozen', 'user': profile.user.email})
+    _log_admin_action(request, f"Froze account: {profile.user.email}", metadata={"reason": reason})
+    return Response({"status": "frozen", "user": profile.user.email})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def unfreeze_account(request):
     """Unfreeze a user account."""
-    user_id = request.data.get('user_id')
+    user_id = request.data.get("user_id")
     try:
         profile = Profile.objects.get(user_id=user_id)
     except Profile.DoesNotExist:
-        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
     profile.is_frozen = False
-    profile.save(update_fields=['is_frozen'])
+    profile.save(update_fields=["is_frozen"])
 
     _log_admin_action(request, f"Unfroze account: {profile.user.email}")
-    return Response({'status': 'unfrozen', 'user': profile.user.email})
+    return Response({"status": "unfrozen", "user": profile.user.email})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def manage_ban(request):
     """Add/remove IP or device ban [Spec §3.3, §4.6]."""
-    action = request.data.get('action', 'add')  # 'add' or 'remove'
-    ban_type = request.data.get('ban_type')  # 'ip' or 'device'
-    value = request.data.get('value')
-    reason = request.data.get('reason', '')
+    action = request.data.get("action", "add")  # 'add' or 'remove'
+    ban_type = request.data.get("ban_type")  # 'ip' or 'device'
+    value = request.data.get("value")
+    reason = request.data.get("reason", "")
 
     if not ban_type or not value:
-        return Response({'error': 'ban_type and value required.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "ban_type and value required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    if action == 'add':
+    if action == "add":
         ban, created = BanList.objects.get_or_create(
-            ban_type=ban_type, value=value,
+            ban_type=ban_type,
+            value=value,
             defaults={
-                'reason': reason,
-                'banned_by': request.user.profile,
-                'is_active': True,
-            }
+                "reason": reason,
+                "banned_by": request.user.profile,
+                "is_active": True,
+            },
         )
         if not created:
             ban.is_active = True
             ban.reason = reason
             ban.save()
         _log_admin_action(request, f"Banned {ban_type}: {value}")
-        return Response({'status': 'banned', 'ban_type': ban_type, 'value': value})
-    elif action == 'remove':
+        return Response({"status": "banned", "ban_type": ban_type, "value": value})
+    elif action == "remove":
         BanList.objects.filter(ban_type=ban_type, value=value).update(is_active=False)
         _log_admin_action(request, f"Unbanned {ban_type}: {value}")
-        return Response({'status': 'unbanned', 'ban_type': ban_type, 'value': value})
+        return Response({"status": "unbanned", "ban_type": ban_type, "value": value})
 
-    return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def security_dashboard_view(request):
     """Premium UI for security controls [Spec §3.3]."""
     import json
     from django.shortcuts import render
     from django.core.serializers.json import DjangoJSONEncoder
-    
+
     # Fetch active bans
-    active_bans = BanList.objects.filter(is_active=True).values(
-        'id', 'ban_type', 'value', 'reason'
-    )
+    active_bans = BanList.objects.filter(is_active=True).values("id", "ban_type", "value", "reason")
     # Map fields for template consistency
     bans_list = []
     for b in active_bans:
-        bans_list.append({
-            'id': b['id'],
-            'type': b['ban_type'],
-            'value': b['value'],
-            'reason': b['reason']
-        })
+        bans_list.append({"id": b["id"], "type": b["ban_type"], "value": b["value"], "reason": b["reason"]})
 
     ctx = {
-        'bans_json': json.dumps(bans_list, cls=DjangoJSONEncoder),
+        "bans_json": json.dumps(bans_list, cls=DjangoJSONEncoder),
     }
-    return render(request, 'admin/security_dashboard.html', ctx)
+    return render(request, "admin/security_dashboard.html", ctx)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def toggle_kill_switch(request):
     """Activate/deactivate emergency kill switch [Spec §3.3, §4.6]."""
-    activate = request.data.get('activate', True)
-    reason = request.data.get('reason', '')
+    activate = request.data.get("activate", True)
+    reason = request.data.get("reason", "")
 
     if activate:
         KillSwitch.objects.create(
@@ -342,7 +352,7 @@ def toggle_kill_switch(request):
             reason=reason,
             activated_at=timezone.now(),
         )
-        _log_admin_action(request, "ACTIVATED kill switch", metadata={'reason': reason})
+        _log_admin_action(request, "ACTIVATED kill switch", metadata={"reason": reason})
     else:
         KillSwitch.objects.filter(is_active=True).update(
             is_active=False,
@@ -350,18 +360,18 @@ def toggle_kill_switch(request):
         )
         _log_admin_action(request, "DEACTIVATED kill switch")
 
-    return Response({'kill_switch_active': activate})
+    return Response({"kill_switch_active": activate})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def set_maintenance_mode(request):
     """Set platform mode: normal/maintenance/kill_switch [Spec P2 §15]."""
-    mode = request.data.get('mode', 'normal')
-    message = request.data.get('message', '')
+    mode = request.data.get("mode", "normal")
+    message = request.data.get("message", "")
 
-    if mode not in ('normal', 'maintenance', 'kill_switch'):
-        return Response({'error': 'Invalid mode.'}, status=status.HTTP_400_BAD_REQUEST)
+    if mode not in ("normal", "maintenance", "kill_switch"):
+        return Response({"error": "Invalid mode."}, status=status.HTTP_400_BAD_REQUEST)
 
     MaintenanceMode.objects.create(
         mode=mode,
@@ -369,123 +379,133 @@ def set_maintenance_mode(request):
         activated_by=request.user.profile,
     )
     _log_admin_action(request, f"Set platform mode: {mode}")
-    return Response({'mode': mode, 'message': message})
+    return Response({"mode": mode, "message": message})
 
 
 # ─── Payout Management ───────────────────────────────────────────
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def hold_payout(request):
     """Hold DJ payout for legal review [Spec P2 §9]."""
-    dj_id = request.data.get('dj_id')
-    reason = request.data.get('reason', 'Under review.')
+    dj_id = request.data.get("dj_id")
+    reason = request.data.get("reason", "Under review.")
 
-    payouts = Payout.objects.filter(dj_id=dj_id, status='pending')
-    count = payouts.update(status='held', hold_reason=reason)
+    payouts = Payout.objects.filter(dj_id=dj_id, status="pending")
+    count = payouts.update(status="held", hold_reason=reason)
 
-    _log_admin_action(request, f"Held {count} payouts for DJ #{dj_id}", metadata={'reason': reason})
-    return Response({'held_count': count, 'dj_id': dj_id})
+    _log_admin_action(request, f"Held {count} payouts for DJ #{dj_id}", metadata={"reason": reason})
+    return Response({"held_count": count, "dj_id": dj_id})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def release_payout(request):
     """Release held payout [Spec P2 §9]."""
-    dj_id = request.data.get('dj_id')
+    dj_id = request.data.get("dj_id")
 
-    payouts = Payout.objects.filter(dj_id=dj_id, status='held')
-    count = payouts.update(status='pending', hold_reason=None)
+    payouts = Payout.objects.filter(dj_id=dj_id, status="held")
+    count = payouts.update(status="pending", hold_reason=None)
 
     _log_admin_action(request, f"Released {count} payouts for DJ #{dj_id}")
-    return Response({'released_count': count, 'dj_id': dj_id})
+    return Response({"released_count": count, "dj_id": dj_id})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def escrow_dj_funds(request):
     """Move DJ earnings to escrow [Spec P2 §9]."""
-    dj_id = request.data.get('dj_id')
-    amount = Decimal(str(request.data.get('amount', 0)))
+    dj_id = request.data.get("dj_id")
+    amount = Decimal(str(request.data.get("amount", 0)))
 
     try:
         wallet = DJWallet.objects.get(dj_id=dj_id)
     except DJWallet.DoesNotExist:
-        return Response({'error': 'DJ wallet not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "DJ wallet not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if amount > wallet.pending_earnings:
-        return Response({'error': 'Insufficient pending earnings.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Insufficient pending earnings."}, status=status.HTTP_400_BAD_REQUEST)
 
     wallet.pending_earnings -= amount
     wallet.escrow_amount += amount
     wallet.save()
 
     _log_admin_action(request, f"Escrowed ₹{amount} for DJ #{dj_id}")
-    return Response({'escrowed': str(amount), 'new_escrow_total': str(wallet.escrow_amount)})
+    return Response({"escrowed": str(amount), "new_escrow_total": str(wallet.escrow_amount)})
 
 
 # ─── Revenue Analytics ────────────────────────────────────────────
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def revenue_dashboard(request):
     """Platform revenue analytics [Spec P2 §12]."""
     from apps.commerce.analytics import get_platform_lifetime_revenue
-    
+
     # Total platform revenue (Daily cache)
     totals_data = get_platform_lifetime_revenue()
 
     # Ad revenue totals
     ad_totals = AdRevenueLog.objects.aggregate(
-        total_ad_revenue=Sum('ad_impression_value'),
+        total_ad_revenue=Sum("ad_impression_value"),
     )
 
     # Weekly breakdown
-    weekly = Purchase.objects.filter(
-        status='paid',
-        created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
-    ).annotate(
-        week=TruncWeek('created_at')
-    ).values('week').annotate(
-        revenue=Sum('price_paid'),
-        commission=Sum('commission'),
-        count=Count('id'),
-    ).order_by('week')
+    weekly = (
+        Purchase.objects.filter(
+            status="paid",
+            created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
+        )
+        .annotate(week=TruncWeek("created_at"))
+        .values("week")
+        .annotate(
+            revenue=Sum("price_paid"),
+            commission=Sum("commission"),
+            count=Count("id"),
+        )
+        .order_by("week")
+    )
 
     # Pending payouts
-    pending_payouts = Payout.objects.filter(
-        status='pending'
-    ).aggregate(total=Sum('amount'))
+    pending_payouts = Payout.objects.filter(status="pending").aggregate(total=Sum("amount"))
 
-    return Response({
-        'totals': {
-            'total_sales': totals_data['total_sales'],
-            'total_commission': totals_data['total_commission'],
-            'total_checkout_fees': totals_data['total_checkout_fees'],
-            'total_dj_earnings': totals_data.get('total_dj_earnings', '0'),
-            'total_ad_revenue': str(ad_totals['total_ad_revenue'] or 0),
-            'purchase_count': totals_data.get('purchase_count', 0),
-        },
-        'weekly_breakdown': list(weekly),
-        'pending_payouts': str(pending_payouts['total'] or 0),
-    })
+    return Response(
+        {
+            "totals": {
+                "total_sales": totals_data["total_sales"],
+                "total_commission": totals_data["total_commission"],
+                "total_checkout_fees": totals_data["total_checkout_fees"],
+                "total_dj_earnings": totals_data.get("total_dj_earnings", "0"),
+                "total_ad_revenue": str(ad_totals["total_ad_revenue"] or 0),
+                "purchase_count": totals_data.get("purchase_count", 0),
+            },
+            "weekly_breakdown": list(weekly),
+            "pending_payouts": str(pending_payouts["total"] or 0),
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def high_value_alerts(request):
     """High-value transaction alerts [Spec P2 §12]."""
-    threshold = Decimal(request.query_params.get('threshold', '5000'))
+    threshold = Decimal(request.query_params.get("threshold", "5000"))
 
-    high_value = Purchase.objects.filter(
-        status='paid',
-        price_paid__gte=threshold,
-    ).select_related('user', 'seller').order_by('-created_at')[:50]
+    high_value = (
+        Purchase.objects.filter(
+            status="paid",
+            price_paid__gte=threshold,
+        )
+        .select_related("user", "seller")
+        .order_by("-created_at")[:50]
+    )
 
-    return Response(data)
+    return Response(high_value)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def revenue_analytics_view(request):
     """Unified UI for financial analytics [Spec P2 §12]."""
@@ -493,88 +513,92 @@ def revenue_analytics_view(request):
     from django.shortcuts import render
     from django.core.serializers.json import DjangoJSONEncoder
     from apps.commerce.analytics import get_platform_lifetime_revenue
-    
+
     # 1. Totals
     totals_data = get_platform_lifetime_revenue()
-    ad_totals = AdRevenueLog.objects.aggregate(total_ad_revenue=Sum('ad_impression_value'))
-    pending_payouts = Payout.objects.filter(status='pending').aggregate(total=Sum('amount'))
-    
+    ad_totals = AdRevenueLog.objects.aggregate(total_ad_revenue=Sum("ad_impression_value"))
+    pending_payouts = Payout.objects.filter(status="pending").aggregate(total=Sum("amount"))
+
     analytics_data = {
-        'totals': {
-            'total_sales': str(totals_data['total_sales']),
-            'total_commission': str(totals_data['total_commission']),
-            'total_checkout_fees': str(totals_data['total_checkout_fees']),
-            'total_ad_revenue': str(ad_totals['total_ad_revenue'] or 0),
-            'purchase_count': totals_data.get('purchase_count', 0),
+        "totals": {
+            "total_sales": str(totals_data["total_sales"]),
+            "total_commission": str(totals_data["total_commission"]),
+            "total_checkout_fees": str(totals_data["total_checkout_fees"]),
+            "total_ad_revenue": str(ad_totals["total_ad_revenue"] or 0),
+            "purchase_count": totals_data.get("purchase_count", 0),
         },
-        'pending_payouts': str(pending_payouts['total'] or 0),
-        'weekly_breakdown': []
+        "pending_payouts": str(pending_payouts["total"] or 0),
+        "weekly_breakdown": [],
     }
-    
+
     # 2. Weekly breakdown (12 weeks)
-    weekly = Purchase.objects.filter(
-        status='paid',
-        created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
-    ).annotate(
-        week=TruncWeek('created_at')
-    ).values('week').annotate(
-        revenue=Sum('price_paid'),
-        commission=Sum('commission')
-    ).order_by('week')
-    
+    weekly = (
+        Purchase.objects.filter(
+            status="paid",
+            created_at__gte=timezone.now() - timezone.timedelta(weeks=12),
+        )
+        .annotate(week=TruncWeek("created_at"))
+        .values("week")
+        .annotate(revenue=Sum("price_paid"), commission=Sum("commission"))
+        .order_by("week")
+    )
+
     for w in weekly:
-        analytics_data['weekly_breakdown'].append({
-            'week': w['week'].isoformat(),
-            'revenue': float(w['revenue']),
-            'commission': float(w['commission'])
-        })
-        
+        analytics_data["weekly_breakdown"].append(
+            {"week": w["week"].isoformat(), "revenue": float(w["revenue"]), "commission": float(w["commission"])}
+        )
+
     # 3. High-Value Alerts
-    threshold = Decimal('5000')
-    high_value = Purchase.objects.filter(
-        status='paid', price_paid__gte=threshold
-    ).select_related('user', 'seller').order_by('-created_at')[:10]
-    
+    threshold = Decimal("5000")
+    high_value = (
+        Purchase.objects.filter(status="paid", price_paid__gte=threshold)
+        .select_related("user", "seller")
+        .order_by("-created_at")[:10]
+    )
+
     alerts_list = []
     for p in high_value:
-        alerts_list.append({
-            'id': p.id,
-            'buyer': p.user.full_name,
-            'dj': p.seller.dj_name,
-            'amount': str(p.price_paid),
-            'created_at': p.created_at.strftime('%d %b, %H:%M')
-        })
+        alerts_list.append(
+            {
+                "id": p.id,
+                "buyer": p.user.full_name,
+                "dj": p.seller.dj_name,
+                "amount": str(p.price_paid),
+                "created_at": p.created_at.strftime("%d %b, %H:%M"),
+            }
+        )
 
     ctx = {
-        'analytics_json': json.dumps(analytics_data, cls=DjangoJSONEncoder),
-        'alerts_json': json.dumps(alerts_list, cls=DjangoJSONEncoder),
+        "analytics_json": json.dumps(analytics_data, cls=DjangoJSONEncoder),
+        "alerts_json": json.dumps(alerts_list, cls=DjangoJSONEncoder),
     }
-    return render(request, 'admin/revenue_analytics.html', ctx)
+    return render(request, "admin/revenue_analytics.html", ctx)
 
 
 # ─── DMCA ─────────────────────────────────────────────────────────
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def generate_dmca_template(request):
     """Generate DMCA takedown notice [Spec §9]."""
-    content_id = request.data.get('content_id')
-    content_type = request.data.get('content_type', 'track')
-    reporter_name = request.data.get('reporter_name', '')
-    reporter_email = request.data.get('reporter_email', '')
+    content_id = request.data.get("content_id")
+    content_type = request.data.get("content_type", "track")
+    reporter_name = request.data.get("reporter_name", "")
+    reporter_email = request.data.get("reporter_email", "")
 
-    if content_type == 'track':
+    if content_type == "track":
         try:
             content = Track.objects.get(id=content_id)
         except Track.DoesNotExist:
-            return Response({'error': 'Content not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Content not found."}, status=status.HTTP_404_NOT_FOUND)
         title = content.title
         dj_name = content.dj.dj_name
     else:
         try:
             content = AlbumPack.objects.get(id=content_id)
         except AlbumPack.DoesNotExist:
-            return Response({'error': 'Content not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Content not found."}, status=status.HTTP_404_NOT_FOUND)
         title = content.title
         dj_name = content.dj.dj_name
 
@@ -609,58 +633,58 @@ This notice is issued in accordance with the Digital Millennium
 Copyright Act (DMCA), 17 U.S.C. § 512.
 """
 
-    return Response({'template': template})
+    return Response({"template": template})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def manage_ad_floor(request):
     """Dynamic ad floor pricing control [Spec §3.3]."""
-    floor_price = request.data.get('floor_price')
-    
+    floor_price = request.data.get("floor_price")
+
     if floor_price is None:
-        return Response({'error': 'floor_price required.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        return Response({"error": "floor_price required."}, status=status.HTTP_400_BAD_REQUEST)
+
     setting, _ = SystemSetting.objects.update_or_create(
-        key='ad_floor_pricing',
-        defaults={'value': {'floor_price': str(floor_price)}, 'description': 'Dynamic ad floor base price'}
+        key="ad_floor_pricing",
+        defaults={"value": {"floor_price": str(floor_price)}, "description": "Dynamic ad floor base price"},
     )
     _log_admin_action(request, f"Updated ad floor pricing to ₹{floor_price}")
-    return Response({'ad_floor_price': str(floor_price)})
+    return Response({"ad_floor_price": str(floor_price)})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def toggle_payment_gateway(request):
     """Admin switch between Razorpay and PhonePe [Spec §10]."""
-    gateway = request.data.get('gateway', 'razorpay')
-    
-    if gateway not in ('razorpay', 'phonepe'):
-        return Response({'error': 'Invalid gateway. Choose razorpay or phonepe.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+    gateway = request.data.get("gateway", "razorpay")
+
+    if gateway not in ("razorpay", "phonepe"):
+        return Response({"error": "Invalid gateway. Choose razorpay or phonepe."}, status=status.HTTP_400_BAD_REQUEST)
+
     setting, _ = SystemSetting.objects.update_or_create(
-        key='active_payment_gateway',
-        defaults={'value': {'gateway': gateway}, 'description': 'Active payment gateway for the platform'}
+        key="active_payment_gateway",
+        defaults={"value": {"gateway": gateway}, "description": "Active payment gateway for the platform"},
     )
     _log_admin_action(request, f"Switched payment gateway to {gateway}")
-    return Response({'active_gateway': gateway})
+    return Response({"active_gateway": gateway})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def toggle_invoice_generation(request):
     """Enable or disable automatic invoice generation for purchases."""
-    enabled = request.data.get('enabled', True)
-    
+    enabled = request.data.get("enabled", True)
+
     setting, _ = SystemSetting.objects.update_or_create(
-        key='invoice_generation_enabled',
-        defaults={'value': {'enabled': enabled}, 'description': 'Toggle automatic invoice generation'}
+        key="invoice_generation_enabled",
+        defaults={"value": {"enabled": enabled}, "description": "Toggle automatic invoice generation"},
     )
     _log_admin_action(request, f"{'Enabled' if enabled else 'Disabled'} invoice generation")
-    return Response({'invoice_generation_enabled': enabled})
+    return Response({"invoice_generation_enabled": enabled})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def investor_report(request):
     """
@@ -672,19 +696,16 @@ def investor_report(request):
     from apps.accounts.models import DJProfile
     from django.shortcuts import render
 
-    total_stats = Purchase.objects.filter(status='paid').aggregate(
-        gmv=Sum('price_paid'),
-        comm=Sum('commission')
-    )
-    
-    ad_revenue = AdRevenueLog.objects.aggregate(total=Sum('ad_impression_value'))['total'] or 0
+    total_stats = Purchase.objects.filter(status="paid").aggregate(gmv=Sum("price_paid"), comm=Sum("commission"))
+
+    ad_revenue = AdRevenueLog.objects.aggregate(total=Sum("ad_impression_value"))["total"] or 0
     total_djs = DJProfile.objects.count()
-    active_djs = DJProfile.objects.filter(status='approved').count()
+    active_djs = DJProfile.objects.filter(status="approved").count()
     pro_djs = DJProfile.objects.filter(profile__is_pro_dj=True).count()
-    
+
     settings = PlatformSettings.load()
     std_rate = float(settings.platform_commission_rate)
-    
+
     # Calculate effective avg rate: (pro * 8 + (total-pro)*std_rate) / total
     if total_djs > 0:
         eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs
@@ -692,20 +713,20 @@ def investor_report(request):
         eff_rate = std_rate
 
     ctx = {
-        'total_gmv': str(total_stats['gmv'] or 0.00),
-        'platform_commission': str(total_stats['comm'] or 0.00),
-        'ad_revenue': str(ad_revenue),
-        'total_dj_count': total_djs,
-        'active_djs': active_djs,
-        'pro_dj_count': pro_djs,
-        'std_commission_rate': std_rate,
-        'avg_commission_rate': round(eff_rate, 2)
+        "total_gmv": str(total_stats["gmv"] or 0.00),
+        "platform_commission": str(total_stats["comm"] or 0.00),
+        "ad_revenue": str(ad_revenue),
+        "total_dj_count": total_djs,
+        "active_djs": active_djs,
+        "pro_dj_count": pro_djs,
+        "std_commission_rate": std_rate,
+        "avg_commission_rate": round(eff_rate, 2),
     }
-    
-    return render(request, 'admin/investor_dashboard.html', ctx)
+
+    return render(request, "admin/investor_dashboard.html", ctx)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def investor_report_pdf(request):
     """
@@ -718,16 +739,21 @@ def investor_report_pdf(request):
     from apps.commerce.models import Purchase, AdRevenueLog
     from apps.accounts.models import DJProfile
 
-    total_stats = Purchase.objects.filter(status='paid').aggregate(
-        gmv=Sum('price_paid'),
-        comm=Sum('commission'),
-        purchase_count=Count('id'),
+    total_stats = Purchase.objects.filter(status="paid").aggregate(
+        gmv=Sum("price_paid"),
+        comm=Sum("commission"),
+        purchase_count=Count("id"),
     )
-    ad_revenue = AdRevenueLog.objects.aggregate(total=Sum('ad_impression_value'))['total'] or 0
+    ad_revenue = AdRevenueLog.objects.aggregate(total=Sum("ad_impression_value"))["total"] or 0
     settings = PlatformSettings.load()
     std_rate = float(settings.platform_commission_rate)
+
+    # Get DJ counts for effective commission rate calculation
+    total_djs = DJProfile.objects.count()
+    active_djs = DJProfile.objects.filter(status="approved").count()
+    pro_djs = Profile.objects.filter(is_pro_dj=True, role="dj").count()
     eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs if total_djs > 0 else std_rate
-    
+
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -736,67 +762,73 @@ def investor_report_pdf(request):
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        doc = SimpleDocTemplate(
+            buffer, pagesize=A4, rightMargin=2 * cm, leftMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm
+        )
         styles = getSampleStyleSheet()
-        title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=22, spaceAfter=6)
-        subtitle_style = ParagraphStyle('subtitle', parent=styles['Normal'], fontSize=10, textColor=colors.grey)
+        title_style = ParagraphStyle("title", parent=styles["Heading1"], fontSize=22, spaceAfter=6)
+        subtitle_style = ParagraphStyle("subtitle", parent=styles["Normal"], fontSize=10, textColor=colors.grey)
 
         elements = []
 
         elements.append(Paragraph("MixMint — Investor Report", title_style))
         elements.append(Paragraph(f"Generated: {timezone.now().strftime('%d %B %Y, %H:%M UTC')}", subtitle_style))
         elements.append(Paragraph("CONFIDENTIAL — For Investor Use Only", subtitle_style))
-        elements.append(Spacer(1, 0.8*cm))
+        elements.append(Spacer(1, 0.8 * cm))
 
         kpi_data = [
-            ['Metric', 'Value'],
-            ['Gross Merchandise Value (GMV)', f"₹{total_stats['gmv'] or 0}"],
-            ['Platform Commission Earned', f"₹{total_stats['comm'] or 0}"],
-            ['Ad Revenue (Gross)', f"₹{ad_revenue}"],
-            ['Total Purchases', str(total_stats['purchase_count'] or 0)],
-            ['Total DJs on Platform', str(total_djs)],
-            ['Active (Approved) DJs', str(active_djs)],
-            ['Pro DJs (8% commission)', str(pro_djs)],
-            ['Effective Commission Rate', f"{round(eff_rate, 2)}%"],
+            ["Metric", "Value"],
+            ["Gross Merchandise Value (GMV)", f"₹{total_stats['gmv'] or 0}"],
+            ["Platform Commission Earned", f"₹{total_stats['comm'] or 0}"],
+            ["Ad Revenue (Gross)", f"₹{ad_revenue}"],
+            ["Total Purchases", str(total_stats["purchase_count"] or 0)],
+            ["Total DJs on Platform", str(total_djs)],
+            ["Active (Approved) DJs", str(active_djs)],
+            ["Pro DJs (8% commission)", str(pro_djs)],
+            ["Effective Commission Rate", f"{round(eff_rate, 2)}%"],
         ]
-        kpi_table = Table(kpi_data, colWidths=[10*cm, 7*cm])
-        kpi_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e91e8c')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 11),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ]))
+        kpi_table = Table(kpi_data, colWidths=[10 * cm, 7 * cm])
+        kpi_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e91e8c")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 11),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9f9f9")]),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
         elements.append(kpi_table)
-        elements.append(Spacer(1, 1*cm))
-        elements.append(Paragraph(
-            "MixMint is a DJ-first digital music distribution platform operating in India. "
-            f"Revenue is generated through track/album sales commissions ({std_rate}% standard, 8% Pro) "
-            "and programmatic advertising. All financial data is real-time from the platform database.",
-            subtitle_style
-        ))
+        elements.append(Spacer(1, 1 * cm))
+        elements.append(
+            Paragraph(
+                "MixMint is a DJ-first digital music distribution platform operating in India. "
+                f"Revenue is generated through track/album sales commissions ({std_rate}% standard, 8% Pro) "
+                "and programmatic advertising. All financial data is real-time from the platform database.",
+                subtitle_style,
+            )
+        )
 
         doc.build(elements)
         pdf = buffer.getvalue()
         buffer.close()
 
     except ImportError:
-        from django.http import HttpResponse
-        return HttpResponse('reportlab required. pip install reportlab', status=501, content_type='text/plain')
+        return HttpResponse("reportlab required. pip install reportlab", status=501, content_type="text/plain")
 
-    from django.http import HttpResponse
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="MixMint-Investor-Report-{timezone.now().strftime("%Y%m%d")}.pdf"'
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="MixMint-Investor-Report-{
+        timezone.now().strftime("%Y%m%d")}.pdf"'
     return response
 
 
-
-
 # ─── Helpers ──────────────────────────────────────────────────────
+
 
 def _log_admin_action(request, action, target_id=None, metadata=None):
     """Log admin action for audit trail [Spec P2 §12]."""
@@ -805,96 +837,93 @@ def _log_admin_action(request, action, target_id=None, metadata=None):
         action=action,
         target_id=target_id,
         metadata=metadata or {},
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        ip_address=request.META.get("REMOTE_ADDR"),
+        user_agent=request.META.get("HTTP_USER_AGENT", ""),
     )
+
 
 # ─── Offers & Pricing Dashboard ──────────────────────────────────
 
-from django.shortcuts import render
-from .models import PlatformSettings, PromotionalOffer
-from django.utils.dateparse import parse_datetime
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def offers_pricing_dashboard(request):
     """Render the Offers & Pricing dashboard for admin."""
     settings = PlatformSettings.load()
-    offers = PromotionalOffer.objects.all().order_by('-created_at')
+    offers = PromotionalOffer.objects.all().order_by("-created_at")
     active_offer = offers.filter(is_active=True).first()
-    
-    context = {
-        'settings': settings,
-        'offers': offers,
-        'active_offer': active_offer
-    }
-    return render(request, 'admin/offers_pricing.html', context)
 
-@api_view(['POST'])
+    context = {"settings": settings, "offers": offers, "active_offer": active_offer}
+    return render(request, "admin/offers_pricing.html", context)
+
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def update_platform_settings(request):
     """Update global platform pricing settings."""
     settings = PlatformSettings.load()
-    
-    if 'platform_commission_rate' in request.data:
-        settings.platform_commission_rate = Decimal(request.data['platform_commission_rate'])
-    if 'buyer_fee_amount' in request.data:
-        settings.buyer_fee_amount = Decimal(request.data['buyer_fee_amount'])
-    if 'gst_rate' in request.data:
-        settings.gst_rate = Decimal(request.data['gst_rate'])
-    if 'dj_application_fee' in request.data:
-        settings.dj_application_fee = Decimal(request.data['dj_application_fee'])
-    if 'dj_application_fee_enabled' in request.data:
-        settings.dj_application_fee_enabled = request.data['dj_application_fee_enabled']
-        
+
+    if "platform_commission_rate" in request.data:
+        settings.platform_commission_rate = Decimal(request.data["platform_commission_rate"])
+    if "buyer_fee_amount" in request.data:
+        settings.buyer_fee_amount = Decimal(request.data["buyer_fee_amount"])
+    if "gst_rate" in request.data:
+        settings.gst_rate = Decimal(request.data["gst_rate"])
+    if "dj_application_fee" in request.data:
+        settings.dj_application_fee = Decimal(request.data["dj_application_fee"])
+    if "dj_application_fee_enabled" in request.data:
+        settings.dj_application_fee_enabled = request.data["dj_application_fee_enabled"]
+
     settings.save()
     _log_admin_action(request, "Updated Platform Settings (Pricing)")
-    return Response({'status': 'success', 'message': 'Settings updated successfully'})
+    return Response({"status": "success", "message": "Settings updated successfully"})
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def save_promotional_offer(request):
     """Create or update a promotional offer."""
     data = request.data
-    offer_id = data.get('id')
-    
+    offer_id = data.get("id")
+
     if offer_id:
         try:
             offer = PromotionalOffer.objects.get(id=offer_id)
         except PromotionalOffer.DoesNotExist:
-            return Response({'error': 'Offer not found'}, status=404)
+            return Response({"error": "Offer not found"}, status=404)
     else:
         offer = PromotionalOffer()
-        
-    offer.title = data.get('title', offer.title)
-    offer.internal_name = data.get('internal_name', offer.internal_name)
-    offer.badge_label = data.get('badge_label', offer.badge_label)
-    offer.sub_text = data.get('sub_text', offer.sub_text)
-    offer.announcement_bar_text = data.get('announcement_bar_text', offer.announcement_bar_text)
-    
-    if 'show_on_homepage' in data:
-        offer.show_on_homepage = data['show_on_homepage']
-    if 'show_on_checkout' in data:
-        offer.show_on_checkout = data['show_on_checkout']
-    if 'show_on_dj_upload' in data:
-        offer.show_on_dj_upload = data['show_on_dj_upload']
-    if 'is_active' in data:
-        is_active = data['is_active']
+
+    offer.title = data.get("title", offer.title)
+    offer.internal_name = data.get("internal_name", offer.internal_name)
+    offer.badge_label = data.get("badge_label", offer.badge_label)
+    offer.sub_text = data.get("sub_text", offer.sub_text)
+    offer.announcement_bar_text = data.get("announcement_bar_text", offer.announcement_bar_text)
+
+    if "show_on_homepage" in data:
+        offer.show_on_homepage = data["show_on_homepage"]
+    if "show_on_checkout" in data:
+        offer.show_on_checkout = data["show_on_checkout"]
+    if "show_on_dj_upload" in data:
+        offer.show_on_dj_upload = data["show_on_dj_upload"]
+    if "is_active" in data:
+        is_active = data["is_active"]
         if is_active:
             # Deactivate all other offers
             PromotionalOffer.objects.filter(is_active=True).update(is_active=False)
         offer.is_active = is_active
-        
-    if data.get('starts_at'):
-        offer.starts_at = parse_datetime(data['starts_at'])
-    if data.get('ends_at'):
-        offer.ends_at = parse_datetime(data['ends_at'])
-        
+
+    if data.get("starts_at"):
+        offer.starts_at = parse_datetime(data["starts_at"])
+    if data.get("ends_at"):
+        offer.ends_at = parse_datetime(data["ends_at"])
+
     offer.save()
     _log_admin_action(request, f"Saved Promotional Offer: {offer.title}")
-    return Response({'status': 'success', 'offer_id': offer.id})
+    return Response({"status": "success", "offer_id": offer.id})
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def health_dashboard(request):
     """Platform health monitoring [Imp 09]."""
@@ -902,54 +931,53 @@ def health_dashboard(request):
     from apps.tracks.models import Track
     from .models import AuditLog, BanList
     from django.shortcuts import render
-    
+
     # 1. Active Traffic (last 1 hour)
     one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
     active_sessions = LoginHistory.objects.filter(created_at__gte=one_hour_ago).count()
-    
+
     # 2. Security Alerts (Recent bans & Audit logs)
     recent_bans = BanList.objects.filter(is_active=True).count()
-    recent_audits = AuditLog.objects.all().order_by('-created_at')[:10]
-    
+    recent_audits = AuditLog.objects.all().order_by("-created_at")[:10]
+
     # 3. Content Health
     total_tracks = Track.objects.count()
     deleted_tracks = Track.objects.filter(is_deleted=True).count()
-    
+
     # 4. Storage / Disk Placeholder
     # Metadata about the environment
-    
+
     ctx = {
-        'active_sessions_1h': active_sessions,
-        'security': {
-            'active_bans': recent_bans,
-            'recent_audits': [{
-                'admin': a.admin.user.email,
-                'action': a.action,
-                'time': a.created_at.isoformat()
-            } for a in recent_audits]
+        "active_sessions_1h": active_sessions,
+        "security": {
+            "active_bans": recent_bans,
+            "recent_audits": [
+                {"admin": a.admin.user.email, "action": a.action, "time": a.created_at.isoformat()}
+                for a in recent_audits
+            ],
         },
-        'content_health': {
-            'total_tracks': total_tracks,
-            'deleted_tracks': deleted_tracks,
-            'health_percentage': round((1 - (deleted_tracks/total_tracks))*100, 1) if total_tracks > 0 else 100
+        "content_health": {
+            "total_tracks": total_tracks,
+            "deleted_tracks": deleted_tracks,
+            "health_percentage": round((1 - (deleted_tracks / total_tracks)) * 100, 1) if total_tracks > 0 else 100,
         },
-        'system': {
-            'status': 'HEALTHY',
-            'last_sync': timezone.now().isoformat(),
-            'server_region': 'ap-south-1',
-            'environment': 'Production'
-        }
+        "system": {
+            "status": "HEALTHY",
+            "last_sync": timezone.now().isoformat(),
+            "server_region": "ap-south-1",
+            "environment": "Production",
+        },
     }
-    
+
     # If HTML requested (for dashboard template)
-    if 'html' in request.query_params or not request.accepted_renderer.format == 'json':
-        return render(request, 'admin/health.html', ctx)
-        
+    if "html" in request.query_params or not request.accepted_renderer.format == "json":
+        return render(request, "admin/health.html", ctx)
+
     return Response(ctx)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_command_center(request):
     """Central hub for all specialized admin dashboards."""
-    return render(request, 'admin/admin_dashboard.html')
+    return render(request, "admin/admin_dashboard.html")

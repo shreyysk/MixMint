@@ -8,13 +8,13 @@ depend on external services (Supabase Postgres, R2, Razorpay, Resend).
 import os
 
 # Must set ENVIRONMENT before importing settings to prevent production safety check
-os.environ.setdefault('ENVIRONMENT', 'test')
+os.environ.setdefault("ENVIRONMENT", "test")
 
-from .settings import *  # noqa: F403, F401
+from .settings import *  # noqa: F403, F401, E402
 
 # Deterministic, isolated test environment
 DEBUG = True
-ENVIRONMENT = 'test'
+ENVIRONMENT = "test"
 SECRET_KEY = os.environ.get("SECRET_KEY", "mixmint-test-secret-key")
 
 # Always use in-memory SQLite for tests (no external DB).
@@ -41,12 +41,15 @@ CACHES = {
     }
 }
 
-# Dummy external service configuration.
-AWS_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "test")
-AWS_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "test")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "test-bucket")
-AWS_S3_ENDPOINT_URL = os.environ.get("R2_ENDPOINT", "https://example.invalid")
+# Dummy external service configuration. Forced dummies (never real .env creds)
+# so tests never touch live R2/Razorpay/Resend.
+AWS_ACCESS_KEY_ID = "test"
+AWS_SECRET_ACCESS_KEY = "test"
+AWS_STORAGE_BUCKET_NAME = "test-bucket"
+AWS_S3_ENDPOINT_URL = "https://example.invalid"
 AWS_S3_CUSTOM_DOMAIN = ""
+R2_PRIVATE_BUCKET = "test-private"
+R2_PUBLIC_BUCKET = "test-public"
 
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "rzp_secret_test")
@@ -63,5 +66,8 @@ PHONEPE_BASE_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # Disable throttling in tests
-REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = ()  # noqa: F405
-REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {}  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ()  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}  # noqa: F405
+
+# Allow testserver host for Django test client
+ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]

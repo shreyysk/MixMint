@@ -17,10 +17,10 @@ Welcome to the Django-based version of MixMint. This project is a complete conve
   - `accounts/`: User auth, Profiles, DJ storefronts.
   - `tracks/`: Music track management and previews.
   - `albums/`: Album packs and ZIP processing.
-  - `commerce/`: Wallets, purchases, and ledger entries.
+  - `commerce/`: Wallets, purchases, ledger entries, and **buyer wishlists**.
   - `payments/`: PhonePe + Razorpay integration (dual gateway).
-  - `social/`: Follows, reviews, and wishlists.
-  - `rewards/`: Points system and referrals.
+  - `social/`: *Removed per Master Document v2.0 — not a social platform.*
+  - `rewards/`: *Removed per Master Document v2.0 — referral tracking in accounts, no points system.*
   - `downloads/`: Secure download token generation.
   - `admin_panel/`: System settings and audit logs.
   - `analytics/`: A/B testing and event tracking.
@@ -75,9 +75,10 @@ See [DEPLOY.md](DEPLOY.md) for complete Railway deployment guide including:
 - [x] **Universal Auth**: Role-based access (User, DJ, Admin).
 - [x] **DJ Storefronts**: Custom profiles with slugs and social links.
 - [x] **Track Management**: Full CRUD with metadata (BPM, Genre, Cover Art).
-- [x] **Monetization**: Razorpay integrated payments and platform fees.
-- [x] **Rewards Engine**: Points balance and referral tracking.
-- [x] **Secure Downloads**: Token-based expiring download links.
+- [x] **Monetization**: PhonePe + Razorpay (dual gateway), platform fees, pro subscriptions.
+- [x] **Referral Tracking**: DJ Ambassador codes, referral attribution (in accounts).
+- [x] **Buyer Wishlists**: Track wishlist with toggle API (in commerce).
+- [x] **Secure Downloads**: Token-based expiring download links, IP/attempt limits.
 - [x] **Audit Trails**: Detailed logs for admin actions.
 
 ---

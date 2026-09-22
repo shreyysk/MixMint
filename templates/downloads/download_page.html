@@ -45,6 +45,12 @@
         </div>
     </div>
 
+    {% if expiry_warning %}
+    <div class="mb-6 px-5 py-3 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--accent-amber)]">⏳ Link expiring soon — start your download now</p>
+    </div>
+    {% endif %}
+
     <!-- Attempt Counter -->
     <div class="flex items-center justify-between bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] px-5 py-3 mb-6">
         <span class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)]">Attempts Used</span>
