@@ -432,10 +432,18 @@ else:
 RESEND_API_KEY = env("RESEND_API_KEY", default="")
 FROM_EMAIL = env("FROM_EMAIL", default="noreply@mixmint.site")
 
+# Shared secret for worker-free cron endpoints (/cron/<job>/) + one-off guards.
+CRON_SECRET = env("CRON_SECRET", default="")
+
 # Celery Config [Spec Tech Stack]
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# Free-tier / serverless mode: run background tasks inline (no Redis/worker needed).
+# Set CELERY_TASK_ALWAYS_EAGER=True on hosts like Render-free; scheduled jobs
+# are then triggered by cron-job.org hitting /cron/<job>/ instead of beat.
+# On Vercel (serverless, no workers possible) eager mode is the safe default.
+CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER", default=os.environ.get("VERCEL") == "1")
 
 # Platform Constants
 PLATFORM_LAUNCH_DATE = timezone.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)

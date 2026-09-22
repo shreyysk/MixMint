@@ -10,6 +10,7 @@ from django.core.cache import cache
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.core.sitemaps import SITEMAPS
+from apps.core import cron_views
 
 
 def robots_txt(request):
@@ -73,6 +74,7 @@ urlpatterns = [
     path("robots.txt", robots_txt, name="robots_txt"),
     path(".well-known/security.txt", security_txt, name="security_txt"),
     path("health/", health_check, name="health_check"),
+    path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
     path("i18n/", include("django.conf.urls.i18n")),
     # API Schema & Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
