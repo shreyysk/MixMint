@@ -75,7 +75,6 @@ urlpatterns = [
     path(".well-known/security.txt", security_txt, name="security_txt"),
     path("health/", health_check, name="health_check"),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
-    path("i18n/", include("django.conf.urls.i18n")),
     # API Schema & Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
