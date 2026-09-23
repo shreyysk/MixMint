@@ -800,8 +800,12 @@
             });
         }
     </script>
-    <!-- Cart Drawer [Phase 3] -->
+    {% comment %} TEMP-DISABLED: cart drawer popup removed per owner request.
+         Navbar cart button + add-to-cart now go to the /cart/ page instead.
+         To restore: uncomment the include below. {% endcomment %}
+    {% comment %}
     {% include 'components/cart_drawer.html' %}
+    {% endcomment %}
 
     <script>
         // MixMint Global Cart Store
@@ -841,7 +845,8 @@
                         const data = await response.json();
                         if (response.ok) {
                             this.cartData = data;
-                            this.show = true; // Open drawer on success
+                            // Cart drawer popup removed: take buyer to the cart page.
+                            window.location.href = "{% url 'cart_page_frontend' %}";
                             
                             // Success Toast
                             window.dispatchEvent(new CustomEvent('show-toast', {

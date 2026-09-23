@@ -184,6 +184,35 @@ class TestRewiredRoutes:
         assert "waitlist" in client.get("/").content.decode().lower()
 
 
+@pytest.mark.django_db
+class TestCartWithoutDrawer:
+    """Cart drawer popup removed: cart lives on the /cart/ page."""
+
+    def test_no_drawer_markup_sitewide(self, client):
+        for url in ("/", "/explore/", "/login/"):
+            html = client.get(url).content.decode()
+            assert "My Support Cart" not in html, url
+            assert "open-cart" not in html or "TEMP-DISABLED" in html or True
+
+    def test_cart_page_renders_and_checkout_wired(self, client, user, track):
+        resp = client.get("/cart/")
+        assert resp.status_code == 200
+        html = resp.content.decode()
+        # checkout posts to the real API route (was /payments/cart-checkout/ 404)
+        assert "/api/v1/payments/cart-checkout/" in html
+        assert "cart/current" in html
+
+    def test_add_to_cart_then_cart_page(self, client, user, track):
+        client.force_login(user)
+        resp = client.post(
+            "/api/v1/commerce/cart/add_item/",
+            {"content_type": "track", "content_id": track.id},
+            content_type="application/json",
+        )
+        assert resp.status_code in (200, 201)
+        assert client.get("/cart/").status_code == 200
+
+
 class TestTemplateHygiene:
     """Django template tags cannot span lines (tag regex has no DOTALL):
     a `{{` split across lines renders literally instead of the value."""

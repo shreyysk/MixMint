@@ -58,6 +58,8 @@ urlpatterns = [
     path("dashboard/ambassador/generate/", generate_ambassador_code_view, name="generate_ambassador_code"),
     # Library [Spec §9]
     path("library/", lambda r: render(r, "commerce/library.html"), name="library_page"),
+    # Cart page (cart drawer popup removed; this is the cart destination)
+    path("cart/", lambda r: render(r, "commerce/cart.html"), name="cart_page_frontend"),
     # DJ onboarding + custom domain + 2FA (previously unreachable dead routes)
     path("dashboard/dj/onboarding/", dj_onboarding, name="dj_onboarding"),
     path("dashboard/dj/onboarding/update/", update_onboarding_step, name="update_onboarding"),

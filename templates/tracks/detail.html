@@ -482,7 +482,7 @@
             const contentId = cartBtn.dataset.contentId;
             const contentType = cartBtn.dataset.contentType;
             try {
-                const res = await fetch('/api/commerce/cart/add_item/', {
+                const res = await fetch('/api/v1/commerce/cart/add_item/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

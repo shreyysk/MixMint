@@ -150,8 +150,9 @@
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
                     Library</a>
                 {% endif %}
-                <!-- Phase 3 Feature 3: Cart Indicator -->
-                <button @click="$dispatch('open-cart')"
+                <!-- Phase 3 Feature 3: Cart Indicator (drawer popup removed; links to cart page) -->
+                <div x-data="cartStore" @add-to-cart.window="addItem($event.detail.type, $event.detail.id)" class="relative">
+                <a href="{% url 'cart_page_frontend' %}"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:bg-[var(--border)] transition-all relative"
                     title="My Cart" aria-label="Shopping Cart">
                     <span class="text-xl">🛒</span>
@@ -159,7 +160,8 @@
                         <span class="absolute -top-1 -right-1 bg-[var(--accent-mint)] text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[var(--bg-base)]"
                               x-text="cartData.total_items"></span>
                     </template>
-                </button>
+                </a>
+                </div>
 
                 <!-- Account Dropdown -->
                 <div class="relative ml-2">
