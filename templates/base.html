@@ -765,8 +765,10 @@
                 </p>
             </div>
 
-            <form :action="mode === 'login' ? '{% url 'login' %}' : '{% url 'signup' %}'" method="get"
+            <form action="{% url 'login' %}" :action="mode === 'login' ? '{% url 'login' %}' : '{% url 'signup' %}'" method="get"
                 class="flex flex-col gap-4">
+                <!-- No-JS fallback: static action goes to login; Alpine :action overrides per mode when alive.
+                     (Without this, dead JS submits to the current page as /?next= and looks "stuck".) -->
                 <!-- Using GET form to redirect to the actual login/signup pages but passing a 'next' parameter if needed -->
                 <!-- Alternatively, just redirect directly -->
 
