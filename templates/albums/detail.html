@@ -142,11 +142,10 @@
                         </button>
                         {% endif %}
                         {% else %}
-                        <button
-                            @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
+                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
                             class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
                             Login to Buy
-                        </button>
+                        </a>
                         {% endif %}
                     </div>
                 </div>
