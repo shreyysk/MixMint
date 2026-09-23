@@ -8,10 +8,13 @@ Three middleware classes:
 """
 
 import ipaddress
+import logging
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.contrib.auth import logout
 from django.utils.deprecation import MiddlewareMixin
+
+logger = logging.getLogger("mixmint")
 
 
 class IPSessionMiddleware(MiddlewareMixin):
@@ -186,6 +189,9 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
                         status=503,
                     )
         except Exception:
+            # Never fail open silently: a broken maintenance template once
+            # disabled the entire maintenance mode (200 instead of 503).
+            logger.exception("MaintenanceModeMiddleware failed; failing open.")
             pass
 
         return None

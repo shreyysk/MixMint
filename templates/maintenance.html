@@ -28,7 +28,7 @@
         <!-- Mode Badge -->
         <div
             class="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-{{ theme_color }}-500 text-black text-[10px] font-mono font-black rounded-full uppercase tracking-[0.2em] shadow-lg shadow-{{ theme_color }}-500/20">
-            {{ mode|replace:"_, " }}
+            {{ mode|cut:"_"|title }}
         </div>
     </div>
 
@@ -142,5 +142,4 @@
         box-shadow: 0 10px 15px -3px rgba(255, 51, 85, 0.2);
     }
 </style>
-{% endblock %}
 {% endblock %}

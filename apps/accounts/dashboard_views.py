@@ -335,6 +335,7 @@ def export_user_data(request):
 
     data = {
         "profile": {
+            "email": profile.user.email,
             "full_name": profile.full_name,
             "role": profile.role,
             "is_pro": profile.is_pro_dj,

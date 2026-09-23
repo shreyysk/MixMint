@@ -135,6 +135,55 @@ class TestAdminJourney:
             assert client.get(url).status_code in (200, 301, 302), url
 
 
+@pytest.mark.django_db
+class TestRewiredRoutes:
+    """Views that existed but were unreachable (dead urls.py) now live here."""
+
+    def test_dj_onboarding_flow(self, client, dj_user):
+        u, dj = dj_user
+        dj.is_onboarding_complete = False
+        dj.save(update_fields=["is_onboarding_complete"])
+        client.force_login(u)
+        assert client.get(reverse("dj_onboarding")).status_code == 200
+        resp = client.post(reverse("update_onboarding"), {"step": "payout_setup"}, content_type="application/json")
+        assert resp.status_code in (200, 400)
+
+    def test_privacy_routes(self, client, user):
+        client.force_login(user)
+        resp = client.get(reverse("export_data"))
+        assert resp.status_code == 200
+        assert "buyer@example.com" in resp.content.decode()
+        resp = client.post(reverse("request_deletion"), {}, content_type="application/json")
+        assert resp.status_code in (200, 400)
+
+    def test_device_sessions(self, client, user):
+        client.force_login(user)
+        resp = client.get(reverse("active_sessions"))
+        assert resp.status_code == 200
+        assert "Active Sessions" in resp.content.decode()
+
+    def test_anon_bounced_from_private_routes(self, client):
+        for url in ("/dashboard/sessions/", "/dashboard/dj/onboarding/", "/privacy/export/"):
+            assert client.get(url).status_code == 302, url
+
+    def test_maintenance_page_renders(self, client, db):
+        from apps.admin_panel.models import MaintenanceMode
+
+        MaintenanceMode.objects.create(mode="maintenance", message="Upgrading.")
+        try:
+            resp = client.get("/")
+            assert resp.status_code == 503
+            assert "Mending" in resp.content.decode() or "maintenance" in resp.content.decode().lower()
+        finally:
+            MaintenanceMode.objects.all().delete()
+
+    def test_404_page_renders(self, client):
+        assert client.get("/this-page-does-not-exist-xyz/").status_code == 404
+
+    def test_footer_waitlist_wired(self, client):
+        assert "waitlist" in client.get("/").content.decode().lower()
+
+
 class TestTemplateHygiene:
     """Django template tags cannot span lines (tag regex has no DOTALL):
     a `{{` split across lines renders literally instead of the value."""
