@@ -713,11 +713,8 @@
 
     {% block extra_js %}{% endblock %}
 
-    {% comment %} TEMP-DISABLED: Auth Modal popup removed per owner request.
-         To restore: delete this comment tag pair. All triggers now link
-         straight to /login/ and /signup/ (with ?next= preserved). {% endcomment %}
-    {% comment %}
-    <!-- ── Auth Modal ── -->
+    <!-- ── Auth Modal (restored; triggers dispatch open-auth-modal; form has
+         static-action fallback so dead-JS clicks still land on login) ── -->
     <div x-data="{ 
             open: false, 
             mode: 'login',
@@ -793,7 +790,6 @@
             </div>
         </div>
     </div>
-    {% endcomment %}
     <!-- Service Worker [Imp 16] -->
     <script>
         if ('serviceWorker' in navigator) {

@@ -85,6 +85,22 @@ class Purchase(models.Model):
             models.Index(fields=["user", "is_completed", "download_completed"]),
         ]
 
+    @property
+    def get_content_object(self):
+        """Resolve the purchased Track/AlbumPack (None if removed). Used by dashboards."""
+        try:
+            if self.content_type == "track":
+                from apps.tracks.models import Track
+
+                return Track.objects.filter(id=self.content_id).first()
+            if self.content_type == "album":
+                from apps.albums.models import AlbumPack
+
+                return AlbumPack.objects.filter(id=self.content_id).first()
+        except Exception:
+            pass
+        return None
+
 
 class LedgerEntry(models.Model):
     TYPE_CHOICES = (

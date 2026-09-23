@@ -161,8 +161,7 @@
                         </h3>
                         <p class="font-body text-[14px] text-[var(--text-muted)]">
                             {% if notif.reason == 'underperforming' %}
-                            This {{ notif.content_type }} had {{ notif.sales_in_period|default:0 }} sales in the last {{
-                            notif.period_days }} days.
+                            This {{ notif.content_type }} had {{ notif.sales_in_period|default:0 }} sales in the last {{ notif.period_days }} days.
                             {% else %}
                             This {{ notif.content_type }} is permanently free.
                             {% endif %}
@@ -269,13 +268,12 @@
                             <td class="px-8 py-6">
                                         <p class="text-[13px] font-bold text-white mb-1">{{ sale.get_content_object.title|default:"Item" }}</p>
                                 <span
-                                    class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mt-1">{{
-                                    sale.content_type }}</span>
+                                    class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mt-1">{{ sale.content_type }}</span>
                             </td>
                             <td class="px-8 py-6">
                                 <span
                                     class="text-[14px] {% if sale.buyer_role == 'dj' %}text-[var(--accent-mint)]{% else %}text-[var(--text-primary)]{% endif %} font-[500] flex items-center gap-1.5">
-                                    {{ sale.user.full_name|default:sale.user.user.username }}
+                                    {{ sale.user.full_name|default:sale.user.user.email }}
                                     {% if sale.buyer_role == 'dj' %}
                                     <span class="text-[12px] opacity-90" title="Fellow DJ">✦</span>
                                     {% endif %}

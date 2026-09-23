@@ -142,10 +142,11 @@
                         </button>
                         {% endif %}
                         {% else %}
-                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
+                        <button
+                            @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
                             class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
                             Login to Buy
-                        </a>
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -165,8 +166,7 @@
                             active_promotional_offer.badge_label %}[{{ active_promotional_offer.badge_label }}] {% endif
                             %}{{ active_promotional_offer.title }}</p>
                         {% if active_promotional_offer.tagline %}
-                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{
-                            active_promotional_offer.tagline }}</p>
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{ active_promotional_offer.tagline }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -242,13 +242,11 @@
                 <tbody class="divide-y divide-[var(--border)]">
                     {% for track in tracks %}
                     <tr class="group hover:bg-[var(--bg-elevated)] transition-colors">
-                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] font-mono text-center w-12">{{
-                            track.track_order|default:forloop.counter }}</td>
+                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] font-mono text-center w-12">{{ track.track_order|default:forloop.counter }}</td>
                         <td
                             class="px-6 py-4 text-[14px] text-[var(--text-primary)] font-medium group-hover:text-[var(--accent-mint)] transition-colors">
                             {{ track.title }}</td>
-                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] text-right font-mono">{{
-                            track.duration|default:"--:--" }}</td>
+                        <td class="px-6 py-4 text-[13px] text-[var(--text-muted)] text-right font-mono">{{ track.duration|default:"--:--" }}</td>
                     </tr>
                     {% empty %}
                     <tr>

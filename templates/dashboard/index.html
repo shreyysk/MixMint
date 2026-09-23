@@ -70,14 +70,12 @@
 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
-                        purchase.track.title }}</h3>
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ purchase.track.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ purchase.track.dj.dj_name }}
                     </p>
                     <div class="flex items-center gap-3 mt-2">
-                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{
-                            purchase.purchase_date|date:"M d, Y" }}</span>
+                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{ purchase.purchase_date|date:"M d, Y" }}</span>
                         {% if purchase.has_insurance %}
                         <span class="pill-success">🛡 Insured</span>
                         {% endif %}
@@ -142,14 +140,12 @@
 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
-                        purchase.album.title }}</h3>
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ purchase.album.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ purchase.album.dj.dj_name }} · {{ purchase.album.tracks.count }} tracks
                     </p>
                     <div class="flex items-center gap-3 mt-2">
-                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{
-                            purchase.purchase_date|date:"M d, Y" }}</span>
+                        <span class="font-mono text-[11px] text-[var(--text-muted)]">Purchased: {{ purchase.purchase_date|date:"M d, Y" }}</span>
                         {% if purchase.has_insurance %}
                         <span class="pill-success">🛡 Insured</span>
                         {% endif %}
@@ -214,14 +210,12 @@
 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{
-                        item.track.title }}</h3>
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ item.track.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ item.track.dj.dj_name }}
                     </p>
                     <div class="flex items-center gap-3 mt-2">
-                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{
-                            item.track.price|money }}</span>
+                        <span class="font-mono text-[11px] text-[var(--accent-mint)] font-bold">{{ item.track.price|money }}</span>
                     </div>
                 </div>
 

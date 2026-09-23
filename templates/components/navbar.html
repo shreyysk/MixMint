@@ -11,8 +11,7 @@
     x-cloak>
 
     {% if active_promotional_offer.badge_label %}
-    <span class="bg-black text-[var(--accent-mint)] text-[10px] uppercase px-2 py-0.5 rounded-sm animate-pulse-slow">{{
-        active_promotional_offer.badge_label }}</span>
+    <span class="bg-black text-[var(--accent-mint)] text-[10px] uppercase px-2 py-0.5 rounded-sm animate-pulse-slow">{{ active_promotional_offer.badge_label }}</span>
     {% endif %}
 
     <span class="flex-1 text-center">
@@ -191,10 +190,12 @@
                     </div>
                 </div>
                 {% else %}
-                <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
-                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{% trans "Login" %}</a>
-                <a href="{% url 'signup' %}?next={{ request.path|urlencode }}"
-                    class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">{% trans "Sign Up" %}</a>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}}))"
+                    class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{% trans "Login" %}</button>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup', nextUrl: '{{ request.path }}'}}))"
+                    class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">{% trans "Sign Up" %}</button>
                 {% endif %}
             </div>
 
@@ -254,11 +255,13 @@
                         out</button>
                 </form>
                 {% else %}
-                <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
-                    class="w-full py-3 text-[15px] font-body font-medium text-[var(--text-primary)] text-center opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards] cursor-pointer block">Login</a>
-                <a href="{% url 'signup' %}?next={{ request.path|urlencode }}"
-                    class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards] block text-center">Sign
-                    Up</a>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'login', nextUrl: '{{ request.path }}'}})); open = false"
+                    class="w-full py-3 text-[15px] font-body font-medium text-[var(--text-primary)] text-center opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards] cursor-pointer">Login</button>
+                <button
+                    @click.prevent="window.dispatchEvent(new CustomEvent('open-auth-modal', {detail: {mode: 'signup', nextUrl: '{{ request.path }}'}})); open = false"
+                    class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards]">Sign
+                    Up</button>
                 {% endif %}
             </div>
         </div>
