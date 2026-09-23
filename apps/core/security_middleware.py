@@ -18,13 +18,16 @@ class SecurityMiddleware:
     Security middleware for fraud detection and abuse prevention.
     """
 
-    # Suspicious header patterns for IP spoofing detection [EX-01.03]
+    # Suspicious header patterns for IP spoofing detection [EX-01.03].
+    # NOTE: X-Forwarded-Host / X-Host are intentionally NOT listed: legitimate
+    # CDN/proxy hosts (Vercel edge, Cloudflare) set them on every request, and
+    # Django ignores them unless USE_X_FORWARDED_HOST=True (we don't set it),
+    # so they carry no spoofing value for this stack. Our code resolves client
+    # IP only from X-Forwarded-For (first entry) + REMOTE_ADDR.
     SUSPICIOUS_HEADERS = [
         "HTTP_X_ORIGINATING_IP",
         "HTTP_X_REMOTE_IP",
         "HTTP_X_CLIENT_IP",
-        "HTTP_X_HOST",
-        "HTTP_X_FORWARDED_HOST",
     ]
 
     def __init__(self, get_response):
