@@ -194,6 +194,13 @@ class TestCartWithoutDrawer:
             assert "My Support Cart" not in html, url
             assert "open-cart" not in html or "TEMP-DISABLED" in html or True
 
+    def test_no_auth_modal_markup_sitewide(self, client):
+        for url in ("/", "/explore/", "/login/"):
+            html = client.get(url).content.decode()
+            assert "Continue to full authentication page" not in html, url
+            # login/signup navigate via real links with return address
+            assert "/login/" in html, url
+
     def test_cart_page_renders_and_checkout_wired(self, client, user, track):
         resp = client.get("/cart/")
         assert resp.status_code == 200
