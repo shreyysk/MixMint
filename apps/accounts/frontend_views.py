@@ -151,6 +151,13 @@ def login_view(request):
                     user=user, fingerprint=device_hash, defaults={"last_ip": _get_client_ip(request)}
                 )
 
+            # Return to where the user was headed (?next=), but only to safe
+            # same-host URLs — never follow off-site redirects (open-redirect guard).
+            from django.utils.http import url_has_allowed_host_and_scheme
+
+            next_url = request.POST.get("next") or request.GET.get("next")
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
             return redirect("dashboard")
         else:
             messages.error(request, "Invalid email or password.")
