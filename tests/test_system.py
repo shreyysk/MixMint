@@ -43,8 +43,8 @@ class TestBuyerJourney:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Genre DJ', slug='genre-dj', status='approved')
         Track.objects.create(dj=dj, title='Bollywood Beat', price=Decimal('50.00'),
-                              file_key='t.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=g', genre='Bollywood')
+                             file_key='t.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=g', genre='Bollywood')
 
         client = Client()
         response = client.get('/explore/', {'genre': 'Bollywood'})
@@ -59,8 +59,8 @@ class TestBuyerJourney:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Query DJ', slug='query-dj', status='approved')
         Track.objects.create(dj=dj, title='Unique Track Name', price=Decimal('50.00'),
-                              file_key='t.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=q')
+                             file_key='t.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=q')
 
         client = Client()
         response = client.get('/explore/', {'q': 'Unique Track'})
@@ -118,9 +118,9 @@ class TestExploreFilters:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Price DJ', slug='pricefilt-dj', status='approved')
         Track.objects.create(dj=dj, title='Cheap Track', price=Decimal('29.00'), file_key='t.wav',
-                              preview_type='youtube', youtube_url='https://youtube.com/watch?v=p')
+                             preview_type='youtube', youtube_url='https://youtube.com/watch?v=p')
         Track.objects.create(dj=dj, title='Expensive Track', price=Decimal('999.00'), file_key='t2.wav',
-                              preview_type='youtube', youtube_url='https://youtube.com/watch?v=p2')
+                             preview_type='youtube', youtube_url='https://youtube.com/watch?v=p2')
 
         client = Client()
         response = client.get('/explore/', {'price_max': '100'})

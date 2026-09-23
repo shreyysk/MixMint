@@ -34,6 +34,18 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <!-- Alpine JS (local) -->
     <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
+    <script>
+        // Failsafe: if local Alpine didn't load (stale CDN/static outage),
+        // fall back to public CDN so the page never renders frozen.
+        window.addEventListener("load", function () {
+            if (!window.Alpine) {
+                var s = document.createElement("script");
+                s.src = "https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js";
+                s.defer = true;
+                document.head.appendChild(s);
+            }
+        });
+    </script>
     <style>
         /* Hide Alpine-cloaked elements until Alpine.js initializes.
            Without this, modals/toasts render stuck-open if JS is slow/blocked. */

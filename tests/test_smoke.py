@@ -5,7 +5,7 @@ Covers: Smoke Testing, Sanity Testing categories.
 """
 import pytest
 from django.test import Client
-from django.urls import reverse, resolve, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 
 
 @pytest.mark.django_db

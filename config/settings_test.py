@@ -51,10 +51,10 @@ AWS_S3_CUSTOM_DOMAIN = ""
 R2_PRIVATE_BUCKET = "test-private"
 R2_PUBLIC_BUCKET = "test-public"
 
-RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test")
-RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "rzp_secret_test")
+RAZORPAY_KEY_ID = "rzp_test"
+RAZORPAY_KEY_SECRET = "rzp_secret_test"
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_test")
+RESEND_API_KEY = "re_test"
 
 # PhonePe test configuration
 PHONEPE_MERCHANT_ID = "PGTESTPAYUAT"

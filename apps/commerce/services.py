@@ -24,7 +24,9 @@ class MonetizationService:
         # Optional: Custom fallback logic if NO offer is active
         # The spec indicates the global admin rate applies. Let's just use the global rate
         # unless Pro overrides it. We'll stick to the global rate.
-        if dj_profile.is_pro_dj:
+        # NOTE: is_pro_dj lives on Profile, not DJProfile — resolve via the link.
+        is_pro = bool(getattr(getattr(dj_profile, "profile", None), "is_pro_dj", False))
+        if is_pro:
             # Let's preserve 8% for pro, unless the global rate is even lower (e.g. 5% promo)
             if settings.platform_commission_rate > Decimal("8.00"):
                 return Decimal("8.00")
@@ -152,14 +154,23 @@ class MonetizationService:
     @staticmethod
     def complete_purchase(purchase):
         """
-        Main entry point for post-payment processing [Spec P2 §4, §5, §6].
+        Main entry point for post-payment processing [Spec P2 ??4, ??5, ??6].
         1. Distribute revenue
         2. Generate invoice
-        3. Check verification status
+        3. Check verification status for the seller
+
+        Idempotent: webhook retries / verify-callback races that reach us twice
+        for the same purchase credit wallets and invoice exactly once (invoice
+        row + row lock decide the winner).
         """
         from apps.accounts.utils import check_verification_eligibility
+        from .models import Purchase
 
         with transaction.atomic():
+            locked = Purchase.objects.select_for_update().get(pk=purchase.pk)
+            if Invoice.objects.filter(purchase=locked).exists():
+                return locked  # already completed
+            purchase = locked
             # 1. Distribute revenue
             track_obj = None
             if purchase.content_type == "track":

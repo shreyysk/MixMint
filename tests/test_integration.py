@@ -5,7 +5,7 @@ Covers: Integration Testing category.
 """
 import pytest
 from decimal import Decimal
-from django.test import TestCase, Client
+from django.test import Client
 from django.urls import reverse
 
 
@@ -95,7 +95,11 @@ class TestReferralIntegration:
         dj_u = User.objects.create_user(email='ambassador@example.com', password='Pass123!')
         dj_u.profile.role = 'dj'
         dj_u.profile.save(update_fields=['role'])
-        dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Ambassador DJ', slug='ambassador-dj', status='approved')
+        dj = DJProfile.objects.create(
+            profile=dj_u.profile,
+            dj_name='Ambassador DJ',
+            slug='ambassador-dj',
+            status='approved')
         code = AmbassadorCode.objects.create(dj=dj, code='TESTREF', is_active=True)
 
         client = Client()
@@ -134,8 +138,8 @@ class TestWalletCreditIntegration:
         dj_u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Wallet DJ', slug='wallet-dj', status='approved')
         track = Track.objects.create(dj=dj, title='Wallet Track', price=Decimal('200.00'),
-                                      file_key='t.wav', preview_type='youtube',
-                                      youtube_url='https://youtube.com/watch?v=w')
+                                     file_key='t.wav', preview_type='youtube',
+                                     youtube_url='https://youtube.com/watch?v=w')
 
         split = calculate_revenue_split(track.price, dj)
 

@@ -5,9 +5,7 @@ Prevents payment security regressions.
 Run with: python manage.py test tests.test_webhook_signatures
 """
 import hashlib
-import hmac
 from django.test import TestCase
-from django.conf import settings
 
 
 class PhonePeWebhookSignatureTests(TestCase):
@@ -66,9 +64,9 @@ class WebhookIdempotencyTests(TestCase):
     def test_duplicate_webhook_ignored(self):
         """Same transaction_id webhook should not create duplicate purchase."""
         from apps.commerce.models import WebhookLog
-        
+
         tx_id = "TEST_TX_12345"
-        
+
         # First webhook
         WebhookLog.objects.create(
             transaction_id=tx_id,
@@ -77,7 +75,7 @@ class WebhookIdempotencyTests(TestCase):
             status='PAYMENT_SUCCESS',
             processed=True
         )
-        
+
         # Check duplicate exists
         self.assertTrue(
             WebhookLog.objects.filter(transaction_id=tx_id, processed=True).exists()

@@ -1,5 +1,8 @@
+import logging
 import requests
 from django.conf import settings
+
+logger = logging.getLogger("mixmint")
 
 
 def send_email(to_email, subject, html_content):
@@ -7,8 +10,7 @@ def send_email(to_email, subject, html_content):
     Sends an email using the Resend API.
     """
     if not settings.RESEND_API_KEY:
-        print("RESEND_API_KEY not configured. Printing email to console:")
-        print(f"To: {to_email}\nSubject: {subject}\nContent: {html_content[:100]}...")
+        logger.warning("RESEND_API_KEY not configured. Email to %s not sent: %s", to_email, subject)
         return None
 
     url = "https://api.resend.com/emails"

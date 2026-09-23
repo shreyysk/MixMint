@@ -4,7 +4,6 @@ Tests REST API endpoints, authentication, permissions, and CRUD operations.
 Covers: API Testing category.
 """
 import pytest
-from django.test import Client
 from rest_framework.test import APIClient
 
 

@@ -178,7 +178,7 @@
                 this.checkingOut = true;
                 this.error = '';
                 try {
-                    const res = await fetch('/payments/cart-checkout/', {
+                    const res = await fetch('{% url 'cart_checkout' %}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

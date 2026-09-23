@@ -11,6 +11,24 @@
         <p class="font-body text-[14px] text-[var(--text-muted)] mt-2">Your purchased tracks, albums, and download history.</p>
     </div>
 
+    <!-- Payment landing banners (payment_callback redirects here with ?payment=) -->
+    {% if request.GET.payment == 'success' %}
+    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-center">
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">✅ Payment successful — your music is below.</p>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Pick any item to get your secure download link</p>
+    </div>
+    {% elif request.GET.payment == 'failed' %}
+    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30 text-center">
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">❌ Payment didn't go through — nothing was charged.</p>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Try again or use a different method · <a href="/contact/" class="underline">contact support</a></p>
+    </div>
+    {% elif request.GET.payment == 'pending' %}
+    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">⏳ We're confirming your payment with the gateway…</p>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Refresh in a minute — your music appears here once confirmed</p>
+    </div>
+    {% endif %}
+
     <!-- Tabs -->
     <div class="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[10px] p-1 mb-8 w-fit">
         <button @click="activeTab = 'tracks'"

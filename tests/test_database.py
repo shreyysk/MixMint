@@ -6,7 +6,6 @@ Covers: Database Testing category.
 import pytest
 from decimal import Decimal
 from django.db import IntegrityError
-from django.core.exceptions import ValidationError
 
 
 @pytest.mark.django_db
@@ -67,7 +66,7 @@ class TestUniqueConstraints:
         dj_u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Wish DJ', slug='wish-dj', status='approved')
         t = Track.objects.create(dj=dj, title='Wish Track', price=Decimal('50.00'), file_key='t.wav',
-                                  preview_type='youtube', youtube_url='https://youtube.com/watch?v=w')
+                                 preview_type='youtube', youtube_url='https://youtube.com/watch?v=w')
         Wishlist.objects.create(user=u.profile, track=t)
         with pytest.raises(IntegrityError):
             Wishlist.objects.create(user=u.profile, track=t)
@@ -92,7 +91,7 @@ class TestCascadeDeletes:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Del DJ', slug='del-dj', status='approved')
         Track.objects.create(dj=dj, title='Del Track', price=Decimal('29.00'), file_key='t.wav',
-                              preview_type='youtube', youtube_url='https://youtube.com/watch?v=d')
+                             preview_type='youtube', youtube_url='https://youtube.com/watch?v=d')
         dj_id = dj.id
         dj.delete()
         assert Track.objects.filter(dj_id=dj_id).count() == 0
@@ -108,13 +107,13 @@ class TestCascadeDeletes:
         dj_u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Inv DJ', slug='inv-dj', status='approved')
         t = Track.objects.create(dj=dj, title='Inv Track', price=Decimal('100.00'), file_key='t.wav',
-                                  preview_type='youtube', youtube_url='https://youtube.com/watch?v=i')
+                                 preview_type='youtube', youtube_url='https://youtube.com/watch?v=i')
         p = Purchase.objects.create(user=buyer.profile, content_id=t.id, content_type='track',
-                                     original_price=Decimal('100.00'), price_paid=Decimal('105.00'),
-                                     seller=dj, status='paid')
+                                    original_price=Decimal('100.00'), price_paid=Decimal('105.00'),
+                                    seller=dj, status='paid')
         inv = Invoice.objects.create(purchase=p, user=buyer.profile, dj=dj,
-                                      invoice_number='INV-001', subtotal=Decimal('100.00'),
-                                      total_amount=Decimal('105.00'))
+                                     invoice_number='INV-001', subtotal=Decimal('100.00'),
+                                     total_amount=Decimal('105.00'))
         p.delete()
         inv.refresh_from_db()
         assert inv.purchase is None  # SET_NULL

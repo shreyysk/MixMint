@@ -6,7 +6,6 @@ Covers: Performance Testing, Load Testing, Stress Testing, Scalability Testing c
 import pytest
 import time
 from decimal import Decimal
-from django.test.utils import override_settings
 
 
 @pytest.mark.django_db

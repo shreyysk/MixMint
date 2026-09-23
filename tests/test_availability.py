@@ -5,8 +5,7 @@ Covers: Availability / Uptime Testing, Disaster Recovery Testing (SaaS-specific)
 """
 import pytest
 from decimal import Decimal
-from django.test import Client, RequestFactory
-from django.http import JsonResponse
+from django.test import Client
 
 
 @pytest.mark.django_db
@@ -30,8 +29,8 @@ class TestMaintenanceMode:
         self._enable_maintenance('maintenance')
         client = Client()
         response = client.get('/api/v1/tracks/',
-                               content_type='application/json',
-                               HTTP_ACCEPT='application/json')
+                              content_type='application/json',
+                              HTTP_ACCEPT='application/json')
         # SecurityMiddleware or MaintenanceModeMiddleware should block this
         assert response.status_code in [503, 200]  # 503 if middleware catches, 200 if not
 
@@ -71,7 +70,7 @@ class TestKillSwitch:
         self._enable_kill_switch()
         client = Client()
         response = client.get('/api/v1/downloads/something/',
-                               content_type='application/json')
+                              content_type='application/json')
         # Kill switch should block download paths with 503
         assert response.status_code in [503, 404, 301]
 
@@ -169,8 +168,8 @@ class TestDataConsistency:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='SoftDel DJ', slug='softdel2-dj', status='approved')
         t = Track.objects.create(dj=dj, title='SoftDel Track', price=Decimal('50.00'),
-                                  file_key='t.wav', preview_type='youtube',
-                                  youtube_url='https://youtube.com/watch?v=s', is_deleted=True)
+                                 file_key='t.wav', preview_type='youtube',
+                                 youtube_url='https://youtube.com/watch?v=s', is_deleted=True)
 
         # Track still exists in DB
         assert Track.objects.filter(id=t.id).exists()

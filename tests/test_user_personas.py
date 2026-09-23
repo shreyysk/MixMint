@@ -1,14 +1,16 @@
 import pytest
 from decimal import Decimal
 from django.test import Client
-from rest_framework.test import APIClient
-from apps.accounts.models import User, DJProfile, AmbassadorCode, Profile
+from apps.accounts.models import User, DJProfile, AmbassadorCode
 from apps.tracks.models import Track
-from apps.commerce.models import Cart, CartItem, DJWallet, Purchase, LedgerEntry, DJApplicationFee, Invoice, TaxRecord, EarningsHold, TransactionAlert, AdminAuditLog
+from apps.commerce.models import (
+    Cart, CartItem, DJWallet, Purchase, LedgerEntry, DJApplicationFee, Invoice, TaxRecord, EarningsHold,
+    TransactionAlert, AdminAuditLog,
+)
 from apps.admin_panel.models import PlatformSettings
 from apps.commerce.revenue_engine import calculate_revenue_split, credit_dj_wallets
 from django.urls import reverse
-import uuid
+
 
 @pytest.mark.django_db
 class TestRegularBuyerPersona:
@@ -19,24 +21,28 @@ class TestRegularBuyerPersona:
     - System testing: buyer E2E flow (signup -> explore -> cart purchase -> secure download token).
     - Acceptance testing: explore page access and dashboard response.
     """
-    
+
     # 1. UNIT TESTING
     def test_buyer_cart_discount_calculations(self, user):
         """Unit test: Verify cart tiered discount calculations for buyer."""
         cart = Cart.objects.create(user=user.profile)
         # Adding items to cart
         for i in range(3):
-            CartItem.objects.create(cart=cart, content_type='track', content_id=i+1, price=10000) # 10000 paise = ₹100
-        
+            CartItem.objects.create(
+                cart=cart,
+                content_type='track',
+                content_id=i + 1,
+                price=10000)  # 10000 paise = ₹100
+
         # 3 items should give 5% discount
         assert cart.discount_percentage == 5
         assert cart.subtotal == 30000
         assert cart.discount_amount == 1500
         assert cart.final_total == 28500
-        
+
         # Check next tier
         info = cart.next_tier_info
-        assert info['needed'] == 2 # needs 5 items total, so 2 more
+        assert info['needed'] == 2  # needs 5 items total, so 2 more
         assert info['discount'] == 10
 
     # 2. INTEGRATION TESTING
@@ -44,15 +50,15 @@ class TestRegularBuyerPersona:
         """Integration test: Check cart checkout with ambassador referral code and invoice + tax creation."""
         _, dj = dj_user
         # Create ambassador code
-        code = AmbassadorCode.objects.create(dj=dj, code='BUYERREF', is_active=True)
-        
+        AmbassadorCode.objects.create(dj=dj, code='BUYERREF', is_active=True)
+
         # Attribute referral to buyer profile
         user.profile.referred_by = dj
         user.profile.save()
-        
+
         # Simulate payment success & wallet credit
         split = calculate_revenue_split(track.price, dj)
-        
+
         purchase = Purchase.objects.create(
             user=user.profile, content_id=track.id, content_type='track',
             original_price=track.price, price_paid=split['total_buyer_pays'],
@@ -60,21 +66,21 @@ class TestRegularBuyerPersona:
             dj_revenue=split['dj_earnings'], dj_earnings=split['dj_earnings'],
             seller=dj, status='paid'
         )
-        
+
         # Credit wallet
         credit_dj_wallets(purchase, dj, split)
-        
+
         # Verify invoice is auto-created or can be generated
         invoice = Invoice.objects.create(
             purchase=purchase, user=user.profile, dj=dj,
             invoice_number=f"INV-{purchase.id}", subtotal=track.price,
             tax_amount=split['gst_amount'], total_amount=split['total_buyer_pays']
         )
-        
+
         tax_record = TaxRecord.objects.create(
             invoice=invoice, tax_rate=Decimal('18.00'), tax_amount=split['gst_amount']
         )
-        
+
         assert invoice.invoice_number.startswith("INV-")
         assert tax_record.tax_amount == split['gst_amount']
         assert user.profile.referred_by == dj
@@ -83,19 +89,19 @@ class TestRegularBuyerPersona:
     def test_buyer_e2e_journey(self):
         """System test: Full E2E flow for a buyer persona (signup -> browse -> purchase -> download)."""
         client = Client()
-        
+
         # Signup
         signup_res = client.post(reverse('signup'), {
             'full_name': 'E2E Buyer User',
             'email': 'e2ebuyerflow@example.com',
             'password': 'StrongPass123!',
         })
-        assert signup_res.status_code == 302 # Redirects to dashboard
-        
+        assert signup_res.status_code == 302  # Redirects to dashboard
+
         # Browse Explore page
         explore_res = client.get(reverse('explore'))
         assert explore_res.status_code == 200
-        
+
         # Verify dashboard is accessible
         dashboard_res = client.get(reverse('dashboard'))
         assert dashboard_res.status_code == 200
@@ -105,7 +111,7 @@ class TestRegularBuyerPersona:
         """Acceptance test: Check explore page responsive attributes and UI structure."""
         client = Client()
         client.force_login(user)
-        
+
         response = client.get(reverse('explore'))
         assert response.status_code == 200
         # HTML should contain standard UI hooks
@@ -121,17 +127,17 @@ class TestStandardDJPersona:
     - System testing: DJ registration and track uploading.
     - Acceptance testing: public DJ storefront render.
     """
-    
+
     # 1. UNIT TESTING
     def test_dj_slug_generation_and_price_validation(self, db):
         """Unit test: Unique slug generation and track price validation rules."""
         u = User.objects.create_user(email='sluggy@example.com', password='Pass123!')
         u.profile.role = 'dj'
         u.profile.save()
-        
+
         dj = DJProfile.objects.create(profile=u.profile, dj_name='DJ Slugger')
         assert dj.slug == 'dj-slugger'
-        
+
         # Test price validator for paid track below 19
         from django.core.exceptions import ValidationError
         t = Track(dj=dj, title='Too Cheap', price=Decimal('10.00'), file_key='t.wav',
@@ -144,17 +150,17 @@ class TestStandardDJPersona:
         """Integration test: Create DJ, associate tracks, and simulate earnings crediting."""
         _, dj = dj_user
         wallet, _ = DJWallet.objects.get_or_create(dj=dj)
-        
+
         # Simulate credit to wallet
         wallet.total_earnings += Decimal('85.00')
         wallet.available_for_payout += Decimal('85.00')
         wallet.save()
-        
+
         # Verify ledger entries can track it
         entry = LedgerEntry.objects.create(
             wallet=wallet, amount=Decimal('85.00'), entry_type='credit', description='Sale'
         )
-        
+
         assert wallet.available_for_payout == Decimal('85.00')
         assert entry.entry_type == 'credit'
 
@@ -162,21 +168,22 @@ class TestStandardDJPersona:
     def test_dj_e2e_journey(self):
         """System test: DJ signup, application, track upload and dashboard check."""
         client = Client()
-        
+
         # Register a user
         client.post(reverse('signup'), {
             'full_name': 'New DJ Store',
             'email': 'newdj@example.com',
             'password': 'StrongPass123!',
         })
-        
+
         # Upgrade profile to DJ and create storefront
         u = User.objects.get(email='newdj@example.com')
         u.profile.role = 'dj'
         u.profile.save()
-        
+
         dj = DJProfile.objects.create(profile=u.profile, dj_name='New DJ Store', slug='new-dj-store', status='approved')
-        
+        assert dj.status == 'approved'
+
         client.force_login(u)
         dashboard_res = client.get(reverse('dj_dashboard'))
         assert dashboard_res.status_code == 200
@@ -200,7 +207,7 @@ class TestProDJPersona:
     - System testing: Pro DJ track upload, sale and wallet share check.
     - Acceptance testing: Dashboard Pro features.
     """
-    
+
     # 1. UNIT TESTING
     def test_pro_commission_split(self, pro_dj_user):
         """Unit test: Verify pro DJ receives higher revenue split (8% commission vs 15%)."""
@@ -214,11 +221,11 @@ class TestProDJPersona:
         """Integration test: Simulate upgrading standard DJ to Pro DJ and updating rates."""
         u, dj = dj_user
         assert u.profile.is_pro_dj is False
-        
+
         # Upgrade
         u.profile.is_pro_dj = True
         u.profile.save()
-        
+
         # Calculate split after upgrade
         split = calculate_revenue_split(Decimal('100.00'), dj)
         assert split['commission'] == Decimal('8.00')
@@ -231,7 +238,7 @@ class TestProDJPersona:
         # Track belongs to Pro DJ
         track.dj = dj
         track.save()
-        
+
         split = calculate_revenue_split(track.price, dj)
         purchase = Purchase.objects.create(
             user=user.profile, content_id=track.id, content_type='track',
@@ -240,7 +247,7 @@ class TestProDJPersona:
             dj_revenue=split['dj_earnings'], dj_earnings=split['dj_earnings'],
             seller=dj, status='paid'
         )
-        
+
         credit_dj_wallets(purchase, dj, split)
         wallet = DJWallet.objects.get(dj=dj)
         # Should get 92% of 100.00 = 92.00
@@ -265,7 +272,7 @@ class TestPlatformAdminPersona:
     - System testing: E2E admin DJ approval and application fee payment.
     - Acceptance testing: Admin dashboard loads.
     """
-    
+
     # 1. UNIT TESTING
     def test_platform_settings_singleton(self):
         """Unit test: Enforce PlatformSettings singleton behavior."""
@@ -277,25 +284,25 @@ class TestPlatformAdminPersona:
     def test_admin_financial_controls(self, dj_user, admin_user, purchase):
         """Integration test: placing payout holds, generating transaction alerts and auditing."""
         _, dj = dj_user
-        
+
         # Place hold
         hold = EarningsHold.objects.create(
             dj=dj, amount=10000, hold_type='dispute', reason='Buyer disputed purchase',
             placed_by=admin_user.profile
         )
-        
+
         # Create high-value alert
         alert = TransactionAlert.objects.create(
             purchase=purchase, user=purchase.user, alert_type='high_value',
             message='High value transaction detected', severity='HIGH'
         )
-        
+
         # Log audit entry
         log = AdminAuditLog.objects.create(
             admin=admin_user.profile, action='PLACE_HOLD', target_dj=dj,
             details={'hold_id': str(hold.id)}
         )
-        
+
         assert hold.status == 'active'
         assert alert.severity == 'HIGH'
         assert log.action == 'PLACE_HOLD'
@@ -309,20 +316,20 @@ class TestPlatformAdminPersona:
         u.profile.role = 'dj'
         u.profile.save()
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Pending DJ', slug='pending-dj', status='pending')
-        
+
         # Create DJ application fee record
         fee = DJApplicationFee.objects.create(dj=dj, amount=Decimal('99.00'), status='pending')
-        
+
         # Admin logs in, approves DJ, fee marked as paid
         client = Client()
         client.force_login(admin_user)
-        
+
         # Update DJ status to approved and application fee to paid
         dj.status = 'approved'
         dj.save()
         fee.status = 'paid'
         fee.save()
-        
+
         assert dj.status == 'approved'
         assert fee.status == 'paid'
 

@@ -1,5 +1,6 @@
 import json
 import uuid
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseRedirect
@@ -145,7 +146,7 @@ def initiate_purchase(request):
             payment_gateway=gateway_name,
             amount_paise=amount_paise,
             original_price=content_obj.price,
-            price_paid=amount_paise / 100.0,
+            price_paid=Decimal(amount_paise) / 100,
             status="pending",
         )
 
@@ -168,42 +169,54 @@ def payment_callback(request):
     """
     User lands here after payment page (PhonePe or Razorpay). [Section A Step 2]
     Handles both single-item and cart-based purchases.
+    Success/failure land on the library page with a status flag (those routes exist).
     """
     order_id = request.GET.get("order_id")
     if not order_id:
-        return HttpResponseRedirect("/payment/failed/")
+        return HttpResponseRedirect("/library/?payment=failed")
 
     # Find all purchases with this order_id (could be one or many)
     purchases = Purchase.objects.filter(gateway_order_id=order_id)
     if not purchases.exists():
-        return HttpResponseRedirect("/payment/failed/")
+        return HttpResponseRedirect("/library/?payment=failed")
 
     # Use the gateway from the first purchase record
     first_purchase = purchases.first()
     gateway = get_gateway(first_purchase.payment_gateway)
-    status_data = gateway.get_payment_status(order_id)
+    try:
+        status_data = gateway.get_payment_status(order_id)
+    except Exception:
+        # Gateway unreachable: don't flip statuses, ask buyer to wait/check library.
+        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=pending")
 
     if status_data["success"] and status_data["status"] == "PAYMENT_SUCCESS":
         for purchase in purchases:
             handle_payment_success(purchase, status_data)
 
         # If it was a cart purchase, redirect to multi-purchase view or downloads
-        return HttpResponseRedirect(f"/downloads/?order_id={order_id}")
+        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=success")
     else:
         for purchase in purchases:
             handle_payment_failure(purchase, status_data)
-        return HttpResponseRedirect(f"/payment/failed/?order_id={order_id}")
+        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=failed")
 
 
 def handle_payment_success(purchase, gateway_status):
+    """Mark paid + credit wallets exactly once (invoice-exists guard vs races/retries)."""
+    from apps.commerce.models import Invoice
+
     with transaction.atomic():
-        if purchase.status != "paid":
-            purchase.status = "paid"
-            purchase.gateway_payment_id = gateway_status["transaction_id"]
-            purchase.gateway_response = gateway_status["gateway_response"]
-            purchase.paid_at = timezone.now()
-            purchase.is_completed = True  # Back-compat
-            purchase.save()
+        locked = Purchase.objects.select_for_update().get(pk=purchase.pk)
+        if locked.status == "paid" and Invoice.objects.filter(purchase=locked).exists():
+            return HttpResponseRedirect(f"/library/?purchase_id={locked.id}&payment=success")
+        if locked.status != "paid":
+            locked.status = "paid"
+            locked.gateway_payment_id = gateway_status["transaction_id"]
+            locked.gateway_response = gateway_status["gateway_response"]
+            locked.paid_at = timezone.now()
+            locked.is_completed = True  # Back-compat
+            locked.save()
+            purchase = locked
 
             # Distribute earnings to DJ wallet (Phase 2 ??9)
             from apps.commerce.revenue_engine import credit_dj_wallets, calculate_revenue_split
@@ -244,14 +257,18 @@ def handle_payment_success(purchase, gateway_status):
             except Exception:
                 pass
 
-    return HttpResponseRedirect(f"/downloads/?purchase_id={purchase.id}")
+    return HttpResponseRedirect(f"/library/?purchase_id={purchase.id}&payment=success")
 
 
 def handle_payment_failure(purchase, gateway_status):
+    # Never overwrite a confirmed payment: late failure callbacks must not
+    # flip paid -> failed (buyer charged, DJ credited already).
+    if purchase.status != "pending":
+        return HttpResponseRedirect(f"/library/?purchase_id={purchase.id}")
     purchase.status = "failed"
     purchase.gateway_response = gateway_status["gateway_response"]
     purchase.save()
-    return HttpResponseRedirect(f"/payment/failed/?order_id={purchase.gateway_order_id}")
+    return HttpResponseRedirect(f"/library/?order_id={purchase.gateway_order_id}&payment=failed")
 
 
 @login_required
@@ -308,7 +325,7 @@ def cart_checkout(request):
                     payment_gateway=gateway_name,
                     amount_paise=item.price,  # Stored as paise in CartItem
                     original_price=item_content.price,
-                    price_paid=item.price / 100.0,
+                    price_paid=Decimal(item.price) / 100,
                     cart_id=str(cart.id),
                     status="pending",
                     discount_applied=cart.discount_percentage,

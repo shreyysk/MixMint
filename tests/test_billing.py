@@ -16,7 +16,11 @@ class TestRevenueCalculations:
         from apps.admin_panel.models import PlatformSettings
         PlatformSettings.load()
 
-        u = User.objects.create_user(email=f'billing{"pro" if is_pro else "std"}{id(self)}@example.com', password='Pass123!')
+        u = User.objects.create_user(
+            email=f'billing{
+                "pro" if is_pro else "std"}{
+                id(self)}@example.com',
+            password='Pass123!')
         u.profile.role = 'dj'
         u.profile.is_pro_dj = is_pro
         u.profile.save(update_fields=['role', 'is_pro_dj'])
@@ -77,8 +81,8 @@ class TestCollaboratorSplits:
         dj2 = DJProfile.objects.create(profile=u2.profile, dj_name='Collab DJ2', slug='collab-dj2', status='approved')
 
         track = Track.objects.create(dj=dj1, title='Collab Track', price=Decimal('100.00'),
-                                      file_key='t.wav', preview_type='youtube',
-                                      youtube_url='https://youtube.com/watch?v=c')
+                                     file_key='t.wav', preview_type='youtube',
+                                     youtube_url='https://youtube.com/watch?v=c')
         TrackCollaborator.objects.create(track=track, dj=dj1, revenue_percentage=Decimal('50.00'))
         TrackCollaborator.objects.create(track=track, dj=dj2, revenue_percentage=Decimal('50.00'))
 

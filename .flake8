@@ -1,5 +1,8 @@
 [flake8]
 max-line-length = 120
+# E127 (continuation-line over-indent) is black's own formatting style —
+# flake8 and black disagree here, black wins (it owns formatting).
+extend-ignore = E127
 exclude = node_modules, staticfiles, .venv, venv
 per-file-ignores =
     */migrations/*: E501

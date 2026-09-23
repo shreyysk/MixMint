@@ -74,14 +74,19 @@ def issue_external_token(request):
 
     content_type = request.data.get("content_type", "track")
     content_id = request.data.get("content_id")
-    if content_type != "track" or not content_id:
-        return Response({"error": "Only track external downloads are supported."}, status=400)
+    if content_type not in ("track", "album") or not content_id:
+        return Response({"error": "Only track/album external downloads are supported."}, status=400)
 
-    track = get_object_or_404(Track, id=content_id, is_active=True, is_deleted=False)
-    if not track.is_external_link and not track.source_url:
-        return Response({"error": "Track is not an external-source item."}, status=400)
-    is_free = (track.price or 0) <= 0
-    if not is_free and not _owns_content(profile, "track", track.id):
+    if content_type == "track":
+        from apps.tracks.models import Track as ContentModel
+    else:
+        from apps.albums.models import AlbumPack as ContentModel
+    content = get_object_or_404(ContentModel, id=content_id, is_active=True, is_deleted=False)
+    is_external = bool(getattr(content, "is_external_link", False) or getattr(content, "source_url", None))
+    if not is_external:
+        return Response({"error": "Content is not an external-source item."}, status=400)
+    is_free = (content.price or 0) <= 0
+    if not is_free and not _owns_content(profile, content_type, content.id):
         return Response({"error": "Purchase required before download."}, status=403)
 
     if _rate_limited(f"issue_{profile.pk}"):
@@ -89,8 +94,8 @@ def issue_external_token(request):
 
     token = DownloadToken.create_external_token(
         user=profile,
-        content_type="track",
-        content_id=track.id,
+        content_type=content_type,
+        content_id=content.id,
         expiry_minutes=getattr(settings, "EXTERNAL_DOWNLOAD_TOKEN_MINUTES", 15),
         max_downloads=getattr(settings, "EXTERNAL_DOWNLOAD_MAX_USES", 1),
         access_source="free" if is_free else "purchase",
@@ -100,8 +105,8 @@ def issue_external_token(request):
     )
     DownloadManager.create_download_log(
         user=profile,
-        content_id=track.id,
-        content_type="track",
+        content_id=content.id,
+        content_type=content_type,
         ip_address=request.META.get("REMOTE_ADDR"),
         device_hash=request.META.get("HTTP_X_DEVICE_HASH"),
     )
@@ -140,13 +145,18 @@ def download_external(request, token_str):
     if _rate_limited(f"hit_{dl.user_id}") or _rate_limited(f"ip_{client_ip}"):
         return JsonResponse({"error": "Too many download attempts. Try again later."}, status=429)
 
-    if dl.content_type != "track":
-        return JsonResponse({"error": "Only track external downloads are supported."}, status=400)
-    track = get_object_or_404(Track, id=dl.content_id, is_active=True, is_deleted=False)
-    source_url = track.source_url or track.external_link_url
-    source_type = track.source_type or (track.external_link_provider or "other")
+    if dl.content_type == "track":
+        content = get_object_or_404(Track, id=dl.content_id, is_active=True, is_deleted=False)
+    elif dl.content_type == "album":
+        from apps.albums.models import AlbumPack
+
+        content = get_object_or_404(AlbumPack, id=dl.content_id, is_active=True, is_deleted=False)
+    else:
+        return JsonResponse({"error": "Unsupported content type."}, status=400)
+    source_url = getattr(content, "source_url", None) or content.external_link_url
+    source_type = getattr(content, "source_type", None) or (content.external_link_provider or "other")
     if not source_url:
-        return JsonResponse({"error": "Backend source not configured for this track."}, status=500)
+        return JsonResponse({"error": "Backend source not configured for this content."}, status=500)
 
     # Resolve body: prefer shared R2 cache (<1 day, reused across buyers),
     # fall back to this token's own ref, then local-dev file, then fresh fetch.
@@ -157,7 +167,7 @@ def download_external(request, token_str):
     content_length = 0
     r2_ref = None
 
-    fresh_key = external_cache.get_fresh_key(track.id, source_url) if r2_configured else None
+    fresh_key = external_cache.get_fresh_key(content.id, source_url) if r2_configured else None
     if fresh_key:
         r2_ref = f"r2://{external_cache._bucket()}/{fresh_key}"
     elif external_cache.parse_r2_ref(dl.cached_file_path):
@@ -179,7 +189,7 @@ def download_external(request, token_str):
             dl.cached_file_path = r2_ref
             dl.save(update_fields=["cached_file_path"])
         except Exception:
-            logger.warning("Shared cache miss for track %s, refetching.", track.id)
+            logger.warning("Shared cache miss for content %s, refetching.", content.id)
             r2_ref, body = None, None
 
     local_path = None
@@ -192,14 +202,14 @@ def download_external(request, token_str):
                 dest_name = f"ext_{dl.token[:16]}_{dl.content_id}"
                 fetched = fetch_from_source(source_url, source_type, dest_name)
             except ValueError as exc:
-                logger.warning("External fetch failed for track %s: %s", track.id, exc)
+                logger.warning("External fetch failed for content %s: %s", content.id, exc)
                 return JsonResponse({"error": "Source file temporarily unavailable. Try again shortly."}, status=502)
             except Exception:  # noqa: BLE001 - never leak backend details
-                logger.exception("External fetch crashed for track %s", track.id)
+                logger.exception("External fetch crashed for content %s", content.id)
                 return JsonResponse({"error": "Source file temporarily unavailable. Try again shortly."}, status=502)
             if r2_configured:
                 try:
-                    r2_ref = external_cache.upload_file(fetched, track.id, source_url)
+                    r2_ref = external_cache.upload_file(fetched, content.id, source_url)
                     try:
                         os.remove(fetched)
                     except OSError:
@@ -208,7 +218,7 @@ def download_external(request, token_str):
                     dl.save(update_fields=["cached_file_path"])
                     body, content_length, _ctype = external_cache.stream_ref(r2_ref)
                 except Exception:
-                    logger.exception("R2 cache upload failed for track %s; serving local file.", track.id)
+                    logger.exception("R2 cache upload failed for content %s; serving local file.", content.id)
                     local_path = fetched
                     dl.cached_file_path = local_path
                     dl.save(update_fields=["cached_file_path"])
@@ -224,7 +234,8 @@ def download_external(request, token_str):
         dl.is_used = True
     dl.save(update_fields=["download_count", "is_expired", "is_used"])
 
-    filename = f"{track.title}.mp3"
+    ext = "zip" if dl.content_type == "album" else "mp3"
+    filename = f"{content.title}.{ext}"
     if body is not None:
         from django.http import StreamingHttpResponse
 

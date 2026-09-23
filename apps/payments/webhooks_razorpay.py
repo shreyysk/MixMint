@@ -44,6 +44,9 @@ def razorpay_webhook(request):
     order_id = payment_entity.get("order_id")
     payment_id = payment_entity.get("id")
     payment_status = payment_entity.get("status")
+    if not payment_id:
+        logger.warning(f"Razorpay webhook: missing payment id for event {event}.")
+        return HttpResponse(status=200)  # nothing trackable; don't retry
 
     # Idempotency check
     if WebhookLog.objects.filter(transaction_id=payment_id, processed=True).exists():
@@ -71,11 +74,34 @@ def razorpay_webhook(request):
 
 
 def _process_successful_payment(order_id, payment_id, payload):
+    payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
     with transaction.atomic():
         purchases = Purchase.objects.filter(gateway_order_id=order_id)
         if not purchases.exists():
             logger.error(f"Razorpay webhook: purchases not found for Order ID {order_id}")
             return
+
+        # Amount check: captured paise must equal what we charged across the order.
+        captured = payment_entity.get("amount")
+        if captured is not None:
+            from decimal import Decimal
+
+            expected = 0
+            for p in purchases:
+                if p.amount_paise is not None:
+                    expected += int(p.amount_paise)
+                else:
+                    expected += int((p.price_paid or Decimal("0.00")) * 100)
+            try:
+                if int(captured) != expected:
+                    logger.error(
+                        f"Razorpay webhook: amount mismatch for {order_id} "
+                        f"(captured {captured} vs expected {expected}). NOT marking paid."
+                    )
+                    return
+            except (TypeError, ValueError):
+                logger.error(f"Razorpay webhook: unparseable amount {captured!r} for {order_id}.")
+                return
 
         for purchase in purchases:
             if purchase.status != "paid":
@@ -92,11 +118,7 @@ def _process_successful_payment(order_id, payment_id, payload):
 
 
 def _process_failed_payment(order_id, payment_id, payload):
-    try:
-        purchase = Purchase.objects.get(gateway_order_id=order_id)
-        if purchase.status == "pending":
-            purchase.status = "failed"
-            purchase.gateway_response = payload
-            purchase.save()
-    except Purchase.DoesNotExist:
-        pass
+    for purchase in Purchase.objects.filter(gateway_order_id=order_id, status="pending"):
+        purchase.status = "failed"
+        purchase.gateway_response = payload
+        purchase.save()

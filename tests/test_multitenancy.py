@@ -24,8 +24,8 @@ class TestDJStorefrontIsolation:
         u1.profile.save(update_fields=['role'])
         dj1 = DJProfile.objects.create(profile=u1.profile, dj_name='Active DJ', slug='active-dj', status='approved')
         Track.objects.create(dj=dj1, title='Active Track', price=Decimal('50.00'),
-                              file_key='t.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=a')
+                             file_key='t.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=a')
 
         # Paused DJ
         u2 = User.objects.create_user(email='paused@example.com', password='Pass123!')
@@ -34,8 +34,8 @@ class TestDJStorefrontIsolation:
         u2.profile.save(update_fields=['role', 'store_paused'])
         dj2 = DJProfile.objects.create(profile=u2.profile, dj_name='Paused DJ', slug='paused-dj', status='approved')
         Track.objects.create(dj=dj2, title='Paused Track', price=Decimal('50.00'),
-                              file_key='t2.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=p')
+                             file_key='t2.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=p')
 
         client = Client()
         response = client.get('/explore/')
@@ -52,8 +52,8 @@ class TestDJStorefrontIsolation:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Inactive DJ', slug='inactive-dj', status='approved')
         Track.objects.create(dj=dj, title='Hidden Track', price=Decimal('50.00'),
-                              file_key='t.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=h', is_active=False)
+                             file_key='t.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=h', is_active=False)
 
         client = Client()
         response = client.get('/explore/')
@@ -69,8 +69,8 @@ class TestDJStorefrontIsolation:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Deleted DJ', slug='deleted-dj', status='approved')
         Track.objects.create(dj=dj, title='Deleted Track', price=Decimal('50.00'),
-                              file_key='t.wav', preview_type='youtube',
-                              youtube_url='https://youtube.com/watch?v=d', is_deleted=True)
+                             file_key='t.wav', preview_type='youtube',
+                             youtube_url='https://youtube.com/watch?v=d', is_deleted=True)
 
         client = Client()
         response = client.get('/explore/')
@@ -84,7 +84,7 @@ class TestProfileDataIsolation:
     def test_regular_user_cannot_see_other_profiles_via_api(self):
         from apps.accounts.models import User
         u1 = User.objects.create_user(email='iso1@example.com', password='Pass123!')
-        u2 = User.objects.create_user(email='iso2@example.com', password='Pass123!')
+        User.objects.create_user(email='iso2@example.com', password='Pass123!')
 
         client = APIClient()
         client.force_authenticate(user=u1)
@@ -121,7 +121,11 @@ class TestDJDirectoryIsolation:
         u = User.objects.create_user(email='pdir@example.com', password='Pass123!')
         u.profile.role = 'dj'
         u.profile.save(update_fields=['role'])
-        DJProfile.objects.create(profile=u.profile, dj_name='Pending Directory DJ', slug='pending-dir', status='pending')
+        DJProfile.objects.create(
+            profile=u.profile,
+            dj_name='Pending Directory DJ',
+            slug='pending-dir',
+            status='pending')
 
         client = Client()
         response = client.get('/djs/')
@@ -132,7 +136,11 @@ class TestDJDirectoryIsolation:
         u = User.objects.create_user(email='adir@example.com', password='Pass123!')
         u.profile.role = 'dj'
         u.profile.save(update_fields=['role'])
-        DJProfile.objects.create(profile=u.profile, dj_name='Approved Directory DJ', slug='approved-dir', status='approved')
+        DJProfile.objects.create(
+            profile=u.profile,
+            dj_name='Approved Directory DJ',
+            slug='approved-dir',
+            status='approved')
 
         client = Client()
         response = client.get('/djs/')
@@ -166,12 +174,12 @@ class TestPurchaseIsolation:
         dj_u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Iso DJ', slug='iso-dj', status='approved')
         t = Track.objects.create(dj=dj, title='Iso Track', price=Decimal('100.00'), file_key='t.wav',
-                                  preview_type='youtube', youtube_url='https://youtube.com/watch?v=i')
+                                 preview_type='youtube', youtube_url='https://youtube.com/watch?v=i')
 
         # Buyer 1 makes a purchase
         Purchase.objects.create(user=buyer1.profile, content_id=t.id, content_type='track',
-                                 original_price=Decimal('100.00'), price_paid=Decimal('105.00'),
-                                 seller=dj, status='paid')
+                                original_price=Decimal('100.00'), price_paid=Decimal('105.00'),
+                                seller=dj, status='paid')
 
         # Buyer 2 should have no purchases
         assert Purchase.objects.filter(user=buyer2.profile).count() == 0

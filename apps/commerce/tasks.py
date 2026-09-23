@@ -25,3 +25,12 @@ def process_weekly_payouts():
 def reset_monthly_quotas():
     """Placeholder for reset_monthly_quotas (quotas/subscriptions managed via payout_cron/etc)."""
     return "No-op: subscriptions handled via payout_cron."
+
+
+@shared_task
+def run_payout_cron():
+    """Daily renewals + storage-overage billing (beat entry for payout_cron command)."""
+    from django.core.management import call_command
+
+    call_command("payout_cron")
+    return "Payout cron completed."

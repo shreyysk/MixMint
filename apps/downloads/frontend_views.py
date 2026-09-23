@@ -47,8 +47,9 @@ def download_page_view(request, token_str):
     attempt_key = f"dl_attempts_{request.META.get('REMOTE_ADDR')}_{token.content_id}_{token.content_type}"
     attempt_count = cache.get(attempt_key, 0)
 
-    # Build the actual download URL (streaming proxy)
-    download_url = f"/downloads/{token_str}/"
+    # Build the actual download URL (secure streaming proxy).
+    # Must match config/urls.py mount: api/v1/downloads/ + downloads/urls.py.
+    download_url = f"/api/v1/downloads/{token_str}/"
 
     # Expiry warning: flag when <10h remain so buyers hurry (short tokens warn immediately).
     from django.conf import settings

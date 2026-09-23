@@ -48,6 +48,9 @@ def phonepe_webhook(request):
     # Extract transaction details
     transaction_id = payload.get("data", {}).get("merchantTransactionId")
     payment_status = payload.get("code", "")
+    if not transaction_id:
+        logger.warning("PhonePe webhook: missing merchantTransactionId.")
+        return HttpResponse(status=400)
 
     # Idempotency check
     if WebhookLog.objects.filter(transaction_id=transaction_id, processed=True).exists():
@@ -78,6 +81,19 @@ def phonepe_webhook(request):
     return HttpResponse(status=200)
 
 
+def _expected_total_paise(purchases):
+    """Sum of what we charged (paise) across all purchases sharing one gateway order."""
+    from decimal import Decimal
+
+    total = 0
+    for p in purchases:
+        if p.amount_paise is not None:
+            total += int(p.amount_paise)
+        else:
+            total += int((p.price_paid or Decimal("0.00")) * 100)
+    return total
+
+
 def _process_successful_payment(transaction_id, payload):
     data = payload.get("data", {})
     gateway_payment_id = data.get("transactionId")
@@ -87,6 +103,20 @@ def _process_successful_payment(transaction_id, payload):
         if not purchases.exists():
             logger.error(f"PhonePe webhook: purchases not found for Transaction ID {transaction_id}")
             return
+
+        # Amount check: never mark paid for less than charged (paise-exact).
+        paid_amount = data.get("amount")
+        if paid_amount is not None:
+            try:
+                if int(paid_amount) != _expected_total_paise(purchases):
+                    logger.error(
+                        f"PhonePe webhook: amount mismatch for {transaction_id} "
+                        f"(paid {paid_amount} vs expected {_expected_total_paise(purchases)}). NOT marking paid."
+                    )
+                    return
+            except (TypeError, ValueError):
+                logger.error(f"PhonePe webhook: unparseable amount {paid_amount!r} for {transaction_id}.")
+                return
 
         for purchase in purchases:
             if purchase.status != "paid":
@@ -104,14 +134,11 @@ def _process_successful_payment(transaction_id, payload):
 
 
 def _process_failed_payment(transaction_id, payload):
-    try:
-        purchase = Purchase.objects.get(gateway_order_id=transaction_id)
-        if purchase.status == "pending":
-            purchase.status = "failed"
-            purchase.gateway_response = payload
-            purchase.save()
-    except Purchase.DoesNotExist:
-        pass
+    purchases = Purchase.objects.filter(gateway_order_id=transaction_id, status="pending")
+    for purchase in purchases:
+        purchase.status = "failed"
+        purchase.gateway_response = payload
+        purchase.save()
 
 
 # Legacy Razorpay webhook (keep for compatibility if needed, or redirect)

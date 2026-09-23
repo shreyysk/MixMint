@@ -46,7 +46,7 @@ class TestDuplicatePurchaseRegression:
         dj_u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=dj_u.profile, dj_name='Dup DJ', slug='dup-dj', status='approved')
         track = Track.objects.create(dj=dj, title='Dup Track', price=Decimal('100.00'), file_key='t.wav',
-                                      preview_type='youtube', youtube_url='https://youtube.com/watch?v=d')
+                                     preview_type='youtube', youtube_url='https://youtube.com/watch?v=d')
 
         # First purchase
         Purchase.objects.create(
@@ -86,7 +86,7 @@ class TestSelfPurchaseRegression:
         u.profile.save(update_fields=['role'])
         dj = DJProfile.objects.create(profile=u.profile, dj_name='Self DJ', slug='self-dj', status='approved')
         track = Track.objects.create(dj=dj, title='Self Track', price=Decimal('100.00'), file_key='t.wav',
-                                      preview_type='youtube', youtube_url='https://youtube.com/watch?v=s')
+                                     preview_type='youtube', youtube_url='https://youtube.com/watch?v=s')
 
         # Verify the track.dj == DJ's dj_profile logic
         assert track.dj == u.profile.dj_profile
