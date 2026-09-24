@@ -51,7 +51,7 @@
     </div>
 
     <!-- ── STATS ── -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8" data-reveal>
         <!-- Storage Usage -->
         <div class="glow-card group p-8 flex flex-col justify-between">
             <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Storage Usage</p>
@@ -111,7 +111,7 @@
         <div class="glow-card group p-8 flex flex-col justify-between">
             <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Total Sales</p>
             <div class="flex items-baseline gap-2">
-                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter">
+                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter" data-count="{{ total_downloads|default:'0' }}">
                     {{ total_downloads|default:"0" }}
                 </span>
             </div>
@@ -121,7 +121,7 @@
     </div>
 
     <!-- ── EARNINGS FORECAST [Imp 11] ── -->
-    <div class="mb-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="mb-16 grid grid-cols-1 md:grid-cols-2 gap-8" data-reveal>
         <div class="h-full">
             {% include 'components/earnings_forecast.html' %}
         </div>

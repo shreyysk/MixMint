@@ -143,9 +143,8 @@ def my_library(request):
     return Response(serializer.data)
 
 
-@login_required
 def pro_landing(request):
-    """MixMint Pro landing page [Section B]"""
+    """MixMint Pro landing page [Section B]. Public sales page (CTA gates on DJ)."""
     return render(request, "commerce/pro_landing.html")
 
 

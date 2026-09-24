@@ -106,21 +106,21 @@
             </div>
 
             <div class="flex items-center justify-between mb-10 border-b border-[var(--border)] pb-6">
-                <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest"><span class="text-[var(--text-primary)] font-bold">{{ tracks|length|default:"0" }}</span> results found in transmission ledger{% if q %} for "{{ q }}"{% endif %}</span>
+                <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest"><span class="text-[var(--text-primary)] font-bold" data-count="{{ tracks|length|default:'0' }}">{{ tracks|length|default:"0" }}</span> results found in transmission ledger{% if q %} for "{{ q }}"{% endif %}</span>
             </div>
 
             {% if tracks %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8"
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8" data-reveal
                 :class="loading ? 'opacity-50 pointer-events-none' : ''">
                 {% for track in tracks %}
-                <div
-                    class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[20px] p-0 overflow-hidden transition-all duration-300 hover:-translate-y-[4px] hover:border-[var(--accent-mint)]/40 shadow-[var(--shadow-card)]">
+                <div data-reveal-child
+                    class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[20px] p-0 overflow-hidden transition-all duration-300 hover:-translate-y-[4px] hover:border-[var(--accent-mint)]/40 shadow-[var(--shadow-card)]">
                     <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
                         <!-- Artwork -->
                         <div
                             class="aspect-square bg-[var(--bg-elevated)] relative overflow-hidden m-4 rounded-[14px] skeleton">
                             {% if track.cover_url %}
-                            <img src="{{ track.cover_url }}" alt="{{ track.title }}"
+                            <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async"
                                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 onload="this.parentElement.classList.remove('skeleton')">
                             {% else %}

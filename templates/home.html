@@ -129,7 +129,9 @@
 
 {% block content %}
 <!-- ── HERO ── -->
-<section class="hero-section text-center -mt-10 mb-0">
+<section class="hero-section text-center -mt-10 mb-0 relative" data-reveal>
+    <div class="ux-blob" style="width:420px;height:420px;top:-140px;left:-120px;background:var(--accent-mint);"></div>
+    <div class="ux-blob" style="width:340px;height:340px;top:-80px;right:-100px;background:var(--accent-blue);animation-delay:-4s;"></div>
     <!-- Decorative Geo Art (angular lines suggesting mixing board grooves) -->
     <svg class="geo-decoration" viewBox="0 0 100 100" preserveAspectRatio="none">
         <path d="M10,90 L90,10 M20,90 L90,20 M30,90 L90,30 M40,90 L90,40 M50,90 L90,50 M60,90 L90,60"
@@ -241,16 +243,16 @@
     </div>
 
     {% if popular_tracks %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
         {% for track in popular_tracks %}
-        <div
-            class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+        <div data-reveal-child
+            class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
             <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
                 <!-- Artwork -->
                 <div
                     class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
                     {% if track.cover_url %}
-                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                     {% else %}
                     <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
                     {% endif %}
@@ -316,16 +318,16 @@
     </div>
 
     {% if featured_tracks %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
         {% for track in featured_tracks %}
-        <div
-            class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+        <div data-reveal-child
+            class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
             <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
                 <!-- Artwork -->
                 <div
                     class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
                     {% if track.cover_url %}
-                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                     {% else %}
                     <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
                     {% endif %}

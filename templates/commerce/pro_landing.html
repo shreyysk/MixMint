@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}MixMint Pro for DJs{% endblock %}
+{% block content %}
+<div class="py-16 max-w-[960px] mx-auto px-4" data-reveal>
+    <div class="text-center mb-12 relative">
+        <div class="ux-blob" style="width:380px;height:380px;top:-120px;left:50%;margin-left:-190px;background:var(--accent-mint);"></div>
+        <p class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4 relative">MixMint Pro</p>
+        <h1 class="font-display text-[40px] sm:text-[56px] font-[700] tracking-tight text-[var(--text-primary)] mb-4 relative">Keep <span class="grad-text">92% of every sale.</span></h1>
+        <p class="font-body text-[15px] text-[var(--text-muted)] max-w-[560px] mx-auto relative">Standard commission is 15%. Pro DJs pay 8% — plus custom domain, 20&nbsp;GB storage, reduced ads and priority support.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-6 mb-12" data-reveal>
+        <div class="lift border border-[var(--border)] bg-[var(--bg-surface)] rounded-[16px] p-8 text-center" data-reveal-child>
+            <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Standard</p>
+            <p class="font-display text-[36px] font-bold">15%</p>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">platform commission<br>3 GB storage</p>
+        </div>
+        <div class="lift border border-[var(--accent-mint)]/50 bg-[var(--bg-surface)] rounded-[16px] p-8 text-center relative" data-reveal-child>
+            <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-2">★ Most popular</p>
+            <p class="font-display text-[36px] font-bold text-[var(--accent-mint)]">8%</p>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">Pro commission<br>20 GB · custom domain · priority support</p>
+        </div>
+        <div class="lift border border-[var(--border)] bg-[var(--bg-surface)] rounded-[16px] p-8 text-center" data-reveal-child>
+            <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Trial</p>
+            <p class="font-display text-[36px] font-bold">Free</p>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">7 days of Pro<br>no card required</p>
+        </div>
+    </div>
+
+    <div class="text-center flex flex-col sm:flex-row gap-4 justify-center" data-reveal>
+        {% if user.is_authenticated and user.profile.role == 'dj' and not user.profile.is_pro_dj %}
+        <button id="pro-trial-btn" class="btn-mm btn-mint h-[56px] px-10 text-[16px] font-[600]">Start 7-day free trial</button>
+        <button id="pro-pay-btn" class="btn-mm btn-ghost h-[56px] px-10 text-[16px] font-[600]">Upgrade via PhonePe</button>
+        <p id="pro-trial-msg" class="w-full font-body text-[13px] text-[var(--text-muted)] mt-2"></p>
+        <script>
+            document.getElementById('pro-trial-btn')?.addEventListener('click', async (e) => {
+                const btn = e.currentTarget, msg = document.getElementById('pro-trial-msg');
+                btn.disabled = true;
+                try {
+                    const res = await fetch('{% url 'activate_pro_trial' %}', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
+                    });
+                    const data = await res.json();
+                    msg.textContent = data.message || data.error || 'Done.';
+                    if (res.ok) setTimeout(() => window.location.reload(), 1500);
+                    else btn.disabled = false;
+                } catch {
+                    msg.textContent = 'Network error. Try again.';
+                    btn.disabled = false;
+                }
+            });
+            document.getElementById('pro-pay-btn')?.addEventListener('click', async (e) => {
+                const btn = e.currentTarget, msg = document.getElementById('pro-trial-msg');
+                btn.disabled = true;
+                msg.textContent = 'Creating PhonePe order…';
+                try {
+                    const res = await fetch('{% url 'dj_upgrade_pro' %}', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.redirect_url) window.location.href = data.redirect_url;
+                    else { msg.textContent = data.error || data.message || 'Could not start upgrade.'; btn.disabled = false; }
+                } catch {
+                    msg.textContent = 'Network error. Try again.';
+                    btn.disabled = false;
+                }
+            });
+        </script>
+        {% elif user.is_authenticated and user.profile.is_pro_dj %}
+        <p class="font-body text-[15px] text-[var(--accent-mint)] font-[600]">✓ You're Pro — 8% commission active.</p>
+        {% else %}
+        <a href="{% url 'signup' %}?next={% url 'pro_landing' %}" class="btn-mm btn-mint h-[56px] px-10 text-[16px] font-[600] inline-flex items-center justify-center">Join as DJ to go Pro</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

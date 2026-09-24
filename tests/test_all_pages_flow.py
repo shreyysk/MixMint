@@ -185,6 +185,35 @@ class TestRewiredRoutes:
 
 
 @pytest.mark.django_db
+class TestUXLayer:
+    """Site-wide UX system present on every page."""
+
+    def test_ux_assets_on_base_pages(self, client, track):
+        for url in ("/", "/explore/", f"/tracks/{track.id}/", "/login/", "/cart/", "/legal/faq/"):
+            html = client.get(url).content.decode()
+            # hashed (css/ux.<hash>.css) or plain — manifest storage renames in prod
+            assert "css/ux." in html, url
+            assert "ux-scroll-progress" in html, url
+            assert "ux-to-top" in html, url
+
+    def test_reveal_on_key_pages(self, client, track):
+        assert "data-reveal" in client.get("/").content.decode()
+        assert "data-reveal" in client.get("/explore/").content.decode()
+        assert "data-reveal" in client.get(f"/tracks/{track.id}/").content.decode()
+
+    def test_pro_landing_renders_with_working_ctas(self, client, dj_user):
+        u, dj = dj_user
+        anon = client.get("/api/v1/commerce/pro/")
+        assert anon.status_code == 200
+        assert "92%" in anon.content.decode()
+        client.force_login(u)
+        dj_html = client.get("/api/v1/commerce/pro/").content.decode()
+        assert "pro-trial-btn" in dj_html and "pro-pay-btn" in dj_html
+        # CTA scripts point at the real POST endpoints (names resolve to paths)
+        assert "/pro/activate" in dj_html and "/upgrade-pro" in dj_html
+
+
+@pytest.mark.django_db
 class TestCartWithoutDrawer:
     """Cart drawer popup removed: cart lives on the /cart/ page."""
 

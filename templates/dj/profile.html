@@ -148,15 +148,15 @@
     <!-- Tracks Tab -->
     <div x-show="tab === 'tracks'" x-transition.opacity>
         {% if tracks %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-reveal>
             {% for track in tracks %}
-            <div
-                class="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
+            <div data-reveal-child
+                class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
                 <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
                     <div
-                        class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
+                        class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px] img-frame">
                         {% if track.cover_url %}
-                        <img src="{{ track.cover_url }}" alt="{{ track.title }}" class="w-full h-full object-cover">
+                        <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                         {% else %}
                         <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
                         {% endif %}

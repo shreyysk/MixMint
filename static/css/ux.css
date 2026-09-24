@@ -1,0 +1,235 @@
+/* ══════════════════════════════════════════════════════════════
+   MixMint UX layer v2 — motion, polish & accessibility system.
+   Theme-aware: built entirely on the design tokens in base.html,
+   so dark + light themes inherit everything automatically.
+   Loaded on EVERY page via base.html after style.css.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Scroll progress bar (JS sets --scroll) ─────────────────── */
+#ux-scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    width: calc(var(--scroll, 0) * 100%);
+    background: linear-gradient(90deg, var(--accent-mint), var(--accent-blue));
+    box-shadow: var(--shadow-glow);
+    z-index: 99990;
+    pointer-events: none;
+}
+
+/* ── Scroll-triggered reveal (JS adds .in on intersect) ─────── */
+[data-reveal] {
+    opacity: 0;
+    transform: translateY(26px) scale(0.99);
+    transition:
+        opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+[data-reveal].in {
+    opacity: 1;
+    transform: none;
+}
+[data-reveal="left"] { transform: translateX(-30px); }
+[data-reveal="right"] { transform: translateX(30px); }
+[data-reveal="zoom"] { transform: scale(0.94); }
+[data-reveal].in { transform: none; }
+
+/* ── Card lift (grids of tracks/albums/DJs) ─────────────────── */
+.lift {
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+    border-color: color-mix(in srgb, var(--accent-mint) 40%, transparent);
+}
+.lift:active { transform: translateY(-1px) scale(0.995); }
+
+/* ── Button sheen sweep ─────────────────────────────────────── */
+.btn-mm { position: relative; overflow: hidden; isolation: isolate; }
+.btn-mm::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.25) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+}
+.btn-mm:hover::after { transform: translateX(120%); }
+.btn-mm:active { transform: scale(0.98); }
+.btn-mm:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-mm:disabled::after { display: none; }
+
+/* ── Focus visibility (keyboard users) ──────────────────────── */
+a:focus-visible, button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent-mint);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+/* ── Text selection + scrollbar ─────────────────────────────── */
+::selection { background: var(--accent-mint); color: #000; }
+* { scrollbar-width: thin; scrollbar-color: var(--accent-mint) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--accent-mint) 45%, transparent);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-mint);
+    background-clip: content-box;
+    border: 2px solid transparent;
+}
+
+/* ── Skeleton shimmer (loading states) ──────────────────────── */
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-elevated);
+}
+.skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.07) 50%, transparent 80%);
+    animation: ux-shimmer 1.6s infinite;
+}
+@keyframes ux-shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+}
+
+/* ── Toast upgrades ─────────────────────────────────────────── */
+.toast-container {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 99995;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: min(92vw, 360px);
+}
+.toast-item {
+    animation: ux-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: var(--shadow-card);
+}
+@keyframes ux-toast-in {
+    from { opacity: 0; transform: translateX(30px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ── Animated gradient headline helper ──────────────────────── */
+.grad-text {
+    background: linear-gradient(100deg, var(--text-primary) 20%, var(--accent-mint) 50%, var(--text-primary) 80%);
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: ux-grad-pan 7s linear infinite;
+}
+@keyframes ux-grad-pan {
+    to { background-position: 220% center; }
+}
+
+/* ── Floating ambient blobs (hero sections) ─────────────────── */
+.ux-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.16;
+    pointer-events: none;
+    animation: ux-float 11s ease-in-out infinite alternate;
+}
+@keyframes ux-float {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(46px, -30px) scale(1.12); }
+}
+
+/* ── Marquee strip (announcements/offers) ───────────────────── */
+.ux-marquee { overflow: hidden; white-space: nowrap; }
+.ux-marquee > span {
+    display: inline-block;
+    padding-right: 3rem;
+    animation: ux-marquee 22s linear infinite;
+}
+@keyframes ux-marquee {
+    to { transform: translateX(-50%); }
+}
+
+/* ── Back-to-top button ─────────────────────────────────────── */
+#ux-to-top {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 5.5rem;
+    z-index: 99990;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--accent-mint);
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+#ux-to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+#ux-to-top:hover { border-color: var(--accent-mint); }
+
+/* ── Number counter pop ─────────────────────────────────────── */
+[data-count].counted { animation: ux-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes ux-pop {
+    0% { transform: scale(0.85); }
+    60% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+/* ── Image treatment ────────────────────────────────────────── */
+img { -webkit-user-drag: none; }
+.img-frame { overflow: hidden; border-radius: inherit; }
+.img-frame img { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease; }
+.img-frame:hover img { transform: scale(1.05); }
+
+/* ── Form polish ────────────────────────────────────────────── */
+.input-mm { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.input-mm:focus {
+    border-color: var(--accent-mint);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-mint) 22%, transparent);
+    outline: none;
+}
+.input-mm::placeholder { opacity: 0.45; }
+
+/* ── Table row hover (dashboards) ───────────────────────────── */
+tbody tr { transition: background-color 0.18s ease; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-mint) 5%, transparent); }
+
+/* ── Page-enter fade (applies once per load) ────────────────── */
+main#main { animation: ux-page-in 0.45s ease both; }
+@keyframes ux-page-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ── Respect reduced motion: design must never depend on it ─── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001s !important;
+    }
+    [data-reveal] { opacity: 1; transform: none; }
+    main#main { animation: none; }
+    .ux-marquee > span { animation: none; }
+}
