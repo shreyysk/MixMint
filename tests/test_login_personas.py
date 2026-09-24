@@ -118,8 +118,9 @@ class TestLoginFailures:
         resp = client.get(reverse("login"))
         assert resp.status_code == 200
         html = resp.content.decode()
-        # No-JS fallback action must exist so the button never self-loops to /?next=
-        assert 'action="/login/"' in html or "action=" in html
+        # Login form posts to itself with email + password fields (no modal involved)
+        assert 'name="email"' in html and 'name="password"' in html
+        assert 'name="csrfmiddlewaretoken"' in html
 
     def test_logout_ends_session(self, client, user):
         _post_login(client, "buyer@example.com", "StrongPass123!")
