@@ -119,6 +119,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")}
+# Supabase / PgBouncer *transaction* pooler (port 6543): server-side cursors and
+# persistent connections don't survive transaction pooling, so turn both off.
+if str(DATABASES["default"].get("PORT", "")) == "6543" or env.bool("DB_TRANSACTION_POOLER", default=False):
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    DATABASES["default"]["CONN_MAX_AGE"] = 0
 
 # Auth & JWT Configuration
 AUTH_USER_MODEL = "accounts.User"
@@ -488,6 +493,14 @@ DJ_APPLICATION_FEE = 99.00  # ₹99 [Spec §7]
 MIN_TRACK_PRICE = 29.00  # ₹29 [CP-06.02 FIX]
 MIN_ALBUM_PRICE = 49.00  # ₹49 [Spec §3.2]
 DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5  # [Spec §4.5]
+# How files reach the buyer after the token checks pass:
+#   proxy     - stream through Django (byte + SHA-256 verified). Best on always-on servers.
+#   auto      - proxy small files, hand large ones (> DOWNLOAD_PROXY_MAX_MB) to a short-lived R2
+#               signed URL so serverless time/size limits (Vercel) never cut a download off.
+#   presigned - always hand off to a short-lived R2 signed URL.
+DOWNLOAD_DELIVERY = env("DOWNLOAD_DELIVERY", default="auto" if os.getenv("VERCEL") else "proxy")
+DOWNLOAD_PROXY_MAX_MB = env.int("DOWNLOAD_PROXY_MAX_MB", default=40)
+DOWNLOAD_PRESIGN_SECONDS = env.int("DOWNLOAD_PRESIGN_SECONDS", default=120)
 IP_LOCK_DAYS = 3  # [Spec §4.3] re-download at 50% after 3-day lock
 MAX_DOWNLOAD_ATTEMPTS = 3  # [Spec §4.2]
 INACTIVE_ACCOUNT_THRESHOLD_MONTHS = 12  # [Spec §10]
