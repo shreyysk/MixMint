@@ -62,8 +62,16 @@ PHONEPE_SALT_KEY = "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399"
 PHONEPE_SALT_INDEX = "1"
 PHONEPE_BASE_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"
 
-# Disable WhiteNoise compression for tests to avoid staticfiles issues
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+# Plain static storage for tests: STORAGES (not the removed STATICFILES_STORAGE)
+# is what Django 5.x reads, so tests no longer need a collected manifest.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+RAZORPAY_WEBHOOK_SECRET = "whsec_test"
+NUM_PROXIES = 0
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+DEFAULT_PAYMENT_GATEWAY = "phonepe"
 
 # Disable throttling in tests
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ()  # noqa: F405
@@ -71,3 +79,5 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}  # noqa: F405
 
 # Allow testserver host for Django test client
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = False

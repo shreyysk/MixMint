@@ -25,16 +25,14 @@ class VercelManager:
             url += f"?teamId={self.team_id}"
 
         payload = {"name": domain_name}
-        response = requests.post(url, headers=self.headers, json=payload)
+        response = requests.post(url, headers=self.headers, json=payload, timeout=15)
 
         if response.status_code in (200, 201):
             return response.json()
         else:
             logger.error(f"Vercel add_domain failed: {response.text}")
-            raise Exception(f"Failed to add domain to Vercel: {
-                response.json().get(
-                    'error', {}).get(
-                    'message', 'Unknown error')}")
+            detail = response.json().get("error", {}).get("message", "Unknown error")
+            raise Exception(f"Failed to add domain to Vercel: {detail}")
 
     def get_domain_status(self, domain_name):
         """Checks domain verification and SSL status."""
@@ -42,7 +40,7 @@ class VercelManager:
         if self.team_id:
             url += f"?teamId={self.team_id}"
 
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, timeout=15)
 
         if response.status_code == 200:
             data = response.json()
@@ -61,5 +59,5 @@ class VercelManager:
         if self.team_id:
             url += f"?teamId={self.team_id}"
 
-        response = requests.delete(url, headers=self.headers)
+        response = requests.delete(url, headers=self.headers, timeout=15)
         return response.status_code in (200, 204)

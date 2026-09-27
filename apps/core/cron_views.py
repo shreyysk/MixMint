@@ -9,9 +9,13 @@ external scheduler (e.g. cron-job.org) calls these URLs on a timetable:
     GET /cron/payout-cron/    daily 02:00   (renewals + overage billing)
     GET /cron/ad-floor/       weekly        (ad floor pricing)
     GET /cron/reset-quotas/   monthly       (quota resets)
+    GET /cron/release-escrow/ hourly        (escrow -> available after 24/48h)
+    GET /cron/payouts/        weekly (Fri)  (DJ payouts over ₹500)
 
-Auth: ?secret=<CRON_SECRET> (constant-time compare). Never expose the secret
-in logs — it travels as a query param over HTTPS only.
+Vercel Cron (see vercel.json) calls these too: when CRON_SECRET is set in the
+Vercel project, Vercel sends it as `Authorization: Bearer <CRON_SECRET>`.
+
+Auth: Authorization: Bearer, X-Cron-Secret header, or ?secret=<CRON_SECRET>; constant-time compare.
 """
 
 import hmac
@@ -31,13 +35,17 @@ JOBS = {
     "payout-cron": ["payout_cron"],
     "ad-floor": ["update_ad_floor_pricing"],
     "reset-quotas": ["reset_quotas"],
+    "release-escrow": ["release_escrow"],
+    "payouts": ["process_payouts"],
 }
 
 
 @require_GET
 def run_cron_job(request, job):
     expected = getattr(settings, "CRON_SECRET", "") or ""
-    provided = request.GET.get("secret", "") or request.headers.get("X-Cron-Secret", "")
+    auth = request.headers.get("Authorization", "")
+    bearer = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+    provided = bearer or request.headers.get("X-Cron-Secret", "") or request.GET.get("secret", "")
     if not expected or not hmac.compare_digest(str(provided), str(expected)):
         return JsonResponse({"error": "Forbidden."}, status=403)
     if job not in JOBS:
@@ -49,5 +57,5 @@ def run_cron_job(request, job):
             ran.append(cmd)
     except Exception as exc:
         logger.exception("Cron job %s failed.", job)
-        return JsonResponse({"job": job, "ok": False, "error": str(exc)[:300]}, status=500)
+        return JsonResponse({"job": job, "ok": False, "error": type(exc).__name__}, status=500)
     return JsonResponse({"job": job, "ok": True, "ran": ran})

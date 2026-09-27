@@ -34,7 +34,7 @@ class TestBuyerLogin:
 
         _post_login(client, "buyer@example.com", "StrongPass123!")
         assert LoginHistory.objects.filter(user=user).exists()
-        assert client.session.get("bound_ip") is not None
+        assert client.session.get("bound_net") is not None
 
     def test_honors_safe_next_url(self, client, user):
         resp = _post_login(client, "buyer@example.com", "StrongPass123!", next_url="/explore/")

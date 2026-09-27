@@ -19,34 +19,27 @@ from apps.commerce.models import DJWallet, Payout, LedgerEntry
 
 def process_weekly_payouts():
     """
-    Process weekly payouts for all eligible DJs [Spec P2 §9].
-    Called by Celery beat or cron job.
-
-    Rules:
-    - ₹500 minimum threshold
-    - Skip DJs with held payouts
-    - Reserve escrow for chargeback protection
-    - Auto-retry failed payouts (max 3 attempts)
+    Weekly payout run [Spec P2 §9]. Pays each approved DJ their *available*
+    (escrow-released) balance once it clears the ₹500 threshold.
+    Skips frozen/banned accounts and DJs with a held payout.
     """
     min_threshold = Decimal(str(settings.MIN_PAYOUT_THRESHOLD))
     processed = 0
     failed = 0
 
-    # Get all wallets with sufficient pending earnings
     eligible_wallets = DJWallet.objects.filter(
-        pending_earnings__gte=min_threshold,
+        available_for_payout__gte=min_threshold,
         dj__status="approved",
-        dj__user__payout_frozen=False,  # [Missing Item 05]
-    ).select_related("dj", "dj__user")
+        dj__is_deleted=False,
+        dj__profile__is_frozen=False,
+        dj__profile__is_banned=False,
+    ).values_list("dj_id", flat=True)
 
-    for wallet in eligible_wallets:
-        # Skip if DJ has held payouts
-        if Payout.objects.filter(dj=wallet.dj, status="held").exists():
+    for dj_id in eligible_wallets:
+        if Payout.objects.filter(dj_id=dj_id, status="held").exists():
             continue
-
         try:
-            payout_amount = _process_single_payout(wallet)
-            if payout_amount:
+            if _process_single_payout(dj_id):
                 processed += 1
         except Exception:
             failed += 1
@@ -58,43 +51,40 @@ def process_weekly_payouts():
     }
 
 
-@transaction.atomic
-def _process_single_payout(wallet):
-    """Process a single DJ payout with escrow protection."""
-    # Calculate payout amount (pending - escrow reserve)
-    # Keep 5% in escrow for chargeback protection
-    escrow_rate = Decimal("0.05")
-    escrow_reserve = (wallet.pending_earnings * escrow_rate).quantize(Decimal("0.01"))
-    payout_amount = wallet.pending_earnings - escrow_reserve
+def _process_single_payout(wallet_or_dj_id):
+    """Pay out the DJ's available balance. Row-locked, so concurrent requests cannot double-pay."""
+    dj_id = getattr(wallet_or_dj_id, "dj_id", wallet_or_dj_id)
+    with transaction.atomic():
+        wallet = DJWallet.objects.select_for_update().get(dj_id=dj_id)
+        payout_amount = wallet.available_for_payout
+        if payout_amount < Decimal(str(settings.MIN_PAYOUT_THRESHOLD)):
+            return None
 
-    if payout_amount < Decimal(str(settings.MIN_PAYOUT_THRESHOLD)):
-        return None
+        payout = Payout.objects.create(dj_id=dj_id, amount=payout_amount, status="pending")
+        wallet.available_for_payout = Decimal("0.00")
+        wallet.pending_earnings -= payout_amount
+        wallet.save(update_fields=["available_for_payout", "pending_earnings", "updated_at"])
 
-    # Create payout record
-    payout = Payout.objects.create(
-        dj=wallet.dj,
-        amount=payout_amount,
-        status="pending",
-    )
-
-    # Update wallet
-    from django.db.models import F
-
-    wallet.pending_earnings = Decimal("0.00")
-    wallet.available_for_payout = Decimal("0.00")
-    wallet.escrow_amount = F("escrow_amount") + escrow_reserve
-    wallet.save(update_fields=["pending_earnings", "available_for_payout", "escrow_amount"])
-
-    # Ledger entry for payout
-    LedgerEntry.objects.create(
-        wallet=wallet,
-        amount=payout_amount,
-        entry_type="debit",
-        description=f"Weekly payout #{payout.id}",
-        metadata={"payout_id": payout.id},
-    )
-
+        LedgerEntry.objects.create(
+            wallet=wallet,
+            amount=payout_amount,
+            entry_type="debit",
+            description=f"Payout #{payout.id}",
+            metadata={"payout_id": payout.id, "type": "payout"},
+        )
+        transaction.on_commit(lambda: _notify_payout(payout))
     return payout_amount
+
+
+def _notify_payout(payout):
+    try:
+        from apps.core.email_service import EmailService
+
+        EmailService.send_payout_initiated(payout.dj, payout)
+    except Exception:  # an email problem must never undo a payout
+        import logging
+
+        logging.getLogger("mixmint").exception("Payout email failed for payout %s", payout.id)
 
 
 def retry_failed_payouts(max_retries=3):

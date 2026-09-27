@@ -7,13 +7,14 @@ from .models import Track, TrackPreview, TrackVersion
 class TrackPreviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrackPreview
-        fields = "__all__"
+        fields = ["id", "preview_type", "url", "embed_id", "is_primary", "is_active"]
 
 
 class TrackVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrackVersion
-        fields = "__all__"
+        # file_key is a private R2 path — never serialized.
+        fields = ["id", "version_label", "is_current", "created_at"]
 
 
 class TrackSerializer(serializers.ModelSerializer):
@@ -54,10 +55,25 @@ class TrackSerializer(serializers.ModelSerializer):
             "previews",
             "versions",
         ]
-        read_only_fields = ["download_count", "sales_last_7_days", "converted_at", "created_at"]
+        # Owner is set server-side from the logged-in DJ; integrity/state fields are system-managed.
+        read_only_fields = [
+            "dj",
+            "download_count",
+            "sales_last_7_days",
+            "converted_at",
+            "created_at",
+            "checksum",
+            "is_deleted",
+            "is_external_link",
+            "external_link_broken",
+        ]
+        extra_kwargs = {
+            # Private R2 path: DJs set it on upload, never readable via API.
+            "file_key": {"write_only": True},
+        }
 
     def validate_price(self, value):
-        """Enforce minimum ₹19 for paid tracks [Spec §3.2]. Free (₹0) allowed."""
+        """Enforce settings.MIN_TRACK_PRICE for paid tracks [Spec §3.2]. Free (₹0) allowed."""
         if value > 0 and value < Decimal(str(settings.MIN_TRACK_PRICE)):
             raise serializers.ValidationError(
                 f"Minimum price for paid tracks is ₹{settings.MIN_TRACK_PRICE}. " f"Set to ₹0 for free tracks."
@@ -81,6 +97,9 @@ class TrackSerializer(serializers.ModelSerializer):
         """Enforce file format standards [Gap 10]. Blank allowed for external-only tracks."""
         if not value:
             return value
+        # Path traversal guard: R2 keys must be plain relative paths.
+        if ".." in value or value.startswith(("/", "\\")) or "\\" in value or "\x00" in value:
+            raise serializers.ValidationError("Invalid file path.")
         ext = value.split(".")[-1].lower()
         if ext not in settings.SUPPORTED_AUDIO_FORMATS:
             raise serializers.ValidationError(

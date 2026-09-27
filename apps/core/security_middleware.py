@@ -13,6 +13,16 @@ from django.http import JsonResponse
 from django.core.cache import cache
 
 
+def _hit(key, limit, window):
+    """Atomic fixed-window counter. True once the limit is exceeded."""
+    cache.add(key, 0, timeout=window)
+    try:
+        return cache.incr(key) > limit
+    except ValueError:
+        cache.set(key, 1, timeout=window)
+        return False
+
+
 class SecurityMiddleware:
     """
     Security middleware for fraud detection and abuse prevention.
@@ -38,13 +48,7 @@ class SecurityMiddleware:
         if request.path == "/health/":
             return self.get_response(request)
 
-        # 1. Check maintenance mode
-        if self._is_maintenance_mode() and not self._is_admin(request):
-            if request.path.startswith("/api/"):
-                return JsonResponse(
-                    {"error": "Platform is under maintenance. Please try again later.", "code": "MAINTENANCE_MODE"},
-                    status=503,
-                )
+        # Maintenance / kill-switch is enforced by accounts.middleware.MaintenanceModeMiddleware.
 
         # 2. IP spoofing detection [EX-01.03 FIX]
         if self._detect_ip_spoofing(request):
@@ -52,7 +56,7 @@ class SecurityMiddleware:
             return JsonResponse({"error": "Security violation detected.", "code": "SECURITY_VIOLATION"}, status=403)
 
         # 3. Rapid download detection [EX-02.01 FIX]
-        if request.path.startswith("/download/"):
+        if request.path.startswith("/api/v1/downloads/"):
             client_ip = self._get_client_ip(request)
             if self._is_rapid_downloader(client_ip):
                 return JsonResponse(
@@ -60,17 +64,6 @@ class SecurityMiddleware:
                 )
 
         return self.get_response(request)
-
-    def _is_maintenance_mode(self):
-        """Check if platform is in maintenance mode."""
-        from apps.admin_panel.models import MaintenanceMode
-
-        latest = MaintenanceMode.objects.last()
-        return latest and latest.mode != "normal"
-
-    def _is_admin(self, request):
-        """Check if request is from admin."""
-        return hasattr(request, "user") and request.user.is_authenticated and request.user.is_staff
 
     def _detect_ip_spoofing(self, request):
         """
@@ -94,21 +87,13 @@ class SecurityMiddleware:
         [EX-02.01 FIX] Detect rapid download patterns (bot behavior).
         Max 10 download requests per minute per IP.
         """
-        cache_key = f"dl_rate_{client_ip}"
-        current = cache.get(cache_key, 0)
-
-        if current >= 10:
-            return True
-
-        cache.set(cache_key, current + 1, timeout=60)
-        return False
+        return _hit(f"dl_rate_{client_ip}", limit=10, window=60)
 
     def _get_client_ip(self, request):
-        """Get real client IP."""
-        xff = request.META.get("HTTP_X_FORWARDED_FOR")
-        if xff:
-            return xff.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR", "unknown")
+        """Get real client IP (trusted-proxy aware)."""
+        from apps.core.net import get_client_ip
+
+        return get_client_ip(request)
 
     def _log_security_event(self, request, event_type):
         """Log security event for audit."""
@@ -153,11 +138,4 @@ class AccountVelocityMiddleware:
         Check for suspicious activity velocity.
         Max 100 API requests per minute per user.
         """
-        cache_key = f"api_velocity_{user.id}"
-        current = cache.get(cache_key, 0)
-
-        if current >= 100:
-            return True
-
-        cache.set(cache_key, current + 1, timeout=60)
-        return False
+        return _hit(f"api_velocity_{user.id}", limit=100, window=60)

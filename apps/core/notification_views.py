@@ -32,6 +32,10 @@ def register_push_subscription(request):
 
     if not all([endpoint, p256dh, auth]):
         return Response({"error": "Missing subscription data"}, status=400)
+    if not str(endpoint).startswith("https://") or len(str(endpoint)) > 1000:
+        return Response({"error": "Invalid push endpoint"}, status=400)
+    if PushSubscription.objects.filter(user=request.user.profile).count() >= 20:
+        return Response({"error": "Too many devices subscribed"}, status=400)
 
     sub, created = PushSubscription.objects.update_or_create(
         user=request.user.profile,
@@ -106,7 +110,10 @@ def notification_preferences(request):
 def get_notifications(request):
     """Get user's in-app notifications."""
     unread_only = request.query_params.get("unread", "false").lower() == "true"
-    limit = min(int(request.query_params.get("limit", 20)), 50)
+    try:
+        limit = max(1, min(int(request.query_params.get("limit", 20)), 50))
+    except (TypeError, ValueError):
+        limit = 20
 
     notifications = InAppNotification.objects.filter(user=request.user.profile)
 
@@ -198,7 +205,7 @@ def track_experiment_event(request, experiment_name):
 @permission_classes([IsAuthenticated])
 def get_user_experiments(request):
     """Get all experiments a user is part of."""
-    from .ab_testing import UserExperiment
+    from apps.accounts.models import UserExperiment
 
     assignments = UserExperiment.objects.filter(user=request.user.profile).select_related("experiment", "variant")
 

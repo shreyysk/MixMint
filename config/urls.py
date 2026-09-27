@@ -6,18 +6,23 @@ from django.contrib.sitemaps.views import sitemap
 from django.http import HttpResponse, JsonResponse
 from django.db import connection
 from django.core.cache import cache
+from django.views.decorators.csrf import csrf_exempt
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.core.sitemaps import SITEMAPS
 from apps.core import cron_views
+from apps.payments import views as payment_views
+from apps.payments.webhooks import phonepe_webhook
+from django.views.generic import RedirectView
 
 
 def robots_txt(request):
     lines = [
         "User-agent: *",
-        "Disallow: /admin/",
         "Disallow: /api/",
+        "Disallow: /dashboard/",
+        "Disallow: /cron/",
         "Allow: /",
         f"Sitemap: https://{request.get_host()}/sitemap.xml",
     ]
@@ -36,36 +41,46 @@ def security_txt(request):
 
 def health_check(request):
     """
-    Public health check endpoint for load balancers / Railway.
-    Checks DB connectivity and Redis/Celery broker reachability.
-    Returns 200 if all healthy, 503 if any dependency is down.
+    Public health check for load balancers. Reports DB + cache without leaking
+    error details (those go to the log).
     """
+    import logging
+
+    log = logging.getLogger("mixmint")
     checks = {}
     overall_healthy = True
 
-    # Check database
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
         checks["database"] = "healthy"
-    except Exception as e:
-        checks["database"] = f"unhealthy: {str(e)}"
+    except Exception:
+        log.exception("Health check: database unreachable")
+        checks["database"] = "unhealthy"
         overall_healthy = False
 
-    # Check Redis (Celery broker)
+    backend = settings.CACHES["default"]["BACKEND"].rsplit(".", 1)[-1]
     try:
         cache.set("health_check", "ok", 10)
-        if cache.get("health_check") == "ok":
-            checks["redis"] = "healthy"
-        else:
-            checks["redis"] = "unhealthy: cache get/set failed"
-            overall_healthy = False
-    except Exception as e:
-        checks["redis"] = f"unhealthy: {str(e)}"
-        overall_healthy = False
+        ok = cache.get("health_check") == "ok"
+    except Exception:
+        log.exception("Health check: cache unreachable")
+        ok = False
+    checks["cache"] = f"{'healthy' if ok else 'unhealthy'} ({backend})"
+    overall_healthy = overall_healthy and ok
 
     status_code = 200 if overall_healthy else 503
     return JsonResponse({"status": "healthy" if overall_healthy else "unhealthy", "checks": checks}, status=status_code)
+
+
+@csrf_exempt
+def csp_report(request):
+    """Collects browser CSP violation reports (logged, never stored)."""
+    import logging
+
+    if request.method == "POST":
+        logging.getLogger("mixmint.csp").warning("CSP violation: %s", request.body[:2000])
+    return HttpResponse(status=204)
 
 
 urlpatterns = [
@@ -74,6 +89,12 @@ urlpatterns = [
     path("robots.txt", robots_txt, name="robots_txt"),
     path(".well-known/security.txt", security_txt, name="security_txt"),
     path("health/", health_check, name="health_check"),
+    path("csp-report/", csp_report, name="csp_report"),
+    # Payment return/notification aliases for orders created before the URL fix.
+    path("payment/callback/", payment_views.payment_callback),
+    path("payment/webhook/phonepe/", phonepe_webhook),
+    path("payment/webhook/phonepe/refund/", phonepe_webhook),
+    path("checkout/", RedirectView.as_view(url="/cart/", permanent=False)),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
     # API Schema & Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

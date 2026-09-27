@@ -15,6 +15,8 @@ class PhonePeGateway(PaymentGateway):
     PhonePe Production Payment Gateway Integration.
     """
 
+    name = "phonepe"
+
     def __init__(self):
         self.merchant_id = getattr(settings, "PHONEPE_MERCHANT_ID", "")
         self.salt_key = getattr(settings, "PHONEPE_SALT_KEY", "")
@@ -45,9 +47,9 @@ class PhonePeGateway(PaymentGateway):
             "merchantTransactionId": order_id,
             "merchantUserId": metadata.get("user_id", "unknown"),
             "amount": int(amount_paise),
-            "redirectUrl": f"{settings.BASE_URL}/payment/callback/?order_id={order_id}",
+            "redirectUrl": f"{settings.BASE_URL}/api/v1/payments/callback/?order_id={order_id}",
             "redirectMode": "REDIRECT",
-            "callbackUrl": f"{settings.BASE_URL}/payment/webhook/phonepe/",
+            "callbackUrl": f"{settings.BASE_URL}/api/v1/payments/webhook/phonepe/",
             "mobileNumber": metadata.get("mobile", ""),
             "paymentInstrument": {"type": "PAY_PAGE"},
         }
@@ -69,7 +71,14 @@ class PhonePeGateway(PaymentGateway):
 
         if data.get("success") and data.get("data", {}).get("instrumentResponse"):
             redirect_url = data["data"]["instrumentResponse"]["redirectInfo"]["url"]
-            return {"success": True, "order_id": order_id, "redirect_url": redirect_url, "gateway_response": data}
+            return {
+                "success": True,
+                "checkout": "redirect",
+                "order_id": order_id,
+                "gateway_order_id": order_id,
+                "redirect_url": redirect_url,
+                "gateway_response": data,
+            }
         else:
             raise Exception(f"PhonePe order creation failed: {data.get('message', 'Unknown error')}")
 
@@ -122,7 +131,7 @@ class PhonePeGateway(PaymentGateway):
             "originalTransactionId": original_transaction_id,
             "merchantTransactionId": refund_id,
             "amount": int(amount_paise),
-            "callbackUrl": f"{settings.BASE_URL}/payment/webhook/phonepe/refund/",
+            "callbackUrl": f"{settings.BASE_URL}/api/v1/payments/webhook/phonepe/",
         }
 
         payload_json = json.dumps(payload)
@@ -133,7 +142,7 @@ class PhonePeGateway(PaymentGateway):
 
         response = requests.post(
             f"{self.base_url}{endpoint}",
-            headers={"Content-Type": "application/json", "X-VERIFY": checksum},
+            headers={"Content-Type": "application/json", "X-VERIFY": checksum, "X-MERCHANT-ID": self.merchant_id},
             json={"request": payload_base64},
             timeout=30,
         )
@@ -148,14 +157,14 @@ class PhonePeGateway(PaymentGateway):
     def create_subscription_order(self, dj_id, plan_type, amount_paise):
         from django.utils import timezone
 
-        order_id = f"PRO_{dj_id[:8].upper()}_{timezone.now().strftime('%Y%m%d')}"
+        order_id = f"PRO_{str(dj_id)[:8].upper()}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
         metadata = {"user_id": str(dj_id), "purpose": "pro_subscription", "plan_type": plan_type}
         return self.create_order(amount_paise=amount_paise, order_id=order_id, metadata=metadata)
 
     def create_overage_order(self, dj_id, overage_gb, amount_paise):
         from django.utils import timezone
 
-        order_id = f"OVERAGE_{dj_id[:8].upper()}_{timezone.now().strftime('%Y%m')}"
+        order_id = f"OVERAGE_{str(dj_id)[:8].upper()}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
         return self.create_order(
             amount_paise=amount_paise,
             order_id=order_id,

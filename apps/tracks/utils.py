@@ -9,9 +9,26 @@ import boto3
 
 def process_track_metadata(track):
     """
-    Applies mandatory MixMint metadata to a single track file.
-    Includes platform ownership, DJ attribution, and anti-resale clause [Spec §8].
+    Applies mandatory MixMint metadata to a single track file and records its
+    SHA-256 so downloads can be integrity-checked [Spec §8, §4.4].
+    ID3 tags are only written to MP3s — prepending ID3 to WAV/FLAC/AIFF corrupts them.
+    Never raises: a metadata failure must not fail the DJ's upload.
     """
+    import hashlib
+    import logging
+
+    log = logging.getLogger("mixmint")
+    if not track.file_key:
+        return False
+    try:
+        return _process_track_metadata(track, hashlib)
+    except Exception:
+        log.exception("Track metadata processing failed for track %s", track.id)
+        return False
+
+
+def _process_track_metadata(track, hashlib):
+    is_mp3 = track.file_key.lower().endswith(".mp3")
     s3 = boto3.client(
         "s3",
         endpoint_url=settings.AWS_S3_ENDPOINT_URL,
@@ -20,11 +37,15 @@ def process_track_metadata(track):
     )
 
     temp_dir = tempfile.mkdtemp(prefix=f"mixmint-track-{track.id}-")
-    local_path = os.path.join(temp_dir, "track.mp3")
+    local_path = os.path.join(temp_dir, os.path.basename(track.file_key) or "track.bin")
 
     try:
         # 1. Download from R2
         s3.download_file(settings.AWS_STORAGE_BUCKET_NAME, track.file_key, local_path)
+
+        if not is_mp3:
+            _store_checksum(track, local_path, hashlib)
+            return True
 
         # 2. Apply ID3 tags with watermark + anti-resale clause
         try:
@@ -53,6 +74,16 @@ def process_track_metadata(track):
 
         # 3. Upload back to R2
         s3.upload_file(local_path, settings.AWS_STORAGE_BUCKET_NAME, track.file_key)
+        _store_checksum(track, local_path, hashlib)
+        return True
 
     finally:
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def _store_checksum(track, path, hashlib):
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    type(track).objects.filter(pk=track.pk).update(checksum=digest.hexdigest(), file_size=os.path.getsize(path))

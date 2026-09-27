@@ -1,3 +1,4 @@
+{% extends "base.html" %}
 {% load tracks_filters %}
 {% block title %}{{ dj.dj_name }} | MixMint{% endblock %}
 
@@ -80,7 +81,7 @@
             <div class="flex items-center gap-3 flex-wrap">
                 <h1 class="font-display text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
                     {{ dj.dj_name }}</h1>
-                {% if dj.profile.is_verified_dj %}
+                {% if dj.is_verified or dj.profile.is_verified_dj %}
                 <span class="pill-success flex items-center gap-1">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                         <path
@@ -94,7 +95,7 @@
                 {{ dj.bio|default:"This DJ hasn't written a bio yet." }}
             </p>
             <div class="flex items-center gap-3 font-mono text-[12px] text-[var(--text-muted)]">
-                <span>Member since {{ dj.date_joined|date:"Y" }}</span>
+                <span>Member since {{ dj.created_at|date:"M Y" }}</span>
             </div>
         </div>
     </div>

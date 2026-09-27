@@ -21,6 +21,16 @@ def patched_copy(self):
 BaseContext.__copy__ = patched_copy
 
 
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Rate-limit counters and the cached platform mode must not leak between tests."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def client():
     return Client()

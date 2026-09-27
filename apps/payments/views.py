@@ -1,27 +1,38 @@
+"""
+Checkout endpoints.
+
+Flow (both gateways):
+  1. POST /api/v1/payments/initiate/ (or cart-checkout/) -> pending rows + gateway order
+  2a. PhonePe:  browser -> redirect_url -> PhonePe -> /api/v1/payments/callback/
+  2b. Razorpay: browser opens checkout.js -> POST /api/v1/payments/razorpay/confirm/
+  3. Webhooks (both) are the server-side backstop.
+All paths fulfil through apps.payments.services.complete_order (idempotent).
+"""
+
 import json
+import logging
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseRedirect
-from django.views.decorators.http import require_POST
 from django.db import transaction
-from django.utils import timezone
+from django.http import HttpResponseRedirect, JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
-from apps.commerce.models import Purchase
-from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
+from apps.commerce.models import Purchase
+from apps.core.net import get_client_ip  # noqa: F401  (re-exported for older imports)
+from apps.tracks.models import Track
 
-# from apps.commerce.revenue_engine import distribute_earnings # Placeholder for now
+from .services import complete_order, fail_order
+from .utils import SUPPORTED_GATEWAYS, get_gateway  # noqa: F401
 
+logger = logging.getLogger("mixmint")
 
-def get_client_ip(request):
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
+CONTENT_TYPES = ("track", "album")
 
 
 def get_device_hash(request):
@@ -30,8 +41,7 @@ def get_device_hash(request):
     ua = request.META.get("HTTP_USER_AGENT", "unknown")
     accept = request.META.get("HTTP_ACCEPT", "")
     lang = request.META.get("HTTP_ACCEPT_LANGUAGE", "")
-    raw = f"{ua}|{accept}|{lang}"
-    return hashlib.sha256(raw.encode()).hexdigest()
+    return hashlib.sha256(f"{ua}|{accept}|{lang}".encode()).hexdigest()
 
 
 def run_fraud_checks(user_id, data):
@@ -40,315 +50,406 @@ def run_fraud_checks(user_id, data):
     return FraudDetector.check_purchase(user_id, data)
 
 
-def calculate_total_price_paise(content, is_redownload=False):
-    price = float(content.price)
-    if is_redownload:
-        price = price * 0.5
-
-    # Add platform fee
+def _buyer_fee():
     from apps.admin_panel.models import PlatformSettings
 
-    settings_obj = PlatformSettings.load()
-    platform_fee = float(settings_obj.buyer_platform_fee) if settings_obj.buyer_platform_fee_enabled else 0.0
+    s = PlatformSettings.load()
+    return Decimal(s.buyer_platform_fee) if s.buyer_platform_fee_enabled else Decimal("0.00")
 
-    return int((price + platform_fee) * 100)
+
+def calculate_total_price_paise(content, is_redownload=False):
+    price = Decimal(content.price)
+    if is_redownload:
+        price = (price * Decimal("0.5")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return int(((price + _buyer_fee()) * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+
+def normalize_content_type(content_type):
+    return "album" if content_type in ("album", "zip") else content_type
 
 
 def get_content_object(content_id, content_type):
+    content_type = normalize_content_type(content_type)
     if content_type == "track":
-        return Track.objects.get(id=content_id, is_active=True, is_deleted=False)
-    elif content_type in ("album", "zip"):
-        return AlbumPack.objects.get(id=content_id, is_active=True, is_deleted=False)
-    raise ValueError(f"Invalid content type: {content_type}")
+        return Track.objects.select_related("dj__profile").get(id=content_id, is_active=True, is_deleted=False)
+    if content_type == "album":
+        return AlbumPack.objects.select_related("dj__profile").get(id=content_id, is_active=True, is_deleted=False)
+    raise ValueError("Invalid content type.")
 
 
-def get_gateway(gateway_name=None):
-    """
-    Get the appropriate payment gateway instance.
-    If gateway_name is provided, use that specific gateway.
-    Otherwise, fall back to the default from settings.
-    """
-    if gateway_name == "razorpay":
-        from apps.payments.razorpay_gateway import RazorpayGateway
+def _gateway_payload(result, order_id, amount_paise):
+    """What the browser needs to continue: a redirect (PhonePe) or checkout.js params (Razorpay)."""
+    if result.get("redirect_url"):
+        return {"checkout": "redirect", "redirect_url": result["redirect_url"], "order_id": order_id}
+    return {
+        "checkout": "razorpay",
+        "order_id": result["gateway_order_id"],
+        "key": result.get("key"),
+        "amount": amount_paise,
+        "currency": result.get("currency", "INR"),
+        "confirm_url": "/api/v1/payments/razorpay/confirm/",
+        "name": "MixMint",
+    }
 
-        return RazorpayGateway()
-    elif gateway_name == "phonepe":
-        from apps.payments.phonepe import PhonePeGateway
 
-        return PhonePeGateway()
-    else:
-        # Use default from settings (LazyGateway)
-        return settings.ACTIVE_GATEWAY
+def _create_gateway_order(gateway, amount_paise, internal_id, metadata):
+    result = gateway.create_order(amount_paise=amount_paise, order_id=internal_id, metadata=metadata)
+    return result, result.get("gateway_order_id") or result.get("order_id") or internal_id
+
+
+def _json_body(request):
+    try:
+        data = json.loads(request.body or b"{}")
+        return data if isinstance(data, dict) else None
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+
+def _gateway_error(exc):
+    logger.exception("Payment gateway error")
+    msg = "Payment gateway is unavailable right now. Please try again in a minute."
+    if settings.DEBUG:
+        msg += f" ({exc})"
+    return JsonResponse({"error": msg}, status=502)
 
 
 @login_required
 @require_POST
 def initiate_purchase(request):
-    """
-    Buyer clicks "Buy & Download" -> this view creates order [Section A Step 1]
-    """
-    try:
-        data = json.loads(request.body)
-        content_id = data.get("content_id")
-        content_type = data.get("content_type")  # track|album
-        is_redownload = data.get("is_redownload", False)
-    except json.JSONDecodeError:
+    """Buyer clicks "Buy" -> pending Purchase + gateway order. Price is always computed server-side."""
+    data = _json_body(request)
+    if data is None:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    # 1. Duplicate Purchase Guard [Gap 20]
-    if not is_redownload:
-        existing_purchase = Purchase.objects.filter(
-            user=request.user.profile,
-            content_type=content_type,
-            content_id=content_id,
-            status="paid",  # Standardizing to 'paid' check
-            is_revoked=False,
-        ).exists()
-        if existing_purchase:
-            return JsonResponse({"error": f"You already own this {content_type}.", "already_owned": True}, status=400)
+    content_type = data.get("content_type")
+    if content_type == "dj_application":
+        return _initiate_dj_application_fee(request, data)
 
-    # 1.5 Prevent DJ from buying their own track
+    content_type = normalize_content_type(content_type)
+    content_id = data.get("content_id")
+    is_redownload = bool(data.get("is_redownload", False))
+    profile = request.user.profile
+
+    if content_type not in CONTENT_TYPES:
+        return JsonResponse({"error": "Invalid content type."}, status=400)
     try:
+        content_id = int(content_id)
         content_obj = get_content_object(content_id, content_type)
-        if hasattr(request.user.profile, "dj_profile") and request.user.profile.dj_profile == content_obj.dj:
-            return JsonResponse({"error": "You cannot purchase your own content.", "self_purchase": True}, status=400)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=404)
+    except (TypeError, ValueError, Track.DoesNotExist, AlbumPack.DoesNotExist):
+        return JsonResponse({"error": "Content not found."}, status=404)
 
-    # 2. Run fraud checks
-    fraud_result, risk, flags = run_fraud_checks(
+    if content_obj.dj.profile.store_paused:
+        return JsonResponse({"error": "This store is temporarily paused."}, status=400)
+    if getattr(profile, "dj_profile", None) is not None and profile.dj_profile == content_obj.dj:
+        return JsonResponse({"error": "You cannot purchase your own content.", "self_purchase": True}, status=400)
+    if content_obj.price <= 0:
+        return JsonResponse({"error": "This item is free — use the download button.", "free": True}, status=400)
+
+    owned = Purchase.objects.filter(
+        user=profile, content_type=content_type, content_id=content_id, status="paid", is_revoked=False
+    )
+    if is_redownload:
+        # Re-download at 50% is only for owners whose lock has expired [Spec §4.3].
+        from apps.downloads.utils import DownloadManager
+
+        if not owned.filter(is_redownload=False).exists():
+            return JsonResponse({"error": "You need to own this item before buying a re-download."}, status=400)
+        eligible, msg = DownloadManager.check_redownload_eligibility(profile, content_id, content_type)
+        if not eligible or not owned.filter(download_completed=True).exists():
+            return JsonResponse({"error": msg or "Re-download is not needed right now."}, status=400)
+    elif owned.filter(is_redownload=False).exists():
+        return JsonResponse({"error": f"You already own this {content_type}.", "already_owned": True}, status=400)
+
+    fraud_ok, _risk, _flags = run_fraud_checks(
         request.user.id,
         {"ip_address": get_client_ip(request), "device_hash": get_device_hash(request), "content_id": content_id},
     )
-    if not fraud_result:
-        return JsonResponse({"error": "Purchase could not be processed"}, status=403)
+    if not fraud_ok:
+        return JsonResponse({"error": "Purchase could not be processed. Please try again later."}, status=403)
 
-    # 2. Get content + calculate price server-side
+    fee = _buyer_fee()
+    amount_paise = calculate_total_price_paise(content_obj, is_redownload)
+    internal_id = f"MM_{uuid.uuid4().hex[:16].upper()}"
+
     try:
-        amount_paise = calculate_total_price_paise(content_obj, is_redownload)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=404)
-
-    # 3. Create pending purchase record in atomic block
-    order_id = f"MM_{uuid.uuid4().hex[:16].upper()}"
-
-    # Get gateway from request (default to phonepe if not specified)
-    gateway_name = data.get("gateway", "phonepe")
-    gateway = get_gateway(gateway_name)
+        gateway = get_gateway(data.get("gateway"))
+    except Exception as exc:
+        return _gateway_error(exc)
 
     with transaction.atomic():
         purchase = Purchase.objects.create(
-            user=request.user.profile,
+            user=profile,
             content_type=content_type,
             content_id=content_id,
             seller=content_obj.dj,
-            gateway_order_id=order_id,
-            payment_gateway=gateway_name,
+            gateway_order_id=internal_id,
+            payment_gateway=gateway.name,
             amount_paise=amount_paise,
             original_price=content_obj.price,
             price_paid=Decimal(amount_paise) / 100,
+            platform_fee=fee,
+            checkout_fee=fee,
+            is_redownload=is_redownload,
+            buyer_role=profile.role,
             status="pending",
         )
-
-        # 4. Create Gateway order
         try:
-            result = gateway.create_order(
-                amount_paise=amount_paise,
-                order_id=order_id,
-                metadata={"user_id": str(request.user.id), "purchase_id": str(purchase.id)},
+            result, gateway_order_id = _create_gateway_order(
+                gateway,
+                amount_paise,
+                internal_id,
+                {"user_id": str(request.user.id), "purchase_id": str(purchase.id)},
             )
-            return JsonResponse({"redirect_url": result["redirect_url"], "order_id": order_id})
-        except Exception as e:
-            purchase.status = "failed"
-            purchase.save()
-            transaction.set_rollback(True)  # Force rollback of the record if gateway fails
-            return JsonResponse({"error": f"Payment gateway error: {str(e)}"}, status=500)
+        except Exception as exc:
+            transaction.set_rollback(True)
+            return _gateway_error(exc)
+        if gateway_order_id != internal_id:
+            purchase.gateway_order_id = gateway_order_id
+            purchase.save(update_fields=["gateway_order_id"])
+
+    payload = _gateway_payload(result, gateway_order_id, amount_paise)
+    payload["description"] = content_obj.title
+    payload["prefill"] = {"email": request.user.email, "name": profile.full_name}
+    return JsonResponse(payload)
 
 
+def _initiate_dj_application_fee(request, data):
+    from apps.commerce.models import DJApplicationFee
+
+    profile = request.user.profile
+    dj = getattr(profile, "dj_profile", None)
+    if dj is None or dj.status != "pending_payment":
+        return JsonResponse({"error": "No application fee is due."}, status=400)
+    fee, _ = DJApplicationFee.objects.get_or_create(dj=dj, defaults={"amount": Decimal("99.00")})
+    if fee.status == "paid":
+        return JsonResponse({"error": "Application fee already paid."}, status=400)
+    amount_paise = int(Decimal(fee.amount) * 100)
+    internal_id = f"DJAPP_{uuid.uuid4().hex[:14].upper()}"
+    try:
+        gateway = get_gateway(data.get("gateway"))
+        result, gateway_order_id = _create_gateway_order(
+            gateway, amount_paise, internal_id, {"user_id": str(request.user.id), "purpose": "dj_application"}
+        )
+    except Exception as exc:
+        return _gateway_error(exc)
+    fee.payment_id = gateway_order_id
+    fee.status = "pending"
+    fee.save(update_fields=["payment_id", "status"])
+    payload = _gateway_payload(result, gateway_order_id, amount_paise)
+    payload["description"] = "DJ Partner Application Fee"
+    return JsonResponse(payload)
+
+
+def _fulfil_from_status(order_id, gateway_name):
+    """Ask the gateway for the truth and act on it. Returns 'success' | 'failed' | 'pending'."""
+    gateway = get_gateway(gateway_name)
+    status_data = gateway.get_payment_status(order_id)
+    if status_data.get("success") and status_data.get("status") == "PAYMENT_SUCCESS":
+        result = complete_order(
+            order_id,
+            gateway_payment_id=status_data.get("transaction_id", ""),
+            gateway_response=status_data.get("gateway_response"),
+            paid_amount_paise=status_data.get("amount"),
+        )
+        return "success" if result in ("ok", "already_processed") else "failed"
+    if status_data.get("status") in ("PAYMENT_DECLINED", "PAYMENT_ERROR", "TIMED_OUT"):
+        fail_order(order_id, status_data.get("gateway_response"))
+        return "failed"
+    return "pending"
+
+
+def _gateway_for_order(order_id):
+    first = Purchase.objects.filter(gateway_order_id=order_id).first()
+    if first:
+        return first.payment_gateway
+    return "razorpay" if str(order_id).startswith("order_") else "phonepe"
+
+
+@csrf_exempt  # read-only: only asks the gateway for the order's real status
 def payment_callback(request):
-    """
-    User lands here after payment page (PhonePe or Razorpay). [Section A Step 2]
-    Handles both single-item and cart-based purchases.
-    Success/failure land on the library page with a status flag (those routes exist).
-    """
-    order_id = request.GET.get("order_id")
+    """Buyer lands here after the PhonePe page. The gateway's status API is the source of truth."""
+    order_id = request.GET.get("order_id") or request.POST.get("transactionId") or ""
     if not order_id:
         return HttpResponseRedirect("/library/?payment=failed")
-
-    # Find all purchases with this order_id (could be one or many)
-    purchases = Purchase.objects.filter(gateway_order_id=order_id)
-    if not purchases.exists():
-        return HttpResponseRedirect("/library/?payment=failed")
-
-    # Use the gateway from the first purchase record
-    first_purchase = purchases.first()
-    gateway = get_gateway(first_purchase.payment_gateway)
     try:
-        status_data = gateway.get_payment_status(order_id)
+        outcome = _fulfil_from_status(order_id, _gateway_for_order(order_id))
     except Exception:
-        # Gateway unreachable: don't flip statuses, ask buyer to wait/check library.
-        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=pending")
-
-    if status_data["success"] and status_data["status"] == "PAYMENT_SUCCESS":
-        for purchase in purchases:
-            handle_payment_success(purchase, status_data)
-
-        # If it was a cart purchase, redirect to multi-purchase view or downloads
-        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=success")
-    else:
-        for purchase in purchases:
-            handle_payment_failure(purchase, status_data)
-        return HttpResponseRedirect(f"/library/?order_id={order_id}&payment=failed")
+        logger.exception("Payment status lookup failed for %s", order_id)
+        outcome = "pending"
+    target = "/dashboard/" if order_id.startswith(("DJAPP_", "PRO_")) else "/library/"
+    return HttpResponseRedirect(f"{target}?order_id={order_id}&payment={outcome}")
 
 
-def handle_payment_success(purchase, gateway_status):
-    """Mark paid + credit wallets exactly once (invoice-exists guard vs races/retries)."""
-    from apps.commerce.models import Invoice
+@login_required
+@require_POST
+def razorpay_confirm(request):
+    """checkout.js success handler posts here. Signature proves the payment belongs to this order."""
+    data = _json_body(request) or {}
+    order_id = data.get("razorpay_order_id") or data.get("order_id")
+    payment_id = data.get("razorpay_payment_id") or data.get("payment_id")
+    signature = data.get("razorpay_signature") or data.get("signature")
+    if not (order_id and payment_id and signature):
+        return JsonResponse({"error": "Missing payment details."}, status=400)
 
-    with transaction.atomic():
-        locked = Purchase.objects.select_for_update().get(pk=purchase.pk)
-        if locked.status == "paid" and Invoice.objects.filter(purchase=locked).exists():
-            return HttpResponseRedirect(f"/library/?purchase_id={locked.id}&payment=success")
-        if locked.status != "paid":
-            locked.status = "paid"
-            locked.gateway_payment_id = gateway_status["transaction_id"]
-            locked.gateway_response = gateway_status["gateway_response"]
-            locked.paid_at = timezone.now()
-            locked.is_completed = True  # Back-compat
-            locked.save()
-            purchase = locked
+    try:
+        gateway = get_gateway("razorpay")
+    except Exception as exc:
+        return _gateway_error(exc)
+    if not gateway.verify_payment({"order_id": order_id, "payment_id": payment_id}, signature):
+        return JsonResponse({"error": "Payment verification failed."}, status=400)
 
-            # Distribute earnings to DJ wallet (Phase 2 ??9)
-            from apps.commerce.revenue_engine import credit_dj_wallets, calculate_revenue_split
+    # Order must belong to the logged-in buyer (or be their own fee/subscription/insurance).
+    owns = Purchase.objects.filter(gateway_order_id=order_id, user=request.user.profile).exists()
+    if not owns:
+        from apps.commerce.models import DJApplicationFee, ProSubscriptionEvent
+        from apps.downloads.models import DownloadInsurance
 
-            # Re-calculate or fetch split for this purchase
-            # Note: amount_paise is stored, price_paid is decimal
-            split = calculate_revenue_split(
-                price=purchase.price_paid,
-                dj_profile=purchase.seller,
-                content=None,  # In case of generic purchase
-                content_type=purchase.content_type,
-            )
-            credit_dj_wallets(purchase, purchase.seller, split)
+        owns = (
+            DownloadInsurance.objects.filter(payment_id=order_id, user=request.user.profile).exists()
+            or DJApplicationFee.objects.filter(payment_id=order_id, dj__profile=request.user.profile).exists()
+            or ProSubscriptionEvent.objects.filter(gateway_order_id=order_id, dj__profile=request.user.profile).exists()
+        )
+    if not owns:
+        return JsonResponse({"error": "Order not found."}, status=404)
 
-            # Check if DJ is now eligible for Verified Badge [Imp 06]
-            if purchase.seller:
-                try:
-                    from apps.accounts.utils import check_verification_eligibility
+    try:
+        payment = gateway.fetch_payment(payment_id)
+    except Exception as exc:
+        return _gateway_error(exc)
+    if payment.get("order_id") != order_id:
+        return JsonResponse({"error": "Payment does not match this order."}, status=400)
+    if payment.get("status") == "authorized":
+        try:
+            gateway.client.payment.capture(payment_id, payment["amount"], {"currency": payment.get("currency", "INR")})
+            payment["status"] = "captured"
+        except Exception:
+            logger.exception("Razorpay capture failed for %s", payment_id)
+    if payment.get("status") != "captured":
+        return JsonResponse({"status": "pending", "message": "Payment is processing. Check your library shortly."})
 
-                    check_verification_eligibility(purchase.seller)
-                except ImportError:
-                    pass
-
-            # Notify DJ via Push/In-App
-            try:
-                from apps.core.push_notifications import PushNotificationService
-
-                content_type_label = (
-                    purchase.get_content_type_display()
-                    if hasattr(purchase, "get_content_type_display")
-                    else purchase.content_type
-                )
-                PushNotificationService.notify_sale(
-                    dj_profile=purchase.seller,
-                    track_title=f"{content_type_label} #{purchase.content_id}",  # Fallback title
-                    amount=purchase.dj_revenue,
-                )
-            except Exception:
-                pass
-
-    return HttpResponseRedirect(f"/library/?purchase_id={purchase.id}&payment=success")
-
-
-def handle_payment_failure(purchase, gateway_status):
-    # Never overwrite a confirmed payment: late failure callbacks must not
-    # flip paid -> failed (buyer charged, DJ credited already).
-    if purchase.status != "pending":
-        return HttpResponseRedirect(f"/library/?purchase_id={purchase.id}")
-    purchase.status = "failed"
-    purchase.gateway_response = gateway_status["gateway_response"]
-    purchase.save()
-    return HttpResponseRedirect(f"/library/?order_id={purchase.gateway_order_id}&payment=failed")
+    result = complete_order(
+        order_id, gateway_payment_id=payment_id, gateway_response=payment, paid_amount_paise=payment.get("amount")
+    )
+    if result in ("ok", "already_processed"):
+        return JsonResponse({"status": "success", "redirect_url": f"/library/?order_id={order_id}&payment=success"})
+    return JsonResponse({"error": "Payment could not be matched to your order. Support has been notified."}, status=409)
 
 
 @login_required
 def cart_page(request):
-    """Render the cart page [Phase 3 Feature 3]."""
-    from django.shortcuts import render
-
     return render(request, "commerce/cart.html")
 
 
 @login_required
 @require_POST
 def cart_checkout(request):
-    """
-    Initiate payment for all items in the cart [Phase 3 Feature 3].
-    Uses tiered bundle discounts.
-    """
-    try:
-        data = json.loads(request.body)
-        cart_id = data.get("cart_id")
-        gateway_name = data.get("gateway", "phonepe")
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
+    """Checkout every cart item as one gateway order with tiered bundle discount (all amounts in paise)."""
     from apps.commerce.models import Cart
 
+    data = _json_body(request)
+    if data is None:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    profile = request.user.profile
+
     try:
-        cart = Cart.objects.get(id=cart_id, user=request.user.profile, is_active=True)
-    except Cart.DoesNotExist:
+        cart = Cart.objects.get(id=data.get("cart_id"), user=profile, is_active=True)
+    except (Cart.DoesNotExist, ValueError, Exception):
         return JsonResponse({"error": "Cart not found."}, status=404)
 
     items = list(cart.items.all())
     if not items:
         return JsonResponse({"error": "Cart is empty."}, status=400)
 
-    total_paise = int(cart.final_total * 100)  # Ensure paise conversion
+    # Re-price from the catalogue (cart prices can be stale) and re-validate every item.
+    lines = []
+    for item in items:
+        try:
+            content = get_content_object(item.content_id, item.content_type)
+        except Exception:
+            return JsonResponse({"error": "An item in your cart is no longer available. Please remove it."}, status=400)
+        if Purchase.objects.filter(
+            user=profile,
+            content_type=item.content_type,
+            content_id=item.content_id,
+            status="paid",
+            is_revoked=False,
+            is_redownload=False,
+        ).exists():
+            return JsonResponse({"error": f"You already own “{content.title}”. Remove it from your cart."}, status=400)
+        if getattr(profile, "dj_profile", None) is not None and profile.dj_profile == content.dj:
+            return JsonResponse({"error": "You cannot purchase your own content."}, status=400)
+        if content.price <= 0 or content.dj.profile.store_paused:
+            return JsonResponse({"error": f"“{content.title}” can't be bought right now. Remove it."}, status=400)
+        lines.append((item, content, int((Decimal(content.price) * 100).to_integral_value())))
+
+    fraud_ok, _risk, _flags = run_fraud_checks(
+        request.user.id, {"ip_address": get_client_ip(request), "device_hash": get_device_hash(request)}
+    )
+    if not fraud_ok:
+        return JsonResponse({"error": "Purchase could not be processed. Please try again later."}, status=403)
+
+    discount_pct = cart.discount_percentage
+    subtotal = sum(p for _, _, p in lines)
+    discount = (subtotal * discount_pct + 50) // 100
+    fee_paise = int(_buyer_fee() * 100)
+    total_paise = subtotal - discount + fee_paise
     if total_paise <= 0:
         return JsonResponse({"error": "Cart total is too low for processing."}, status=400)
 
-    order_id = f"MMC_{uuid.uuid4().hex[:14].upper()}"
-    pending_purchases = []
-    gateway = get_gateway(gateway_name)
+    # Spread the discount over lines (largest-remainder) so per-item amounts sum exactly to the charge.
+    shares = []
+    remaining_discount = discount
+    for idx, (item, content, price) in enumerate(lines):
+        d = remaining_discount if idx == len(lines) - 1 else (price * discount) // subtotal
+        remaining_discount -= d
+        shares.append(price - d)
+    shares[0] += fee_paise  # the one buyer fee rides on the first line
+
+    internal_id = f"MMC_{uuid.uuid4().hex[:14].upper()}"
+    try:
+        gateway = get_gateway(data.get("gateway"))
+    except Exception as exc:
+        return _gateway_error(exc)
 
     with transaction.atomic():
-        try:
-            for item in items:
-                item_content = get_content_object(item.content_id, item.content_type)
-                p = Purchase.objects.create(
-                    user=request.user.profile,
+        created = []
+        for idx, ((item, content, price), amount) in enumerate(zip(lines, shares)):
+            created.append(
+                Purchase.objects.create(
+                    user=profile,
                     content_type=item.content_type,
                     content_id=item.content_id,
-                    seller=item_content.dj,
-                    gateway_order_id=order_id,
-                    payment_gateway=gateway_name,
-                    amount_paise=item.price,  # Stored as paise in CartItem
-                    original_price=item_content.price,
-                    price_paid=Decimal(item.price) / 100,
-                    cart_id=str(cart.id),
+                    seller=content.dj,
+                    gateway_order_id=internal_id,
+                    payment_gateway=gateway.name,
+                    amount_paise=amount,
+                    original_price=content.price,
+                    price_paid=Decimal(amount) / 100,
+                    platform_fee=Decimal(fee_paise) / 100 if idx == 0 else Decimal("0.00"),
+                    checkout_fee=Decimal(fee_paise) / 100 if idx == 0 else Decimal("0.00"),
+                    cart_id=cart.id,
+                    discount_applied=discount_pct,
+                    final_price=amount,
+                    buyer_role=profile.role,
                     status="pending",
-                    discount_applied=cart.discount_percentage,
                 )
-                pending_purchases.append(p)
-        except Exception as e:
-            return JsonResponse({"error": f"Error preparing checkout: {str(e)}"}, status=500)
-
-        try:
-            result = gateway.create_order(
-                amount_paise=total_paise,
-                order_id=order_id,
-                metadata={
-                    "user_id": str(request.user.id),
-                    "cart_id": str(cart.id),
-                    "purchase_ids": [str(p.id) for p in pending_purchases],
-                },
             )
-            # ONLY mark cart inactive if order creation succeeded
-            cart.is_active = False
-            cart.save()
-            return JsonResponse({"redirect_url": result["redirect_url"], "order_id": order_id})
-        except Exception as e:
-            # Atomic rollback will handle purchase records if we raise or set_rollback
+        try:
+            result, gateway_order_id = _create_gateway_order(
+                gateway,
+                total_paise,
+                internal_id,
+                {"user_id": str(request.user.id), "cart_id": str(cart.id)},
+            )
+        except Exception as exc:
             transaction.set_rollback(True)
-            return JsonResponse({"error": f"Payment gateway error: {str(e)}"}, status=500)
+            return _gateway_error(exc)
+        if gateway_order_id != internal_id:
+            Purchase.objects.filter(gateway_order_id=internal_id).update(gateway_order_id=gateway_order_id)
+        # The cart stays intact until payment succeeds (paid items are removed then),
+        # so a cancelled or failed payment never loses the buyer's cart.
+
+    payload = _gateway_payload(result, gateway_order_id, total_paise)
+    payload["description"] = f"{len(lines)} item(s)"
+    payload["prefill"] = {"email": request.user.email, "name": profile.full_name}
+    return JsonResponse(payload)

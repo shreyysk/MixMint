@@ -1,24 +1,36 @@
+"""Gateway selection. One place decides which gateway handles a new order."""
+
+import logging
+
 from django.conf import settings
 
+logger = logging.getLogger("mixmint")
 
-def get_gateway():
-    return settings.ACTIVE_GATEWAY
-
-
-# These functions are kept for backward compatibility if needed,
-# but new code should use settings.ACTIVE_GATEWAY directly or get_gateway()
+SUPPORTED_GATEWAYS = ("phonepe", "razorpay")
 
 
-def create_order(amount_paise, currency="INR", order_id=None, metadata=None):
-    gateway = get_gateway()
-    return gateway.create_order(amount_paise, currency=currency, order_id=order_id, metadata=metadata)
+def active_gateway_name():
+    """Admin toggle (SystemSetting) wins over the DEFAULT_PAYMENT_GATEWAY env var."""
+    try:
+        from apps.admin_panel.models import SystemSetting
+
+        row = SystemSetting.objects.filter(key="active_payment_gateway").first()
+        name = (row.value or {}).get("gateway") if row else None
+        if name in SUPPORTED_GATEWAYS:
+            return name
+    except Exception:  # table missing during migrations, etc.
+        pass
+    name = getattr(settings, "DEFAULT_PAYMENT_GATEWAY", "phonepe")
+    return name if name in SUPPORTED_GATEWAYS else "phonepe"
 
 
-def verify_payment(payload, signature):
-    gateway = get_gateway()
-    return gateway.verify_payment(payload, signature)
+def get_gateway(gateway_name=None):
+    """Instantiate a gateway. Unknown/empty names fall back to the active gateway."""
+    name = gateway_name if gateway_name in SUPPORTED_GATEWAYS else active_gateway_name()
+    if name == "razorpay":
+        from .razorpay_gateway import RazorpayGateway
 
+        return RazorpayGateway()
+    from .phonepe import PhonePeGateway
 
-def get_payment_status(payment_id):
-    gateway = get_gateway()
-    return gateway.get_payment_status(payment_id)
+    return PhonePeGateway()

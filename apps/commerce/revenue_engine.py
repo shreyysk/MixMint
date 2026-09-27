@@ -291,9 +291,8 @@ def credit_dj_wallets(purchase, primary_dj, split):
 
             if collab_dj.is_deleted:
                 wallet.escrow_amount += net_amount
-                description = f'Collab revenue ({
-                    collab_split["percentage"]}%) from purchase #{
-                    purchase.id} (ESCROW - DELETED DJ)'
+                pct = collab_split["percentage"]
+                description = f"Collab revenue ({pct}%) from purchase #{purchase.id} (ESCROW - DELETED DJ)"
             else:
                 wallet.pending_earnings += net_amount
                 wallet.available_for_payout += net_amount
@@ -452,14 +451,17 @@ def check_high_value_transaction(purchase):
                 from django.conf import settings
 
                 admin_email = getattr(settings, "ADMIN_ALERT_EMAIL", "admin@mixmint.site")
-                send_email(to_email=admin_email, subject=f"⚠️ MixMint Transaction Alert — {
-                    alert['type']}", html_content=f"<p>High-value transaction detected.</p><p>Alert type: {
-                    alert['type']}<br>Severity: {
-                    alert['severity']}<br>Message: {
-                    alert['message']}</p><p>Purchase ID: {
-                    purchase.id}<br>User ID: {
-                    purchase.user_id}<br>Amount: ₹{amount}<br>Content: {
-                    purchase.content_id}<br>Time: {
-                    timezone.now().isoformat()}</p>")
+                from django.utils.html import escape
+
+                html = (
+                    "<p>High-value transaction detected.</p>"
+                    f"<p>Alert type: {escape(alert['type'])}<br>Severity: {escape(alert['severity'])}"
+                    f"<br>Message: {escape(alert['message'])}</p>"
+                    f"<p>Purchase ID: {purchase.id}<br>User ID: {purchase.user_id}<br>Amount: ₹{amount}"
+                    f"<br>Content: {purchase.content_id}<br>Time: {timezone.now().isoformat()}</p>"
+                )
+                send_email(
+                    to_email=admin_email, subject=f"⚠️ MixMint Transaction Alert — {alert['type']}", html_content=html
+                )
             except Exception:
                 pass

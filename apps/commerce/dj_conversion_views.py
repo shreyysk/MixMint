@@ -24,7 +24,7 @@ def get_referral_code(request):
     Get or generate DJ's unique referral code with social sharing links.
     DJs earn ₹100 when their referral makes first sale.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can access referral codes."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -40,7 +40,9 @@ def get_referral_code(request):
     referrals = DJReferralProgram.objects.filter(referrer=dj_profile)
 
     # Build referral URL
-    referral_url = f"https://mixmint.in/join?ref={code.code}"
+    from django.conf import settings
+
+    referral_url = f"{getattr(settings, 'BASE_URL', 'https://mixmint.site').rstrip('/')}/?ref={code.code}"
 
     # Social sharing messages
     share_message = f"Join MixMint and start selling your tracks! Use my code {code.code} to get ₹50 bonus. 🎵"
@@ -93,7 +95,7 @@ def apply_referral_code(request):
     if not code:
         return Response({"error": "Referral code is required."}, status=400)
 
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can apply referral codes."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -134,7 +136,7 @@ def apply_promo_code(request):
     if not code:
         return Response({"error": "Promo code is required."}, status=400)
 
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can apply promo codes."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -155,7 +157,7 @@ def apply_promo_code(request):
 @permission_classes([IsAuthenticated])
 def get_milestones(request):
     """Get DJ's milestone progress and rewards."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can view milestones."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -194,7 +196,7 @@ def get_milestones(request):
 @permission_classes([IsAuthenticated])
 def get_onboarding_status(request):
     """Get DJ onboarding progress."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can view onboarding status."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -202,14 +204,15 @@ def get_onboarding_status(request):
     progress, _ = DJOnboardingProgress.objects.get_or_create(dj=dj_profile)
 
     # Auto-detect completed steps
-    progress.profile_completed = bool(dj_profile.bio and dj_profile.profile_image)
+    progress.profile_completed = bool(dj_profile.bio and dj_profile.profile.avatar_url)
     progress.first_track_uploaded = dj_profile.tracks.filter(is_deleted=False).exists()
-    progress.store_customized = bool(dj_profile.banner_image or dj_profile.tagline)
+    progress.store_customized = bool(dj_profile.social_links or dj_profile.genres)
 
-    # Check bank details
-    from apps.accounts.models import BankAccount
-
-    progress.bank_details_added = BankAccount.objects.filter(dj=dj_profile, is_verified=True).exists()
+    # Payout method on file (UPI or bank account + IFSC)
+    progress.bank_details_added = bool(
+        (dj_profile.upi_id or "").strip()
+        or ((dj_profile.bank_account_number or "").strip() and (dj_profile.bank_ifsc_code or "").strip())
+    )
 
     # Check if any track has custom price
     progress.pricing_set = dj_profile.tracks.filter(is_deleted=False).exclude(price=29).exists()
@@ -245,7 +248,7 @@ def get_onboarding_status(request):
             "id": "store",
             "name": "Customize your store",
             "completed": progress.store_customized,
-            "tip": "Add a banner and tagline to stand out",
+            "tip": "Add your genres and social links to stand out",
         },
     ]
 
@@ -266,7 +269,7 @@ def get_dj_dashboard_stats(request):
     Enhanced DJ dashboard with conversion-focused metrics.
     Shows earnings, milestones, and growth opportunities.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can access this."}, status=403)
 
     dj_profile = request.user.profile.dj_profile

@@ -22,6 +22,7 @@ class EmailService:
     def send_email(cls, to_email, subject, template_name, context):
         """Send templated email."""
         try:
+            context = {"site_url": getattr(settings, "BASE_URL", "https://mixmint.site").rstrip("/"), **(context or {})}
             html_content = render_to_string(f"emails/{template_name}.html", context)
 
             send_mail(
@@ -37,6 +38,16 @@ class EmailService:
         except Exception as e:
             logger.error(f"Email failed: {template_name} to {to_email} - {str(e)}")
             return False
+
+    @classmethod
+    def send_notice(cls, to_email, subject, heading, lines, cta_label=None, cta_path=None):
+        """Plain transactional notice (one heading, a few paragraphs, optional button)."""
+        return cls.send_email(
+            to_email=to_email,
+            subject=subject,
+            template_name="notice",
+            context={"heading": heading, "lines": list(lines), "cta_label": cta_label, "cta_path": cta_path},
+        )
 
     # ============================================
     # DJ EMAILS
@@ -103,10 +114,8 @@ class EmailService:
     @classmethod
     def send_payout_initiated(cls, dj_profile, payout):
         """Notify DJ of payout initiation."""
-        from apps.accounts.models import BankAccount
-
-        bank = BankAccount.objects.filter(dj=dj_profile, is_primary=True).first()
-        bank_last_4 = bank.account_number[-4:] if bank else "****"
+        account = (dj_profile.bank_account_number or "").strip()
+        bank_last_4 = account[-4:] if account else "****"
 
         return cls.send_email(
             to_email=dj_profile.profile.user.email,
@@ -130,7 +139,8 @@ class EmailService:
         referrals = DJReferralProgram.objects.filter(referrer=referrer_dj)
         code = AmbassadorCode.objects.filter(dj=referrer_dj).first()
 
-        referral_url = f"https://mixmint.in/join?ref={code.code}" if code else ""
+        base = getattr(settings, "BASE_URL", "https://mixmint.site").rstrip("/")
+        referral_url = f"{base}/?ref={code.code}" if code else ""
         share_msg = f"Join MixMint! Use code {code.code}"
 
         return cls.send_email(
@@ -216,7 +226,7 @@ class EmailService:
                 "amount_paid": str(purchase.price_paid),
                 "order_id": str(purchase.id)[:8],
                 "purchase_date": purchase.created_at.strftime("%b %d, %Y %H:%M"),
-                "download_url": "https://mixmint.in/library",
+                "download_url": f"{getattr(settings, 'BASE_URL', 'https://mixmint.site').rstrip('/')}/library/",
             },
         )
 

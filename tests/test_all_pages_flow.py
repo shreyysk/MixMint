@@ -189,7 +189,7 @@ class TestUXLayer:
     """Site-wide UX system present on every page."""
 
     def test_ux_assets_on_base_pages(self, client, track):
-        for url in ("/", "/explore/", f"/tracks/{track.id}/", "/login/", "/cart/", "/legal/faq/"):
+        for url in ("/", "/explore/", f"/tracks/{track.id}/", "/login/", "/djs/", "/legal/faq/"):
             html = client.get(url).content.decode()
             # hashed (css/ux.<hash>.css) or plain — manifest storage renames in prod
             assert "css/ux." in html, url
@@ -231,6 +231,8 @@ class TestCartWithoutDrawer:
             assert "/login/" in html, url
 
     def test_cart_page_renders_and_checkout_wired(self, client, user, track):
+        assert client.get("/cart/").status_code == 302  # login required
+        client.force_login(user)
         resp = client.get("/cart/")
         assert resp.status_code == 200
         html = resp.content.decode()

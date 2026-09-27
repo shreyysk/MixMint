@@ -138,7 +138,8 @@ class ABTestingService:
     def _in_traffic(cls, user_profile, experiment):
         """Deterministic check if user is in traffic percentage."""
         hash_input = f"{user_profile.pk}_{experiment.id}"
-        hash_val = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        # Non-security bucketing hash (not for auth/tokens); flagged for FIPS clarity.
+        hash_val = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)
         bucket = hash_val % 100
         return bucket < experiment.traffic_percentage
 

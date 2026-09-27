@@ -17,9 +17,7 @@ class TestRevenueCalculations:
         PlatformSettings.load()
 
         u = User.objects.create_user(
-            email=f'billing{
-                "pro" if is_pro else "std"}{
-                id(self)}@example.com',
+            email=f"billing{'pro' if is_pro else 'std'}{id(self)}@example.com",
             password='Pass123!')
         u.profile.role = 'dj'
         u.profile.is_pro_dj = is_pro

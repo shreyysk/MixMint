@@ -30,7 +30,8 @@
             </div>
 
             <!-- Progress Bar -->
-            <div class="w-full h-[6px] bg-[var(--bg-elevated)] rounded-full overflow-hidden mb-4">
+            <div class="w-full h-[6px] bg-[var(--bg-elevated)] rounded-full overflow-hidden mb-4" role="progressbar"
+                aria-label="Download progress" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="downloadProgress">
                 <div class="h-full rounded-full transition-all duration-300 ease-out"
                     :class="downloadState === 'failed' ? 'bg-[var(--accent-red)]' : 'bg-[var(--accent-mint)]'"
                     :style="'width: ' + downloadProgress + '%'"></div>
@@ -38,7 +39,7 @@
 
             <!-- Status Text -->
             <div class="flex items-center justify-between">
-                <span class="font-body text-[13px] text-[var(--text-muted)]" x-text="statusText"></span>
+                <span class="font-body text-[13px] text-[var(--text-muted)]" x-text="statusText" aria-live="polite"></span>
                 <span class="font-mono text-[12px] text-[var(--text-muted)]" x-show="downloadProgress > 0 && downloadState === 'downloading'"
                     x-text="downloadProgress + '%'"></span>
             </div>
@@ -113,10 +114,10 @@
                 </svg>
             </div>
             <h2 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-2">Download Incomplete</h2>
-            <p class="font-body text-[14px] text-[var(--text-muted)]">Download incomplete. You are eligible for a refund or a retry.</p>
-            <div class="flex justify-center gap-4 mt-6">
-                <button @click="retryDownload()" class="btn-mm btn-mint px-8" x-show="attemptCount < maxAttempts">Retry</button>
-                <a href="/api/v1/commerce/refund/request/" class="btn-mm btn-ghost px-8">Request Refund</a>
+            <p class="font-body text-[14px] text-[var(--text-muted)]">The file wasn't verified. Incomplete downloads don't use up your purchase — get a fresh link, or request a refund from your library.</p>
+            <div class="flex justify-center gap-4 mt-6 flex-wrap">
+                <a :href="contentUrl" class="btn-mm btn-mint px-8" x-show="attemptCount < maxAttempts">Get a new link</a>
+                <a href="{% url 'library_page' %}" class="btn-mm btn-ghost px-8">Go to library</a>
             </div>
         </div>
     </template>
@@ -153,85 +154,81 @@ function downloadApp() {
     return {
         downloadState: 'ready',   // ready | downloading | complete | failed | expired
         downloadProgress: 0,
-        timeRemaining: {{ token_seconds_remaining|default:"600" }},
+        timeRemaining: {{ token_seconds_remaining|default:"300" }},
         attemptCount: {{ attempt_count|default:"0" }},
         maxAttempts: {{ max_attempts|default:"3" }},
         contentTitle: '{{ content_title|escapejs }}',
         downloadUrl: '{{ download_url|escapejs }}',
+        statusUrl: '{{ status_url|escapejs }}',
+        contentUrl: '{{ content_url|escapejs }}',
         statusText: 'Ready to download',
 
-        init() {
-            this.startTimer();
-        },
+        init() { this.startTimer(); },
 
         startTimer() {
             this._timer = setInterval(() => {
+                if (this.downloadState !== 'ready') return;
                 this.timeRemaining--;
-                if (this.timeRemaining <= 120 && this.timeRemaining > 0 && this.downloadState === 'ready') {
-                    this.statusText = 'Token expiring — download now.';
-                }
+                if (this.timeRemaining <= 60 && this.timeRemaining > 0) this.statusText = 'Link expiring — download now.';
                 if (this.timeRemaining <= 0) {
                     clearInterval(this._timer);
-                    if (this.downloadState === 'ready') {
-                        this.downloadState = 'expired';
-                        this.statusText = 'Token expired.';
-                    }
+                    this.downloadState = 'expired';
+                    this.statusText = 'Link expired.';
                 }
             }, 1000);
         },
 
         formatTime(seconds) {
             if (seconds <= 0) return '0:00';
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return m + ':' + String(s).padStart(2, '0');
+            return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
         },
 
-        async startDownload() {
+        // The browser handles the file transfer; the server verifies bytes + SHA-256
+        // and we poll that real status instead of animating a fake bar.
+        startDownload() {
             this.downloadState = 'downloading';
-            this.statusText = 'Initiating secure transfer…';
-            this.downloadProgress = 5;
+            this.statusText = 'Your browser is downloading the file…';
+            this.downloadProgress = 3;
+            const link = document.createElement('a');
+            link.href = this.downloadUrl;
+            link.rel = 'noopener';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            this.attemptCount++;
+            this.poll(0);
+        },
 
+        async poll(n) {
+            if (this.downloadState !== 'downloading') return;
             try {
-                // Trigger the actual file download via hidden iframe/link
-                const link = document.createElement('a');
-                link.href = this.downloadUrl;
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-
-                // Simulate progress (actual byte tracking is server-side)
-                let progress = 5;
-                const progressInterval = setInterval(() => {
-                    progress += Math.random() * 8;
-                    if (progress >= 95) {
-                        progress = 95;
-                        clearInterval(progressInterval);
-                    }
-                    this.downloadProgress = Math.round(progress);
-                    this.statusText = 'Downloading and verifying…';
-                }, 500);
-
-                // Mark complete after estimated time (server verifies actual completion)
-                setTimeout(() => {
-                    clearInterval(progressInterval);
+                const s = await MM.api(this.statusUrl, { redirectOnAuth: false });
+                if (s.bytes_expected) {
+                    this._hasBytes = true;
+                    this.downloadProgress = Math.max(this.downloadProgress,
+                        Math.min(99, Math.round(100 * (s.bytes_delivered || 0) / s.bytes_expected)) || 10);
+                }
+                if (s.download_completed) {
                     this.downloadProgress = 100;
                     this.downloadState = 'complete';
-                    this.statusText = 'File verified and locked to this device.';
-                    this.attemptCount++;
-                }, 8000);
-
-            } catch (e) {
-                this.downloadState = 'failed';
-                this.statusText = 'Download failed. Check your connection.';
+                    this.statusText = 'Complete — verified.';
+                    if (navigator.vibrate) navigator.vibrate(200);
+                    return;
+                }
+                if (s.checksum_failed) {
+                    this.downloadState = 'failed';
+                    this.statusText = 'File could not be verified.';
+                    return;
+                }
+            } catch (e) { /* keep polling */ }
+            // ~10 minutes of polling, slowing down over time.
+            if (n > 180) {
+                this.statusText = 'Still downloading? Check your browser\'s downloads bar.';
+                return;
             }
+            if (this.downloadProgress < 90 && !this._hasBytes) this.downloadProgress += 1;
+            setTimeout(() => this.poll(n + 1), n < 30 ? 2000 : 4000);
         },
-
-        retryDownload() {
-            this.downloadState = 'ready';
-            this.downloadProgress = 0;
-            this.statusText = 'Ready to download';
-        }
     };
 }
 </script>

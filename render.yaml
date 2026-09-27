@@ -9,7 +9,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120"
+    startCommand: "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120"
     healthCheckPath: /health/
     envVars:
       - key: PYTHON_VERSION
@@ -36,7 +36,9 @@ services:
         sync: false
       - key: R2_ENDPOINT
         sync: false
-      - key: R2_BUCKET_NAME
+      - key: R2_PRIVATE_BUCKET
+        sync: false
+      - key: R2_PUBLIC_BUCKET
         sync: false
       - key: R2_PUBLIC_URL
         sync: false
@@ -44,6 +46,12 @@ services:
         sync: false
       - key: RAZORPAY_KEY_SECRET
         sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: DEFAULT_PAYMENT_GATEWAY
+        value: razorpay
+      - key: NUM_PROXIES
+        value: "1"
       - key: RESEND_API_KEY
         sync: false
       - key: FROM_EMAIL

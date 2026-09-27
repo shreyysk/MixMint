@@ -44,79 +44,18 @@
                 <p class="font-mono text-4xl font-bold text-[var(--accent-mint)]">₹{{ fee_amount }}</p>
             </div>
 
-            <button id="pay-application-btn"
+            <button id="pay-application-btn" type="button"
                 class="btn-mm btn-mint w-full max-w-sm h-[56px] text-[16px] font-[600] mx-auto">
                 Pay Securely
             </button>
         </div>
 
-        <!-- Payment Script -->
-        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <script>
-            document.getElementById('pay-application-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('pay-application-btn');
-                try {
-                    btn.disabled = true;
-                    btn.innerText = 'Initializing...';
-
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Initiating secure payment...' } }));
-
-                    const response = await fetch('{% url "initiate_payment" %}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify({ content_id: '{{ dj_profile.id }}', content_type: 'dj_application' })
-                    });
-
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.error || "Failed to initiate payment.");
-                    if (!data.order_id) throw new Error(data.error || "No order_id returned.");
-
-                    const options = {
-                        key: data.key,
-                        amount: data.amount,
-                        currency: data.currency || "INR",
-                        name: "MixMint",
-                        description: "DJ Partner Application Fee",
-                        order_id: data.order_id,
-                        theme: { color: "#00FFB3" },
-                        handler: async function (resp) {
-                            try {
-                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Payment confirmed. Submitting application...' } }));
-                                const confirmRes = await fetch('{% url "confirm_payment" %}', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                                    body: JSON.stringify({
-                                        payment_id: resp.razorpay_payment_id,
-                                        order_id: resp.razorpay_order_id,
-                                        signature: resp.razorpay_signature,
-                                        content_id: '{{ dj_profile.id }}',
-                                        content_type: 'dj_application',
-                                    })
-                                });
-                                const confirmData = await confirmRes.json();
-                                if (!confirmRes.ok) throw new Error(confirmData.error || "Payment confirmation failed.");
-
-                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Application successfully submitted!' } }));
-                                setTimeout(() => window.location.reload(), 2000);
-                            } catch (e) {
-                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Confirmation failed." } }));
-                                btn.disabled = false;
-                                btn.innerText = 'Pay Securely';
-                            }
-                        }
-                    };
-                    const rzp = new Razorpay(options);
-                    rzp.on('payment.failed', function () {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: "Payment failed or cancelled." } }));
-                        btn.disabled = false;
-                        btn.innerText = 'Pay Securely';
-                    });
-                    rzp.open();
-                } catch (e) {
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment initiation failed." } }));
-                    btn.disabled = false;
-                    btn.innerText = 'Pay Securely';
-                }
+            document.getElementById('pay-application-btn').addEventListener('click', (e) => {
+                MM.checkout('{% url "initiate_payment" %}', { content_type: 'dj_application' }, {
+                    button: e.currentTarget,
+                    successUrl: '{% url "apply_as_dj" %}?payment=success',
+                });
             });
         </script>
 

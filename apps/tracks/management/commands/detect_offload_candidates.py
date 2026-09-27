@@ -108,5 +108,7 @@ class Command(BaseCommand):
         # NOTE: Email sending logic should be implemented via Celery or bulk send
         # in a production environment: `send_offload_digest_email(dj_id)`
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully found {created_count} candidates and queued for {
-            len(notified_djs)} DJs."))
+        dj_count = len(notified_djs)
+        self.stdout.write(
+            self.style.SUCCESS(f"Successfully found {created_count} candidates and queued for {dj_count} DJs.")
+        )

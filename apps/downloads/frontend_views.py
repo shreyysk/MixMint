@@ -3,6 +3,7 @@ Frontend view for the buyer-facing download page [Spec §8].
 Shows token countdown, progress bar, and attempt tracking.
 """
 
+from apps.core.net import get_client_ip
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
@@ -41,11 +42,16 @@ def download_page_view(request, token_str):
     else:
         seconds_remaining = 0
 
-    # Get attempt count for this content
-    from django.core.cache import cache
+    # Attempts used on this network for this item (same counter the token endpoint enforces).
+    from .models import DownloadAttempt
 
-    attempt_key = f"dl_attempts_{request.META.get('REMOTE_ADDR')}_{token.content_id}_{token.content_type}"
-    attempt_count = cache.get(attempt_key, 0)
+    attempt = DownloadAttempt.objects.filter(
+        user=request.user.profile,
+        ip_address=get_client_ip(request),
+        content_id=token.content_id,
+        content_type=token.content_type,
+    ).first()
+    attempt_count = attempt.attempt_count if attempt else 0
 
     # Build the actual download URL (secure streaming proxy).
     # Must match config/urls.py mount: api/v1/downloads/ + downloads/urls.py.
@@ -64,6 +70,27 @@ def download_page_view(request, token_str):
         "token_seconds_remaining": max(0, seconds_remaining),
         "expiry_warning": bool(token.expires_at and token.expires_at > now) and seconds_remaining < warn_hours * 3600,
         "attempt_count": attempt_count,
-        "max_attempts": 3,
+        "max_attempts": getattr(settings, "MAX_DOWNLOAD_ATTEMPTS", 3),
+        "status_url": f"/api/v1/downloads/status/{token_str}/",
+        "content_url": f"/{'tracks' if token.content_type == 'track' else 'albums'}/{token.content_id}/",
     }
     return render(request, "downloads/download_page.html", context)
+
+
+@login_required
+def download_status_view(request, token_str):
+    """Real completion status for the download page (server-side byte + checksum verification)."""
+    from django.http import JsonResponse
+
+    token = DownloadToken.objects.filter(token=token_str, user=request.user.profile).first()
+    if token is None:
+        return JsonResponse({"error": "Not found."}, status=404)
+    return JsonResponse(
+        {
+            "is_used": token.is_used,
+            "bytes_expected": token.bytes_expected,
+            "bytes_delivered": token.bytes_delivered,
+            "download_completed": token.download_completed,
+            "checksum_failed": bool(token.bytes_delivered and not token.checksum_verified and token.checksum_hex),
+        }
+    )

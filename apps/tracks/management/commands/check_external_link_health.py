@@ -85,6 +85,5 @@ class Command(BaseCommand):
         if broken:
             self.stdout.write(self.style.WARNING(f"Found {len(broken)} broken external links."))
         else:
-            self.stdout.write(self.style.SUCCESS(f"All {
-                external_tracks.count() +
-                external_albums.count()} external links are healthy."))
+            total = external_tracks.count() + external_albums.count()
+            self.stdout.write(self.style.SUCCESS(f"All {total} external links are healthy."))

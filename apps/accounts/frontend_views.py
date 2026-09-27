@@ -11,11 +11,28 @@ from .validators import validate_email_domain, validate_strong_password
 
 
 def _get_client_ip(request):
-    """Extract real client IP from request."""
-    x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded:
-        return x_forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
+    """Extract real client IP from request (trusted-proxy aware)."""
+    from apps.core.net import get_client_ip
+
+    return get_client_ip(request)
+
+
+def _rate_limited(key, limit, window):
+    """Fixed-window limiter backed by the cache. True when over the limit."""
+    from django.core.cache import cache
+
+    cache.add(key, 0, timeout=window)
+    try:
+        return cache.incr(key) > limit
+    except ValueError:
+        cache.set(key, 1, timeout=window)
+        return False
+
+
+def _bind_session(request):
+    from .middleware import _network_of
+
+    request.session["bound_net"] = _network_of(_get_client_ip(request))
 
 
 def signup_view(request):
@@ -24,23 +41,40 @@ def signup_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
-        full_name = request.POST.get("full_name", "").strip()
+        full_name = request.POST.get("full_name", "").strip()[:120]
         email = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
+
+        if _rate_limited(f"signup_ip_{_get_client_ip(request)}", limit=10, window=3600):
+            messages.error(request, "Too many sign-up attempts from your network. Please try again later.")
+            return render(request, "auth/signup.html", status=429)
+
+        from django.core.validators import validate_email
+
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Enter a valid email address.")
+            return render(request, "auth/signup.html", {"form_email": email, "form_name": full_name})
 
         # Validate temp email domains [Spec §13]
         try:
             validate_email_domain(email)
         except ValidationError as e:
             messages.error(request, e.message)
-            return render(request, "auth/signup.html")
+            return render(request, "auth/signup.html", {"form_email": email, "form_name": full_name})
+
+        confirm = request.POST.get("confirm_password")
+        if confirm is not None and confirm != password:
+            messages.error(request, "Passwords don't match.")
+            return render(request, "auth/signup.html", {"form_email": email, "form_name": full_name})
 
         # Validate strong password [Spec §11]
         try:
             validate_strong_password(password)
         except ValidationError as e:
             messages.error(request, e.message)
-            return render(request, "auth/signup.html")
+            return render(request, "auth/signup.html", {"form_email": email, "form_name": full_name})
 
         if not full_name:
             messages.error(request, "Full name is required.")
@@ -83,16 +117,16 @@ def signup_view(request):
 
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
-            # Bind IP to session [Spec §13]
-            request.session["bound_ip"] = _get_client_ip(request)
+            # Bind session to network [Spec §13]
+            _bind_session(request)
 
             # Record login history [Spec §13]
-            device_hash = request.headers.get("X-Device-Hash") or request.POST.get("device_hash", "")
+            device_hash = (request.headers.get("X-Device-Hash") or request.POST.get("device_hash", ""))[:128]
 
             LoginHistory.objects.create(
                 user=user,
                 ip_address=_get_client_ip(request),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
                 location_data={"device_hash": device_hash} if device_hash else {},
             )
 
@@ -110,6 +144,15 @@ def login_view(request):
     if request.method == "POST":
         email = (request.POST.get("email") or request.POST.get("username", "")).strip().lower()
         password = request.POST.get("password", "")
+        ip = _get_client_ip(request)
+
+        # Brute-force protection: per IP and per account.
+        if _rate_limited(f"login_ip_{ip}", limit=20, window=900) or _rate_limited(
+            f"login_email_{email}", limit=8, window=900
+        ):
+            messages.error(request, "Too many login attempts. Please wait 15 minutes and try again.")
+            return render(request, "auth/login.html", {"form_email": email}, status=429)
+
         user = authenticate(request, username=email, password=password)
 
         if user is not None:
@@ -130,16 +173,19 @@ def login_view(request):
 
             login(request, user)
 
-            # Bind IP to session [Spec §13]
-            request.session["bound_ip"] = _get_client_ip(request)
+            # Successful login clears the per-account counter; bind session to network [Spec §13]
+            from django.core.cache import cache
+
+            cache.delete(f"login_email_{email}")
+            _bind_session(request)
 
             # Record login history [Spec §13]
-            device_hash = request.headers.get("X-Device-Hash") or request.POST.get("device_hash", "")
+            device_hash = (request.headers.get("X-Device-Hash") or request.POST.get("device_hash", ""))[:128]
 
             LoginHistory.objects.create(
                 user=user,
                 ip_address=_get_client_ip(request),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
                 location_data={"device_hash": device_hash} if device_hash else {},
             )
 
@@ -161,6 +207,7 @@ def login_view(request):
             return redirect("dashboard")
         else:
             messages.error(request, "Invalid email or password.")
+            return render(request, "auth/login.html", {"form_email": email})
 
     return render(request, "auth/login.html")
 
@@ -387,22 +434,44 @@ class WaitlistSignupView(View):
         import json
         from django.http import JsonResponse
 
+        from django.core.validators import validate_email
+
         try:
-            data = json.loads(request.body)
-            email = data.get("email")
-            is_dj = data.get("is_dj", False)
-            source = data.get("source", "unknown")
+            data = json.loads(request.body or b"{}")
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({"error": "Invalid request."}, status=400)
+        email = str(data.get("email") or "").strip().lower()
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({"error": "Enter a valid email address."}, status=400)
+        if _rate_limited(f"waitlist_{_get_client_ip(request)}", limit=10, window=3600):
+            return JsonResponse({"error": "Too many requests. Try again later."}, status=429)
 
-            if not email:
-                return JsonResponse({"error": "Email is required."}, status=400)
+        from .models import Waitlist
 
-            from .models import Waitlist
+        _, created = Waitlist.objects.get_or_create(
+            email=email,
+            defaults={"is_dj": bool(data.get("is_dj", False)), "source": str(data.get("source") or "unknown")[:50]},
+        )
+        if not created:
+            return JsonResponse({"message": "You are already on the waitlist! We will notify you soon."})
+        return JsonResponse({"message": "Success! You have been added to the waitlist."})
 
-            waitlist, created = Waitlist.objects.get_or_create(email=email, defaults={"is_dj": is_dj, "source": source})
 
-            if not created:
-                return JsonResponse({"message": "You are already on the waitlist! We will notify you soon."})
+class ThrottledPasswordResetView:
+    """Password reset form with per-IP throttling (stops reset-email bombing)."""
 
-            return JsonResponse({"message": "Success! You have been added to the waitlist."})
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+    @staticmethod
+    def as_view(**kwargs):
+        from django.contrib.auth import views as auth_views
+
+        inner = auth_views.PasswordResetView.as_view(**kwargs)
+
+        def view(request, *args, **kw):
+            if request.method == "POST" and _rate_limited(f"pwreset_{_get_client_ip(request)}", limit=5, window=3600):
+                messages.error(request, "Too many reset requests. Please try again in an hour.")
+                return redirect("password_reset")
+            return inner(request, *args, **kw)
+
+        return view

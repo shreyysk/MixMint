@@ -37,6 +37,8 @@ class User(AbstractUser):
 class DJProfile(models.Model):
     STATUS_CHOICES = (
         ("pending", "Pending"),
+        ("pending_payment", "Awaiting application fee"),
+        ("pending_review", "Pending review"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
         ("banned", "Banned"),

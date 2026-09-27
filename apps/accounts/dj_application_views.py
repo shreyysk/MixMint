@@ -55,6 +55,19 @@ def apply_as_dj(request):
             {"error": "You must accept the legal agreement to proceed."}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    from django.utils.text import slugify
+
+    if slugify(slug) != slug or len(slug) < 3 or len(slug) > 50:
+        return Response(
+            {"error": "URL slug must be 3-50 lowercase letters, numbers or hyphens."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(dj_name) > 100 or len(bio) > 2000:
+        return Response({"error": "DJ name or bio is too long."}, status=status.HTTP_400_BAD_REQUEST)
+    RESERVED = {"admin", "api", "static", "media", "dashboard", "login", "signup", "logout", "explore", "djs"}
+    if slug in RESERVED:
+        return Response({"error": "This URL slug is reserved."}, status=status.HTTP_400_BAD_REQUEST)
+
     # Check slug uniqueness
     if DJProfile.objects.filter(slug=slug).exists():
         return Response({"error": "This URL slug is already taken."}, status=status.HTTP_400_BAD_REQUEST)
@@ -72,7 +85,7 @@ def apply_as_dj(request):
         dj_name=dj_name,
         slug=slug,
         bio=bio,
-        genres=genres if isinstance(genres, list) else [],
+        genres=[str(g)[:40] for g in genres][:10] if isinstance(genres, list) else [],
         status="pending_payment" if fee_enabled else "pending_review",
     )
 
@@ -227,7 +240,7 @@ def admin_verify_dj(request, dj_profile_id):
 @permission_classes([IsAuthenticated])
 def toggle_store_pause(request):
     """DJ pauses/unpauses their store [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can access this."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
@@ -254,7 +267,7 @@ def request_payout_otp(request):
     DJ requests a 2FA OTP for payout verification [Spec P2 §11, P3 §3.2].
     OTP is sent to the DJ's registered email.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can request payout OTPs."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
@@ -262,8 +275,13 @@ def request_payout_otp(request):
     except (Profile.DoesNotExist, DJProfile.DoesNotExist):
         return Response({"error": "DJ profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    from .payout_auth import generate_payout_otp
-
-    generate_payout_otp(dj_profile)
-
-    return Response({"message": "Verification code sent to your email.", "expires_in": "10 minutes"})
+    # Payouts are protected by TOTP (Google Authenticator / Authy), not emailed codes.
+    if not dj_profile.payout_otp_secret:
+        return Response(
+            {
+                "error": "Set up two-factor authentication first.",
+                "setup_url": "/dashboard/dj/2fa/enable/",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response({"message": "Open your authenticator app and enter the current 6-digit code."})

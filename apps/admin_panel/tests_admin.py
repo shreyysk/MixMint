@@ -21,12 +21,12 @@ class AdminViewTests(TestCase):
 
         # Unauthorized access
         response = self.client.get(url)
-        self.assertIn(response.status_code, [302, 403])
+        self.assertIn(response.status_code, [302, 401, 403])
 
         # Regular user access
         self.client.login(email="user@mixmint.site", password="password123")
         response = self.client.get(url)
-        self.assertIn(response.status_code, [302, 403])
+        self.assertIn(response.status_code, [302, 401, 403])
         self.client.logout()
 
         # Admin access

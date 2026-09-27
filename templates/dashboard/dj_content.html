@@ -3,10 +3,11 @@
 {% block title %}My Content | MixMint{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block content %}
+{{ revenue_chart_data|json_script:"revenue-chart-data" }}
 <div class="py-12 max-w-[1200px] mx-auto" x-data="djDashboard()">
     <!-- ── DJ HEADER ── -->
     <div class="mb-16 border-b border-[var(--border)] pb-8">
@@ -427,7 +428,7 @@
 
             initChart() {
                 const ctx = document.getElementById('djRevenueChart').getContext('2d');
-                const data = JSON.parse('{{ revenue_chart_json|safe|default:"[]" }}');
+                const data = JSON.parse(document.getElementById('revenue-chart-data').textContent || '[]');
                 
                 const labels = data.map(d => d.week);
                 const values = data.map(d => d.revenue);

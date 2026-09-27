@@ -115,6 +115,19 @@ class MaintenanceMode(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+
+        cache.delete("platform_mode")  # middleware caches the current mode briefly
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+
+        result = super().delete(*args, **kwargs)
+        cache.delete("platform_mode")
+        return result
+
 
 class ContentArchive(models.Model):
     """Immutable archive of soft-deleted content [Spec §9]."""
@@ -162,6 +175,9 @@ class PlatformSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1  # enforce singleton
         super().save(*args, **kwargs)
+        from django.core.cache import cache
+
+        cache.delete("global_settings_ctx")
 
     @classmethod
     def load(cls):
@@ -197,6 +213,12 @@ class PromotionalOffer(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+
+        cache.delete("global_settings_ctx")
 
     def __str__(self):
         return self.title

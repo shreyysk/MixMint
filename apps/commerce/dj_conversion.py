@@ -39,7 +39,8 @@ class DJWelcomeBonus(models.Model):
 
             wallet.total_earnings = F("total_earnings") + bonus.amount
             wallet.pending_earnings = F("pending_earnings") + bonus.amount
-            wallet.save(update_fields=["total_earnings", "pending_earnings"])
+            wallet.available_for_payout = F("available_for_payout") + bonus.amount
+            wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
 
             LedgerEntry.objects.create(
                 wallet=wallet,
@@ -96,7 +97,8 @@ class DJReferralProgram(models.Model):
                 referrer_wallet, _ = DJWallet.objects.get_or_create(dj=referral.referrer)
                 referrer_wallet.total_earnings = F("total_earnings") + referral.referrer_bonus
                 referrer_wallet.pending_earnings = F("pending_earnings") + referral.referrer_bonus
-                referrer_wallet.save(update_fields=["total_earnings", "pending_earnings"])
+                referrer_wallet.available_for_payout = F("available_for_payout") + referral.referrer_bonus
+                referrer_wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
 
                 LedgerEntry.objects.create(
                     wallet=referrer_wallet,
@@ -112,7 +114,8 @@ class DJReferralProgram(models.Model):
                 referred_wallet, _ = DJWallet.objects.get_or_create(dj=dj_profile)
                 referred_wallet.total_earnings = F("total_earnings") + referral.referred_bonus
                 referred_wallet.pending_earnings = F("pending_earnings") + referral.referred_bonus
-                referred_wallet.save(update_fields=["total_earnings", "pending_earnings"])
+                referred_wallet.available_for_payout = F("available_for_payout") + referral.referred_bonus
+                referred_wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
 
                 LedgerEntry.objects.create(
                     wallet=referred_wallet,
@@ -204,7 +207,8 @@ class DJMilestoneReward(models.Model):
             wallet, _ = DJWallet.objects.get_or_create(dj=reward.dj)
             wallet.total_earnings = F("total_earnings") + reward.reward_amount
             wallet.pending_earnings = F("pending_earnings") + reward.reward_amount
-            wallet.save(update_fields=["total_earnings", "pending_earnings"])
+            wallet.available_for_payout = F("available_for_payout") + reward.reward_amount
+            wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
 
             LedgerEntry.objects.create(
                 wallet=wallet,
@@ -268,9 +272,8 @@ class DJPromoCode(models.Model):
         self.times_used += 1
         self.save(update_fields=["times_used"])
 
-        return True, f"Promo applied! You get {
-            self.commission_discount}% off commission until {
-            self.valid_until.strftime('%b %d, %Y')}"
+        until = self.valid_until.strftime("%b %d, %Y")
+        return True, f"Promo applied! You get {self.commission_discount}% off commission until {until}"
 
 
 class DJPromoApplication(models.Model):

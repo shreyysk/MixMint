@@ -13,54 +13,59 @@ class FraudDetectionMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            self.track_user_activity(request)
+            try:
+                self.track_user_activity(request)
+            except Exception:
+                logger.exception("Fraud tracking failed")
 
         response = self.get_response(request)
         return response
 
     def track_user_activity(self, request):
-        user = request.user.profile
-        ip = self._get_client_ip(request)
+        user = getattr(request.user, "profile", None)
+        if user is None:
+            return
+        ip = self._get_client_ip(request) or "unknown"
+        uid = str(user.user_id)
 
-        # 1. Track IPs per User (24h)
-        user_ips_key = f"fraud_user_ips_{user.user.id}"
+        # 1. Distinct IPs per user (24h)
+        user_ips_key = f"fraud_user_ips_{uid}"
         ips = cache.get(user_ips_key, set())
-        ips.add(ip)
-        cache.set(user_ips_key, ips, timeout=86400)
+        if ip not in ips:
+            ips.add(ip)
+            cache.set(user_ips_key, ips, timeout=86400)
+            if len(ips) > 5 and cache.add(f"fraud_alerted_ips_{uid}", 1, timeout=86400):
+                FraudAlert.objects.get_or_create(
+                    user=user,
+                    alert_type="ip_abuse",
+                    status="pending",
+                    defaults={
+                        "severity": "medium",
+                        "details": {"ips": sorted(ips)[:20], "reason": "High number of IPs for single user"},
+                    },
+                )
 
-        if len(ips) > 5:
-            FraudAlert.objects.get_or_create(
-                user=user,
-                alert_type="ip_abuse",
-                status="pending",
-                defaults={
-                    "severity": "medium",
-                    "details": {"ips": list(ips), "reason": "High number of IPs for single user"},
-                },
-            )
-
-        # 2. Track Users per IP (24h)
+        # 2. Distinct users per IP (24h)
         ip_users_key = f"fraud_ip_users_{ip.replace(':', '_')}"
         users = cache.get(ip_users_key, set())
-        users.add(str(user.user.id))
-        cache.set(ip_users_key, users, timeout=86400)
-
-        if len(users) > 3:
-            FraudAlert.objects.get_or_create(
-                user=user,
-                alert_type="ip_abuse",
-                status="pending",
-                defaults={
-                    "severity": "high",
-                    "details": {"ip": ip, "users": list(users), "reason": "Multiple users on same IP"},
-                },
-            )
+        if uid not in users:
+            users.add(uid)
+            cache.set(ip_users_key, users, timeout=86400)
+            if len(users) > 3 and cache.add(f"fraud_alerted_ipusers_{ip}_{uid}", 1, timeout=86400):
+                FraudAlert.objects.get_or_create(
+                    user=user,
+                    alert_type="ip_abuse",
+                    status="pending",
+                    defaults={
+                        "severity": "medium",
+                        "details": {"ip": ip, "user_count": len(users), "reason": "Multiple users on same IP"},
+                    },
+                )
 
     def _get_client_ip(self, request):
-        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded:
-            return x_forwarded.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
+        from apps.core.net import get_client_ip
+
+        return get_client_ip(request)
 
 
 class FraudDetector:

@@ -14,7 +14,7 @@ from .views import (
 )
 from .insurance_views import check_insurance_eligibility, purchase_insurance, verify_insurance_payment
 from .views_verify import verify_purchase_view
-from .legal_views import download_invoice, dj_gst_export
+from .legal_views import dj_gst_export, dj_gst_export_csv, download_invoice, download_invoice_pdf
 from .dj_analytics import (
     dj_earnings_overview,
     dj_earnings_per_track,
@@ -53,7 +53,9 @@ urlpatterns = [
     path("my-library/", my_library, name="my_library"),
     # Legal & Compliance [Spec §9]
     path("invoice/<int:invoice_id>/", download_invoice, name="download_invoice"),
+    path("invoice/<int:invoice_id>/pdf/", download_invoice_pdf, name="download_invoice_pdf"),
     path("gst-export/", dj_gst_export, name="dj_gst_export"),
+    path("gst-export/csv/", dj_gst_export_csv, name="dj_gst_export_csv"),
     # DJ Analytics — Revenue Only [Spec §3.2]
     path("analytics/overview/", dj_earnings_overview, name="dj_earnings_overview"),
     path("analytics/tracks/", dj_earnings_per_track, name="dj_earnings_per_track"),

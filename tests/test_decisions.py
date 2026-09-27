@@ -14,7 +14,7 @@ class TestPreviewAndOfferDecisions:
         assert resp.status_code == 200
         html = resp.content.decode()
         assert "Preview 1" in html and "Preview 2" in html
-        assert "youtube.com/embed" in html and "instagram.com" in html
+        assert "youtube-nocookie.com/embed" in html and "instagram.com" in html
 
     def test_dj_offer_banner_on_track_and_storefront(self, client, track, dj_user):
         from apps.admin_panel.models import PromotionalOffer

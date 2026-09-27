@@ -1,3 +1,4 @@
+from apps.core.net import get_client_ip
 import json
 
 from django.shortcuts import render, redirect
@@ -6,6 +7,27 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models.functions import TruncWeek
 from django.utils import timezone
+
+
+def dj_required(json_response=False):
+    """Allow only users with a DJ profile; exposes it as request.dj_profile."""
+    from functools import wraps
+
+    def deco(view):
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            profile = request.user.profile
+            dj = getattr(profile, "dj_profile", None)
+            if profile.role != "dj" or dj is None:
+                if json_response:
+                    return JsonResponse({"error": "DJ account required."}, status=403)
+                return redirect("dashboard")
+            request.dj_profile = dj
+            return view(request, *args, **kwargs)
+
+        return wrapper
+
+    return deco
 
 
 @login_required
@@ -106,7 +128,7 @@ def dj_apply_view(request):
 @login_required
 def upload_track_view(request):
     """View to render the DJ upload form [Spec P3 §4]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return redirect("dashboard")
 
     return render(request, "dashboard/upload.html")
@@ -115,7 +137,7 @@ def upload_track_view(request):
 @login_required
 def dj_dashboard_view(request):
     """DJ-specific dashboard with earnings [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return redirect("dashboard")
 
     profile = request.user.profile
@@ -205,6 +227,7 @@ def dj_dashboard_view(request):
         "offload_notifications": offload_notifications,
         "recent_sales": recent_sales,
         "revenue_chart_json": json.dumps(revenue_chart_data),
+        "revenue_chart_data": revenue_chart_data,
         "total_downloads": total_downloads,
     }
     return render(request, "dashboard/dj_content.html", context)
@@ -212,6 +235,7 @@ def dj_dashboard_view(request):
 
 @login_required
 @require_POST
+@dj_required(True)
 def add_custom_domain(request):
     """Pro feature: Connect a custom domain [Section C Fix 02]."""
     profile = request.user.profile
@@ -224,74 +248,102 @@ def add_custom_domain(request):
     except BaseException:
         return JsonResponse({"error": "Invalid request."}, status=400)
 
-    if not domain:
-        return JsonResponse({"error": "Domain name is required."}, status=400)
+    import re as _re
+
+    if (
+        not domain
+        or len(domain) > 253
+        or not _re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", domain)
+    ):
+        return JsonResponse({"error": "Enter a valid domain like music.yourname.com."}, status=400)
+    if any(domain == d or domain.endswith("." + d) for d in ("mixmint.site", "mixmint.in", "vercel.app")):
+        return JsonResponse({"error": "That domain can't be used."}, status=400)
+
+    from .models import DJProfile
+
+    dj_profile = request.dj_profile
+    if DJProfile.objects.filter(custom_domain=domain).exclude(pk=dj_profile.pk).exists():
+        return JsonResponse({"error": "That domain is already connected to another store."}, status=400)
 
     from .vercel import VercelManager
 
-    vm = VercelManager()
-
     try:
-        vm.add_domain(domain)
-        dj_profile = profile.dj_profile
-        dj_profile.custom_domain = domain
-        dj_profile.save()
-        return JsonResponse({"status": "success", "message": f"Domain {domain} added. Please update your DNS."})
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        VercelManager().add_domain(domain)
+    except Exception:
+        import logging
+
+        logging.getLogger("mixmint").exception("Custom domain add failed for %s", domain)
+        return JsonResponse({"error": "Couldn't register the domain right now. Try again later."}, status=502)
+    dj_profile.custom_domain = domain
+    dj_profile.save(update_fields=["custom_domain"])
+    return JsonResponse({"status": "success", "message": f"Domain {domain} added. Please update your DNS."})
 
 
 @login_required
 def enable_2fa(request):
-    """Pro feature / DJ Security: Initiate TOTP setup [Fix 06]."""
+    """
+    Start TOTP setup for payouts [Fix 06]. The secret is only ever revealed while
+    setup is pending; once confirmed it is never shown again (a hijacked session
+    must not be able to read the second factor).
+    """
     profile = request.user.profile
-    if profile.role != "dj":
+    dj_profile = getattr(profile, "dj_profile", None)
+    if profile.role != "dj" or dj_profile is None:
         return JsonResponse({"error": "DJs only."}, status=403)
+    if dj_profile.payout_otp_secret:
+        return JsonResponse({"status": "enabled", "message": "Two-factor authentication is already enabled."})
 
-    dj_profile = profile.dj_profile
-    from .payout_auth import get_totp_uri
+    import pyotp
+    from django.core.cache import cache
 
-    uri = get_totp_uri(dj_profile)
+    cache_key = f"totp_pending_{dj_profile.pk}"
+    secret = cache.get(cache_key) or pyotp.random_base32()
+    cache.set(cache_key, secret, timeout=900)
+    uri = pyotp.TOTP(secret).provisioning_uri(name=request.user.email, issuer_name="MixMint")
+    try:
+        import segno
 
-    return JsonResponse(
-        {
-            "status": "success",
-            "totp_uri": uri,
-            "secret": dj_profile.payout_otp_secret,  # Also show secret for manual entry
-        }
-    )
+        qr = segno.make(uri, error="m").svg_data_uri(scale=4, border=2)
+    except Exception:  # QR is a convenience; the secret can still be typed in by hand
+        qr = ""
+    return JsonResponse({"status": "pending", "totp_uri": uri, "secret": secret, "qr_data_uri": qr})
 
 
 @login_required
 @require_POST
 def verify_2fa_setup(request):
-    """Verify and lock in 2FA setup."""
+    """Confirm the pending secret with a first code, then store it."""
     profile = request.user.profile
+    dj_profile = getattr(profile, "dj_profile", None)
+    if profile.role != "dj" or dj_profile is None:
+        return JsonResponse({"error": "DJs only."}, status=403)
     try:
-        data = json.loads(request.body)
-        code = data.get("code")
-    except BaseException:
+        code = str(json.loads(request.body or b"{}").get("code", "")).strip()
+    except (ValueError, AttributeError):
         return JsonResponse({"error": "Invalid request."}, status=400)
 
-    dj_profile = profile.dj_profile
-    from .payout_auth import verify_totp
+    import pyotp
+    from django.core.cache import cache
 
-    success, message = verify_totp(dj_profile, code)
+    secret = cache.get(f"totp_pending_{dj_profile.pk}")
+    if dj_profile.payout_otp_secret:
+        return JsonResponse({"status": "success", "message": "2FA already enabled."})
+    if not secret:
+        return JsonResponse({"error": "Setup expired. Start again."}, status=400)
+    if not (code.isdigit() and len(code) == 6 and pyotp.TOTP(secret).verify(code, valid_window=1)):
+        return JsonResponse({"error": "Invalid verification code."}, status=400)
 
-    if success:
-        # 2FA is now active
-        return JsonResponse({"status": "success", "message": "2FA successfully enabled."})
-    return JsonResponse({"error": message}, status=400)
+    dj_profile.payout_otp_secret = secret
+    dj_profile.save(update_fields=["payout_otp_secret"])
+    cache.delete(f"totp_pending_{dj_profile.pk}")
+    return JsonResponse({"status": "success", "message": "2FA successfully enabled."})
 
 
 @login_required
+@dj_required()
 def dj_onboarding(request):
     """DJ Onboarding Wizard [Fix 07]."""
-    profile = request.user.profile
-    if profile.role != "dj":
-        return redirect("dashboard")
-
-    dj_profile = profile.dj_profile
+    dj_profile = request.dj_profile
     if dj_profile.is_onboarding_complete:
         return redirect("dj_dashboard")
 
@@ -304,10 +356,10 @@ def dj_onboarding(request):
 
 @login_required
 @require_POST
+@dj_required(True)
 def update_onboarding_step(request):
     """Moves the DJ to the next onboarding step."""
-    profile = request.user.profile
-    dj_profile = profile.dj_profile
+    dj_profile = request.dj_profile
 
     try:
         data = json.loads(request.body)
@@ -387,7 +439,7 @@ def request_account_deletion(request):
     AuditLog.objects.create(
         admin=None,  # User-initiated
         action=f"User {request.user.email} requested account deletion.",
-        ip_address=request.META.get("REMOTE_ADDR"),
+        ip_address=get_client_ip(request),
     )
 
     return JsonResponse(
@@ -437,10 +489,10 @@ def logout_device(request):
 
 
 @login_required
+@dj_required(True)
 def check_custom_domain_status(request):
     """Check DNS and SSL status via Vercel API."""
-    profile = request.user.profile
-    dj_profile = profile.dj_profile
+    dj_profile = request.dj_profile
     domain = dj_profile.custom_domain
 
     if not domain:
@@ -457,12 +509,13 @@ def check_custom_domain_status(request):
 
 
 @login_required
+@dj_required()
 def bundle_management_view(request):
     """Imp 12: View and manage track bundles."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return redirect("dashboard")
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
     bundles = dj_profile.bundles.filter(is_deleted=False).prefetch_related("bundle_tracks__track")
     tracks = dj_profile.tracks.filter(is_deleted=False, is_active=True)
 
@@ -475,34 +528,63 @@ def bundle_management_view(request):
 
 @login_required
 @require_POST
+@dj_required()
 def create_bundle_view(request):
     """Create a new discounted track bundle."""
     from apps.commerce.models import Bundle, BundleTrack
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
 
     title = request.POST.get("title")
     price = request.POST.get("price")
     selected_tracks = request.POST.getlist("tracks")  # track IDs
 
-    if not title or not price or not selected_tracks:
+    from decimal import Decimal, InvalidOperation
+    from django.contrib import messages
+
+    try:
+        price = Decimal(str(price)).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError):
+        price = None
+    title = (title or "").strip()[:200]
+    # Only the DJ's own live tracks can go into their bundle.
+    own_tracks = list(
+        dj_profile.tracks.filter(id__in=[t for t in selected_tracks if str(t).isdigit()], is_deleted=False)
+    )
+    if not title or price is None or price <= 0 or len(own_tracks) < 2:
+        messages.error(request, "A bundle needs a title, a positive price and at least 2 of your tracks.")
         return redirect("bundle_management")
 
     bundle = Bundle.objects.create(dj=dj_profile, title=title, price=price)
-
-    for track_id in selected_tracks:
-        BundleTrack.objects.create(bundle=bundle, track_id=track_id)
-
+    for order, track in enumerate(own_tracks):
+        BundleTrack.objects.create(bundle=bundle, track=track, display_order=order)
+    messages.success(request, "Bundle created.")
     return redirect("bundle_management")
 
 
 @login_required
+@require_POST
+@dj_required()
+def delete_bundle_view(request, bundle_id):
+    """Soft-delete one of the DJ's own bundles (past buyers keep what they bought)."""
+    from django.contrib import messages
+
+    updated = request.dj_profile.bundles.filter(id=bundle_id, is_deleted=False).update(is_deleted=True)
+    if updated:
+        messages.success(request, "Bundle deleted.")
+    else:
+        messages.error(request, "Bundle not found.")
+    return redirect("bundle_management")
+
+
+@login_required
+@dj_required()
 def announcement_management_view(request):
     """Imp 14: View and manage DJ announcements."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return redirect("dashboard")
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
     announcements = dj_profile.announcements.all()
 
     return render(request, "dashboard/announcements.html", {"announcements": announcements})
@@ -510,15 +592,17 @@ def announcement_management_view(request):
 
 @login_required
 @require_POST
+@dj_required()
 def create_announcement_view(request):
     """Post a new update to the storefront."""
     from .models import DJAnnouncement
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
 
     title = request.POST.get("title")
     content = request.POST.get("content")
 
+    title, content = (title or "").strip()[:200], (content or "").strip()[:5000]
     if title and content:
         DJAnnouncement.objects.create(dj=dj_profile, title=title, content=content)
 
@@ -527,9 +611,10 @@ def create_announcement_view(request):
 
 @login_required
 @require_POST
+@dj_required()
 def delete_announcement_view(request, post_id):
     """Delete an announcement."""
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
     try:
         announcement = dj_profile.announcements.get(id=post_id)
         announcement.delete()
@@ -539,12 +624,13 @@ def delete_announcement_view(request, post_id):
 
 
 @login_required
+@dj_required()
 def ambassador_management_view(request):
     """Imp 15: DJ Ambassador Program management."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return redirect("dashboard")
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
     ambassador = getattr(dj_profile, "ambassador_code", None)
 
     # Standard profile fields are: user, referred_by, etc.
@@ -562,13 +648,14 @@ def ambassador_management_view(request):
 
 @login_required
 @require_POST
+@dj_required()
 def generate_ambassador_code_view(request):
     """Generate a unique referral code for the DJ."""
     from .models import AmbassadorCode
     import random
     import string
 
-    dj_profile = request.user.profile.dj_profile
+    dj_profile = request.dj_profile
     if hasattr(dj_profile, "ambassador_code"):
         return redirect("ambassador_management")
 

@@ -17,37 +17,53 @@ from django.utils.deprecation import MiddlewareMixin
 logger = logging.getLogger("mixmint")
 
 
+def _network_of(ip):
+    """Coarse network (/24 IPv4, /48 IPv6) so normal carrier/Wi-Fi churn doesn't log people out."""
+    try:
+        addr = ipaddress.ip_address(ip)
+    except (TypeError, ValueError):
+        return None
+    prefix = 24 if addr.version == 4 else 48
+    return str(ipaddress.ip_network(f"{addr}/{prefix}", strict=False))
+
+
 class IPSessionMiddleware(MiddlewareMixin):
     """
-    Stores client IP in session on login.
-    Auto-logs out user if IP changes mid-session [Spec §13].
+    Binds a logged-in session to the client's network [Spec §13]. If the session
+    suddenly appears from a different network it is terminated (stolen cookie
+    defence). Same-network IP changes (DHCP/CGNAT) are allowed.
     """
 
     def process_request(self, request):
         if not request.user.is_authenticated:
             return None
 
-        client_ip = self._get_client_ip(request)
-        session_ip = request.session.get("bound_ip")
+        client_net = _network_of(self._get_client_ip(request))
+        session_net = request.session.get("bound_net")
 
-        if session_ip is None:
-            # First request after login — bind IP
-            request.session["bound_ip"] = client_ip
-        elif session_ip != client_ip:
-            # IP changed mid-session — force logout [Spec §13]
+        if session_net is None:
+            request.session["bound_net"] = client_net
+        elif client_net and session_net != client_net:
+            logger.warning("Session network changed for user %s; logging out.", request.user.pk)
             logout(request)
-            return JsonResponse(
-                {"error": "Session terminated: IP address changed.", "code": "IP_CHANGE_LOGOUT"}, status=401
-            )
+            if request.path.startswith("/api/") or request.headers.get("Accept", "").startswith("application/json"):
+                return JsonResponse(
+                    {
+                        "error": "Session ended because your network changed. Please log in again.",
+                        "code": "IP_CHANGE_LOGOUT",
+                    },
+                    status=401,
+                )
+            from django.shortcuts import redirect
 
+            return redirect(f"/login/?next={request.path}&reason=network")
         return None
 
     @staticmethod
     def _get_client_ip(request):
-        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded:
-            return x_forwarded.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
+        from apps.core.net import get_client_ip
+
+        return get_client_ip(request)
 
 
 def get_blacklist():
@@ -118,82 +134,93 @@ class BlacklistMiddleware(MiddlewareMixin):
 
     @staticmethod
     def _get_client_ip(request):
-        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded:
-            return x_forwarded.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
+        from apps.core.net import get_client_ip
+
+        return get_client_ip(request)
+
+
+def current_platform_mode():
+    """Latest MaintenanceMode row, cached briefly (checked on every request)."""
+    cached = cache.get("platform_mode")
+    if cached is not None:
+        return cached or None
+    from apps.admin_panel.models import MaintenanceMode
+
+    row = MaintenanceMode.objects.order_by("-created_at").first()
+    value = (
+        {"mode": row.mode, "message": row.message, "estimated_return_at": row.estimated_return_at}
+        if row and row.mode != "normal"
+        else {}
+    )
+    cache.set("platform_mode", value, 15)
+    return value or None
 
 
 class MaintenanceModeMiddleware(MiddlewareMixin):
     """
-    Returns 503 if platform is in maintenance or kill-switch mode [Spec P2 §15].
-    Admin routes are always accessible.
+    Returns 503 while the platform is in maintenance, or blocks downloads in
+    kill-switch mode [Spec P2 §15]. Staff, the admin site (wherever ADMIN_URL
+    points), login and static assets always pass.
     """
 
-    # Paths that bypass maintenance mode
-    BYPASS_PATHS = ["/admin/", "/api/v1/admin/"]
+    def _bypass(self, request):
+        from django.conf import settings
+
+        admin_prefix = "/" + settings.ADMIN_URL.lstrip("/")
+        paths = (admin_prefix, "/api/v1/admin/", "/static/", "/health/", "/login/", "/logout/", "/csp-report/")
+        if request.path.startswith(paths):
+            return True
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated and user.is_staff)
 
     def process_request(self, request):
-        # Let admin paths through
-        for path in self.BYPASS_PATHS:
-            if request.path.startswith(path):
-                return None
+        if self._bypass(request):
+            return None
+        try:
+            current = current_platform_mode()
+        except Exception:
+            logger.exception("MaintenanceModeMiddleware: mode lookup failed; failing open.")
+            return None
+        if not current:
+            return None
 
-        from apps.admin_panel.models import MaintenanceMode
         from django.shortcuts import render
 
-        try:
-            current_mode = MaintenanceMode.objects.order_by("-created_at").first()
-            if not current_mode:
-                return None
-
-            is_api = "api/v1" in request.path or request.content_type == "application/json"
-
-            if current_mode.mode == "maintenance":
-                if is_api:
-                    return JsonResponse(
-                        {
-                            "error": "Maintenance Mode Active.",
-                            "message": current_mode.message or "Scheduled maintenance.",
-                            "code": "MAINTENANCE_MODE",
-                        },
-                        status=503,
-                    )
-
-                return render(
-                    request,
-                    "maintenance.html",
+        is_api = request.path.startswith("/api/") or request.content_type == "application/json"
+        if current["mode"] == "maintenance":
+            if is_api:
+                return JsonResponse(
                     {
-                        "mode": "maintenance",
-                        "message": current_mode.message or "Scheduled maintenance in progress.",
-                        "estimated_return": current_mode.estimated_return_at,
-                        "theme_color": "amber",  # Maintenance = Amber [Fix 14]
+                        "error": "Maintenance Mode Active.",
+                        "message": current["message"] or "Scheduled maintenance.",
+                        "code": "MAINTENANCE_MODE",
                     },
                     status=503,
                 )
-
-            elif current_mode.mode == "kill_switch":
-                # Kill switch — block downloads
-                if "/downloads/" in request.path or "/download-token" in request.path:
-                    if is_api:
-                        return JsonResponse({"error": "Downloads Disabled.", "code": "KILL_SWITCH"}, status=503)
-
-                    return render(
-                        request,
-                        "maintenance.html",
-                        {
-                            "mode": "kill_switch",
-                            "message": "Downloads area is temporarily closed for security.",
-                            "theme_color": "red",  # Kill Switch = Red [Fix 14]
-                        },
-                        status=503,
-                    )
-        except Exception:
-            # Never fail open silently: a broken maintenance template once
-            # disabled the entire maintenance mode (200 instead of 503).
-            logger.exception("MaintenanceModeMiddleware failed; failing open.")
-            pass
-
+            return render(
+                request,
+                "maintenance.html",
+                {
+                    "mode": "maintenance",
+                    "message": current["message"] or "Scheduled maintenance in progress.",
+                    "estimated_return": current["estimated_return_at"],
+                    "theme_color": "amber",
+                },
+                status=503,
+            )
+        if current["mode"] == "kill_switch" and ("/downloads/" in request.path or "/download-token" in request.path):
+            if is_api:
+                return JsonResponse({"error": "Downloads Disabled.", "code": "KILL_SWITCH"}, status=503)
+            return render(
+                request,
+                "maintenance.html",
+                {
+                    "mode": "kill_switch",
+                    "message": "Downloads area is temporarily closed for security.",
+                    "theme_color": "red",
+                },
+                status=503,
+            )
         return None
 
 
@@ -227,7 +254,7 @@ class ReferralMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        ref_code = request.GET.get("ref")
-        if ref_code:
+        ref_code = request.GET.get("ref", "")
+        if ref_code and len(ref_code) <= 32 and ref_code.isalnum():
             request.session["ref_code"] = ref_code
         return None

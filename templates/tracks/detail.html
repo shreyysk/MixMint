@@ -100,7 +100,7 @@
                         class="font-body text-[16px] font-[600] text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">
                         {{ track.dj.dj_name }}
                     </a>
-                    {% if track.dj.profile.is_verified_dj %}
+                    {% if track.dj.is_verified or track.dj.profile.is_verified_dj %}
                     <span class="text-[var(--accent-mint)]" title="Verified DJ">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path
@@ -172,67 +172,69 @@
                     </div>
 
                     <div class="w-full sm:w-auto flex-1 max-w-[400px]" x-data="{ showShareModal: false }">
+                        <div class="flex flex-col gap-3">
                         {% if user.is_authenticated %}
-                        <div class="flex flex-col gap-4">
                             {% if request.user.profile.dj_profile and request.user.profile.dj_profile == track.dj %}
-                            <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost border border-[var(--border)] w-full h-[56px] text-[16px] font-[600] flex items-center justify-center hover:bg-[var(--bg-elevated)] transition-colors">
-                                Manage Your Track
+                            <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
+                                Manage your track
                             </a>
                             {% elif track.is_external_link or track.source_url %}
-                            <button id="external-download-btn" data-content-id="{{ track.id }}"
-                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                ⬇ Download Now
-                            </button>
-                            <p class="mt-2 text-[11px] font-mono text-[var(--text-muted)] text-center uppercase tracking-wider"
-                                id="external-download-note" style="display:none">Preparing your secure download…</p>
+                                {% if can_request_download %}
+                                <button id="external-download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                    ⬇ Download now
+                                </button>
+                                {% else %}
+                                <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                    Buy &amp; Download · {{ track.price|money }}
+                                </button>
+                                {% endif %}
                             {% elif can_request_download %}
-                            <button id="download-btn" data-content-id="{{ track.id }}" data-content-type="track"
-                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                ⬇ Download Now
+                            <button id="download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                ⬇ Download now
                             </button>
                             {% elif needs_redownload_payment %}
-                            <button id="redownload-pay-btn" data-content-id="{{ track.id }}" data-content-type="track"
-                                class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
-                                Re-download · {% if redownload_price %}{{ redownload_price|money }}{% else %}—{% endif %}
+                            <button id="redownload-pay-btn" type="button" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
+                                Re-download · {{ redownload_price|money }}
                             </button>
+                            <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
+                            {% elif redownload_message %}
+                            <button type="button" class="btn-mm btn-disabled w-full h-[56px] text-[15px]" disabled aria-disabled="true">
+                                Re-download locked
+                            </button>
+                            <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
                             {% else %}
-                            <button @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
-                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                Support & Add to Cart
+                            <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                Buy &amp; Download · {{ track.price|money }}
                             </button>
-                            <p class="mt-2 text-[11px] font-mono text-[var(--accent-mint)] text-center uppercase tracking-wider animate-pulse-slow">
-                                🎁 Support 3+ artists for a Bundle Discount!
-                            </p>
-                {% endif %}
-
-                            <button @click="showShareModal = true"
-                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
-                                Share / Embed 🔗
+                            <button type="button" @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
+                                class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">
+                                + Add to cart
                             </button>
-                        </div>
+                            <p class="text-[11px] font-mono text-[var(--text-muted)] text-center">3+ items in your cart = bundle discount</p>
+                            {% endif %}
                         {% else %}
-                        <div class="flex flex-col gap-4">
-                            <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
-                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
-                                Login to Support Artist
+                            <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
+                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                                Buy &amp; Download · {{ track.price|money }}
                             </a>
-                            <button @click="showShareModal = true"
-                                class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
+                            <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
+                        {% endif %}
+                            <button type="button" @click="showShareModal = true"
+                                class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">
                                 Share / Embed 🔗
                             </button>
                         </div>
-                        {% endif %}
 
                         <!-- SHARE MODAL -->
                         <template x-if="showShareModal">
-                            <div
+                            <div role="dialog" aria-modal="true" aria-label="Share track" @keydown.escape.window="showShareModal = false"
                                 class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
                                 <div @click.away="showShareModal = false"
                                     class="bg-[var(--bg-surface)] border border-[var(--border)] w-full max-w-[500px] rounded-[24px] overflow-hidden shadow-2xl">
                                     <div class="p-8 border-b border-[var(--border)] flex justify-between items-center">
-                                        <h2 class="font-display text-2xl font-bold text-white">Share Track</h2>
-                                        <button @click="showShareModal = false"
-                                            class="text-[var(--text-muted)] hover:text-white">&times;</button>
+                                        <h2 class="font-display text-2xl font-bold text-[var(--text-primary)]">Share Track</h2>
+                                        <button type="button" @click="showShareModal = false" aria-label="Close share dialog"
+                                            class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-2xl w-11 h-11">&times;</button>
                                     </div>
                                     <div class="p-8 space-y-8">
                                         <div>
@@ -243,9 +245,9 @@
                                                 class="flex items-center gap-3 p-3 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl">
                                                 <input type="text" readonly value="{{ request.build_absolute_uri }}"
                                                     class="bg-transparent border-none text-[var(--accent-mint)] font-mono text-xs flex-1 outline-none">
-                                                <button
-                                                    onclick="navigator.clipboard.writeText('{{ request.build_absolute_uri }}'); alert('Link copied!')"
-                                                    class="text-[var(--accent-mint)] font-bold text-xs uppercase">Copy</button>
+                                                <button type="button"
+                                                    @click="navigator.clipboard.writeText($el.previousElementSibling.value).then(() => MM.toast('success', 'Link copied'))"
+                                                    class="text-[var(--accent-mint)] font-bold text-xs uppercase min-h-[36px] px-2">Copy</button>
                                             </div>
                                         </div>
                                         <div>
@@ -254,10 +256,9 @@
                                                 Code (IFrame)</label>
                                             <textarea readonly
                                                 class="w-full bg-[var(--bg-base)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-muted)] font-mono text-[10px] h-24 resize-none"><iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'track_embed' track.id %}" width="100%" height="400" frameborder="0"></iframe></textarea>
-                                            <button
-                                                data-embed-url="{{ request.scheme }}://{{ request.get_host }}{% url 'track_embed' track.id %}"
-                                                onclick="navigator.clipboard.writeText('<iframe src=\'' + this.dataset.embedUrl + '\' width=\'100%\' height=\'400\' frameborder=\'0\'></iframe>'); alert('Embed code copied!')"
-                                                class="mt-2 text-[var(--accent-mint)] font-bold text-xs uppercase">Copy
+                                            <button type="button"
+                                                @click="navigator.clipboard.writeText($el.previousElementSibling.value).then(() => MM.toast('success', 'Embed code copied'))"
+                                                class="mt-2 text-[var(--accent-mint)] font-bold text-xs uppercase min-h-[36px]">Copy
                                                 Embed Code</button>
                                         </div>
                                     </div>
@@ -343,165 +344,68 @@
 
 <!-- ── Scripts ── -->
 <script>
-    async function getDeviceHash() {
-        const key = "mixmint_device_hash_v1";
-        const existing = localStorage.getItem(key);
-        if (existing) return existing;
-
-        const raw = [
-            navigator.userAgent || "",
-            navigator.platform || "",
-            Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-            String(screen.width) + "x" + String(screen.height),
-        ].join("|");
-
-        const buf = new TextEncoder().encode(raw);
-        const digest = await crypto.subtle.digest("SHA-256", buf);
-        const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
-        localStorage.setItem(key, hex);
-        return hex;
-    }
-
-    async function initiateAndPay(isRedownload) {
-        const contentId = "{{ track.id }}";
-        const contentType = "track";
-
-        try {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Initiating secure payment...' } }));
-
-            const response = await fetch('{% url "initiate_payment" %}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ content_id: contentId, content_type: contentType, is_redownload: !!isRedownload })
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Failed to initiate payment.");
-            if (data.free) return { free: true };
-
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
-                return { paid: false, redirecting: true };
-            } else {
-                throw new Error("No redirect URL returned for payment");
-            }
-        } catch (err) {
-            throw err;
-        }
-    }
-
-    async function requestDownloadTokenAndStart() {
-        try {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Generating secure download token...' } }));
-            const deviceHash = await getDeviceHash();
-            const res = await fetch('/api/v1/tracks/{{ track.id }}/download-token/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}', 'X-Device-Hash': deviceHash },
-                body: JSON.stringify({ device_hash: deviceHash })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to get download token.");
-            if (data.warning) {
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'warning', text: data.warning } }));
-            }
-            window.location.href = data.download_url;
-        } catch (err) {
-            throw err;
-        }
-    }
-
+(function () {
+    const trackId = {{ track.id }};
     const buyBtn = document.getElementById('buy-now-btn');
     const rePayBtn = document.getElementById('redownload-pay-btn');
     const dlBtn = document.getElementById('download-btn');
     const extBtn = document.getElementById('external-download-btn');
 
-    async function requestExternalDownloadAndStart() {
-        const btn = extBtn;
-        const note = document.getElementById('external-download-note');
+    function buy(isRedownload, button) {
+        return MM.checkout('{% url "initiate_payment" %}',
+            { content_type: 'track', content_id: trackId, is_redownload: !!isRedownload },
+            { button: button });
+    }
+
+    if (buyBtn) buyBtn.addEventListener('click', () => buy(false, buyBtn));
+    if (rePayBtn) rePayBtn.addEventListener('click', () => buy(true, rePayBtn));
+    if (dlBtn) dlBtn.addEventListener('click', () => MM.download('/api/v1/tracks/' + trackId + '/download-token/', {
+        button: dlBtn,
+        onRedownload: () => window.location.reload(),
+    }));
+    if (extBtn) extBtn.addEventListener('click', async () => {
+        const restore = MM.busy(extBtn, 'Preparing your secure download…');
         try {
-            if (btn) btn.disabled = true;
-            if (note) note.style.display = 'block'; // "Preparing your download" state
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Preparing your secure download…' } }));
-            const res = await fetch('/api/v1/downloads/external/issue/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ content_type: 'track', content_id: {{ track.id }} })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Could not prepare download.');
+            const data = await MM.api('/api/v1/downloads/external/issue/', { body: { content_type: 'track', content_id: trackId } });
             window.location.href = data.download_url;
+            setTimeout(restore, 4000);
         } catch (e) {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || 'Download failed.' } }));
-            if (btn) btn.disabled = false;
-            if (note) note.style.display = 'none';
+            restore();
+            if (e.status !== 401) MM.toast('error', e.message);
         }
-    }
+    });
 
-    if (extBtn) {
-        extBtn.addEventListener('click', requestExternalDownloadAndStart);
+    // Returning from login with ?buy=1 continues checkout automatically.
+    if (buyBtn && new URLSearchParams(location.search).get('buy') === '1') {
+        history.replaceState(null, '', location.pathname);
+        buy(false, buyBtn);
     }
-
-    if (buyBtn) {
-        buyBtn.addEventListener('click', async () => {
-            try {
-                await initiateAndPay(false);
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Payment confirmed. Preparing secure download...' } }));
-                setTimeout(() => window.location.reload(), 2000);
-            } catch (e) {
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } }));
-            }
-        });
-    }
-
-    if (rePayBtn) {
-        rePayBtn.addEventListener('click', async () => {
-            try {
-                await initiateAndPay(true);
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Re-download activated! Reloading...' } }));
-                setTimeout(() => window.location.reload(), 2000);
-            } catch (e) {
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } }));
-            }
-        });
-    }
-
-    if (dlBtn) {
-        dlBtn.addEventListener('click', async () => {
-            try {
-                await requestDownloadTokenAndStart();
-            } catch (e) {
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Download failed." } }));
-            }
-        });
-    }
-
-    // Phase 3 Feature 3: Add to Cart
-    const cartBtn = document.getElementById('add-to-cart-btn');
-    if (cartBtn) {
-        cartBtn.addEventListener('click', async () => {
-            const contentId = cartBtn.dataset.contentId;
-            const contentType = cartBtn.dataset.contentType;
-            try {
-                const res = await fetch('/api/v1/commerce/cart/add_item/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-                    },
-                    body: JSON.stringify({ content_id: contentId, content_type: contentType })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Added to cart! 🛒' } }));
-                    cartBtn.textContent = '✓ In Cart';
-                    cartBtn.disabled = true;
-                } else {
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: data.error || 'Could not add to cart.' } }));
-                }
-            } catch (e) {
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: 'Network error.' } }));
-            }
-        });
-    }
+})();
 </script>
 
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Mobile sticky purchase bar: primary action always within thumb reach -->
+<div class="mm-buybar md:hidden" id="mm-buybar" hidden>
+    <div class="min-w-0">
+        <p class="font-body text-[13px] font-[700] truncate">{{ track.title }}</p>
+        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ track.price|money }}</p>
+    </div>
+    <button type="button" class="btn-mm btn-mint h-[48px] px-5" id="mm-buybar-btn">Buy</button>
+</div>
+<script>
+(function () {
+    const primary = document.getElementById('buy-now-btn') || document.getElementById('download-btn')
+        || document.getElementById('redownload-pay-btn') || document.getElementById('external-download-btn')
+        || document.getElementById('buy-now-link');
+    const bar = document.getElementById('mm-buybar');
+    if (!primary || !bar || !('IntersectionObserver' in window)) return;
+    const btn = document.getElementById('mm-buybar-btn');
+    btn.textContent = /^buy-now/.test(primary.id) ? 'Buy' : (primary.id === 'redownload-pay-btn' ? 'Re-download' : 'Download');
+    btn.addEventListener('click', () => primary.click());
+    new IntersectionObserver(([e]) => { bar.hidden = e.isIntersecting; }).observe(primary);
+})();
+</script>
 {% endblock %}

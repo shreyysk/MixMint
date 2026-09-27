@@ -46,21 +46,21 @@
                 </div>
 
                 <!-- Signup Form -->
-                <form method="post" class="space-y-5">
+                <form method="post" class="space-y-5" onsubmit="MM.busy(this.querySelector('[type=submit]'), 'Creating your account…')">
                     {% csrf_token %}
 
                     <div>
                         <label for="full_name"
                             class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2 font-[600]">Full
                             Name</label>
-                        <input type="text" name="full_name" id="full_name" required autocomplete="name" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
+                        <input type="text" name="full_name" id="full_name" required autocomplete="name" maxlength="120" value="{{ form_name|default:'' }}" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
                             placeholder="Your full name">
                     </div>
 
                     <div>
                         <label for="email"
                             class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2 font-[600]">Email Address</label>
-                        <input type="email" name="email" id="email" required autocomplete="email" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
+                        <input type="email" name="email" id="email" required autocomplete="email" value="{{ form_email|default:'' }}" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
                             placeholder="you@example.com">
                     </div>
 
@@ -78,9 +78,9 @@
                             class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2 font-[600]">Password</label>
                         <div class="relative">
                             <input :type="showPassword ? 'text' : 'password'" name="password" id="password" required
-                                autocomplete="new-password" minlength="8" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]"
+                                autocomplete="new-password" minlength="8" aria-describedby="password-hint" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]"
                                 placeholder="Min. 8 characters" @input="strength = testStrength($event.target.value)">
-                            <button type="button" @click="showPassword = !showPassword"
+                            <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword.toString()"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none">
                                 <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
@@ -102,6 +102,7 @@
                                 :class="strength < 40 ? 'bg-[var(--accent-red)]' : (strength < 80 ? 'bg-[var(--accent-amber)]' : 'bg-[var(--accent-mint)]')">
                             </div>
                         </div>
+                        <p class="mm-field-hint" id="password-hint">8+ characters with upper &amp; lower case, a number and a symbol.</p>
                     </div>
 
                     <div x-data="{ showPassword: false }" class="relative">
@@ -111,7 +112,7 @@
                         <div class="relative">
                             <input :type="showPassword ? 'text' : 'password'" name="confirm_password" id="confirm_password"
                                 required autocomplete="new-password" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]" placeholder="Re-enter password">
-                            <button type="button" @click="showPassword = !showPassword"
+                            <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword.toString()"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none">
                                 <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">

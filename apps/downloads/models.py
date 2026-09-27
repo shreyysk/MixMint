@@ -72,8 +72,9 @@ class DownloadToken(models.Model):
 
 
 class DownloadAttempt(models.Model):
-    """Per-IP attempt tracking [Spec §4.2: 3 attempts per IP per content]"""
+    """Per-user, per-network attempt tracking [Spec §4.2: 3 attempts per IP per content]"""
 
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True, related_name="download_attempts")
     ip_address = models.GenericIPAddressField()
     content_id = models.PositiveBigIntegerField()
     CONTENT_TYPES = (
@@ -85,7 +86,7 @@ class DownloadAttempt(models.Model):
     last_attempt_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("ip_address", "content_id", "content_type")
+        unique_together = ("user", "ip_address", "content_id", "content_type")
 
 
 class DownloadLog(models.Model):
@@ -108,6 +109,7 @@ class DownloadInsurance(models.Model):
     """Optional download insurance — unlimited re-downloads [Spec §4.3]."""
 
     STATUS_CHOICES = (
+        ("pending", "Awaiting payment"),
         ("active", "Active"),
         ("expired", "Expired"),
         ("claimed", "Claimed"),

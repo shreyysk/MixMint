@@ -18,6 +18,12 @@ from django.http import HttpResponse
 from apps.commerce.models import Invoice, TaxRecord
 
 
+def _csv_safe(value):
+    """Neutralise spreadsheet formula injection in user-controlled cells (e.g. buyer names)."""
+    text = str(value if value is not None else "")
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def download_invoice(request, invoice_id):
@@ -204,7 +210,7 @@ def download_invoice_pdf(request, invoice_id):
 @permission_classes([IsAuthenticated])
 def dj_gst_export(request):
     """DJ GST export report as JSON [Spec §9]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     try:
@@ -247,7 +253,7 @@ def dj_gst_export_csv(request):
     """
     DJ GST export report as downloadable CSV file [Spec §9].
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return HttpResponse("DJ access only.", status=403)
 
     try:
@@ -274,7 +280,7 @@ def dj_gst_export_csv(request):
                 [
                     inv.invoice_number,
                     inv.created_at.strftime("%Y-%m-%d"),
-                    inv.user.full_name,
+                    _csv_safe(inv.user.full_name),
                     str(inv.subtotal),
                     str(tr.tax_rate),
                     str(tr.tax_amount),

@@ -35,6 +35,10 @@ app.conf.beat_schedule = {
         "task": "apps.commerce.tasks.reset_monthly_quotas",
         "schedule": crontab(day_of_month=1, hour=0, minute=30),
     },
+    "release-escrow-hourly": {
+        "task": "apps.commerce.tasks.release_escrow_task",
+        "schedule": crontab(minute=15),
+    },
     "weekly-payout-processing": {
         "task": "apps.commerce.tasks.process_weekly_payouts",
         "schedule": crontab(day_of_week="friday", hour=18, minute=0),

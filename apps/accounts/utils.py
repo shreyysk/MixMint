@@ -45,11 +45,9 @@ def record_dj_page_view(dj_id, page_type, request=None):
 
     ip_address = None
     if request:
-        x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded:
-            ip_address = x_forwarded.split(",")[0].strip()
-        else:
-            ip_address = request.META.get("REMOTE_ADDR")
+        from apps.core.net import get_client_ip
+
+        ip_address = get_client_ip(request)
 
     # Optional: basic deduplication per IP per day could be added here,
     # but for raw views, simple creation is standard.

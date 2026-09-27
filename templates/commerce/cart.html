@@ -56,12 +56,12 @@
 
                     <!-- Price -->
                     <div class="font-mono text-[18px] font-bold text-[var(--accent-mint)] shrink-0">
-                        ₹<span x-text="(item.price / 100).toFixed(0)"></span>
+                        ₹<span x-text="rupees(item.price)"></span>
                     </div>
 
                     <!-- Remove Button -->
-                    <button @click="removeItem(item.id)"
-                        class="w-8 h-8 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:border-[var(--accent-red)] transition-all shrink-0"
+                    <button type="button" @click="removeItem(item.id)" :aria-label="'Remove ' + item.title + ' from cart'"
+                        class="w-11 h-11 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:border-[var(--accent-red)] transition-all shrink-0"
                         title="Remove from cart">
                         ✕
                     </button>
@@ -78,41 +78,39 @@
                 <div class="flex justify-between font-body text-[14px]">
                     <span class="text-[var(--text-muted)]">Subtotal (<span x-text="cart.total_items"></span>
                         items)</span>
-                    <span class="text-[var(--text-primary)]">₹<span
-                            x-text="(cart.subtotal / 100).toFixed(0)"></span></span>
+                    <span class="text-[var(--text-primary)]">₹<span x-text="rupees(cart.subtotal)"></span></span>
                 </div>
                 <template x-if="cart.discount_amount > 0">
                     <div class="flex justify-between font-body text-[14px]">
-                        <span class="text-[var(--accent-mint)] flex items-center gap-1.5">✦ Bulk Discount (5+
-                            items)</span>
-                        <span class="text-[var(--accent-mint)] font-[600]">– ₹<span
-                                x-text="(cart.discount_amount / 100).toFixed(0)"></span></span>
+                        <span class="text-[var(--accent-mint)] flex items-center gap-1.5">✦ Bundle discount (<span x-text="cart.discount_percentage"></span>%)</span>
+                        <span class="text-[var(--accent-mint)] font-[600]">– ₹<span x-text="rupees(cart.discount_amount)"></span></span>
                     </div>
                 </template>
-                <div class="border-t border-[var(--border)] pt-3 flex justify-between">
-                    <span class="font-display font-[700] text-[18px] text-[var(--text-primary)]">Total</span>
-                    <span class="font-mono text-[22px] font-bold text-[var(--accent-mint)]">₹<span
-                            x-text="(cart.final_total / 100).toFixed(0)"></span></span>
+                <div class="border-t border-[var(--border)] pt-3 flex justify-between items-baseline">
+                    <span class="font-display font-[700] text-[18px] text-[var(--text-primary)]">You pay</span>
+                    <span class="font-mono text-[24px] font-bold text-[var(--accent-mint)]">₹<span x-text="rupees(cart.payable_total ?? cart.final_total)"></span></span>
                 </div>
+                <p class="font-body text-[12px] text-[var(--text-muted)]">* Inclusive of all applicable taxes and charges. A GST invoice is emailed after payment.</p>
             </div>
-
-            <!-- Bulk Discount Nudge -->
-            <template x-if="cart.total_items < 5 && cart.discount_amount === 0">
-                <div
-                    class="mb-6 text-[12px] font-mono text-[var(--accent-amber)] bg-[var(--accent-amber)]/10 px-4 py-2 rounded text-center">
-                    Add <span x-text="5 - cart.total_items"></span> more item(s) to unlock a 20% bulk discount!
+            <!-- Next discount tier -->
+            <template x-if="cart.next_tier_info">
+                <div class="mb-6">
+                    <div class="flex justify-between font-mono text-[11px] text-[var(--text-muted)] mb-2">
+                        <span>Add <strong class="text-[var(--accent-amber)]" x-text="cart.next_tier_info.needed"></strong> more for <strong class="text-[var(--accent-amber)]" x-text="cart.next_tier_info.discount + '% off'"></strong></span>
+                        <span x-text="cart.total_items + ' item(s)'"></span>
+                    </div>
+                    <div class="mm-progress" role="progressbar" aria-label="Progress to next bundle discount"
+                        :aria-valuenow="cart.total_items" aria-valuemin="0" :aria-valuemax="cart.total_items + cart.next_tier_info.needed">
+                        <span :style="'width:' + Math.round(100 * cart.total_items / (cart.total_items + cart.next_tier_info.needed)) + '%'"></span>
+                    </div>
                 </div>
             </template>
-
-            <!-- Error display -->
-            <div x-show="error" x-text="error" class="mb-4 text-[13px] text-[var(--accent-red)] font-body"></div>
-
-            <button @click="checkout()" :disabled="checkingOut"
-                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600] relative">
-                <span x-show="!checkingOut">Proceed to Checkout</span>
-                <span x-show="checkingOut" class="animate-pulse">Processing…</span>
+            <div x-show="error" x-text="error" class="mb-4 text-[13px] text-[var(--accent-red)] font-body" role="alert"></div>
+            <button type="button" x-ref="payBtn" @click="checkout()" :disabled="checkingOut"
+                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                Proceed to secure payment
             </button>
-
+            <p class="mt-3 flex items-center justify-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">🔒 UPI · Cards · Netbanking</p>
             <button @click="clearCart()"
                 class="mt-3 w-full h-10 font-body text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors">
                 Clear Cart
@@ -124,79 +122,44 @@
 <script>
     function cartApp() {
         return {
-            cart: null,
+            cart: { items: [], total_items: 0, subtotal: 0, discount_amount: 0, discount_percentage: 0, final_total: 0, payable_total: 0, next_tier_info: null },
             loading: true,
             checkingOut: false,
             error: '',
-
+            rupees(paise) {
+                const r = (Number(paise) || 0) / 100;
+                return Number.isInteger(r) ? String(r) : r.toFixed(2);
+            },
             async loadCart() {
-                this.loading = true;
                 try {
-                    const res = await fetch('/api/v1/commerce/cart/current/', {
-                        headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
-                    });
-                    if (res.ok) {
-                        this.cart = await res.json();
-                    }
+                    this.cart = await MM.api('/api/v1/commerce/cart/current/');
                 } catch (e) {
-                    this.error = 'Failed to load cart.';
+                    this.error = e.message;
                 } finally {
                     this.loading = false;
                 }
             },
-
             async removeItem(itemId) {
-                const res = await fetch('/api/v1/commerce/cart/remove_item/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-                    },
-                    body: JSON.stringify({ item_id: itemId })
-                });
-                if (res.ok) {
-                    this.cart = await res.json();
-                }
+                try {
+                    this.cart = await MM.api('/api/v1/commerce/cart/remove_item/', { body: { item_id: itemId } });
+                    MM.toast('info', 'Removed from cart');
+                } catch (e) { MM.toast('error', e.message); }
             },
-
             async clearCart() {
-                const res = await fetch('/api/v1/commerce/cart/clear/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-                    },
-                    body: JSON.stringify({})
-                });
-                if (res.ok) {
-                    this.cart = await res.json();
-                }
+                if (!confirm('Remove every item from your cart?')) return;
+                try {
+                    this.cart = await MM.api('/api/v1/commerce/cart/clear/', { body: {} });
+                } catch (e) { MM.toast('error', e.message); }
             },
-
             async checkout() {
                 if (!this.cart || this.cart.total_items === 0) return;
-                this.checkingOut = true;
                 this.error = '';
-                try {
-                    const res = await fetch('{% url 'cart_checkout' %}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-                        },
-                        body: JSON.stringify({ cart_id: this.cart.id })
-                    });
-                    const data = await res.json();
-                    if (data.redirect_url) {
-                        window.location.href = data.redirect_url;
-                    } else {
-                        this.error = data.error || 'Checkout failed. Please try again.';
-                    }
-                } catch (e) {
-                    this.error = 'Network error. Please try again.';
-                } finally {
-                    this.checkingOut = false;
-                }
+                this.checkingOut = true;
+                await MM.checkout('{% url "cart_checkout" %}', { cart_id: this.cart.id }, {
+                    button: this.$refs.payBtn,
+                    onError: (e) => { this.error = e.cancelled ? '' : e.message; },
+                });
+                this.checkingOut = false;
             }
         }
     }

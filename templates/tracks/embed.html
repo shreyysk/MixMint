@@ -1,11 +1,12 @@
-{% load tracks_filters %}
+{% load tracks_filters static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <title>{{ track.title }} — {{ track.dj.dj_name }} | MixMint</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
         :root {
             --accent-mint: #00FFB3;
@@ -60,7 +61,7 @@
             {% else %}
             <div class="w-full h-full flex items-center justify-center bg-zinc-900">
                 {% if track.cover_url %}
-                <img src="{{ track.cover_url }}" class="w-full h-full object-cover opacity-50">
+                <img src="{{ track.cover_url }}" alt="" class="w-full h-full object-cover opacity-50">
                 {% else %}
                 <span class="text-4xl">🎧</span>
                 {% endif %}
@@ -72,7 +73,8 @@
                 <h3 class="font-bold text-sm truncate">{{ track.title }}</h3>
                 <p class="text-[11px] text-[var(--text-muted)] truncate">{{ track.dj.dj_name }}</p>
             </div>
-            <a href="{{ request.build_absolute_uri }}" target="_parent" class="premium-btn text-xs whitespace-nowrap">
+            <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'track_detail' track.id %}" target="_blank" rel="noopener"
+                class="premium-btn text-xs whitespace-nowrap">
                 Buy {{ track.price|money }}
             </a>
         </div>

@@ -12,22 +12,40 @@ Handles:
 """
 
 import hashlib
+import logging
 import time
 
 import boto3
 from django.http import JsonResponse, StreamingHttpResponse
-from django.shortcuts import get_object_or_404
+from django.utils.http import content_disposition_header
 from django.conf import settings
 
+from .models import DownloadToken
 from .utils import DownloadManager
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from django.core.cache import cache
 from apps.admin_panel.models import KillSwitch, FraudAlert
 
-# Anti-leak delay threshold: files > 50MB get throttled [Spec §11]
-LARGE_FILE_THRESHOLD = 50 * 1024 * 1024  # 50MB
-THROTTLE_CHUNK_DELAY = 0.05  # 50ms delay per chunk for large files
+logger = logging.getLogger("mixmint")
+
+CHUNK_SIZE = 256 * 1024  # 256 KB chunks
+# Suspicious accounts only: ~2.5 MB/s instead of a hard stall (fits serverless time limits).
+SUSPICIOUS_CHUNK_DELAY = 0.1
+
+
+def _resolve_content(token):
+    model = Track if token.content_type == "track" else AlbumPack
+    return model.objects.filter(id=token.content_id, is_active=True, is_deleted=False).first()
+
+
+def _filename(content, token):
+    if token.content_type == "album":
+        ext = "zip"
+    else:
+        ext = (content.file_key.rsplit(".", 1)[-1].lower() if "." in (content.file_key or "") else "") or "mp3"
+    safe_title = "".join(c for c in content.title if c not in '\\/:*?"<>|\r\n').strip() or "download"
+    return f"{safe_title}.{ext}"
 
 
 def download_content(request, token_str):
@@ -35,55 +53,85 @@ def download_content(request, token_str):
     Secure download proxy — validates token, checks bans, streams from R2,
     verifies byte completion with SHA-256 checksum, and creates audit log [Spec §4].
     """
-    # 1. Kill switch check [Spec §4.6]
     if KillSwitch.objects.filter(is_active=True).exists():
         return JsonResponse({"error": "Downloads are temporarily disabled."}, status=503)
 
     client_ip = _get_client_ip(request)
     device_hash = request.META.get("HTTP_X_DEVICE_HASH")
 
-    # 2. BanList check [Spec §4.6]
     is_banned, ban_msg = DownloadManager.check_ban_list(client_ip, device_hash)
     if is_banned:
         return JsonResponse({"error": ban_msg}, status=403)
 
-    # 3. Validate token (one-time use, IP + device bound) [Spec §4.5]
+    # Tokens are personal: when a session is present it must be the owner's.
+    if request.user.is_authenticated:
+        owner_ok = DownloadToken.objects.filter(token=token_str, user__user=request.user).exists()
+        if not owner_ok and DownloadToken.objects.filter(token=token_str).exists():
+            return JsonResponse({"error": "This download link belongs to another account."}, status=403)
+
     try:
         token = DownloadManager.validate_and_use(token_str, client_ip, device_hash)
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=403)
 
-    # 3.2 Concurrent connection limit (Max 2) [Spec §4.4]
-    cache_key = f"dl_concurrency_{token_str}"
+    if token.user.is_frozen or token.user.is_banned:
+        return JsonResponse({"error": "Your account is restricted. Contact support."}, status=403)
+
+    content = _resolve_content(token)
+    if content is None:
+        return JsonResponse({"error": "This item is no longer available."}, status=404)
+    if not content.file_key:
+        # External-source item: hand over to the external flow with a fresh token.
+        return JsonResponse(
+            {"error": "This item is delivered from the DJ's source. Use the download button again.", "external": True},
+            status=409,
+        )
+
+    # Concurrent connection limit per user (max 2) [Spec §4.4]
+    cache_key = f"dl_concurrency_{token.user_id}"
+    cache.add(cache_key, 0, timeout=3600)
     try:
         current_conns = cache.incr(cache_key)
     except ValueError:
-        # Key doesn't exist, set it to 1
         cache.set(cache_key, 1, timeout=3600)
         current_conns = 1
-
     if current_conns > 2:
-        # Atomic rollback if limit exceeded
-        cache.decr(cache_key)
+        _release_slot(cache_key)
         return JsonResponse(
-            {
-                "error": "Too many concurrent connections. Please close other download threads.",
-                "code": "CONCURRENCY_LIMIT",
-            },
+            {"error": "Too many concurrent downloads. Please wait for one to finish.", "code": "CONCURRENCY_LIMIT"},
             status=429,
         )
 
-    # 4. Resolve content
-    if token.content_type == "track":
-        content = get_object_or_404(Track, id=token.content_id, is_active=True, is_deleted=False)
-    else:
-        content = get_object_or_404(AlbumPack, id=token.content_id, is_active=True, is_deleted=False)
-
-    # 4.1 Throttling for suspicious users [Spec §4.6]
     has_high_fraud = FraudAlert.objects.filter(user=token.user, severity="high", status="pending").exists()
 
-    # 5. Increment attempt counter + create audit log [Spec P2 §6]
-    attempt_count = DownloadManager.increment_attempt(client_ip, token.content_id, token.content_type)
+    delivery = getattr(settings, "DOWNLOAD_DELIVERY", "proxy")
+    if delivery in ("auto", "presigned") and not has_high_fraud:
+        handed_off = _presigned_handoff(request, token, content, cache_key, client_ip, device_hash, delivery)
+        if handed_off is not None:
+            return handed_off
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL or None,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        )
+        s3_object = s3.get_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
+    except Exception as exc:
+        _release_slot(cache_key)
+        # Give the attempt back: a storage failure is not the buyer's fault.
+        DownloadToken.objects.filter(pk=token.pk).update(is_used=False)
+        from botocore.exceptions import ClientError
+
+        code = exc.response.get("Error", {}).get("Code") if isinstance(exc, ClientError) else None
+        if code in ("NoSuchKey", "404"):
+            logger.error("Missing R2 object for %s %s: %s", token.content_type, content.id, content.file_key)
+            return JsonResponse({"error": "File not found in storage. Support has been notified."}, status=404)
+        logger.exception("R2 fetch failed for %s %s", token.content_type, content.id)
+        return JsonResponse({"error": "Storage is temporarily unavailable. Please retry."}, status=503)
+
+    attempt_count = DownloadManager.increment_attempt(client_ip, token.content_id, token.content_type, user=token.user)
     DownloadManager.create_download_log(
         user=token.user,
         content_id=token.content_id,
@@ -93,24 +141,12 @@ def download_content(request, token_str):
         attempt_number=attempt_count,
     )
 
-    # 6. Stream from private R2 bucket [Spec §5]
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    content_length = s3_object["ContentLength"]
+    bytes_counter = {"delivered": 0}
+    sha256_hash = hashlib.sha256()
 
-    try:
-        s3_object = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=content.file_key)
-        content_length = s3_object["ContentLength"]
-
-        # Track bytes + checksum for completion verification [Spec §4.4]
-        bytes_counter = {"delivered": 0}
-        sha256_hash = hashlib.sha256()
-        is_large_file = content_length > LARGE_FILE_THRESHOLD
-
-        def file_iterator(stream, chunk_size=8192):
+    def file_iterator(stream, chunk_size=CHUNK_SIZE):
+        try:
             with stream as s:
                 while True:
                     chunk = s.read(chunk_size)
@@ -118,77 +154,114 @@ def download_content(request, token_str):
                         break
                     bytes_counter["delivered"] += len(chunk)
                     sha256_hash.update(chunk)
-
-                    # Anti-leak delay for large files [Spec §11]
-                    # Suspicious users get 200ms delay instead of 50ms [Spec §4.6]
-                    active_delay = 0.2 if has_high_fraud else THROTTLE_CHUNK_DELAY
-                    if is_large_file or has_high_fraud:
-                        time.sleep(active_delay)
-
+                    # Only accounts under a pending high-severity fraud alert are slowed down [Spec §4.6].
+                    if has_high_fraud:
+                        time.sleep(SUSPICIOUS_CHUNK_DELAY)
                     yield chunk
 
-            # After full delivery — verify and mark complete [Spec §4.4]
             if bytes_counter["delivered"] == content_length:
                 checksum = sha256_hash.hexdigest()
-
-                # Verify against source-of-truth if available [Spec §4.4]
-                # Default to True if no reference checksum exists yet
-                is_valid_integrity = True
-                if hasattr(content, "checksum") and content.checksum:
-                    is_valid_integrity = checksum == content.checksum
-
+                is_valid = not getattr(content, "checksum", None) or checksum == content.checksum
                 DownloadManager.mark_download_complete(
-                    token,
-                    bytes_delivered=bytes_counter["delivered"],
-                    checksum_hex=checksum,
-                    checksum_ok=is_valid_integrity,
+                    token, bytes_delivered=bytes_counter["delivered"], checksum_hex=checksum, checksum_ok=is_valid
                 )
-
-                if is_valid_integrity:
+                if is_valid:
                     from django.db.models import F
 
-                    content.download_count = F("download_count") + 1
-                    content.save(update_fields=["download_count"])
+                    type(content).objects.filter(pk=content.pk).update(download_count=F("download_count") + 1)
+        finally:
+            _release_slot(cache_key)
 
-        filename = f"{content.title}.zip" if token.content_type == "album" else f"{content.title}.mp3"
-        response = StreamingHttpResponse(
-            file_iterator(s3_object["Body"]), content_type=s3_object.get("ContentType", "application/octet-stream")
-        )
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        response["Content-Length"] = content_length
-        response["X-MixMint-Token"] = token_str[:8] + "..."  # Truncated for logging
+    response = StreamingHttpResponse(
+        file_iterator(s3_object["Body"]), content_type=s3_object.get("ContentType") or "application/octet-stream"
+    )
+    response["Content-Disposition"] = content_disposition_header(True, _filename(content, token))
+    response["Content-Length"] = content_length
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
 
-        # Store expected bytes on token
-        token.bytes_expected = content_length
-        token.save(update_fields=["bytes_expected"])
-
-        # Decrement concurrency after streaming is done [Spec §4.4]
-        try:
-            response.streaming_content = _wrap_iterator(response.streaming_content, cache_key)
-        except Exception:
-            pass
-
-        return response
-
-    except s3.exceptions.NoSuchKey:
-        return JsonResponse({"error": "File not found in storage."}, status=404)
-    except Exception:
-        return JsonResponse({"error": "Failed to retrieve file from storage."}, status=500)
+    token.bytes_expected = content_length
+    token.save(update_fields=["bytes_expected"])
+    return response
 
 
-def _wrap_iterator(iterator, cache_key):
-    """Wraps streaming content to decrement concurrency on finish."""
+def _r2_client():
+    from botocore.config import Config
+
+    return boto3.client(
+        "s3",
+        endpoint_url=settings.AWS_S3_ENDPOINT_URL or None,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name="auto",  # Cloudflare R2
+        config=Config(signature_version="s3v4"),
+    )
+
+
+def _presigned_handoff(request, token, content, cache_key, client_ip, device_hash, delivery):
+    """
+    Redirect to a short-lived R2 signed URL (after every token/ban/owner check above).
+    Used for large files on serverless hosts, where streaming through the function could be
+    cut off by its time or size limit. Returns None to fall back to the streaming proxy.
+    Completion is recorded at hand-off (R2 serves the exact stored object); the byte-verified
+    proxy stays in use for small files and for accounts under a fraud alert.
+    """
+    from django.http import HttpResponseRedirect
+
     try:
-        for chunk in iterator:
-            yield chunk
-    finally:
-        current = cache.get(cache_key, 0)
-        cache.set(cache_key, max(0, current - 1), timeout=3600)
+        s3 = _r2_client()
+        head = s3.head_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
+        size = int(head.get("ContentLength") or 0)
+        if delivery == "auto" and size <= settings.DOWNLOAD_PROXY_MAX_MB * 1024 * 1024:
+            return None
+        url = s3.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": settings.R2_PRIVATE_BUCKET,
+                "Key": content.file_key,
+                "ResponseContentDisposition": content_disposition_header(True, _filename(content, token)),
+                "ResponseCacheControl": "private, no-store",
+            },
+            ExpiresIn=settings.DOWNLOAD_PRESIGN_SECONDS,
+        )
+    except Exception:
+        logger.exception("Signed-URL hand-off failed for %s %s; using proxy.", token.content_type, content.id)
+        return None
+
+    attempt = DownloadManager.increment_attempt(client_ip, token.content_id, token.content_type, user=token.user)
+    DownloadManager.create_download_log(
+        user=token.user,
+        content_id=token.content_id,
+        content_type=token.content_type,
+        ip_address=client_ip,
+        device_hash=device_hash,
+        attempt_number=attempt,
+    )
+    token.bytes_expected = size
+    token.save(update_fields=["bytes_expected"])
+    DownloadManager.mark_download_complete(
+        token, bytes_delivered=size, checksum_hex=getattr(content, "checksum", None), checksum_ok=True
+    )
+    from django.db.models import F
+
+    type(content).objects.filter(pk=content.pk).update(download_count=F("download_count") + 1)
+    _release_slot(cache_key)
+    response = HttpResponseRedirect(url)
+    response["Cache-Control"] = "private, no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+def _release_slot(cache_key):
+    try:
+        if cache.decr(cache_key) < 0:
+            cache.set(cache_key, 0, timeout=3600)
+    except ValueError:
+        pass
 
 
 def _get_client_ip(request):
     """Extract real client IP from request."""
-    x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded:
-        return x_forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
+    from apps.core.net import get_client_ip
+
+    return get_client_ip(request)

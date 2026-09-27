@@ -5,8 +5,6 @@ from rest_framework.response import Response
 from .models import Track
 from .serializers import TrackSerializer
 from apps.downloads.utils import DownloadManager
-from apps.commerce.models import Purchase
-from .utils import process_track_metadata
 
 
 class TrackViewSet(viewsets.ModelViewSet):
@@ -31,7 +29,9 @@ class TrackViewSet(viewsets.ModelViewSet):
         """
         if self.action in ["list", "retrieve"]:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        from apps.accounts.permissions import IsNotBanned
+
+        return [permissions.IsAuthenticated(), IsNotBanned()]
 
     def _check_dj_permission(self, user):
         """
@@ -68,21 +68,33 @@ class TrackViewSet(viewsets.ModelViewSet):
             return error_response
         return super().create(request, *args, **kwargs)
 
-    def update(self, request, *args, **kwargs):
-        """
-        [CP-06.04 FIX] Enforce DJ role for track updates.
-        Only track owner can update.
-        """
+    def _owner_guard(self, request, obj):
+        """Only the owning DJ (or staff) may modify a track [CP-06.04]."""
+        if request.user.is_staff:
+            return None
         is_allowed, error_response = self._check_dj_permission(request.user)
         if not is_allowed:
             return error_response
-
-        # Additional ownership check
-        track = self.get_object()
-        if hasattr(request.user.profile, "dj_profile") and track.dj != request.user.profile.dj_profile:
+        if obj.dj_id != request.user.profile.dj_profile.id:
             return Response({"error": "You can only modify your own tracks."}, status=403)
+        return None
 
+    def update(self, request, *args, **kwargs):
+        denied = self._owner_guard(request, self.get_object())
+        if denied:
+            return denied
         return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Soft delete only [Spec P2 §3.1]; buyers keep their library entries."""
+        track = self.get_object()
+        denied = self._owner_guard(request, track)
+        if denied:
+            return denied
+        track.is_deleted = True
+        track.is_active = False
+        track.save(update_fields=["is_deleted", "is_active"])
+        return Response(status=204)
 
     def get_queryset(self):
         """
@@ -124,93 +136,17 @@ class TrackViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        """Process track metadata upon upload [Gap 04]."""
-        track = serializer.save()
-        process_track_metadata(track)
+        """Owner is always the requesting DJ; process metadata [Gap 04]."""
+        track = serializer.save(dj=self.request.user.profile.dj_profile)
+        from .tasks import process_track_metadata_task
+
+        # Off the request path (runs inline when CELERY_TASK_ALWAYS_EAGER).
+        process_track_metadata_task.delay(track.id)
 
     @action(detail=True, methods=["post"], url_path="download-token", permission_classes=[permissions.IsAuthenticated])
     def get_download_token(self, request, pk=None):
-        """
-        Generate a secure download token.
-        Ownership-based access only. 3 attempts per IP. Device fingerprint bound.
-        [Spec §4]
-        """
-        track = self.get_object()
-        profile = request.user.profile
-        client_ip = request.META.get("REMOTE_ADDR")
-        user_agent = request.META.get("HTTP_USER_AGENT")
-        device_hash = request.data.get("device_hash") or request.META.get("HTTP_X_DEVICE_HASH")
-
-        # 0. BanList check [Spec §4.6]
-        is_banned, ban_msg = DownloadManager.check_ban_list(client_ip, device_hash)
-        if is_banned:
-            return Response({"error": ban_msg}, status=403)
-
-        # 1. Ownership + single-download lock enforcement [Spec §2.2, §4.3]
-        purchase = (
-            Purchase.objects.filter(
-                user=profile,
-                content_id=track.id,
-                content_type="track",
-                is_revoked=False,
-                is_redownload=False,
-            )
-            .order_by("-created_at")
-            .first()
-        )
-
-        if not purchase and track.price > 0:
-            return Response({"error": "You must purchase this track first.", "price": str(track.price)}, status=403)
-
-        access_source = "purchase"
-        if purchase and purchase.download_completed:
-            # Insurance allows free re-downloads [Spec §4.3]
-            if hasattr(purchase, "insurance") and purchase.insurance.status == "active":
-                access_source = "insurance"
-            else:
-                eligible, msg = DownloadManager.check_redownload_eligibility(profile, track.id, "track")
-                if eligible:
-                    return Response(
-                        {
-                            "error": "Re-download requires payment.",
-                            "redownload_available": True,
-                            "redownload_price": str(track.price * 0.5),
-                            "message": msg,
-                        },
-                        status=403,
-                    )
-                return Response({"error": msg}, status=403)
-
-        # 2. Check IP attempt limit [Spec §4.2: 3 per IP]
-        allowed, msg, remaining = DownloadManager.check_ip_attempts(client_ip, track.id, "track")
-        if not allowed:
-            eligible, redownload_msg = DownloadManager.check_redownload_eligibility(profile, track.id, "track")
-            if eligible:
-                return Response(
-                    {
-                        "error": msg,
-                        "redownload_available": True,
-                        "redownload_price": str(track.price * 0.5),
-                        "message": "You can re-download at 50% price.",
-                    },
-                    status=403,
-                )
-            return Response({"error": msg}, status=403)
-
-        # 3. Generate token (IP + device bound)
-        token = DownloadManager.generate_token(
-            profile, track.id, "track", access_source, client_ip, user_agent, device_hash
-        )
-
-        response_data = {"download_url": f"/api/v1/downloads/{token.token}/"}
-
-        # 4. Add warning if 1 attempt remaining [Spec §4.2]
-        if msg:
-            response_data["warning"] = msg
-        if remaining == 1:
-            response_data["warning"] = "WARNING: This is your last download attempt from this IP."
-
-        return Response(response_data)
+        """Ownership-checked, IP/device-bound one-time download token [Spec §4]."""
+        return DownloadManager.issue_token_response(request, self.get_object(), "track")
 
     @action(detail=True, methods=["post"], url_path="report", permission_classes=[permissions.IsAuthenticated])
     def report_content(self, request, pk=None):
@@ -221,6 +157,11 @@ class TrackViewSet(viewsets.ModelViewSet):
 
         if not report_type or not reason:
             return Response({"error": "report_type and reason are required."}, status=400)
+        from apps.admin_panel.models import ContentReport as _CR
+
+        if report_type not in dict(_CR.REPORT_TYPES):
+            return Response({"error": "Invalid report_type."}, status=400)
+        reason = str(reason)[:2000]
 
         from apps.admin_panel.models import ContentReport
 
@@ -241,10 +182,21 @@ class TrackViewSet(viewsets.ModelViewSet):
         stars = request.data.get("stars")
         review = request.data.get("review", "")
 
-        if not stars or not (1 <= int(stars) <= 5):
+        try:
+            stars = int(stars)
+        except (TypeError, ValueError):
+            stars = 0
+        if not (1 <= stars <= 5):
             return Response({"error": "stars (1-5) is required."}, status=400)
 
+        from apps.commerce.models import Purchase
         from .models import StarRating
+
+        owns = Purchase.objects.filter(
+            user=request.user.profile, content_type="track", content_id=track.id, status="paid"
+        ).exists()
+        if not owns and track.price > 0:
+            return Response({"error": "Only buyers can rate this track."}, status=403)
 
         rating, created = StarRating.objects.update_or_create(
             user=request.user.profile,
@@ -306,7 +258,7 @@ class TrackViewSet(viewsets.ModelViewSet):
         track = self.get_object()
 
         # Security: Only track owner can do this
-        if request.user.profile.dj_profile != track.dj:
+        if getattr(request.user.profile, "dj_profile", None) != track.dj:
             return Response({"error": "You do not have permission to modify this track."}, status=403)
 
         url = request.data.get("external_link_url", "").strip() or request.data.get("source_url", "").strip()
@@ -367,7 +319,7 @@ class TrackViewSet(viewsets.ModelViewSet):
 
         Probes headers only, then reports reachability + size. Guide included on failure.
         """
-        if request.user.profile.role != "dj":
+        if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
             return Response({"error": "Only DJs can verify source links."}, status=403)
         url = request.data.get("source_url", "").strip() or request.data.get("external_link_url", "").strip()
         if not url:
@@ -390,7 +342,7 @@ class TrackViewSet(viewsets.ModelViewSet):
         Ensures DJs can only access their own tracks for editing.
         [Enhancement] Added pagination support.
         """
-        if request.user.profile.role != "dj":
+        if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
             return Response({"error": "Only DJs can access this endpoint."}, status=403)
 
         try:
@@ -407,8 +359,11 @@ class TrackViewSet(viewsets.ModelViewSet):
             tracks = tracks.filter(is_deleted=False)
 
         # Pagination [Enhancement]
-        page = int(request.query_params.get("page", 1))
-        page_size = min(int(request.query_params.get("page_size", 20)), 50)  # Max 50
+        try:
+            page = max(1, int(request.query_params.get("page", 1)))
+            page_size = max(1, min(int(request.query_params.get("page_size", 20)), 50))  # Max 50
+        except (TypeError, ValueError):
+            return Response({"error": "page and page_size must be integers."}, status=400)
         start = (page - 1) * page_size
         end = start + page_size
 

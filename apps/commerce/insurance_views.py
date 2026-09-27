@@ -1,122 +1,106 @@
-import json
-from decimal import Decimal
+"""
+Download Insurance [Spec §4.3]: ₹49 add-on for a paid purchase that unlocks
+unlimited free re-downloads. Paid through the normal gateway order flow and
+activated by apps.payments.services.complete_order (callback/webhook/confirm).
+"""
+
+import uuid
 from datetime import timedelta
-from django.utils import timezone
+from decimal import Decimal
+
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from rest_framework import permissions
+from rest_framework.decorators import api_view, permission_classes
 
 from apps.commerce.models import Purchase
 from apps.downloads.models import DownloadInsurance
-from apps.payments.utils import create_order, verify_payment
+
+INSURANCE_PRICE = Decimal("49.00")
 
 
-@login_required
+def _paid_purchase(request, purchase_id):
+    return Purchase.objects.filter(
+        id=purchase_id, user=request.user.profile, status="paid", is_revoked=False, is_redownload=False
+    ).first()
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
 def check_insurance_eligibility(request, purchase_id):
-    """
-    Check if a purchase is eligible for insurance [Spec §4.3].
-    Available after 24 hours from original purchase.
-    """
-    try:
-        purchase = Purchase.objects.get(id=purchase_id, user=request.user.profile)
-    except Purchase.DoesNotExist:
+    """Available 24 hours after the original purchase."""
+    purchase = _paid_purchase(request, purchase_id)
+    if not purchase:
         return JsonResponse({"error": "Purchase not found."}, status=404)
 
-    if hasattr(purchase, "insurance"):
+    ins = getattr(purchase, "insurance", None)
+    if ins and ins.status == "active":
+        return JsonResponse({"eligible": False, "reason": "Insurance is already active.", "status": ins.status})
+
+    wait_until = (purchase.paid_at or purchase.created_at) + timedelta(hours=24)
+    if timezone.now() < wait_until:
+        remaining = wait_until - timezone.now()
+        hours, remainder = divmod(int(remaining.total_seconds()), 3600)
         return JsonResponse(
             {
                 "eligible": False,
-                "reason": "Insurance already exists for this purchase.",
-                "status": purchase.insurance.status,
+                "reason": f"Insurance available after 24 hours. Wait another {hours}h {remainder // 60}m.",
+                "available_at": wait_until.isoformat(),
             }
         )
-
-    # 24-hour wait rule [Spec §4.3]
-    wait_time = purchase.created_at + timedelta(hours=24)
-    if timezone.now() < wait_time:
-        remaining = wait_time - timezone.now()
-        hours, remainder = divmod(remaining.seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        return JsonResponse(
-            {
-                "eligible": False,
-                "reason": f"Insurance available after 24 hours. Wait another {hours}h {minutes}m.",
-                "available_at": wait_time.isoformat(),
-            }
-        )
-
-    return JsonResponse(
-        {"eligible": True, "price": "₹49.00", "content": purchase.content_id}  # Standard insurance price
-    )
+    return JsonResponse({"eligible": True, "price": str(INSURANCE_PRICE), "content": purchase.content_id})
 
 
-@login_required
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def purchase_insurance(request, purchase_id):
-    """
-    Initiate insurance purchase flow [Spec §4.3].
-    """
-    try:
-        purchase = Purchase.objects.get(id=purchase_id, user=request.user.profile)
-    except Purchase.DoesNotExist:
+    """Create a gateway order for insurance; the row activates only when payment completes."""
+    from apps.payments.utils import get_gateway
+    from apps.payments.views import _gateway_error, _gateway_payload
+
+    purchase = _paid_purchase(request, purchase_id)
+    if not purchase:
         return JsonResponse({"error": "Purchase not found."}, status=404)
+    if timezone.now() < (purchase.paid_at or purchase.created_at) + timedelta(hours=24):
+        return JsonResponse({"error": "Insurance is available 24 hours after purchase."}, status=400)
 
-    if hasattr(purchase, "insurance"):
-        return JsonResponse({"error": "Insurance already exists."}, status=400)
+    ins = getattr(purchase, "insurance", None)
+    if ins and ins.status == "active":
+        return JsonResponse({"error": "Insurance already active."}, status=400)
 
-    # Price for insurance (fixed ₹49 for now)
-    price = Decimal("49.00")
-
-    # Create Payment Order
+    amount_paise = int(INSURANCE_PRICE * 100)
+    internal_id = f"INS_{uuid.uuid4().hex[:14].upper()}"
     try:
-        order = create_order(
-            float(price), receipt=f"insurr_{purchase_id}", notes={"purchase_id": str(purchase_id), "type": "insurance"}
+        gateway = get_gateway(request.data.get("gateway") if hasattr(request, "data") else None)
+        result = gateway.create_order(
+            amount_paise=amount_paise,
+            order_id=internal_id,
+            metadata={"user_id": str(request.user.id), "purchase_id": str(purchase.id), "purpose": "insurance"},
         )
-        return JsonResponse({"order_id": order["id"], "amount": order["amount"], "currency": "INR"})
-    except Exception:
-        return JsonResponse({"error": "Payment gateway error."}, status=500)
+    except Exception as exc:
+        return _gateway_error(exc)
+    order_id = result.get("gateway_order_id") or result.get("order_id") or internal_id
 
-
-@login_required
-def verify_insurance_payment(request):
-    """
-    Verify Razorpay payment and activate insurance [Spec §4.3].
-    """
-
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid method."}, status=400)
-
-    try:
-        data = json.loads(request.body)
-        payment_id = data.get("payment_id")
-        order_id = data.get("order_id")
-        signature = data.get("signature")
-        purchase_id = data.get("purchase_id")
-    except (json.JSONDecodeError, TypeError, AttributeError):
-        return JsonResponse({"error": "Invalid request data."}, status=400)
-
-    if not verify_payment(payment_id, order_id, signature):
-        return JsonResponse({"error": "Payment verification failed."}, status=400)
-
-    try:
-        purchase = Purchase.objects.get(id=purchase_id, user=request.user.profile)
-    except Purchase.DoesNotExist:
-        return JsonResponse({"error": "Purchase not found."}, status=404)
-
-    # Activate Insurance
-    insurance, created = DownloadInsurance.objects.get_or_create(
+    DownloadInsurance.objects.update_or_create(
         purchase=purchase,
         defaults={
             "user": request.user.profile,
             "content_id": purchase.content_id,
             "content_type": purchase.content_type,
-            "insurance_price": Decimal("49.00"),
-            "payment_id": payment_id,
-            "status": "active",
+            "insurance_price": INSURANCE_PRICE,
+            "payment_id": order_id,
+            "status": "pending",
         },
     )
+    payload = _gateway_payload(result, order_id, amount_paise)
+    payload["description"] = "Download Insurance"
+    return JsonResponse(payload)
 
-    return JsonResponse(
-        {
-            "status": "success",
-            "message": "Download Insurance activated! You now have unlimited free re-downloads for this content.",
-        }
-    )
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def verify_insurance_payment(request):
+    """Razorpay checkout result for an insurance order -> shared confirm path."""
+    from apps.payments.views import razorpay_confirm
+
+    return razorpay_confirm(request._request)

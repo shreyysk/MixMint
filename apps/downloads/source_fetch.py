@@ -10,6 +10,8 @@ Security: source URL never leaves the server. Only the token URL is public.
 import logging
 import os
 import re
+import socket
+import ipaddress
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -24,6 +26,67 @@ _GDRIVE_ID_PATTERNS = [
 ]
 
 _MEDIAFIRE_HINTS = ("mediafire.com",)
+
+# Explicitly blocked hosts even if they resolve publicly (cloud metadata, etc.)
+_BLOCKED_HOSTS = ("metadata.google.internal", "metadata.google.com")
+
+
+def assert_public_url(url):
+    """SSRF guard: DJ-supplied source URLs are fetched server-side, so refuse
+    anything resolving to private/loopback/link-local/multicast/reserved IPs
+    (covers 169.254.169.254 cloud metadata, 127.x, 10/8, 172.16/12, 192.168/16,
+    IPv6 equivalents, and DNS-rebinding hostnames — every resolved A/AAAA is checked).
+    Raises ValueError on violation.
+    """
+    parsed = urlparse(url or "")
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("Source URL must be http(s).")
+    host = (parsed.hostname or "").lower()
+    if not host or host in _BLOCKED_HOSTS:
+        raise ValueError("Source host is not allowed.")
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        raise ValueError("Source host does not resolve.")
+    for info in infos:
+        ip = info[4][0]
+        try:
+            addr = ipaddress.ip_address(ip)
+        except ValueError:
+            raise ValueError("Source host is not allowed.")
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_reserved:
+            raise ValueError("Source host resolves to a private address.")
+    return True
+
+
+MAX_REDIRECTS = 5
+
+
+def safe_request(method, url, session=None, **kwargs):
+    """
+    requests wrapper that follows redirects *manually* and runs the SSRF guard on
+    every hop before connecting (requests' own redirect handling would connect to
+    an internal address first and only let us check afterwards).
+    """
+    http = session or requests
+    kwargs["allow_redirects"] = False
+    kwargs.setdefault("headers", {"User-Agent": "MixMint/2.0 (server fetch)"})
+    for _ in range(MAX_REDIRECTS + 1):
+        assert_public_url(url)
+        resp = http.request(method, url, **kwargs)
+        if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("Location")
+            if not location:
+                return resp
+            from urllib.parse import urljoin
+
+            url = urljoin(url, location)
+            if resp.status_code == 303:
+                method = "GET"
+            resp.close()
+            continue
+        return resp
+    raise ValueError("Too many redirects from source link.")
 
 
 def extract_gdrive_id(url):
@@ -41,6 +104,8 @@ def _cache_dir():
 
 
 def _check_size_ok(resp):
+    # Re-validate post-redirect URL: a benign link must not bounce us internal.
+    assert_public_url(getattr(resp, "url", "") or "")
     max_mb = getattr(settings, "EXTERNAL_DOWNLOAD_MAX_MB", 500)
     length = resp.headers.get("Content-Length")
     if length and length.isdigit():
@@ -83,8 +148,16 @@ def fetch_gdrive(url, dest_name):
 
     api_key = getattr(settings, "GOOGLE_DRIVE_API_KEY", "") or ""
     if api_key:
-        api_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&key={api_key}"
-        resp = session.get(api_url, stream=True, timeout=timeout)
+        # Key goes in a header, never the URL, so it can't leak into logs/tracebacks.
+        api_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        resp = safe_request(
+            "GET",
+            api_url,
+            session=session,
+            stream=True,
+            timeout=timeout,
+            headers={"User-Agent": "MixMint/2.0 (server fetch)", "X-goog-api-key": api_key},
+        )
         if resp.status_code == 200:
             _check_size_ok(resp)
             return _stream_to_file(resp, dest)
@@ -94,7 +167,7 @@ def fetch_gdrive(url, dest_name):
     # NOTE: only read resp.text when the response is HTML; reading .text on a
     # streamed binary body would consume the stream.
     dl_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    resp = session.get(dl_url, stream=True, timeout=timeout)
+    resp = safe_request("GET", dl_url, session=session, stream=True, timeout=timeout)
     for _ in range(3):
         ctype = resp.headers.get("Content-Type", "")
         if "text/html" not in ctype:
@@ -110,7 +183,7 @@ def fetch_gdrive(url, dest_name):
             confirm = m.group(1) if m else None
         if not confirm:
             break
-        resp = session.get(f"{dl_url}&confirm={confirm}", stream=True, timeout=timeout)
+        resp = safe_request("GET", f"{dl_url}&confirm={confirm}", session=session, stream=True, timeout=timeout)
     if resp.status_code != 200:
         raise ValueError(f"Google Drive fetch failed (HTTP {resp.status_code}).")
     ctype = resp.headers.get("Content-Type", "")
@@ -135,7 +208,7 @@ def fetch_mediafire(url, dest_name):
     timeout = getattr(settings, "EXTERNAL_DOWNLOAD_TIMEOUT_SEC", 120)
     dest = str(_cache_dir() / dest_name)
     try:
-        resp = requests.get(url, stream=True, timeout=timeout, headers={"User-Agent": "MixMint/2.0 (server fetch)"})
+        resp = safe_request("GET", url, stream=True, timeout=timeout)
     except Exception as exc:
         raise ValueError(f"MediaFire fetch failed: {exc}") from exc
     ctype = resp.headers.get("Content-Type", "")
@@ -148,7 +221,7 @@ def fetch_mediafire(url, dest_name):
                 "Please use a Google Drive link as the backend source instead."
             )
         direct = m.group(1)
-        resp = requests.get(direct, stream=True, timeout=timeout, headers={"User-Agent": "MixMint/2.0 (server fetch)"})
+        resp = safe_request("GET", direct, stream=True, timeout=timeout)
         if resp.status_code != 200 or "text/html" in resp.headers.get("Content-Type", ""):
             raise ValueError("MediaFire direct link expired or blocked. Use a Google Drive link instead.")
     if resp.status_code != 200:
@@ -160,7 +233,7 @@ def fetch_mediafire(url, dest_name):
 def fetch_generic(url, dest_name):
     timeout = getattr(settings, "EXTERNAL_DOWNLOAD_TIMEOUT_SEC", 120)
     dest = str(_cache_dir() / dest_name)
-    resp = requests.get(url, stream=True, timeout=timeout, headers={"User-Agent": "MixMint/2.0 (server fetch)"})
+    resp = safe_request("GET", url, stream=True, timeout=timeout)
     if resp.status_code != 200:
         raise ValueError(f"Source fetch failed (HTTP {resp.status_code}).")
     _check_size_ok(resp)
@@ -176,6 +249,10 @@ def probe_source(source_url, timeout=None):
     url = (source_url or "").strip()
     if not url.lower().startswith(("http://", "https://")):
         return False, "Link must start with http:// or https://."
+    try:
+        assert_public_url(url)
+    except ValueError as exc:
+        return False, f"Link blocked for security: {exc}"
     timeout = timeout or getattr(settings, "EXTERNAL_DOWNLOAD_TIMEOUT_SEC", 120)
     host = urlparse(url).netloc.lower()
     if "drive.google.com" in host and not extract_gdrive_id(url):
@@ -185,9 +262,10 @@ def probe_source(source_url, timeout=None):
             "'Anyone with the link (Viewer)' → copy the /file/d/... link and paste it.",
         )
     try:
-        resp = requests.head(url, timeout=15, allow_redirects=True, headers={"User-Agent": "MixMint/2.0 (link-check)"})
+        resp = safe_request("HEAD", url, timeout=15, headers={"User-Agent": "MixMint/2.0 (link-check)"})
         if resp.status_code >= 400:
-            resp = requests.get(
+            resp = safe_request(
+                "GET",
                 url,
                 timeout=20,
                 stream=True,
@@ -207,14 +285,17 @@ def probe_source(source_url, timeout=None):
             mb = int(length) / (1024 * 1024)
             return True, f"Link OK — file reachable (~{mb:.1f} MB). It will be cached to MixMint on first download."
         return True, "Link OK — file reachable. It will be cached to MixMint on first download."
-    except Exception as exc:
-        return False, f"Could not reach the link ({exc}). Check sharing: Drive → 'Anyone with the link (Viewer)'."
+    except ValueError as exc:
+        return False, f"Link blocked: {exc}"
+    except Exception:
+        return False, "Could not reach the link. Check sharing: Drive → 'Anyone with the link (Viewer)'."
 
 
 def fetch_from_source(source_url, source_type, dest_name):
     """Fetch backend file to local temp cache. Returns absolute local path."""
     if not source_url:
         raise ValueError("No backend source URL configured for this track.")
+    assert_public_url(source_url)  # SSRF guard on the initial URL; each fetcher re-checks post-redirect
     st = (source_type or "other").lower()
     host = urlparse(source_url).netloc.lower()
     if st == "gdrive" or "drive.google.com" in host:

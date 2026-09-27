@@ -38,7 +38,7 @@ def mobile_home(request):
     trending = (
         Track.objects.filter(is_active=True, is_deleted=False)
         .order_by("-download_count")
-        .values("id", "title", "price", "cover_image")[:6]
+        .values("id", "title", "price", "cover_url")[:6]
     )
 
     # New releases
@@ -46,7 +46,7 @@ def mobile_home(request):
     new_releases = (
         Track.objects.filter(is_active=True, is_deleted=False, created_at__gte=week_ago)
         .order_by("-created_at")
-        .values("id", "title", "price", "cover_image")[:6]
+        .values("id", "title", "price", "cover_url")[:6]
     )
 
     data = {
@@ -81,7 +81,7 @@ def mobile_search(request):
     tracks = (
         Track.objects.filter(is_active=True, is_deleted=False)
         .filter(title__icontains=q)
-        .values("id", "title", "price", "cover_image", "dj__dj_name")[:20]
+        .values("id", "title", "price", "cover_url", "dj__dj_name")[:20]
     )
 
     data = {
@@ -125,7 +125,7 @@ def mobile_dj_stats(request):
     """
     Minimal DJ stats for mobile dashboard.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ only"}, status=403)
 
     dj = request.user.profile.dj_profile
@@ -223,6 +223,15 @@ def mobile_batch(request):
     return Response({"results": results})
 
 
+def _avg_rating(track_id):
+    from django.db.models import Avg
+
+    from apps.tracks.models import StarRating
+
+    avg = StarRating.objects.filter(content_type="track", content_id=track_id).aggregate(a=Avg("stars"))["a"]
+    return round(avg, 1) if avg else 0
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def mobile_track_detail(request, track_id):
@@ -247,8 +256,8 @@ def mobile_track_detail(request, track_id):
         "title": track.title,
         "price": str(track.price),
         "genre": track.genre,
-        "cover": track.cover_image.url if track.cover_image else None,
-        "preview_url": track.preview_url,
+        "cover": track.cover_url,
+        "preview_url": track.youtube_url or track.instagram_url,
         "dj": {
             "id": str(track.dj.id),
             "name": track.dj.dj_name,
@@ -256,7 +265,7 @@ def mobile_track_detail(request, track_id):
         },
         "stats": {
             "downloads": track.download_count,
-            "rating": str(track.average_rating or 0),
+            "rating": str(_avg_rating(track.id)),
         },
     }
 
@@ -267,72 +276,20 @@ def mobile_track_detail(request, track_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mobile_quick_buy(request):
-    """
-    One-tap purchase for mobile.
-    Minimal validation, fast checkout.
-    """
-    content_type = request.data.get("type")  # 'track' or 'album'
-    content_id = request.data.get("id")
+    """One-tap purchase for mobile — same validated path as /payments/initiate/."""
+    import json
 
+    from apps.payments.views import initiate_purchase
+
+    content_type = request.data.get("type")
+    content_id = request.data.get("id")
     if not content_type or not content_id:
         return Response({"error": "type and id required"}, status=400)
-
-    # Get content
-    if content_type == "track":
-        from apps.tracks.models import Track
-
-        content = Track.objects.filter(id=content_id, is_active=True).first()
-    else:
-        from apps.albums.models import AlbumPack
-
-        content = AlbumPack.objects.filter(id=content_id, is_active=True).first()
-
-    if not content:
-        return Response({"error": "Not found"}, status=404)
-
-    # Check already owned
-    from apps.commerce.models import Purchase
-
-    if Purchase.objects.filter(
-        user=request.user.profile, content_type=content_type, content_id=content_id, status="paid"
-    ).exists():
-        return Response({"error": "Already owned", "owned": True}, status=400)
-
-    # Create purchase
-    purchase = Purchase.objects.create(
-        user=request.user.profile,
-        seller=content.dj,
-        content_type=content_type,
-        content_id=content_id,
-        price_paid=content.price,
-        status="pending",
-    )
-
-    # Get payment URL
-    from django.conf import settings
-
-    gateway = settings.ACTIVE_GATEWAY
-
-    try:
-        result = gateway.create_order(
-            amount_paise=int(content.price * 100),
-            merchant_transaction_id=str(purchase.id),
-            user_id=str(request.user.id),
-            redirect_url=f"{settings.BASE_URL}/m/payment/callback",
-        )
-        purchase.gateway_order_id = result.get("order_id")
-        purchase.save()
-
-        return Response(
-            {
-                "purchase_id": str(purchase.id),
-                "amount": str(content.price),
-                "payment_url": result.get("redirect_url"),
-            }
-        )
-    except Exception:
-        purchase.delete()
-        return Response({"error": "Payment failed"}, status=500)
+    raw = request._request
+    raw._body = json.dumps(
+        {"content_type": content_type, "content_id": content_id, "gateway": request.data.get("gateway")}
+    ).encode()
+    return initiate_purchase(raw)
 
 
 @api_view(["GET"])

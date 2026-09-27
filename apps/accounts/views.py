@@ -5,7 +5,7 @@ from .models import User, Profile, DJProfile
 from .serializers import UserSerializer, ProfileSerializer, DJProfileSerializer
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all().order_by("-date_joined")
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
@@ -17,9 +17,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
+    """Users read/update their own profile (cosmetic fields only). No create/delete via API."""
+
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "patch", "put", "head", "options"]
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -27,16 +30,21 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Profile.objects.filter(user=self.request.user).order_by("-created_at")
 
 
-class DJProfileViewSet(viewsets.ModelViewSet):
+class DJProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public DJ directory. Read-only; DJs edit their profile from the dashboard."""
+
     queryset = DJProfile.objects.all()
     serializer_class = DJProfileSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = "slug"
-    # ... placeholder
     throttle_scope = "search"  # [Fix 16]
 
     def get_queryset(self):
-        return DJProfile.objects.filter(status="approved").order_by("-created_at")
+        return (
+            DJProfile.objects.filter(status="approved", is_deleted=False)
+            .select_related("profile")
+            .order_by("-created_at")
+        )
 
 
 @api_view(["POST"])

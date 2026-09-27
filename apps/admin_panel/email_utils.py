@@ -17,5 +17,5 @@ def send_email(to_email, subject, html_content):
     headers = {"Authorization": f"Bearer {settings.RESEND_API_KEY}", "Content-Type": "application/json"}
     payload = {"from": settings.FROM_EMAIL, "to": [to_email], "subject": subject, "html": html_content}
 
-    response = requests.post(url, json=payload, headers=headers)
+    response = requests.post(url, json=payload, headers=headers, timeout=15)
     return response.json()

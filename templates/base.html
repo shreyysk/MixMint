@@ -4,7 +4,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="description" content="{% block meta_description %}MixMint — buy exclusive DJ edits, tool kits and album packs directly from the DJs who made them. Secure downloads, instant GST invoices.{% endblock %}">
 
     {% for key, value in og_tags.items %}
     <meta property="{{ key }}" content="{{ value }}">
@@ -36,6 +38,7 @@
     <link rel="stylesheet" href="{% static 'css/ux.css' %}">
     <!-- Alpine JS (local) -->
     <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
+    <script src="{% static 'js/mm.js' %}"></script>
     <script>
         // Failsafe: if local Alpine didn't load (stale CDN/static outage),
         // fall back to public CDN so the page never renders frozen.
@@ -104,12 +107,7 @@
             --radius-lg: 16px;
         }
 
-        /* Smooth theme transition */
-        *,
-        *::before,
-        *::after {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-        }
+        /* Theme transition is applied only while switching (html.theme-switching, see ux.css). */
 
         /* ── Base ── */
         body {
@@ -624,7 +622,8 @@
     <!-- Theme initialization (prevent flash) -->
     <script>
         (function () {
-            var saved = localStorage.getItem('mm-theme');
+            var saved = null;
+            try { saved = localStorage.getItem('mm-theme'); } catch (e) { }
             if (saved === 'light' || saved === 'dark') {
                 document.documentElement.setAttribute('data-theme', saved);
             } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
@@ -635,10 +634,13 @@
         })();
 
         function toggleTheme() {
-            var current = document.documentElement.getAttribute('data-theme');
+            var root = document.documentElement;
+            var current = root.getAttribute('data-theme');
             var next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('mm-theme', next);
+            root.classList.add('theme-switching');
+            root.setAttribute('data-theme', next);
+            setTimeout(function () { root.classList.remove('theme-switching'); }, 350);
+            try { localStorage.setItem('mm-theme', next); } catch (e) { }
 
             // Update ARIA labels on all theme toggle buttons
             document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
@@ -648,7 +650,7 @@
     </script>
 </head>
 
-<body x-data="{ toasts: [] }" @show-toast.window="
+<body {% if user.is_authenticated %}class="has-tabbar" {% endif %}x-data="{ toasts: [] }" @show-toast.window="
     if (toasts.length >= 3) toasts.shift();
     toasts.push({...$event.detail, id: Date.now()});
     let id = toasts[toasts.length - 1].id;
@@ -666,6 +668,12 @@
     </div>
 
     {% include 'components/navbar.html' %}
+
+    {% if payments_test_mode %}
+    <div role="status" class="relative z-20 w-full text-center font-mono text-[12px] py-2 px-4 bg-[var(--accent-amber)] text-black">
+        TEST MODE &mdash; payments are simulated with Razorpay test keys. No real money is charged.
+    </div>
+    {% endif %}
 
     <main id="main" class="container mx-auto px-4 py-10 max-w-[1280px] relative z-10">
         {# Django messages → toast #}
@@ -697,7 +705,7 @@
     {% include 'components/footer.html' %}
 
     <!-- Toast container -->
-    <div class="toast-container" x-cloak>
+    <div class="toast-container" role="status" aria-live="polite" aria-atomic="false" x-cloak>
         <template x-for="(toast, i) in toasts" :key="toast.id">
             <div class="toast-item" :class="'toast-' + toast.type" x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
@@ -712,6 +720,40 @@
             </div>
         </template>
     </div>
+
+    <!-- Payment progress / result overlay (driven by MM.checkout in static/js/mm.js) -->
+    <div id="mm-pay-overlay" role="dialog" aria-modal="true" aria-labelledby="mm-pay-title" data-state="pending" hidden>
+        <div class="mm-pay-card">
+            <svg class="mm-pay-icon" viewBox="0 0 72 72" aria-hidden="true">
+                <circle cx="36" cy="36" r="30"></circle>
+                <circle class="ring" cx="36" cy="36" r="30"></circle>
+                <path class="tick" d="M23 37l9 9 17-19"></path>
+            </svg>
+            <h2 id="mm-pay-title" class="font-display text-[22px] mb-2" data-title tabindex="-1" data-focus>Processing…</h2>
+            <p class="font-body text-[14px] text-[var(--text-muted)]" data-text></p>
+            <button type="button" class="btn-mm btn-ghost mt-6" data-close>Close</button>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Mobile bottom tab bar [UI/UX spec §12] -->
+    {% with p=request.path %}
+    <nav class="mm-tabbar" aria-label="Primary">
+        <a href="/" {% if p == "/" or p == "/home/" %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Home</a>
+        <a href="{% url 'explore' %}" {% if p|slice:":9" == "/explore/" %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</a>
+        <a href="{% url 'library_page' %}" {% if p|slice:":9" == "/library/" %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V5m5 14V5m4 14l3-14 5 14"/></svg>Library</a>
+        {% if user.profile.role == 'dj' %}
+        <a href="{% url 'dj_dashboard' %}" {% if p|slice:":13" == "/dashboard/dj" %}aria-current="page"{% endif %}>
+        {% else %}
+        <a href="{% url 'dashboard' %}" {% if p == "/dashboard/" %}aria-current="page"{% endif %}>
+        {% endif %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>{% if user.profile.role == 'dj' %}DJ Panel{% else %}Profile{% endif %}</a>
+    </nav>
+    {% endwith %}
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 
@@ -801,9 +843,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('SW Registered', reg))
-                    .catch(err => console.log('SW Error', err));
+                navigator.serviceWorker.register('/static/sw.js').catch(function () { });
             });
         }
     </script>
@@ -823,7 +863,7 @@
                 loading: false,
 
                 init() {
-                    this.fetchCart();
+                    {% if user.is_authenticated %}this.fetchCart();{% endif %}
                 },
 
                 async fetchCart() {
@@ -838,6 +878,7 @@
                 },
 
                 async addItem(type, id) {
+                    {% if not user.is_authenticated %}MM.loginRedirect(); return;{% endif %}
                     this.loading = true;
                     try {
                         const response = await fetch('/api/v1/commerce/cart/add_item/', {

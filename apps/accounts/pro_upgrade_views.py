@@ -7,7 +7,6 @@ Endpoint: POST /api/v1/accounts/dj/upgrade-pro/
   unlocking 8% commission and custom domain.
 """
 
-from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -18,6 +17,7 @@ from apps.accounts.models import DJProfile
 # Pro Plan pricing
 PRO_PLAN_PRICE_PAISE = 99900  # ₹999 in paise
 PRO_PLAN_PRICE_INR = 999.00
+PRO_MONTHLY_PRICE_PAISE = 14900  # ₹149 in paise
 
 
 @api_view(["POST"])
@@ -52,35 +52,54 @@ def upgrade_to_pro(request):
     if profile.is_pro_dj:
         return Response({"message": "You are already a Pro DJ.", "is_pro_dj": True}, status=status.HTTP_200_OK)
 
-    # Create payment order via PhonePe (Pro upgrades always use PhonePe).
-    try:
-        gateway = settings.get_payment_gateway("phonepe")
-        result = gateway.create_subscription_order(
-            dj_id=str(dj_profile.id), plan_type="annual", amount_paise=PRO_PLAN_PRICE_PAISE
-        )
-    except Exception as e:
-        return Response(
-            {"error": "Failed to create payment order. Please try again.", "detail": str(e)},
-            status=status.HTTP_502_BAD_GATEWAY,
-        )
+    plan_type = request.data.get("plan_type", "annual")
+    if plan_type not in ("annual", "monthly"):
+        plan_type = "annual"
+    amount_paise = PRO_PLAN_PRICE_PAISE if plan_type == "annual" else PRO_MONTHLY_PRICE_PAISE
 
-    return Response(
+    from apps.commerce.models import ProSubscriptionEvent
+    from apps.payments.utils import get_gateway
+    from apps.payments.views import _gateway_payload
+
+    try:
+        gateway = get_gateway(request.data.get("gateway"))
+        result = gateway.create_subscription_order(
+            dj_id=str(dj_profile.id), plan_type=plan_type, amount_paise=amount_paise
+        )
+    except Exception:
+        import logging
+
+        logging.getLogger("mixmint").exception("Pro upgrade order failed for DJ %s", dj_profile.id)
+        return Response(
+            {"error": "Failed to create payment order. Please try again."}, status=status.HTTP_502_BAD_GATEWAY
+        )
+    order_id = result.get("gateway_order_id") or result.get("order_id")
+    # Activation happens only when the gateway confirms payment (apps.payments.services).
+    ProSubscriptionEvent.objects.create(
+        dj=dj_profile,
+        event_type="payment_initiated",
+        plan_type=plan_type,
+        amount_paise=amount_paise,
+        gateway=gateway.name,
+        gateway_order_id=order_id,
+    )
+
+    payload = _gateway_payload(result, order_id, amount_paise)
+    payload.update(
         {
-            "order_id": result.get("order_id"),
-            "redirect_url": result.get("redirect_url"),
-            "amount": PRO_PLAN_PRICE_PAISE,
-            "amount_inr": PRO_PLAN_PRICE_INR,
-            "currency": "INR",
-            "message": f"Complete ₹{PRO_PLAN_PRICE_INR:.0f} payment to activate Pro DJ.",
+            "amount_inr": amount_paise / 100,
+            "plan_type": plan_type,
+            "description": f"MixMint Pro ({plan_type})",
+            "message": f"Complete ₹{amount_paise / 100:.0f} payment to activate Pro DJ.",
             "features": [
                 "8% platform commission (vs 15% standard)",
                 "Custom domain support (e.g. music.yourname.com)",
                 "Reduced ad exposure for your storefront",
                 "Priority support",
             ],
-        },
-        status=status.HTTP_201_CREATED,
+        }
     )
+    return Response(payload, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])

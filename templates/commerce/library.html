@@ -13,96 +13,101 @@
 
     <!-- Payment landing banners (payment_callback redirects here with ?payment=) -->
     {% if request.GET.payment == 'success' %}
-    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-center">
+    <div data-payment-banner role="status" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-center">
         <p class="font-bold text-[14px] text-[var(--text-primary)]">✅ Payment successful — your music is below.</p>
         <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Pick any item to get your secure download link</p>
     </div>
     {% elif request.GET.payment == 'failed' %}
-    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30 text-center">
+    <div data-payment-banner role="alert" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30 text-center">
         <p class="font-bold text-[14px] text-[var(--text-primary)]">❌ Payment didn't go through — nothing was charged.</p>
         <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Try again or use a different method · <a href="/contact/" class="underline">contact support</a></p>
     </div>
     {% elif request.GET.payment == 'pending' %}
-    <div class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
+    <div data-payment-banner role="status" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
         <p class="font-bold text-[14px] text-[var(--text-primary)]">⏳ We're confirming your payment with the gateway…</p>
-        <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Refresh in a minute — your music appears here once confirmed</p>
+        <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">This page checks again automatically — your music appears here once confirmed</p>
     </div>
     {% endif %}
 
     <!-- Tabs -->
-    <div class="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[10px] p-1 mb-8 w-fit">
-        <button @click="activeTab = 'tracks'"
-            :class="activeTab === 'tracks' ? 'bg-[var(--accent-mint)] text-[var(--text-inverse)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'"
-            class="px-5 py-2 rounded-[8px] font-mono text-[11px] uppercase tracking-widest transition-all font-[500]">
-            Tracks
-        </button>
-        <button @click="activeTab = 'albums'"
-            :class="activeTab === 'albums' ? 'bg-[var(--accent-mint)] text-[var(--text-inverse)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'"
-            class="px-5 py-2 rounded-[8px] font-mono text-[11px] uppercase tracking-widest transition-all font-[500]">
-            Albums
-        </button>
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div class="mm-tabs" role="tablist" aria-label="Library sections">
+            <button type="button" role="tab" class="mm-tab" :aria-selected="activeTab === 'tracks'" @click="activeTab = 'tracks'">
+                Tracks <span class="font-mono text-[11px] opacity-70" x-text="'(' + count('track') + ')'"></span>
+            </button>
+            <button type="button" role="tab" class="mm-tab" :aria-selected="activeTab === 'albums'" @click="activeTab = 'albums'">
+                Albums <span class="font-mono text-[11px] opacity-70" x-text="'(' + count('album') + ')'"></span>
+            </button>
+        </div>
+        <label class="relative w-full sm:w-[260px]">
+            <span class="sr-only">Search your library</span>
+            <input type="search" x-model.debounce.150ms="query" placeholder="Search your library…" class="input-mm h-[44px]">
+        </label>
     </div>
 
-    <!-- Loading -->
-    <div x-show="loading" class="text-center py-20">
-        <div class="font-mono text-[12px] text-[var(--text-muted)] uppercase tracking-widest animate-pulse">Loading library…</div>
+    <!-- Loading skeletons -->
+    <div x-show="loading" aria-hidden="true">
+        <template x-for="n in 3" :key="n">
+            <div class="mm-row"><div class="mm-row__art skeleton"></div><div><div class="skeleton h-4 w-2/3 mb-2"></div><div class="skeleton h-3 w-1/3"></div></div><div class="skeleton h-10 w-28"></div></div>
+        </template>
     </div>
+    <p x-show="error" x-text="error" class="notice-danger mb-6" role="alert"></p>
 
     <!-- Empty State -->
-    <div x-show="!loading && filteredItems.length === 0" class="py-24 text-center">
-        <div class="text-6xl mb-8 opacity-20">📀</div>
-        <p class="font-display text-[22px] font-[600] text-[var(--text-primary)] mb-3">Nothing here yet</p>
-        <p class="font-body text-[14px] text-[var(--text-muted)] mb-8">Your purchased tracks and albums will appear here.</p>
-        <a href="/explore/" class="btn-mm btn-mint h-12 px-8 font-[600]">Explore Tracks</a>
+    <div x-show="!loading && !error && filteredItems.length === 0" class="mm-empty" x-cloak>
+        <div class="text-5xl opacity-40" aria-hidden="true">📀</div>
+        <h3 class="font-display" x-text="query ? 'No matches' : 'Nothing here yet'"></h3>
+        <p class="font-body text-[14px] mb-6" x-text="query ? 'Try a different search.' : 'Tracks and albums you buy show up here, ready to download.'"></p>
+        <a href="/explore/" class="btn-mm btn-mint" x-show="!query">Explore music</a>
     </div>
 
     <!-- Library Items -->
-    <div x-show="!loading && filteredItems.length > 0" class="space-y-4">
+    <div x-show="!loading && filteredItems.length > 0" x-cloak>
         <template x-for="item in filteredItems" :key="item.id">
-            <div class="flex items-center gap-5 border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-5 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)]/30 transition-colors group">
-
-                <!-- Artwork -->
-                <div class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
-                    <span class="text-3xl opacity-20" x-text="item.content_type === 'track' ? '🎵' : '💿'"></span>
-                </div>
-
-                <!-- Info -->
-                <div class="flex-1 min-w-0">
-                    <p class="font-display font-[600] text-[15px] text-[var(--text-primary)] truncate" x-text="item.content_title || 'Track #' + item.content_id"></p>
-                    <div class="flex items-center gap-3 mt-1.5">
-                        <span class="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded"
-                            :class="item.download_completed ? 'bg-[var(--accent-mint)]/10 text-[var(--accent-mint)]' : 'bg-[var(--accent-amber)]/10 text-[var(--accent-amber)]'"
-                            x-text="item.download_completed ? '✓ Downloaded' : '⏳ Pending'"></span>
-                        <template x-if="item.has_download_insurance">
-                            <span class="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-[var(--accent-blue)]/10 text-[var(--accent-blue)]">🛡 Insured</span>
-                        </template>
+            <article class="mm-row" :aria-label="item.content_title">
+                <a :href="detailUrl(item)" class="block">
+                    <img x-show="item.cover_url" :src="item.cover_url" :alt="''" class="mm-row__art" loading="lazy">
+                    <div x-show="!item.cover_url" class="mm-row__art flex items-center justify-center text-2xl opacity-40" aria-hidden="true"
+                        x-text="item.content_type === 'track' ? '🎵' : '💿'"></div>
+                </a>
+                <div class="mm-row__meta">
+                    <a :href="detailUrl(item)" class="mm-row__title block hover:text-[var(--accent-mint)]" x-text="item.content_title"></a>
+                    <p class="font-body text-[13px] text-[var(--text-muted)] truncate">
+                        <span x-text="item.dj_name"></span> ·
+                        <span class="font-mono text-[11px]" x-text="fmtDate(item.paid_at || item.created_at)"></span> ·
+                        <span class="font-mono text-[11px]" x-text="'₹' + Number(item.price_paid).toFixed(2)"></span>
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="mm-badge" :class="item.download_completed ? 'mm-badge--ok' : 'mm-badge--warn'"
+                            x-text="item.download_completed ? '✓ Downloaded' : '⬇ Ready to download'"></span>
+                        <span class="mm-badge mm-badge--ok" x-show="item.has_download_insurance">🛡 Insured</span>
+                        <span class="mm-badge" x-show="item.is_redownload">Re-download</span>
                     </div>
                 </div>
-
-                <!-- Price Paid -->
-                <div class="text-right shrink-0">
-                    <div class="font-mono text-[16px] font-bold text-[var(--accent-mint)]" x-text="'₹' + (item.price_paid / 1).toFixed(2)"></div>
-                    <div class="font-mono text-[10px] text-[var(--text-muted)] mt-1" x-text="new Date(item.created_at).toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric'})"></div>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex items-center gap-2 shrink-0">
-                    <template x-if="item.download_completed">
-                        <a :href="'/api/v1/commerce/invoice/' + item.invoice_id + '/'" x-show="item.invoice_id"
-                            class="w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:border-[var(--accent-mint)] transition-all"
-                            title="Download Invoice">
-                            📄
-                        </a>
+                <div class="mm-row__actions">
+                    <template x-if="item.redownload_price">
+                        <button type="button" class="btn-mm btn-amber h-[44px]" @click="buyRedownload(item, $el)"
+                            x-text="'Re-download · ₹' + item.redownload_price"></button>
                     </template>
+                    <template x-if="!item.redownload_price">
+                        <button type="button" class="btn-mm btn-mint h-[44px]" @click="download(item, $el)"
+                            :aria-label="'Download ' + item.content_title">⬇ Download</button>
+                    </template>
+                    <a x-show="item.invoice_id" :href="'/api/v1/commerce/invoice/' + item.invoice_id + '/pdf/'"
+                        class="btn-mm btn-ghost h-[44px] px-4" :aria-label="'Invoice for ' + item.content_title">Invoice</a>
+                    <button type="button" x-show="!item.download_completed && !item.is_redownload" @click="refund(item, $el)"
+                        class="font-body text-[12px] text-[var(--accent-red)] underline underline-offset-2 px-2 min-h-[44px]">Request refund</button>
                 </div>
-            </div>
+            </article>
         </template>
     </div>
 
     <!-- Re-download Info -->
     <div class="mt-10 notice-info">
         <p class="font-body text-[12px] text-[var(--text-muted)]">
-            🔁 Re-download: available 2 days after completion · 50% of original price. Insured downloads can be re-downloaded for free.
+            🔁 Each purchase includes a verified download. Re-downloads open 3 days after purchase at 50% of the price;
+            Download Insurance (₹49, available 24h after purchase) makes them free.
+            Invoices include the full GST breakdown.
         </p>
     </div>
 </div>
@@ -113,26 +118,62 @@ function libraryApp() {
         activeTab: 'tracks',
         items: [],
         loading: true,
+        error: '',
+        query: '',
+        polls: 0,
 
         get filteredItems() {
-            return this.items.filter(i => i.content_type === (this.activeTab === 'tracks' ? 'track' : 'album'));
+            const type = this.activeTab === 'tracks' ? 'track' : 'album';
+            const q = this.query.trim().toLowerCase();
+            return this.items.filter(i => i.content_type === type &&
+                (!q || (i.content_title || '').toLowerCase().includes(q) || (i.dj_name || '').toLowerCase().includes(q)));
         },
+        count(type) { return this.items.filter(i => i.content_type === type).length; },
+        detailUrl(item) { return (item.content_type === 'track' ? '/tracks/' : '/albums/') + item.content_id + '/'; },
+        fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; },
 
         async loadLibrary() {
-            this.loading = true;
             try {
-                const res = await fetch('/api/v1/commerce/my-library/', {
-                    headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
-                });
-                if (res.ok) {
-                    this.items = await res.json();
-                }
+                this.items = await MM.api('/api/v1/commerce/my-library/');
+                this.error = '';
             } catch (e) {
-                console.error('Failed to load library:', e);
+                this.error = e.message;
             } finally {
                 this.loading = false;
             }
-        }
+            // Payment still confirming: poll quietly for up to a minute.
+            if (new URLSearchParams(location.search).get('payment') === 'pending' && this.polls < 12) {
+                this.polls++;
+                setTimeout(() => this.loadLibrary(), 5000);
+            }
+        },
+
+        download(item, btn) {
+            const base = item.content_type === 'track' ? '/api/v1/tracks/' : '/api/v1/albums/';
+            MM.download(base + item.content_id + '/download-token/', {
+                button: btn,
+                onRedownload: (data) => { item.redownload_price = data.redownload_price; },
+            });
+        },
+
+        buyRedownload(item, btn) {
+            MM.checkout('{% url "initiate_payment" %}',
+                { content_type: item.content_type, content_id: item.content_id, is_redownload: true }, { button: btn });
+        },
+
+        async refund(item, btn) {
+            if (!confirm('Request a refund for “' + item.content_title + '”? Refunds are automatic when the file was never downloaded.')) return;
+            const restore = MM.busy(btn, 'Sending…');
+            try {
+                const data = await MM.api('/api/v1/commerce/refund/request/', { body: { purchase_id: item.id, reason: 'Requested from library' } });
+                MM.toast(data.status === 'success' ? 'success' : 'info', data.message);
+                this.loadLibrary();
+            } catch (e) {
+                MM.toast('error', e.message);
+            } finally {
+                restore();
+            }
+        },
     };
 }
 </script>

@@ -91,3 +91,13 @@ def validate_strong_password(password):
             "Password must contain at least one uppercase letter, "
             "one lowercase letter, one digit, and one special character."
         )
+
+
+class StrongPasswordValidator:
+    """AUTH_PASSWORD_VALIDATORS adapter so password *reset* enforces the same rules as sign-up."""
+
+    def validate(self, password, user=None):
+        validate_strong_password(password)
+
+    def get_help_text(self):
+        return "Use 8+ characters with upper and lower case letters, a number and a symbol."

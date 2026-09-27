@@ -32,7 +32,7 @@ def dj_earnings_overview(request):
     DJ earnings dashboard overview [Spec §3.2].
     Returns lifetime, weekly, monthly earnings + pending payout.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     try:
@@ -86,7 +86,7 @@ def dj_earnings_overview(request):
 @permission_classes([IsAuthenticated])
 def dj_earnings_per_track(request):
     """Earnings breakdown per track [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -132,7 +132,7 @@ def dj_earnings_per_track(request):
 @permission_classes([IsAuthenticated])
 def dj_earnings_per_album(request):
     """Earnings breakdown per album [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -177,7 +177,7 @@ def dj_earnings_per_album(request):
 @permission_classes([IsAuthenticated])
 def dj_payout_history(request):
     """Paid payouts history [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     dj_profile = request.user.profile.dj_profile
@@ -202,7 +202,7 @@ def dj_payout_history(request):
 @permission_classes([IsAuthenticated])
 def dj_weekly_chart(request):
     """Weekly earnings for the last 12 weeks for charting [Spec §3.2]."""
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ access only."}, status=403)
 
     dj_profile = request.user.profile.dj_profile

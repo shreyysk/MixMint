@@ -22,7 +22,7 @@ class TestIPSessionMiddleware:
         client = Client(REMOTE_ADDR='10.0.0.1')
         client.post('/login/', {'email': 'ipsession@example.com', 'password': 'StrongPass123!'})
         session = client.session
-        assert session.get('bound_ip') == '10.0.0.1'
+        assert session.get('bound_net') == '10.0.0.0/24'
 
     def test_ip_change_triggers_logout(self):
         from apps.accounts.models import User
@@ -35,11 +35,11 @@ class TestIPSessionMiddleware:
         from apps.accounts.middleware import IPSessionMiddleware
         from django.test import RequestFactory
         factory = RequestFactory()
-        request = factory.get('/api/v1/tracks/', REMOTE_ADDR='10.0.0.2')
-        # Simulate session with bound_ip
+        # A different network (not just a different IP on the same /24) must log out.
+        request = factory.get('/api/v1/tracks/', REMOTE_ADDR='172.16.9.2')
         from django.contrib.sessions.backends.db import SessionStore
         request.session = SessionStore()
-        request.session['bound_ip'] = '10.0.0.1'
+        request.session['bound_net'] = '10.0.0.0/24'
 
         # Simulate authenticated user
         from apps.accounts.models import User as UserModel
@@ -49,6 +49,19 @@ class TestIPSessionMiddleware:
         response = middleware.process_request(request)
         assert response is not None
         assert response.status_code == 401
+
+    def test_same_network_ip_change_keeps_session(self):
+        from apps.accounts.middleware import IPSessionMiddleware
+        from apps.accounts.models import User as UserModel
+        from django.contrib.sessions.backends.db import SessionStore
+        from django.test import RequestFactory
+
+        UserModel.objects.create_user(email='samenet@example.com', password='StrongPass123!')
+        request = RequestFactory().get('/api/v1/tracks/', REMOTE_ADDR='10.0.0.77')
+        request.session = SessionStore()
+        request.session['bound_net'] = '10.0.0.0/24'
+        request.user = UserModel.objects.get(email='samenet@example.com')
+        assert IPSessionMiddleware(get_response=lambda r: None).process_request(request) is None
 
 
 # ============================================================
@@ -142,12 +155,12 @@ class TestDownloadRateLimiting:
 
         # First 10 should pass
         for i in range(10):
-            request = factory.get('/download/token123', REMOTE_ADDR='10.5.5.5')
+            request = factory.get('/api/v1/downloads/token123/', REMOTE_ADDR='10.5.5.5')
             request.user = type('User', (), {'is_authenticated': False, 'is_staff': False})()
             response = mw(request)
 
         # 11th should be rate limited
-        request = factory.get('/download/token123', REMOTE_ADDR='10.5.5.5')
+        request = factory.get('/api/v1/downloads/token123/', REMOTE_ADDR='10.5.5.5')
         request.user = type('User', (), {'is_authenticated': False, 'is_staff': False})()
         response = mw(request)
         assert response.status_code == 429

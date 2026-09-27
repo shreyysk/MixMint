@@ -46,7 +46,10 @@
                 </div>
 
                 <!-- Login Form -->
-                <form method="post" class="space-y-6">
+                {% if request.GET.reason == 'network' %}
+                <div class="notice-warning mb-6" role="status">For your security we signed you out because your network changed. Please log in again.</div>
+                {% endif %}
+                <form method="post" class="space-y-6" onsubmit="MM.busy(this.querySelector('[type=submit]'), 'Signing in…')">
                     {% csrf_token %}
                     {% if request.GET.next %}
                     <input type="hidden" name="next" value="{{ request.GET.next }}">
@@ -55,7 +58,7 @@
                     <div>
                         <label for="email"
                             class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2 font-[600]">Email Address</label>
-                        <input type="email" name="email" id="email" required autocomplete="email" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
+                        <input type="email" name="email" id="email" required autocomplete="email" value="{{ form_email|default:'' }}" {% if not form_email %}autofocus{% endif %} class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors rounded-[8px]"
                             placeholder="you@example.com">
                     </div>
 
@@ -69,7 +72,7 @@
                         <div class="relative">
                             <input :type="showPassword ? 'text' : 'password'" name="password" id="password" required
                                 autocomplete="current-password" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]" placeholder="••••••••">
-                            <button type="button" @click="showPassword = !showPassword"
+                            <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword.toString()"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none">
                                 <!-- Eye icon -->
                                 <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"

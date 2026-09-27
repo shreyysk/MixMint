@@ -165,7 +165,7 @@ class TestWebhookAmountVerification:
         from django.conf import settings as dj_settings
 
         body = json.dumps(payload)
-        sig = hmac.new(dj_settings.RAZORPAY_KEY_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
+        sig = hmac.new(dj_settings.RAZORPAY_WEBHOOK_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
         return client.post(
             "/api/v1/payments/webhook/razorpay/",
             data=body,
@@ -232,7 +232,7 @@ class TestWebhookAmountVerification:
 class TestPaymentFailureGuard:
     def test_late_failure_cannot_unpay(self, user, track, dj_user):
         from apps.commerce.models import Purchase
-        from apps.payments.views import handle_payment_failure
+        from apps.payments.services import fail_order
 
         _, dj = dj_user
         purchase = Purchase.objects.create(
@@ -245,7 +245,7 @@ class TestPaymentFailureGuard:
             status="paid",
             gateway_order_id="MM_LATEFAIL",
         )
-        handle_payment_failure(purchase, {"gateway_response": {}})
+        fail_order("MM_LATEFAIL", {})
         purchase.refresh_from_db()
         assert purchase.status == "paid"
 

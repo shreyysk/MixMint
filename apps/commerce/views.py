@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
@@ -51,7 +50,7 @@ def request_manual_payout(request):
     DJ manually initiates a payout [Spec P2 §11, P3 §3.2].
     Requires 2FA verification code.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "Only DJs can request payouts."}, status=status.HTTP_403_FORBIDDEN)
 
     code = request.data.get("verification_code")
@@ -80,10 +79,19 @@ def request_manual_payout(request):
     if not success:
         return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Process Payout
+    if request.user.profile.is_frozen or request.user.profile.is_banned:
+        return Response({"error": "Payouts are disabled on this account."}, status=status.HTTP_403_FORBIDDEN)
+    if dj_profile.status != "approved":
+        return Response({"error": "Your DJ profile is not approved."}, status=status.HTTP_403_FORBIDDEN)
+    from .models import Payout
+
+    if Payout.objects.filter(dj=dj_profile, status="held").exists():
+        return Response({"error": "A payout hold is active on your account."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Process Payout (row-locked inside)
     from .payout_processor import _process_single_payout
 
-    payout_amount = _process_single_payout(wallet)
+    payout_amount = _process_single_payout(wallet.dj_id)
 
     if not payout_amount:
         return Response(
@@ -148,8 +156,8 @@ def pro_landing(request):
     return render(request, "commerce/pro_landing.html")
 
 
-@login_required
 @api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def activate_pro_trial(request):
     """Activates 7-day free trial for Pro Plan [Section B Step 5]"""
     profile = request.user.profile
@@ -158,6 +166,9 @@ def activate_pro_trial(request):
 
     if profile.is_pro_dj:
         return Response({"error": "You are already a Pro DJ."}, status=status.HTTP_400_BAD_REQUEST)
+    dj_profile = getattr(profile, "dj_profile", None)
+    if dj_profile is None or dj_profile.status != "approved":
+        return Response({"error": "Your DJ profile must be approved first."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Check if they've used a trial before
     if ProSubscriptionEvent.objects.filter(dj=profile.dj_profile, event_type="trial_start").exists():
@@ -190,25 +201,26 @@ def activate_pro_trial(request):
     )
 
 
-@login_required
 @api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def request_refund(request):
     """
     Buyer requests a refund [Section C Fix 01].
-    Automated if download not completed.
+    Auto-refunded (and DJ credit reversed) only if the file was never delivered;
+    otherwise queued for admin review.
     """
     purchase_id = request.data.get("purchase_id")
-    reason = request.data.get("reason", "")
+    reason = str(request.data.get("reason", ""))[:2000]
 
     if not purchase_id:
         return Response({"error": "Purchase ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         purchase = Purchase.objects.get(id=purchase_id, user=request.user.profile)
-    except Purchase.DoesNotExist:
+    except (Purchase.DoesNotExist, ValueError, TypeError):
         return Response({"error": "Purchase not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if purchase.status != "paid":
+    if purchase.status != "paid" or purchase.is_revoked:
         return Response({"error": "Only paid purchases can be refunded."}, status=status.HTTP_400_BAD_REQUEST)
 
     if RefundRequest.objects.filter(purchase=purchase).exists():
@@ -216,52 +228,62 @@ def request_refund(request):
             {"error": "Refund request already exists for this purchase."}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Automated refund eligibility check
-    # [Spec §4.4: Byte verification status]
-    eligible_for_auto = not purchase.download_completed
+    from apps.downloads.models import DownloadLog
 
-    with transaction.atomic():
-        refund_req = RefundRequest.objects.create(
-            purchase=purchase,
-            reason=reason,
-            eligible_for_auto_refund=eligible_for_auto,
-            is_automated=eligible_for_auto,
-            status="pending",
+    delivered = (
+        purchase.download_completed
+        or DownloadLog.objects.filter(
+            user=purchase.user,
+            content_id=purchase.content_id,
+            content_type=purchase.content_type,
+            created_at__gte=purchase.created_at,
+        ).exists()
+    )
+    eligible_for_auto = not delivered and bool(purchase.gateway_payment_id)
+
+    refund_req = RefundRequest.objects.create(
+        purchase=purchase,
+        reason=reason,
+        eligible_for_auto_refund=eligible_for_auto,
+        is_automated=eligible_for_auto,
+        status="pending",
+    )
+    if not eligible_for_auto:
+        return Response(
+            {"status": "pending", "message": "Refund request submitted for admin review.", "automated": False}
         )
 
-        if eligible_for_auto:
-            # Trigger automated refund
-            from apps.payments.utils import get_gateway
+    from apps.payments.utils import get_gateway
+    from .services import MonetizationService
 
-            gateway = get_gateway()
-            try:
-                # PhonePe refund
-                refund_result = gateway.process_refund(
-                    original_transaction_id=purchase.gateway_payment_id or purchase.gateway_order_id,
-                    amount_paise=purchase.amount_paise,
-                    reason=f"Auto-refund: {reason}",
-                )
+    try:
+        gateway = get_gateway(purchase.payment_gateway)
+        amount = purchase.amount_paise if purchase.amount_paise is not None else int(purchase.price_paid * 100)
+        refund_result = gateway.process_refund(
+            purchase.gateway_payment_id if purchase.payment_gateway == "razorpay" else purchase.gateway_order_id,
+            amount,
+            reason=f"Auto-refund: {reason}"[:250],
+        )
+    except Exception:
+        logger.exception("Refund failed for purchase %s", purchase.id)
+        refund_req.admin_notes = "Automatic refund failed at the gateway; needs manual processing."
+        refund_req.save(update_fields=["admin_notes"])
+        return Response(
+            {"status": "pending", "message": "We couldn't refund automatically. Support will process it shortly."},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
-                # Update purchase and refund request
-                purchase.status = "refunded"
-                purchase.gateway_refund_id = refund_result["refund_id"]
-                purchase.save()
+    with transaction.atomic():
+        MonetizationService.reverse_purchase(purchase, reason="refund")
+        Purchase.objects.filter(pk=purchase.pk).update(
+            status="refunded", gateway_refund_id=refund_result.get("refund_id"), refunded_at=timezone.now()
+        )
+        refund_req.status = "processed"
+        refund_req.processed_at = timezone.now()
+        refund_req.admin_notes = "Automatically approved: download not delivered."
+        refund_req.save()
 
-                refund_req.status = "processed"
-                refund_req.processed_at = timezone.now()
-                refund_req.admin_notes = "Automatically approved: Download not completed."
-                refund_req.save()
-
-                return Response(
-                    {"status": "success", "message": "Refund processed successfully (Automated).", "automated": True}
-                )
-            except Exception as e:
-                logger.error(f"Refund failed for purchase {purchase_id}: {str(e)}")
-                return Response(
-                    {"error": f"Payment gateway refund failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-    return Response({"status": "pending", "message": "Refund request submitted for admin review.", "automated": False})
+    return Response({"status": "success", "message": "Refund processed successfully.", "automated": True})
 
 
 @api_view(["POST"])
@@ -351,7 +373,7 @@ class CartViewSet(viewsets.ModelViewSet):
         cart, _ = Cart.objects.get_or_create(user=request.user.profile, is_active=True)
         try:
             CartItem.objects.create(
-                cart=cart, content_type=content_type, content_id=content_id, price=int(float(content.price) * 100)
+                cart=cart, content_type=content_type, content_id=content_id, price=int(content.price * 100)
             )
         except Exception:
             return Response({"error": "Item is already in your cart."}, status=400)
@@ -430,7 +452,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
             try:
                 CartItem.objects.create(
-                    cart=cart, content_type=content_type, content_id=content_id, price=int(float(content.price) * 100)
+                    cart=cart, content_type=content_type, content_id=content_id, price=int(content.price * 100)
                 )
                 merged_count += 1
             except Exception:

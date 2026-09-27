@@ -27,6 +27,13 @@ class Purchase(models.Model):
         ("album", "Album"),
         ("bundle", "Bundle"),
     )
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
+        ("disputed", "Disputed"),
+    )
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="purchases")
     content_id = models.PositiveBigIntegerField()
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
@@ -55,7 +62,7 @@ class Purchase(models.Model):
     gateway_response = models.JSONField(null=True, blank=True)
     amount_paise = models.IntegerField(null=True, blank=True)
 
-    status = models.CharField(max_length=20, default="pending")  # pending | paid | failed | refunded | disputed
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     paid_at = models.DateTimeField(null=True, blank=True)
     refunded_at = models.DateTimeField(null=True, blank=True)
 
@@ -106,6 +113,7 @@ class LedgerEntry(models.Model):
     TYPE_CHOICES = (
         ("credit", "Credit"),
         ("debit", "Debit"),
+        ("transfer", "Escrow transfer"),
     )
     wallet = models.ForeignKey(DJWallet, on_delete=models.CASCADE, related_name="ledger_entries")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -454,7 +462,8 @@ class Cart(models.Model):
     def discount_amount(self):
         percentage = self.discount_percentage
         if percentage > 0:
-            return round(self.subtotal * (percentage / 100))
+            # Integer half-up math on paise: exact, no float/banker's rounding.
+            return (self.subtotal * percentage + 50) // 100
         return 0
 
     @property

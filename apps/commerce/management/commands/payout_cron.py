@@ -9,6 +9,7 @@ from apps.accounts.models import Profile, DJProfile
 from apps.tracks.models import Track
 from apps.albums.models import AlbumPack
 from apps.commerce.models import StorageOverage, ProSubscriptionEvent
+from apps.core.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,18 @@ class Command(BaseCommand):
             profile.pro_grace_ends_at = profile.pro_expires_at + datetime.timedelta(days=7)
             profile.save()
             logger.info(f"DJ {profile.user.email} entered Pro Plan grace period until {profile.pro_grace_ends_at}")
-            # TODO: Send email notification
+            EmailService.send_notice(
+                profile.user.email,
+                "Your MixMint Pro plan has expired - 7 days to renew",
+                "Your Pro plan has expired",
+                [
+                    "Your MixMint Pro plan ran out, so you are now in a 7-day grace period.",
+                    f"Renew before {profile.pro_grace_ends_at:%d %b %Y} to keep Pro commission rates and storage.",
+                    "After that your account moves back to the free plan (3 GB storage).",
+                ],
+                cta_label="Renew Pro",
+                cta_path="/dashboard/dj/",
+            )
 
         # Check for grace period lapses
         lapsed_profiles = Profile.objects.filter(is_pro_dj=True, pro_grace_ends_at__lt=timezone.now())
@@ -56,6 +68,17 @@ class Command(BaseCommand):
                     gateway_order_id=f"LAPSE_{profile.user.id.hex[:8].upper()}",
                 )
                 logger.warning(f"DJ {profile.user.email} Pro Plan LAPSED and downgraded.")
+            EmailService.send_notice(
+                profile.user.email,
+                "Your MixMint Pro plan has ended",
+                "You're back on the free plan",
+                [
+                    "Your Pro grace period ended, so your account is now on the free plan.",
+                    "Your tracks stay online. Upgrade again any time to get Pro rates and storage back.",
+                ],
+                cta_label="Upgrade to Pro",
+                cta_path="/dashboard/dj/",
+            )
 
     def process_storage_overage(self):
         """
@@ -102,4 +125,16 @@ class Command(BaseCommand):
                         status="pending",
                     )
                     logger.info(f"Generated overage bill for {dj.dj_name}: ₹{amount_paise / 100.0}")
-                    # TODO: Trigger automatic payment attempt if CC on file, or send payment link
+                    # No card-on-file billing: the DJ pays the pending bill from the dashboard.
+                    EmailService.send_notice(
+                        dj.profile.user.email,
+                        "MixMint storage overage bill",
+                        "You went over your storage quota",
+                        [
+                            f"Last month you used {usage_mb / 1024:.2f} GB against a {quota_mb / 1024:.2f} GB quota.",
+                            f"Overage charge: ₹{amount_paise / 100:.2f} (₹30 per extra GB).",
+                            "Pay it from your dashboard, or delete files to avoid next month's charge.",
+                        ],
+                        cta_label="Open dashboard",
+                        cta_path="/dashboard/dj/",
+                    )

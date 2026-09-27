@@ -24,6 +24,12 @@ def create_support_ticket(request):
     priority = (request.data.get("priority") or "medium").strip().lower()
     if not subject or not description:
         return Response({"error": "Subject and description are required."}, status=400)
+    from django.core.cache import cache
+
+    key = f"support_tickets_{request.user.pk}"
+    cache.add(key, 0, timeout=3600)
+    if cache.incr(key) > 5:
+        return Response({"error": "You've opened several tickets recently. We'll get back to you soon."}, status=429)
     if category not in CATEGORIES:
         category = "other"
     if priority not in ("low", "medium", "high", "urgent"):
@@ -34,7 +40,7 @@ def create_support_ticket(request):
         subject=subject[:255],
         category=category,
         priority=priority,
-        description=description,
+        description=description[:5000],
     )
     telegram_sent = notify_support_ticket(ticket)
     return Response(

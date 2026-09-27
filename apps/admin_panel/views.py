@@ -10,6 +10,7 @@ Admin capabilities:
 - DMCA template generation
 """
 
+from apps.core.net import get_client_ip
 from django.shortcuts import render
 from django.utils.dateparse import parse_datetime
 from .models import PlatformSettings, PromotionalOffer
@@ -342,7 +343,11 @@ def security_dashboard_view(request):
 @permission_classes([IsAdminUser])
 def toggle_kill_switch(request):
     """Activate/deactivate emergency kill switch [Spec §3.3, §4.6]."""
-    activate = request.data.get("activate", True)
+    if "activate" not in request.data:
+        return Response({"error": "Pass activate=true or activate=false."}, status=status.HTTP_400_BAD_REQUEST)
+    activate = request.data.get("activate")
+    if isinstance(activate, str):
+        activate = activate.strip().lower() in ("1", "true", "yes", "on")
     reason = request.data.get("reason", "")
 
     if activate:
@@ -378,6 +383,9 @@ def set_maintenance_mode(request):
         message=message,
         activated_by=request.user.profile,
     )
+    from django.core.cache import cache
+
+    cache.delete("platform_mode")
     _log_admin_action(request, f"Set platform mode: {mode}")
     return Response({"mode": mode, "message": message})
 
@@ -415,22 +423,33 @@ def release_payout(request):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def escrow_dj_funds(request):
-    """Move DJ earnings to escrow [Spec P2 §9]."""
-    dj_id = request.data.get("dj_id")
-    amount = Decimal(str(request.data.get("amount", 0)))
+    """Move withdrawable DJ earnings into escrow under an admin hold [Spec P2 §9]."""
+    from decimal import InvalidOperation
 
+    from apps.commerce.escrow_utils import place_earnings_hold
+
+    dj_id = request.data.get("dj_id")
     try:
-        wallet = DJWallet.objects.get(dj_id=dj_id)
-    except DJWallet.DoesNotExist:
+        amount = Decimal(str(request.data.get("amount", 0)))
+    except InvalidOperation:
+        return Response({"error": "Invalid amount."}, status=status.HTTP_400_BAD_REQUEST)
+    if amount <= 0:
+        return Response({"error": "Amount must be positive."}, status=status.HTTP_400_BAD_REQUEST)
+    if not DJWallet.objects.filter(dj_id=dj_id).exists():
         return Response({"error": "DJ wallet not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if amount > wallet.pending_earnings:
-        return Response({"error": "Insufficient pending earnings."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        place_earnings_hold(
+            dj_id,
+            "admin_manual",
+            amount=amount,
+            reason=str(request.data.get("reason", ""))[:500],
+            admin_id=request.user.pk,
+        )
+    except ValueError as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-    wallet.pending_earnings -= amount
-    wallet.escrow_amount += amount
-    wallet.save()
-
+    wallet = DJWallet.objects.get(dj_id=dj_id)
     _log_admin_action(request, f"Escrowed ₹{amount} for DJ #{dj_id}")
     return Response({"escrowed": str(amount), "new_escrow_total": str(wallet.escrow_amount)})
 
@@ -822,8 +841,8 @@ def investor_report_pdf(request):
         return HttpResponse("reportlab required. pip install reportlab", status=501, content_type="text/plain")
 
     response = HttpResponse(pdf, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="MixMint-Investor-Report-{
-        timezone.now().strftime("%Y%m%d")}.pdf"'
+    stamp = timezone.now().strftime("%Y%m%d")
+    response["Content-Disposition"] = f'attachment; filename="MixMint-Investor-Report-{stamp}.pdf"'
     return response
 
 
@@ -837,7 +856,7 @@ def _log_admin_action(request, action, target_id=None, metadata=None):
         action=action,
         target_id=target_id,
         metadata=metadata or {},
-        ip_address=request.META.get("REMOTE_ADDR"),
+        ip_address=get_client_ip(request),
         user_agent=request.META.get("HTTP_USER_AGENT", ""),
     )
 
@@ -894,11 +913,18 @@ def save_promotional_offer(request):
     else:
         offer = PromotionalOffer()
 
-    offer.title = data.get("title", offer.title)
-    offer.internal_name = data.get("internal_name", offer.internal_name)
-    offer.badge_label = data.get("badge_label", offer.badge_label)
+    if not (data.get("title") or offer.title):
+        return Response({"error": "title is required."}, status=status.HTTP_400_BAD_REQUEST)
+    offer.title = str(data.get("title", offer.title))[:255]
+    offer.tagline = str(data.get("tagline", getattr(offer, "tagline", "") or data.get("announcement_bar_text", "")))[
+        :255
+    ]
+    offer.badge_label = str(data.get("badge_label", offer.badge_label))[:50]
     offer.sub_text = data.get("sub_text", offer.sub_text)
-    offer.announcement_bar_text = data.get("announcement_bar_text", offer.announcement_bar_text)
+    if "show_on_navbar" in data:
+        offer.show_on_navbar = bool(data["show_on_navbar"])
+    if "show_on_track_pages" in data:
+        offer.show_on_track_pages = bool(data["show_on_track_pages"])
 
     if "show_on_homepage" in data:
         offer.show_on_homepage = data["show_on_homepage"]
@@ -910,13 +936,15 @@ def save_promotional_offer(request):
         is_active = data["is_active"]
         if is_active:
             # Deactivate all other offers
-            PromotionalOffer.objects.filter(is_active=True).update(is_active=False)
+            PromotionalOffer.objects.filter(is_active=True, dj__isnull=True).exclude(pk=offer.pk).update(
+                is_active=False
+            )
         offer.is_active = is_active
 
-    if data.get("starts_at"):
-        offer.starts_at = parse_datetime(data["starts_at"])
-    if data.get("ends_at"):
-        offer.ends_at = parse_datetime(data["ends_at"])
+    if data.get("starts_at") or data.get("start_date"):
+        offer.start_date = parse_datetime(data.get("starts_at") or data.get("start_date"))
+    if data.get("ends_at") or data.get("end_date"):
+        offer.end_date = parse_datetime(data.get("ends_at") or data.get("end_date"))
 
     offer.save()
     _log_admin_action(request, f"Saved Promotional Offer: {offer.title}")

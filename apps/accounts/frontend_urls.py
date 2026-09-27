@@ -9,12 +9,14 @@ from .frontend_views import (
     signup_view,
     logout_view,
     WaitlistSignupView,
+    ThrottledPasswordResetView,
 )
 from .dashboard_views import (
     dashboard_view,
     dj_dashboard_view,
     bundle_management_view,
     create_bundle_view,
+    delete_bundle_view,
     announcement_management_view,
     create_announcement_view,
     delete_announcement_view,
@@ -33,6 +35,7 @@ from .dashboard_views import (
 )
 from .dj_views import dj_storefront_view
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     path("", HomeView.as_view(), name="index"),
@@ -51,15 +54,16 @@ urlpatterns = [
     path("upload/", dashboard_views.upload_track_view, name="upload_track"),
     path("dashboard/bundles/", bundle_management_view, name="bundle_management"),
     path("dashboard/bundles/create/", create_bundle_view, name="create_bundle"),
+    path("dashboard/bundles/<int:bundle_id>/delete/", delete_bundle_view, name="delete_bundle"),
     path("dashboard/announcements/", announcement_management_view, name="announcement_management"),
     path("dashboard/announcements/create/", create_announcement_view, name="create_announcement"),
     path("dashboard/announcements/delete/<int:post_id>/", delete_announcement_view, name="delete_announcement"),
     path("dashboard/ambassador/", ambassador_management_view, name="ambassador_management"),
     path("dashboard/ambassador/generate/", generate_ambassador_code_view, name="generate_ambassador_code"),
     # Library [Spec §9]
-    path("library/", lambda r: render(r, "commerce/library.html"), name="library_page"),
+    path("library/", login_required(lambda r: render(r, "commerce/library.html")), name="library_page"),
     # Cart page (cart drawer popup removed; this is the cart destination)
-    path("cart/", lambda r: render(r, "commerce/cart.html"), name="cart_page_frontend"),
+    path("cart/", login_required(lambda r: render(r, "commerce/cart.html")), name="cart_page_frontend"),
     # DJ onboarding + custom domain + 2FA (previously unreachable dead routes)
     path("dashboard/dj/onboarding/", dj_onboarding, name="dj_onboarding"),
     path("dashboard/dj/onboarding/update/", update_onboarding_step, name="update_onboarding"),
@@ -78,7 +82,7 @@ urlpatterns = [
     # Password Reset (MixMint-styled templates)
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
+        ThrottledPasswordResetView.as_view(
             template_name="registration/password_reset_form.html",
         ),
         name="password_reset",

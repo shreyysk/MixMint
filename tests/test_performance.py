@@ -129,7 +129,8 @@ class TestStressScenarios:
         """Simulate 20 rapid signups."""
         from django.test import Client
         for i in range(20):
-            client = Client()
+            # Distinct networks: per-IP sign-up throttling (10/hour) is covered in test_security.
+            client = Client(REMOTE_ADDR=f"203.0.113.{i + 1}")
             response = client.post('/signup/', {
                 'full_name': f'Stress User {i}',
                 'email': f'stress{i}@example.com',

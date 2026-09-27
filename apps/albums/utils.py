@@ -22,6 +22,9 @@ from django.utils import timezone
 
 from apps.albums.models import AlbumPack, AlbumTrack
 
+MAX_ZIP_ENTRIES = 500
+MAX_ZIP_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB
+
 
 def process_album_zip(album_id):
     """
@@ -62,7 +65,15 @@ def process_album_zip(album_id):
         # 2. Extract
         os.makedirs(extract_dir, exist_ok=True)
         with zipfile.ZipFile(zip_path, "r") as zf:
+            # Zip-bomb guard: cap entry count and total uncompressed size before extracting.
+            infos = zf.infolist()
+            total = sum(i.file_size for i in infos)
+            if len(infos) > MAX_ZIP_ENTRIES or total > MAX_ZIP_UNCOMPRESSED_BYTES:
+                raise ValueError("ZIP is too large or contains too many files.")
             zf.extractall(extract_dir)
+
+        # Re-processing must not duplicate the tracklist.
+        AlbumTrack.objects.filter(album=album).delete()
 
         # 3. Process each audio file
         track_order = 0
@@ -119,7 +130,7 @@ def process_album_zip(album_id):
 
     except Exception as e:
         album.processing_status = "failed"
-        album.processing_error = str(e)
+        album.processing_error = str(e)[:500]
         album.save(update_fields=["processing_status", "processing_error"])
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)

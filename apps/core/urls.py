@@ -53,7 +53,7 @@ urlpatterns = [
     # Admin Tools
     path("admin/stats/", admin_dashboard_stats, name="admin_stats"),
     path("admin/dj-approvals/", pending_dj_approvals, name="pending_approvals"),
-    path("admin/dj-approve/<uuid:dj_id>/", quick_approve_dj, name="quick_approve_dj"),
+    path("admin/dj-approve/<int:dj_id>/", quick_approve_dj, name="quick_approve_dj"),
     path("admin/flagged/", flagged_content, name="flagged_content"),
     # Mobile API (lightweight endpoints)
     path("m/home/", mobile_home, name="mobile_home"),
@@ -62,7 +62,7 @@ urlpatterns = [
     path("m/dj/stats/", mobile_dj_stats, name="mobile_dj_stats"),
     path("m/notifications/", mobile_notifications, name="mobile_notifications"),
     path("m/batch/", mobile_batch, name="mobile_batch"),
-    path("m/track/<uuid:track_id>/", mobile_track_detail, name="mobile_track_detail"),
+    path("m/track/<int:track_id>/", mobile_track_detail, name="mobile_track_detail"),
     path("m/buy/", mobile_quick_buy, name="mobile_quick_buy"),
     path("m/genres/", mobile_genres, name="mobile_genres"),
     # Push Notifications

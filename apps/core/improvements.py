@@ -28,7 +28,7 @@ def dj_quick_stats(request):
     Fast DJ dashboard stats with caching.
     Returns key metrics in <100ms.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ only"}, status=403)
 
     dj = request.user.profile.dj_profile
@@ -87,7 +87,7 @@ def quick_upload_track(request):
     Simplified track upload with smart defaults.
     Minimal required fields for faster uploads.
     """
-    if request.user.profile.role != "dj":
+    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
         return Response({"error": "DJ only"}, status=403)
 
     dj = request.user.profile.dj_profile
@@ -147,8 +147,13 @@ def smart_search(request):
     min_price = request.query_params.get("min_price")
     max_price = request.query_params.get("max_price")
     sort = request.query_params.get("sort", "popular")  # popular, newest, price_low, price_high
-    page = int(request.query_params.get("page", 1))
-    limit = min(int(request.query_params.get("limit", 20)), 50)
+    from decimal import InvalidOperation
+
+    try:
+        page = max(1, int(request.query_params.get("page", 1)))
+        limit = max(1, min(int(request.query_params.get("limit", 20)), 50))
+    except (TypeError, ValueError):
+        return Response({"error": "page and limit must be integers."}, status=400)
 
     # Base query with optimizations
     tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False).select_related(
@@ -162,12 +167,27 @@ def smart_search(request):
     if genre:
         tracks = tracks.filter(genre=genre)
 
-    if min_price:
-        tracks = tracks.filter(price__gte=Decimal(min_price))
-    if max_price:
-        tracks = tracks.filter(price__lte=Decimal(max_price))
+    try:
+        if min_price:
+            tracks = tracks.filter(price__gte=Decimal(min_price))
+        if max_price:
+            tracks = tracks.filter(price__lte=Decimal(max_price))
+    except (InvalidOperation, ValueError):
+        return Response({"error": "min_price/max_price must be numbers."}, status=400)
 
     # Sorting
+    if sort == "rating":
+        from django.db.models import Avg, OuterRef, Subquery
+
+        from apps.tracks.models import StarRating
+
+        avg = (
+            StarRating.objects.filter(content_type="track", content_id=OuterRef("pk"))
+            .values("content_id")
+            .annotate(a=Avg("stars"))
+            .values("a")
+        )
+        tracks = tracks.annotate(average_rating=Subquery(avg))
     sort_map = {
         "popular": "-download_count",
         "newest": "-created_at",
@@ -254,71 +274,20 @@ def homepage_feed(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def quick_checkout(request):
-    """
-    One-click checkout for single item.
-    Skips cart for faster conversion.
-    """
+    """One-click checkout for a single item — same validated path as /payments/initiate/."""
+    import json
+
+    from apps.payments.views import initiate_purchase
+
     content_type = request.data.get("content_type")
     content_id = request.data.get("content_id")
-
     if not content_type or not content_id:
         return Response({"error": "content_type and content_id required"}, status=400)
-
-    # Get content and price
-    if content_type == "track":
-        from apps.tracks.models import Track
-
-        content = Track.objects.filter(id=content_id, is_active=True).first()
-    else:
-        from apps.albums.models import AlbumPack
-
-        content = AlbumPack.objects.filter(id=content_id, is_active=True).first()
-
-    if not content:
-        return Response({"error": "Content not found"}, status=404)
-
-    # Check already owned
-    from apps.commerce.models import Purchase
-
-    if Purchase.objects.filter(
-        user=request.user.profile, content_type=content_type, content_id=content_id, status="paid"
-    ).exists():
-        return Response({"error": "You already own this"}, status=400)
-
-    # Create purchase and get payment link
-    from django.conf import settings
-
-    purchase = Purchase.objects.create(
-        user=request.user.profile,
-        seller=content.dj,
-        content_type=content_type,
-        content_id=content_id,
-        price_paid=content.price,
-        status="pending",
-    )
-
-    # Get payment URL from gateway
-    gateway = settings.ACTIVE_GATEWAY
-    try:
-        result = gateway.create_order(
-            amount_paise=int(content.price * 100),
-            merchant_transaction_id=str(purchase.id),
-            user_id=str(request.user.id),
-            redirect_url=f"{settings.BASE_URL}/payment/callback",
-        )
-        purchase.gateway_order_id = result.get("order_id")
-        purchase.save()
-
-        return Response(
-            {
-                "purchase_id": str(purchase.id),
-                "amount": str(content.price),
-                "redirect_url": result.get("redirect_url"),
-            }
-        )
-    except Exception as e:
-        purchase.delete()
-        return Response({"error": str(e)}, status=500)
+    raw = request._request
+    raw._body = json.dumps(
+        {"content_type": content_type, "content_id": content_id, "gateway": request.data.get("gateway")}
+    ).encode()
+    return initiate_purchase(raw)
 
 
 # ============================================
@@ -456,11 +425,14 @@ def flagged_content(request):
     """
     from apps.admin_panel.models import ContentReport, FraudAlert
 
-    reports = (
-        ContentReport.objects.filter(status="pending")
-        .select_related("reporter", "track", "album")
-        .order_by("-created_at")[:50]
-    )
+    reports = ContentReport.objects.filter(status="pending").select_related("reporter").order_by("-created_at")[:50]
+    from apps.albums.models import AlbumPack
+    from apps.tracks.models import Track
+
+    def _title(r):
+        model = Track if r.content_type == "track" else AlbumPack
+        obj = model.objects.filter(id=r.content_id).only("title").first()
+        return obj.title if obj else "Unknown"
 
     fraud_alerts = FraudAlert.objects.filter(status="pending").select_related("user").order_by("-created_at")[:20]
 
@@ -469,8 +441,10 @@ def flagged_content(request):
             "content_reports": [
                 {
                     "id": r.id,
-                    "type": "track" if r.track else "album",
-                    "content_title": r.track.title if r.track else r.album.title if r.album else "Unknown",
+                    "type": r.content_type,
+                    "content_id": r.content_id,
+                    "content_title": _title(r),
+                    "report_type": r.report_type,
                     "reason": r.reason,
                     "reported_at": r.created_at.isoformat(),
                 }

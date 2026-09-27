@@ -1,197 +1,219 @@
-from decimal import Decimal
+"""
+Canonical money movement for MixMint.
+
+Wallet semantics (all amounts in rupees, Decimal):
+    total_earnings        lifetime credited earnings
+    pending_earnings      earned but not yet paid out  (= escrow + available)
+    escrow_amount         held for the chargeback window or by an admin hold
+    available_for_payout  released and withdrawable
+
+A sale credits escrow; `release_escrow_funds` moves it to available after the
+hold period; payouts debit available. Every movement writes a LedgerEntry.
+"""
+
+import logging
+import secrets
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import transaction
-from .models import DJWallet, LedgerEntry, Invoice, TaxRecord
+from django.utils import timezone
+
 from apps.admin_panel.models import PlatformSettings, PromotionalOffer
-import time
-import random
+
+from .models import DJWallet, Invoice, LedgerEntry, TaxRecord
+
+logger = logging.getLogger("mixmint")
+
+CENT = Decimal("0.01")
+GST_RATE = Decimal("18.00")
+
+
+def money(value):
+    return Decimal(value or 0).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _locked_wallet(dj_profile):
+    DJWallet.objects.get_or_create(dj=dj_profile)
+    return DJWallet.objects.select_for_update().get(dj=dj_profile)
+
+
+def credit_wallet(dj_profile, amount, description, metadata=None, escrow=True):
+    """Credit a DJ. escrow=True holds the money until the release job runs."""
+    amount = money(amount)
+    if amount <= 0:
+        return None
+    with transaction.atomic():
+        wallet = _locked_wallet(dj_profile)
+        wallet.total_earnings += amount
+        wallet.pending_earnings += amount
+        if escrow:
+            wallet.escrow_amount += amount
+        else:
+            wallet.available_for_payout += amount
+        wallet.save()
+        meta = dict(metadata or {})
+        meta["escrow"] = bool(escrow)
+        return LedgerEntry.objects.create(
+            wallet=wallet, amount=amount, entry_type="credit", description=description, metadata=meta
+        )
 
 
 class MonetizationService:
     @staticmethod
     def get_commission_rate(dj_profile):
-        """
-        Returns commission rate based on DJ tier or PlatformSettings.
-        If a promotional offer is active, it overrides everything via the global PlatformSettings.
-        Otherwise, Pro DJs might get a default of 8%.
-        """
-        settings = PlatformSettings.load()
-        active_offer = PromotionalOffer.objects.filter(is_active=True).first()
-
-        # If there's an active offer, we adhere to the global setting strictly:
-        if active_offer:
-            return settings.platform_commission_rate
-
-        # Optional: Custom fallback logic if NO offer is active
-        # The spec indicates the global admin rate applies. Let's just use the global rate
-        # unless Pro overrides it. We'll stick to the global rate.
-        # NOTE: is_pro_dj lives on Profile, not DJProfile — resolve via the link.
+        """Global rate; Pro DJs pay at most 8% unless a promo sets a lower global rate."""
+        settings_obj = PlatformSettings.load()
+        rate = Decimal(settings_obj.platform_commission_rate)
+        if PromotionalOffer.objects.filter(is_active=True, dj__isnull=True).exists():
+            return rate
         is_pro = bool(getattr(getattr(dj_profile, "profile", None), "is_pro_dj", False))
-        if is_pro:
-            # Let's preserve 8% for pro, unless the global rate is even lower (e.g. 5% promo)
-            if settings.platform_commission_rate > Decimal("8.00"):
-                return Decimal("8.00")
-
-        return settings.platform_commission_rate
+        if is_pro and rate > Decimal("8.00"):
+            return Decimal("8.00")
+        return rate
 
     @staticmethod
     def calculate_revenue_split(dj_profile, total_amount):
-        """
-        Calculates split between DJ and Platform.
-        Regular: 85% DJ, 15% Platform
-        Pro DJ: 92% DJ, 8% Platform
-        """
         commission_rate = MonetizationService.get_commission_rate(dj_profile)
-        platform_amount = (total_amount * commission_rate) / Decimal("100.00")
-        dj_amount = total_amount - platform_amount
-
-        return {"dj_amount": dj_amount, "platform_amount": platform_amount, "commission_rate": commission_rate}
+        total_amount = money(total_amount)
+        platform_amount = money(total_amount * commission_rate / Decimal("100"))
+        return {
+            "dj_amount": total_amount - platform_amount,
+            "platform_amount": platform_amount,
+            "commission_rate": commission_rate,
+        }
 
     @staticmethod
-    def record_revenue(dj_profile, amount, sale_type, reference_id, track=None):
-        """
-        Updates DJ wallet and records ledger.
-        If track has collaborators, splits DJ's share among them [Spec P2 §4].
-        """
-        with transaction.atomic():
-            split = MonetizationService.calculate_revenue_split(dj_profile, amount)
-            dj_total = split["dj_amount"]
+    def _recipients(purchase, dj_total):
+        """[(dj_profile, amount)] — collaborators by %, owner keeps the remainder."""
+        recipients = []
+        if purchase.content_type == "track":
+            from apps.tracks.models import TrackCollaborator
 
-            # Check for collaborators
-            collaborators = []
-            if track and hasattr(track, "collaborators"):
-                collaborators = list(track.collaborators.all())
-
-            if collaborators:
-                # Split DJ amount among collaborators by percentage
-                for collab in collaborators:
-                    collab_amount = (dj_total * collab.revenue_percentage) / Decimal("100.00")
-                    wallet, _ = DJWallet.objects.get_or_create(dj=collab.dj)
-                    from django.db.models import F
-
-                    wallet.total_earnings = F("total_earnings") + collab_amount
-                    wallet.pending_earnings = F("pending_earnings") + collab_amount
-                    wallet.available_for_payout = F("available_for_payout") + collab_amount
-                    wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
-
-                    LedgerEntry.objects.create(
-                        wallet=wallet,
-                        amount=collab_amount,
-                        entry_type="credit",
-                        description=f"Collab revenue from {sale_type} ({reference_id})",
-                        metadata={
-                            "commission_rate": str(split["commission_rate"]),
-                            "collab_percentage": str(collab.revenue_percentage),
-                            "reference_id": reference_id,
-                            "type": sale_type,
-                        },
-                    )
-            else:
-                # Solo track — all revenue to single DJ
-                wallet, _ = DJWallet.objects.get_or_create(dj=dj_profile)
-                from django.db.models import F
-
-                wallet.total_earnings = F("total_earnings") + dj_total
-                wallet.pending_earnings = F("pending_earnings") + dj_total
-                wallet.available_for_payout = F("available_for_payout") + dj_total
-                wallet.save(update_fields=["total_earnings", "pending_earnings", "available_for_payout"])
-
-                LedgerEntry.objects.create(
-                    wallet=wallet,
-                    amount=dj_total,
-                    entry_type="credit",
-                    description=f"Revenue from {sale_type} ({reference_id})",
-                    metadata={
-                        "commission_rate": str(split["commission_rate"]),
-                        "platform_amount": str(split["platform_amount"]),
-                        "reference_id": reference_id,
-                        "type": sale_type,
-                    },
-                )
-
-            return split
+            for collab in TrackCollaborator.objects.filter(track_id=purchase.content_id).select_related("dj"):
+                if collab.dj_id == purchase.seller_id:
+                    continue
+                share = money(dj_total * Decimal(collab.revenue_percentage) / Decimal("100"))
+                if share > 0:
+                    recipients.append((collab.dj, share))
+        assigned = sum((a for _, a in recipients), Decimal("0.00"))
+        if assigned > dj_total:  # corrupt percentages: never pay out more than the DJ share
+            recipients, assigned = [], Decimal("0.00")
+        recipients.insert(0, (purchase.seller, dj_total - assigned))
+        return recipients
 
     @staticmethod
     def generate_invoice(purchase):
-        """
-        Generates invoice and tax records silently using unified PlatformSettings.
-        """
-        settings = PlatformSettings.load()
-        subtotal = purchase.price_paid
-
-        tax_amount = Decimal("0.00")
-        tax_rate = Decimal("18.00")
-
-        # If GST is enabled, calculate backward (Inclusive Pricing Rule)
-        # So subtotal is the total amount (buyer only sees one number)
-        # And tax_amount is subtotal - (subtotal / 1.18)
-        total_amount = subtotal
-
-        if settings.gst_charging_enabled:
-            # Formula for inclusive tax: Tax = Total - (Total / (1 + Rate))
-            base_price = subtotal / (Decimal("1") + (tax_rate / Decimal("100.00")))
-            tax_amount = subtotal - base_price
-            subtotal = base_price  # The subtotal on the invoice is the base price
-
-        invoice_number = f"INV-{int(time.time())}-{random.randint(100, 999)}"
-
-        with transaction.atomic():
-            invoice = Invoice.objects.create(
-                purchase=purchase,
-                user=purchase.user,
-                dj=purchase.seller,
-                invoice_number=invoice_number,
-                subtotal=subtotal,
-                tax_amount=tax_amount,
-                total_amount=total_amount,
-                status="issued",
-            )
-
-            TaxRecord.objects.create(
-                invoice=invoice, tax_type="GST", tax_rate=tax_rate, tax_amount=tax_amount, jurisdiction="India"
-            )
-            return invoice
+        settings_obj = PlatformSettings.load()
+        total_amount = money(purchase.price_paid)
+        subtotal, tax_amount = total_amount, Decimal("0.00")
+        if settings_obj.gst_charging_enabled:
+            base = money(total_amount / (Decimal("1") + GST_RATE / Decimal("100")))
+            tax_amount = total_amount - base
+            subtotal = base
+        invoice = Invoice.objects.create(
+            purchase=purchase,
+            user=purchase.user,
+            dj=purchase.seller,
+            invoice_number=f"INV-{timezone.now():%Y%m%d}-{secrets.token_hex(4).upper()}",
+            subtotal=subtotal,
+            tax_amount=tax_amount,
+            total_amount=total_amount,
+            status="issued",
+        )
+        TaxRecord.objects.create(
+            invoice=invoice, tax_type="GST", tax_rate=GST_RATE, tax_amount=tax_amount, jurisdiction="India"
+        )
+        return invoice
 
     @staticmethod
     def complete_purchase(purchase):
         """
-        Main entry point for post-payment processing [Spec P2 ??4, ??5, ??6].
-        1. Distribute revenue
-        2. Generate invoice
-        3. Check verification status for the seller
-
-        Idempotent: webhook retries / verify-callback races that reach us twice
-        for the same purchase credit wallets and invoice exactly once (invoice
-        row + row lock decide the winner).
+        Post-payment processing, exactly once per purchase (row lock + invoice guard):
+        revenue split -> escrow credits -> invoice -> verification badge check.
         """
-        from apps.accounts.utils import check_verification_eligibility
         from .models import Purchase
 
         with transaction.atomic():
             locked = Purchase.objects.select_for_update().get(pk=purchase.pk)
-            if Invoice.objects.filter(purchase=locked).exists():
-                return locked  # already completed
-            purchase = locked
-            # 1. Distribute revenue
-            track_obj = None
-            if purchase.content_type == "track":
-                from apps.tracks.models import Track
+            if locked.status != "paid" or Invoice.objects.filter(purchase=locked).exists():
+                return locked
 
-                try:
-                    track_obj = Track.objects.get(id=purchase.content_id)
-                except Track.DoesNotExist:
-                    pass
+            # Buyer-side platform fee is platform revenue, never part of the DJ split.
+            base = money(locked.price_paid) - money(locked.platform_fee)
+            split = MonetizationService.calculate_revenue_split(locked.seller, base)
+            locked.commission = split["platform_amount"]
+            locked.dj_revenue = split["dj_amount"]
+            locked.dj_earnings = split["dj_amount"]
+            locked.save(update_fields=["commission", "dj_revenue", "dj_earnings"])
 
-            MonetizationService.record_revenue(
-                dj_profile=purchase.seller,
-                amount=purchase.price_paid,
-                sale_type=purchase.content_type,
-                reference_id=str(purchase.id),
-                track=track_obj,
-            )
+            for dj, amount in MonetizationService._recipients(locked, split["dj_amount"]):
+                credit_wallet(
+                    dj,
+                    amount,
+                    description=f"Sale of {locked.content_type} #{locked.content_id} (purchase {locked.id})",
+                    metadata={
+                        "purchase_id": locked.id,
+                        "commission_rate": str(split["commission_rate"]),
+                        "type": "sale",
+                    },
+                    escrow=True,
+                )
 
-            # 2. Generate invoice
-            MonetizationService.generate_invoice(purchase)
+            MonetizationService.generate_invoice(locked)
 
-            # 3. Check verification status for the seller
-            if purchase.seller:
-                check_verification_eligibility(purchase.seller)
+        try:
+            from apps.accounts.utils import check_verification_eligibility
+
+            check_verification_eligibility(locked.seller)
+        except Exception:
+            logger.exception("Verification check failed for DJ %s", locked.seller_id)
+        return locked
+
+    @staticmethod
+    def reverse_purchase(purchase, reason="refund"):
+        """Claw back every credit made for a purchase (refund / chargeback)."""
+        from .models import Purchase
+
+        with transaction.atomic():
+            locked = Purchase.objects.select_for_update().get(pk=purchase.pk)
+            credits = LedgerEntry.objects.filter(entry_type="credit", metadata__purchase_id=locked.id)
+            already = LedgerEntry.objects.filter(
+                entry_type="debit", metadata__purchase_id=locked.id, metadata__type="reversal"
+            ).exists()
+            if already:
+                return 0
+            reversed_total = Decimal("0.00")
+            for entry in credits:
+                wallet = DJWallet.objects.select_for_update().get(pk=entry.wallet_id)
+                amt = money(entry.amount)
+                wallet.total_earnings -= amt
+                wallet.pending_earnings -= amt
+                if locked.is_escrow_released:
+                    wallet.available_for_payout -= amt  # may go negative = debt against future sales
+                else:
+                    wallet.escrow_amount -= amt
+                wallet.save()
+                LedgerEntry.objects.create(
+                    wallet=wallet,
+                    amount=amt,
+                    entry_type="debit",
+                    description=f"Reversal ({reason}) for purchase {locked.id}",
+                    metadata={"purchase_id": locked.id, "type": "reversal", "reason": reason},
+                )
+                reversed_total += amt
+            locked.is_revoked = True
+            locked.save(update_fields=["is_revoked"])
+            return reversed_total
+
+    # Back-compat shim for older callers.
+    @staticmethod
+    def record_revenue(dj_profile, amount, sale_type, reference_id, track=None):
+        split = MonetizationService.calculate_revenue_split(dj_profile, amount)
+        credit_wallet(
+            dj_profile,
+            split["dj_amount"],
+            description=f"Revenue from {sale_type} ({reference_id})",
+            metadata={"reference_id": str(reference_id), "type": sale_type},
+            escrow=True,
+        )
+        return split

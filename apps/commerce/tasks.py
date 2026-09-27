@@ -34,3 +34,12 @@ def run_payout_cron():
 
     call_command("payout_cron")
     return "Payout cron completed."
+
+
+@shared_task
+def release_escrow_task():
+    """Hourly: move matured sale earnings from escrow to available [Spec P2 §9]."""
+    from .escrow_utils import release_escrow_funds
+
+    count, total = release_escrow_funds()
+    return f"Released {count} purchase(s), ₹{total}"

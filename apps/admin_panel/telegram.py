@@ -41,8 +41,9 @@ def notify_admins(text):
             timeout=10,
         )
         return resp.status_code == 200
-    except Exception:
-        logger.exception("Telegram notify failed.")
+    except Exception as exc:
+        # Never log the exception text: requests errors embed the URL, which contains the bot token.
+        logger.error("Telegram notify failed (%s).", type(exc).__name__)
         return False
 
 

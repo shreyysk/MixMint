@@ -1,55 +1,39 @@
-from django.shortcuts import render, get_object_or_404
-from django.utils.safestring import mark_safe
-from .models import Track, TrackCollaborator
-from apps.commerce.models import Purchase
+from csp.decorators import csp_update
+from django.http import Http404
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+from apps.core.embeds import build_preview_embeds
 from apps.downloads.utils import DownloadManager
+
+from .models import Track, TrackCollaborator
+
+
+def _safe_embed_src(url):
+    """Kept for callers/tests: only http(s) URLs pass."""
+    url = (url or "").strip()
+    return url if url.lower().startswith(("http://", "https://")) else None
 
 
 def _build_preview_embeds(track):
-    """Build both DJ embeds (YouTube and/or Instagram Reel). Returns list of
-    (key, label, html). Playback is from DJ embeds only — never hosted."""
-    embeds = []
-    if track.youtube_url:
-        url = track.youtube_url.strip()
-        if "watch?v=" in url:
-            url = url.replace("watch?v=", "embed/")
-        if "youtu.be/" in url:
-            vid = url.split("youtu.be/", 1)[1].split("?", 1)[0]
-            url = f"https://www.youtube.com/embed/{vid}"
-        embeds.append(
-            (
-                "youtube",
-                "Preview 1 · YouTube",
-                mark_safe(
-                    f'<iframe class="w-full h-full" src="{url}" '
-                    f'title="YouTube preview" frameborder="0" allowfullscreen></iframe>'
-                ),
-            )
+    """Both DJ embeds (YouTube and/or Instagram Reel), host-allowlisted. Never hosted audio."""
+    return build_preview_embeds(track)
+
+
+def _visible_track_or_404(request, pk):
+    track = get_object_or_404(Track.objects.select_related("dj", "dj__profile"), pk=pk)
+    if track.is_deleted or not track.is_active:
+        is_owner = (
+            request.user.is_authenticated
+            and getattr(getattr(request.user.profile, "dj_profile", None), "id", None) == track.dj_id
         )
-    if track.instagram_url:
-        url = track.instagram_url.strip()
-        embed_url = url
-        if "/reel/" in url and not url.rstrip("/").endswith("/embed"):
-            embed_url = url.rstrip("/") + "/embed"
-        embeds.append(
-            (
-                "instagram",
-                "Preview 2 · Reel",
-                mark_safe(
-                    f'<iframe class="w-full h-full" src="{embed_url}" '
-                    f'title="Instagram preview" frameborder="0"></iframe>'
-                ),
-            )
-        )
-    # Primary tab: preview_type if available, else first available.
-    order = {"youtube": 0, "instagram": 1}
-    primary = getattr(track, "preview_type", None)
-    embeds.sort(key=lambda e: (0 if e[0] == primary else 1, order.get(e[0], 9)))
-    return embeds
+        if not (request.user.is_staff or is_owner):
+            raise Http404("Track not found.")
+    return track
 
 
 def track_detail_view(request, pk):
-    track = get_object_or_404(Track, pk=pk)
+    track = _visible_track_or_404(request, pk)
     preview_embeds = _build_preview_embeds(track)
     preview_embed_html = preview_embeds[0][2] if preview_embeds else None
 
@@ -68,32 +52,16 @@ def track_detail_view(request, pk):
             if track.price <= 0:
                 can_request_download = True
             else:
-                owned = Purchase.objects.filter(
-                    user=profile,
-                    content_id=track.id,
-                    content_type="track",
-                    status="paid",
-                    is_revoked=False,
-                ).exists()
-                can_request_download = bool(owned)
+                can_request_download = DownloadManager.owned_purchase(profile, track.id, "track") is not None
         elif track.price <= 0:
             can_request_download = True
         else:
-            purchase = (
-                Purchase.objects.filter(
-                    user=profile,
-                    content_id=track.id,
-                    content_type="track",
-                    is_revoked=False,
-                    is_redownload=False,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-
+            purchase = DownloadManager.owned_purchase(profile, track.id, "track")
             if purchase and not purchase.download_completed:
                 can_request_download = True
-            elif purchase and purchase.download_completed:
+            elif purchase and DownloadManager.has_active_insurance(purchase):
+                can_request_download = True
+            elif purchase:
                 eligible, msg = DownloadManager.check_redownload_eligibility(profile, track.id, "track")
                 needs_redownload_payment = bool(eligible)
                 redownload_message = msg
@@ -122,15 +90,18 @@ def track_detail_view(request, pk):
         "can_request_download": can_request_download,
         "needs_redownload_payment": needs_redownload_payment,
         "redownload_message": redownload_message,
+        "redownload_price": _redownload_price(track),
         "dj_offers": dj_offers,
         "og_tags": get_track_og_tags(track),
     }
     return render(request, "tracks/detail.html", context)
 
 
+@xframe_options_exempt
+@csp_update(FRAME_ANCESTORS="*")
 def track_embed_view(request, pk):
     """Minimalist embeddable view for external sites [Imp 17]."""
-    track = get_object_or_404(Track, pk=pk)
+    track = get_object_or_404(Track, pk=pk, is_active=True, is_deleted=False)
     embeds = _build_preview_embeds(track)
 
     context = {
@@ -138,3 +109,15 @@ def track_embed_view(request, pk):
         "preview_embed_html": embeds[0][2] if embeds else None,
     }
     return render(request, "tracks/embed.html", context)
+
+
+def _redownload_price(content):
+    """What the buyer pays for a re-download (50% + buyer fee), in rupees."""
+    from decimal import Decimal
+
+    from apps.payments.views import calculate_total_price_paise
+
+    try:
+        return Decimal(calculate_total_price_paise(content, is_redownload=True)) / 100
+    except Exception:
+        return None

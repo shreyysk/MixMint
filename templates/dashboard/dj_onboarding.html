@@ -47,7 +47,7 @@
             </div>
 
             {% elif step == 'payout_setup' %}
-            <div id="step-payout" x-data="{ open: false, verified: false, showQR: false, secret: '' }" class="space-y-8 animate-in slide-in-from-right duration-700">
+            <div id="step-payout" x-data="{ open: false, verified: false, showQR: false, secret: '', qr: '' }" class="space-y-8 animate-in slide-in-from-right duration-700">
                 <div>
                     <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 2: Security & Liquidity</h4>
                     <p class="font-body text-[14px] text-[var(--text-muted)]">Configure your payout gateway and activate hardware-grade security.</p>
@@ -69,7 +69,8 @@
                     <div x-show="showQR && !verified" class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] space-y-6 text-center">
                         <p class="font-body text-[13px] text-[var(--text-primary)]">Scan this QR code with Google Authenticator:</p>
                         <div id="qrcode-container" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg flex items-center justify-center">
-                            <span class="text-black text-[10px] font-mono">[QR CODE]</span>
+                            <img x-show="qr" :src="qr" alt="QR code for your authenticator app" class="w-full h-full">
+                            <span x-show="!qr" class="text-black text-[10px] font-mono">Loading…</span>
                         </div>
                         <div class="text-left">
                             <label class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Manual Secret Key</label>
@@ -144,9 +145,9 @@
 
     function load2FAInAlpine(data) {
         fetch('{% url "enable_2fa" %}').then(r => r.json()).then(res => {
-            data.secret = res.secret;
-            // In a production app, we would use a library like qrcode.js here
-            // For this UI polish, we'll keep the placeholder container
+            if (res.status === 'enabled') { data.verified = true; data.showQR = false; return; }
+            data.secret = res.secret || '';
+            data.qr = res.qr_data_uri || '';
         });
     }
 

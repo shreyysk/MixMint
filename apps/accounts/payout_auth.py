@@ -22,10 +22,27 @@ def verify_totp(dj_profile, code):
     if not dj_profile.payout_otp_secret:
         return False, "TOTP not configured."
 
+    code = str(code or "").strip()
+    if not code.isdigit() or len(code) != 6:
+        return False, "Enter the 6-digit code from your authenticator app."
+
+    from django.core.cache import cache
+
+    # Brute-force guard: 5 wrong codes -> 15 minute lockout.
+    fail_key = f"totp_fail_{dj_profile.pk}"
+    if cache.get(fail_key, 0) >= 5:
+        return False, "Too many incorrect codes. Try again in 15 minutes."
+
     totp = pyotp.TOTP(dj_profile.payout_otp_secret)
-    if totp.verify(code):
-        return True, "Verified."
-    return False, "Invalid verification code."
+    if not totp.verify(code, valid_window=1):
+        cache.set(fail_key, cache.get(fail_key, 0) + 1, timeout=900)
+        return False, "Invalid verification code."
+
+    # Replay guard: a code can be used once.
+    if not cache.add(f"totp_used_{dj_profile.pk}_{code}", 1, timeout=90):
+        return False, "This code was already used. Wait for the next one."
+    cache.delete(fail_key)
+    return True, "Verified."
 
 
 # Keep original for legacy/fallback if needed, but rename if appropriate.

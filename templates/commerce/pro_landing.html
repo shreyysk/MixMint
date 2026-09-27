@@ -30,7 +30,7 @@
     <div class="text-center flex flex-col sm:flex-row gap-4 justify-center" data-reveal>
         {% if user.is_authenticated and user.profile.role == 'dj' and not user.profile.is_pro_dj %}
         <button id="pro-trial-btn" class="btn-mm btn-mint h-[56px] px-10 text-[16px] font-[600]">Start 7-day free trial</button>
-        <button id="pro-pay-btn" class="btn-mm btn-ghost h-[56px] px-10 text-[16px] font-[600]">Upgrade via PhonePe</button>
+        <button id="pro-pay-btn" type="button" class="btn-mm btn-ghost h-[56px] px-10 text-[16px] font-[600]">Upgrade to Pro · ₹999/year</button>
         <p id="pro-trial-msg" class="w-full font-body text-[13px] text-[var(--text-muted)] mt-2"></p>
         <script>
             document.getElementById('pro-trial-btn')?.addEventListener('click', async (e) => {
@@ -50,22 +50,11 @@
                     btn.disabled = false;
                 }
             });
-            document.getElementById('pro-pay-btn')?.addEventListener('click', async (e) => {
-                const btn = e.currentTarget, msg = document.getElementById('pro-trial-msg');
-                btn.disabled = true;
-                msg.textContent = 'Creating PhonePe order…';
-                try {
-                    const res = await fetch('{% url 'dj_upgrade_pro' %}', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.redirect_url) window.location.href = data.redirect_url;
-                    else { msg.textContent = data.error || data.message || 'Could not start upgrade.'; btn.disabled = false; }
-                } catch {
-                    msg.textContent = 'Network error. Try again.';
-                    btn.disabled = false;
-                }
+            document.getElementById('pro-pay-btn')?.addEventListener('click', (e) => {
+                MM.checkout('{% url 'dj_upgrade_pro' %}', { plan_type: 'annual' }, {
+                    button: e.currentTarget,
+                    successUrl: '{% url 'dj_dashboard' %}?payment=success',
+                });
             });
         </script>
         {% elif user.is_authenticated and user.profile.is_pro_dj %}

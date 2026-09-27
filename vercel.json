@@ -4,5 +4,12 @@
     "config/wsgi.py": {
       "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    { "path": "/cron/release-escrow/", "schedule": "0 1 * * *" },
+    { "path": "/cron/payout-cron/", "schedule": "0 2 * * *" },
+    { "path": "/cron/cleanup/", "schedule": "0 3 * * *" },
+    { "path": "/cron/weekly-sales/", "schedule": "0 4 * * *" },
+    { "path": "/cron/payouts/", "schedule": "30 5 * * 5" }
+  ]
 }

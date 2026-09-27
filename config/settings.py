@@ -17,7 +17,23 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["testserver", "localhost", "127.0.0.1"])
 
 # Environment detection (must be before production block)
-ENVIRONMENT = env("ENVIRONMENT", default="development")
+# Hosted platforms default to production so a missing ENVIRONMENT var can't ship dev settings
+# (open CORS, insecure cookies) to real users.
+_ON_HOST = any(os.environ.get(k) for k in ("RENDER", "RAILWAY_ENVIRONMENT", "VERCEL", "DYNO"))
+ENVIRONMENT = env("ENVIRONMENT", default="production" if _ON_HOST else "development")
+
+# Number of reverse proxies in front of Django that append to X-Forwarded-For.
+# Render / Railway / Vercel = 1; Cloudflare in front of them = 2; local dev = 0.
+# Used by apps.core.net.get_client_ip — never trust the left-most XFF entry.
+NUM_PROXIES = env.int("NUM_PROXIES", default=1 if ENVIRONMENT == "production" else 0)
+
+if ENVIRONMENT == "production":
+    if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
+        raise ValueError("SECRET_KEY must be a long random value in production")
+    if len(SECRET_KEY) < 50:
+        logging.getLogger("mixmint").warning("SECRET_KEY is shorter than 50 characters; rotate it to a longer value.")
+if ENVIRONMENT == "production" and DEBUG:
+    raise ValueError("DEBUG must be False in production")
 
 # Production Safety Assertion - ALLOWED_HOSTS must be configured
 if ENVIRONMENT == "production" and not ALLOWED_HOSTS:
@@ -35,6 +51,7 @@ INSTALLED_APPS = [
     # Third-party apps
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "storages",
@@ -49,6 +66,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.downloads",
     "apps.admin_panel",
+    "apps.core",
     "social_django",
 ]
 
@@ -128,10 +146,12 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/day",
-        "user": "1000/day",
+        # Public browsing hits the API constantly; keep limits per hour, not per day.
+        "anon": "600/hour",
+        "user": "3000/hour",
         "search": "60/min",
         "auth": "10/min",  # For login/register endpoints
         "payment": "20/hour",  # For checkout endpoints
@@ -178,7 +198,7 @@ SPECTACULAR_SETTINGS = {
         {"url": "http://localhost:8000/api/v1", "description": "Local Development"},
     ],
     "ENUM_NAME_OVERRIDES": {
-        "ContentTypeEnum": "apps.commerce.models.Purchase.ContentType",
+        "ContentTypeEnum": "apps.commerce.models.Purchase.CONTENT_TYPES",
     },
 }
 
@@ -341,6 +361,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "apps.accounts.validators.StrongPasswordValidator"},
 ]
 
 # Internationalization (English only)
@@ -356,7 +377,6 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # Don't crash if a referenced static file is missing (e.g. conditional template assets)
 WHITENOISE_MANIFEST_STRICT = False
 
@@ -381,7 +401,8 @@ AWS_S3_ENDPOINT_URL = env("R2_ENDPOINT", default="")
 AWS_S3_REGION_NAME = "auto"
 
 # Separate buckets for raw vs public [Spec Phase 1 Section B §4]
-R2_PRIVATE_BUCKET = env("R2_PRIVATE_BUCKET", default="mixmint-raw")
+# R2_BUCKET_NAME is accepted as an alias (render.yaml / older .env files use it).
+R2_PRIVATE_BUCKET = env("R2_PRIVATE_BUCKET", default=env("R2_BUCKET_NAME", default="mixmint-raw"))
 R2_PUBLIC_BUCKET = env("R2_PUBLIC_BUCKET", default="mixmint-public")
 AWS_STORAGE_BUCKET_NAME = R2_PRIVATE_BUCKET  # Default to private
 
@@ -394,6 +415,11 @@ MAX_UPLOAD_SIZE_MB = 200  # 200MB limit for raw tracks
 # Razorpay Config
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
+# Webhook secret configured in Razorpay Dashboard -> Webhooks (different from the API key secret).
+RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
+# Razorpay test keys (rzp_test_...) = sandbox: no real money moves. Going live is only an
+# env change: swap in rzp_live_ keys + the live webhook secret and redeploy.
+PAYMENTS_TEST_MODE = RAZORPAY_KEY_ID.startswith("rzp_test_")
 
 # PhonePe Config [Spec P1 Section A]
 PHONEPE_MERCHANT_ID = env("PHONEPE_MERCHANT_ID", default="")
@@ -426,6 +452,17 @@ else:
 # Resend Email Config [Spec Tech Stack]
 RESEND_API_KEY = env("RESEND_API_KEY", default="")
 FROM_EMAIL = env("FROM_EMAIL", default="noreply@mixmint.site")
+DEFAULT_FROM_EMAIL = FROM_EMAIL
+SERVER_EMAIL = FROM_EMAIL
+# All Django mail (password reset, EmailService) goes through Resend when a key is set.
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "apps.core.resend_backend.ResendEmailBackend"
+elif DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Cache: set CACHE_URL=redis://... in production so rate limits, fraud counters and
+# download slots are shared across gunicorn workers. Falls back to per-process memory.
+CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://mixmint")}
 
 # Shared secret for worker-free cron endpoints (/cron/<job>/) + one-off guards.
 CRON_SECRET = env("CRON_SECRET", default="")
@@ -475,35 +512,23 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
 
-# Active Payment Gateway Selection (Lazy loaded to avoid import errors)
-# The actual gateway is imported when first accessed via get_payment_gateway()
-# Default gateway can be overridden per-request in views via get_gateway(gateway_name)
-DEFAULT_PAYMENT_GATEWAY = env("DEFAULT_PAYMENT_GATEWAY", default="phonepe")  # 'phonepe' or 'razorpay'
+# Active payment gateway: DEFAULT_PAYMENT_GATEWAY env var, overridable by the admin
+# toggle (SystemSetting "active_payment_gateway"). See apps.payments.utils.get_gateway.
+DEFAULT_PAYMENT_GATEWAY = env("DEFAULT_PAYMENT_GATEWAY", default="razorpay")  # 'phonepe' or 'razorpay'
 
 
 def get_payment_gateway(gateway_name=None):
-    """Get the active payment gateway. If gateway_name is None, use DEFAULT_PAYMENT_GATEWAY."""
-    gateway_name = gateway_name or DEFAULT_PAYMENT_GATEWAY
-    if gateway_name == "razorpay":
-        from apps.payments.razorpay_gateway import RazorpayGateway
+    """Back-compat wrapper; use apps.payments.utils.get_gateway."""
+    from apps.payments.utils import get_gateway
 
-        return RazorpayGateway()
-    else:
-        from apps.payments.phonepe import PhonePeGateway
-
-        return PhonePeGateway()
-
-
-# For backwards compatibility - lazy loaded (uses DEFAULT_PAYMENT_GATEWAY)
+    return get_gateway(gateway_name)
 
 
 class LazyGateway:
-    _gateway = None
+    """Back-compat: resolves the active gateway on every attribute access."""
 
     def __getattr__(self, name):
-        if self._gateway is None:
-            self._gateway = get_payment_gateway()
-        return getattr(self._gateway, name)
+        return getattr(get_payment_gateway(), name)
 
 
 ACTIVE_GATEWAY = LazyGateway()
@@ -515,6 +540,10 @@ if ENVIRONMENT == "production":
         assert "preprod" not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
     elif DEFAULT_PAYMENT_GATEWAY == "razorpay":
         assert RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, "Razorpay keys not configured for production"
+        if not RAZORPAY_WEBHOOK_SECRET:
+            logging.getLogger("mixmint").warning("RAZORPAY_WEBHOOK_SECRET not set: Razorpay webhooks will be rejected.")
+        if PAYMENTS_TEST_MODE:
+            logging.getLogger("mixmint").warning("Razorpay TEST keys in production: payments are simulated (test-mode banner shown).")
 
 # Vercel Configuration [Phase 1 Section C Fix 02]
 VERCEL_TOKEN = os.getenv("VERCEL_TOKEN")
@@ -560,39 +589,19 @@ if ENVIRONMENT == "production":
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_HTTPONLY = True
+    # Must stay False: the frontend reads csrftoken from document.cookie for fetch() POSTs.
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_TRUSTED_ORIGINS = env.list(
+        "CSRF_TRUSTED_ORIGINS", default=[f"https://{h.lstrip('.')}" for h in ALLOWED_HOSTS if h and h != "*"]
+    )
     SESSION_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_SAMESITE = "Lax"
 
     # Content Security
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"  # Razorpay checkout popup
     X_FRAME_OPTIONS = "DENY"
-
-    # Content Security Policy (CSP)
-    CSP_DEFAULT_SRC = ("'self'",)
-    CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net", "https://unpkg.com")
-    CSP_STYLE_SRC = (
-        "'self'",
-        "https://cdn.tailwindcss.com",
-        "https://fonts.googleapis.com",
-        "https://cdn.jsdelivr.net",
-        "https://unpkg.com",
-        "'unsafe-inline'",
-    )
-    CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")
-    CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
-    CSP_CONNECT_SRC = (
-        "'self'",
-        "https://api.phonepe.com",
-        "https://api-preprod.phonepe.com",
-        "https://api.razorpay.com",
-    )
-    CSP_FRAME_SRC = ("'self'", "https://api.phonepe.com", "https://api-preprod.phonepe.com", "https://api.razorpay.com")
-    CSP_BASE_URI = ("'self'",)
-    CSP_FORM_ACTION = ("'self'",)
-    CSP_FRAME_ANCESTORS = ("'none'",)
-    CSP_REPORT_URI = "/csp-report/"
 
     # Session Expiry
     SESSION_COOKIE_AGE = 86400  # 24 hours
@@ -600,3 +609,63 @@ if ENVIRONMENT == "production":
 
     # Logging
     ADMINS = [("MixMint Admin", env("ADMIN_EMAIL", default="admin@mixmint.site"))]
+
+# Content Security Policy — applies in every environment (the CSP middleware is always on,
+# and django-csp's default of default-src 'self' would otherwise block the inline scripts).
+# Templates use inline <script> blocks and Alpine.js (which evaluates expressions), so
+# 'unsafe-inline'/'unsafe-eval' are required for script-src; every other source is allowlisted.
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = (
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    "https://checkout.razorpay.com",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com",
+)
+CSP_STYLE_SRC = (
+    "'self'",
+    "'unsafe-inline'",
+    "https://fonts.googleapis.com",
+    "https://api.fontshare.com",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com",
+)
+CSP_FONT_SRC = (
+    "'self'",
+    "data:",
+    "https://fonts.gstatic.com",
+    "https://cdn.fontshare.com",
+    "https://api.fontshare.com",
+    "https://cdn.jsdelivr.net",
+)
+CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
+CSP_MEDIA_SRC = ("'self'", "https:", "blob:")
+CSP_CONNECT_SRC = (
+    "'self'",
+    "https://api.razorpay.com",
+    "https://lumberjack.razorpay.com",
+    "https://api.phonepe.com",
+    "https://api-preprod.phonepe.com",
+)
+CSP_FRAME_SRC = (
+    "'self'",
+    "https://www.youtube.com",
+    "https://www.youtube-nocookie.com",
+    "https://www.instagram.com",
+    "https://api.razorpay.com",
+    "https://checkout.razorpay.com",
+    "https://api.phonepe.com",
+    "https://api-preprod.phonepe.com",
+)
+CSP_BASE_URI = ("'self'",)
+CSP_FORM_ACTION = (
+    "'self'",
+    "https://accounts.google.com",
+    "https://api.phonepe.com",
+    "https://api-preprod.phonepe.com",
+)
+CSP_FRAME_ANCESTORS = ("'none'",)
+CSP_OBJECT_SRC = ("'none'",)
+if ENVIRONMENT == "production":
+    CSP_REPORT_URI = "/csp-report/"

@@ -8,12 +8,15 @@ file -> cleanup job deletes cache after expiry/use limit.
 The buyer only ever sees mixmint.app/.../<token>/ — source URL never exposed.
 """
 
+from apps.core.net import get_client_ip
 import logging
 import os
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse, JsonResponse
+from django.utils.http import content_disposition_header
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -85,9 +88,25 @@ def issue_external_token(request):
     is_external = bool(getattr(content, "is_external_link", False) or getattr(content, "source_url", None))
     if not is_external:
         return Response({"error": "Content is not an external-source item."}, status=400)
+    if profile.is_frozen or profile.is_banned:
+        return Response({"error": "Your account is restricted. Contact support."}, status=403)
     is_free = (content.price or 0) <= 0
-    if not is_free and not _owns_content(profile, content_type, content.id):
+    purchase = DownloadManager.owned_purchase(profile, content.id, content_type)
+    if not is_free and not purchase:
         return Response({"error": "Purchase required before download."}, status=403)
+    # Same re-download policy as R2 downloads: completed download -> insurance or paid re-download.
+    if purchase and purchase.download_completed and not DownloadManager.has_active_insurance(purchase):
+        eligible, msg = DownloadManager.check_redownload_eligibility(profile, content.id, content_type)
+        if eligible:
+            return Response(
+                {
+                    "error": "Re-download requires payment.",
+                    "redownload_available": True,
+                    "redownload_price": str((content.price * Decimal("0.5")).quantize(Decimal("0.01"))),
+                },
+                status=402,
+            )
+        return Response({"error": msg}, status=403)
 
     if _rate_limited(f"issue_{profile.pk}"):
         return Response({"error": "Too many download requests. Try again later."}, status=429)
@@ -99,7 +118,7 @@ def issue_external_token(request):
         expiry_minutes=getattr(settings, "EXTERNAL_DOWNLOAD_TOKEN_MINUTES", 15),
         max_downloads=getattr(settings, "EXTERNAL_DOWNLOAD_MAX_USES", 1),
         access_source="free" if is_free else "purchase",
-        ip_address=request.META.get("REMOTE_ADDR"),
+        ip_address=get_client_ip(request),
         user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
         device_hash=request.META.get("HTTP_X_DEVICE_HASH"),
     )
@@ -107,7 +126,7 @@ def issue_external_token(request):
         user=profile,
         content_id=content.id,
         content_type=content_type,
-        ip_address=request.META.get("REMOTE_ADDR"),
+        ip_address=get_client_ip(request),
         device_hash=request.META.get("HTTP_X_DEVICE_HASH"),
     )
     return Response(
@@ -141,7 +160,7 @@ def download_external(request, token_str):
     if dl.is_expired or not dl.is_active:
         return JsonResponse({"error": "Link expired."}, status=403)
 
-    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR")
+    client_ip = get_client_ip(request)
     if _rate_limited(f"hit_{dl.user_id}") or _rate_limited(f"ip_{client_ip}"):
         return JsonResponse({"error": "Too many download attempts. Try again later."}, status=429)
 
@@ -248,8 +267,10 @@ def download_external(request, token_str):
                 yield chunk
             DownloadManager.mark_download_complete(dl, bytes_delivered=size or content_length)
 
-        response = StreamingHttpResponse(_iter(), content_type="audio/mpeg")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response = StreamingHttpResponse(
+            _iter(), content_type="application/zip" if ext == "zip" else "application/octet-stream"
+        )
+        response["Content-Disposition"] = content_disposition_header(True, filename)
         if content_length:
             response["Content-Length"] = str(content_length)
         dl.bytes_expected = content_length or None

@@ -21,19 +21,66 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    """A user's own profile. Only cosmetic fields are writable — never role/flags/quotas."""
+
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Profile
-        fields = "__all__"
+        fields = (
+            "user",
+            "role",
+            "full_name",
+            "avatar_url",
+            "is_verified_dj",
+            "is_pro_dj",
+            "pro_plan_type",
+            "pro_expires_at",
+            "storage_quota_mb",
+            "store_paused",
+            "created_at",
+        )
+        read_only_fields = tuple(f for f in fields if f not in ("full_name", "avatar_url"))
+
+    def validate_full_name(self, value):
+        value = (value or "").strip()
+        if not value or len(value) > 120:
+            raise serializers.ValidationError("Name must be 1-120 characters.")
+        return value
+
+    def validate_avatar_url(self, value):
+        if value and not value.lower().startswith("https://"):
+            raise serializers.ValidationError("Avatar must be an https:// URL.")
+        return value
 
 
-class DJProfileSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(read_only=True)
+class PublicDJProfileSerializer(serializers.ModelSerializer):
+    """Public storefront data. No payout, bank, PAN, OTP or contact fields."""
+
+    is_pro = serializers.BooleanField(source="profile.is_pro_dj", read_only=True)
+    avatar_url = serializers.URLField(source="profile.avatar_url", read_only=True)
 
     class Meta:
         model = DJProfile
-        fields = "__all__"
+        fields = (
+            "id",
+            "dj_name",
+            "slug",
+            "bio",
+            "social_links",
+            "genres",
+            "location",
+            "is_verified",
+            "is_pro",
+            "avatar_url",
+            "popularity_score",
+            "created_at",
+        )
+        read_only_fields = fields
+
+
+# Back-compat name used elsewhere in the codebase.
+DJProfileSerializer = PublicDJProfileSerializer
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

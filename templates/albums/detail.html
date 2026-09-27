@@ -1,3 +1,4 @@
+{% extends "base.html" %}
 {% load tracks_filters %}
 {% block title %}{{ album.title }} | MixMint{% endblock %}
 
@@ -117,37 +118,44 @@
                             charges</span>
                     </div>
 
-                    <div class="w-full sm:w-auto flex-1 max-w-[320px]">
+                    <div class="w-full sm:w-auto flex-1 max-w-[340px] flex flex-col gap-3">
                         {% if user.is_authenticated %}
                         {% if request.user.profile.dj_profile and request.user.profile.dj_profile == album.dj %}
-                        <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost border border-[var(--border)] w-full h-[56px] text-[16px] font-[600] flex items-center justify-center hover:bg-[var(--bg-elevated)] transition-colors">
-                            Manage Your Album
+                        <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600]">
+                            Manage your album
                         </a>
-                        {% elif album.is_external_link %}
-                        <a href="{{ album.external_link_url }}" target="_blank" rel="noopener noreferrer"
-                            class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600] flex items-center justify-center">
-                            📦 Free ZIP Download
-                        </a>
+                        {% elif can_request_download and album.is_external_link %}
+                        <button id="external-download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            📦 Download ZIP pack
+                        </button>
                         {% elif can_request_download %}
-                        <button id="download-btn" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            📦 Download as ZIP Pack
+                        <button id="download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            📦 Download ZIP pack
                         </button>
                         {% elif needs_redownload_payment %}
-                        <button id="redownload-pay-btn" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
-                            Re-download · ₹{{ redownload_price|default:"—" }}
+                        <button id="redownload-pay-btn" type="button" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
+                            Re-download · {{ redownload_price|money }}
                         </button>
+                        <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
+                        {% elif redownload_message %}
+                        <button type="button" class="btn-mm btn-disabled w-full h-[56px]" disabled aria-disabled="true">Re-download locked</button>
+                        <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
                         {% else %}
-                        <button id="buy-now-btn" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            Buy & Download
+                        <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            Buy &amp; Download · {{ album.price|money }}
                         </button>
+                        <button type="button" @click.prevent="$dispatch('add-to-cart', {type: 'album', id: {{ album.id }}})"
+                            class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">+ Add to cart</button>
                         {% endif %}
                         {% else %}
-                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
-                            class="btn-mm btn-ghost w-full h-[56px] text-[16px] font-[600] flex items-center justify-center cursor-pointer">
-                            Login to Buy
+                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
+                            class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
+                            Buy &amp; Download · {{ album.price|money }}
                         </a>
+                        <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
                         {% endif %}
                     </div>
+                </div>
                 </div>
 
                 <!-- Inline Offer Notice -->
@@ -262,85 +270,57 @@
 
 <!-- ── Scripts ── -->
 <script>
-    async function getDeviceHash() {
-        const key = "mixmint_device_hash_v1";
-        const existing = localStorage.getItem(key);
-        if (existing) return existing;
-        const raw = [navigator.userAgent || "", navigator.platform || "", Intl.DateTimeFormat().resolvedOptions().timeZone || "", String(screen.width) + "x" + String(screen.height)].join("|");
-        const buf = new TextEncoder().encode(raw);
-        const digest = await crypto.subtle.digest("SHA-256", buf);
-        const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
-        localStorage.setItem(key, hex);
-        return hex;
-    }
-
-    async function initiateAndPay(isRedownload) {
-        const contentId = "{{ album.id }}";
-        const contentType = "album";
-        try {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Initiating secure payment...' } }));
-            const response = await fetch('{% url "initiate_payment" %}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ content_id: contentId, content_type: contentType, is_redownload: !!isRedownload })
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Failed to initiate payment");
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
-                return { paid: false, redirecting: true };
-            } else {
-                throw new Error("No redirect URL returned for payment");
-            }
-        } catch (err) { throw err; }
-    }
-
-    async function requestDownloadTokenAndStart() {
-        try {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'info', text: 'Generating secure download token...' } }));
-            const deviceHash = await getDeviceHash();
-            const res = await fetch('/api/v1/albums/{{ album.id }}/download-token/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}', 'X-Device-Hash': deviceHash },
-                body: JSON.stringify({ device_hash: deviceHash })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to generate token");
-            if (data.warning) window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'warning', text: data.warning } }));
-            window.location.href = data.download_url;
-        } catch (err) { throw err; }
-    }
-
+(function () {
+    const albumId = {{ album.id }};
     const buyBtn = document.getElementById('buy-now-btn');
     const rePayBtn = document.getElementById('redownload-pay-btn');
     const dlBtn = document.getElementById('download-btn');
+    const extBtn = document.getElementById('external-download-btn');
+    const buy = (re, btn) => MM.checkout('{% url "initiate_payment" %}',
+        { content_type: 'album', content_id: albumId, is_redownload: !!re }, { button: btn });
 
-    if (buyBtn) {
-        buyBtn.addEventListener('click', async () => {
-            try {
-                await initiateAndPay(false);
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Payment confirmed! Reloading...' } }));
-                setTimeout(() => window.location.reload(), 1500);
-            } catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } })); }
-        });
+    if (buyBtn) buyBtn.addEventListener('click', () => buy(false, buyBtn));
+    if (rePayBtn) rePayBtn.addEventListener('click', () => buy(true, rePayBtn));
+    if (dlBtn) dlBtn.addEventListener('click', () => MM.download('/api/v1/albums/' + albumId + '/download-token/', {
+        button: dlBtn, onRedownload: () => window.location.reload(),
+    }));
+    if (extBtn) extBtn.addEventListener('click', async () => {
+        const restore = MM.busy(extBtn, 'Preparing your secure download…');
+        try {
+            const data = await MM.api('/api/v1/downloads/external/issue/', { body: { content_type: 'album', content_id: albumId } });
+            window.location.href = data.download_url;
+            setTimeout(restore, 4000);
+        } catch (e) { restore(); if (e.status !== 401) MM.toast('error', e.message); }
+    });
+    if (buyBtn && new URLSearchParams(location.search).get('buy') === '1') {
+        history.replaceState(null, '', location.pathname);
+        buy(false, buyBtn);
     }
-
-    if (rePayBtn) {
-        rePayBtn.addEventListener('click', async () => {
-            try {
-                await initiateAndPay(true);
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', text: 'Re-download activated! Reloading...' } }));
-                setTimeout(() => window.location.reload(), 1500);
-            } catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Payment failed." } })); }
-        });
-    }
-
-    if (dlBtn) {
-        dlBtn.addEventListener('click', async () => {
-            try { await requestDownloadTokenAndStart(); }
-            catch (e) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', text: e.message || "Download failed." } })); }
-        });
-    }
+})();
 </script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Mobile sticky purchase bar: primary action always within thumb reach -->
+<div class="mm-buybar md:hidden" id="mm-buybar" hidden>
+    <div class="min-w-0">
+        <p class="font-body text-[13px] font-[700] truncate">{{ album.title }}</p>
+        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ album.price|money }}</p>
+    </div>
+    <button type="button" class="btn-mm btn-mint h-[48px] px-5" id="mm-buybar-btn">Buy</button>
+</div>
+<script>
+(function () {
+    const primary = document.getElementById('buy-now-btn') || document.getElementById('download-btn')
+        || document.getElementById('redownload-pay-btn') || document.getElementById('external-download-btn')
+        || document.getElementById('buy-now-link');
+    const bar = document.getElementById('mm-buybar');
+    if (!primary || !bar || !('IntersectionObserver' in window)) return;
+    const btn = document.getElementById('mm-buybar-btn');
+    btn.textContent = /^buy-now/.test(primary.id) ? 'Buy' : (primary.id === 'redownload-pay-btn' ? 'Re-download' : 'Download');
+    btn.addEventListener('click', () => primary.click());
+    new IntersectionObserver(([e]) => { bar.hidden = e.isIntersecting; }).observe(primary);
+})();
+</script>
 {% endblock %}
