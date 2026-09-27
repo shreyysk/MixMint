@@ -12,6 +12,7 @@ from .dj_application_views import (
 from .pro_upgrade_views import upgrade_to_pro, admin_grant_pro
 
 from .registration_views import RegisterView
+from .jwt_views import LoginView, LogoutView, RefreshView
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet)
@@ -21,6 +22,9 @@ router.register(r"djs", DJProfileViewSet)
 urlpatterns = [
     path("", include(router.urls)),
     path("register/", RegisterView.as_view(), name="register"),
+    path("token/", LoginView.as_view(), name="api_login"),
+    path("token/refresh/", RefreshView.as_view(), name="api_token_refresh"),
+    path("logout/", LogoutView.as_view(), name="api_logout"),
     # DJ Application Flow [Spec §7]
     path("dj/apply/", apply_as_dj, name="dj_apply"),
     path("dj/<int:dj_profile_id>/approve/", admin_approve_dj, name="dj_approve"),

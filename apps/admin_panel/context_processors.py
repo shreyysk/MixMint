@@ -9,7 +9,10 @@ def global_settings(request):
     from django.conf import settings as dj_settings
     from django.core.cache import cache
 
-    test_mode = {"payments_test_mode": getattr(dj_settings, "PAYMENTS_TEST_MODE", False)}
+    test_mode = {
+        "payments_test_mode": getattr(dj_settings, "PAYMENTS_TEST_MODE", False),
+        "google_login_enabled": getattr(dj_settings, "GOOGLE_LOGIN_ENABLED", False),
+    }
     cached = cache.get("global_settings_ctx")
     if cached is not None:
         return {**cached, **test_mode}

@@ -91,14 +91,39 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ("email", "password", "full_name")
 
+    def get_fields(self):
+        fields = super().get_fields()
+        fields["email"].validators = []  # uniqueness is checked case-insensitively below
+        return fields
+
     def validate_email(self, value):
         """Block temporary/disposable email domains."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        value = (value or "").strip().lower()
         try:
             validate_email_domain(value)
-        except ValueError as e:
-            raise serializers.ValidationError(str(e))
-        if User.objects.filter(email=value).exists():
+        except (ValueError, DjangoValidationError) as e:
+            raise serializers.ValidationError(getattr(e, "message", None) or str(e))
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_password(self, value):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from .validators import validate_strong_password
+
+        try:
+            validate_strong_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
+        return value
+
+    def validate_full_name(self, value):
+        value = (value or "").strip()[:120]
+        if not value:
+            raise serializers.ValidationError("Full name is required.")
         return value
 
     def create(self, validated_data):

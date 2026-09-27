@@ -167,7 +167,16 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
         from django.conf import settings
 
         admin_prefix = "/" + settings.ADMIN_URL.lstrip("/")
-        paths = (admin_prefix, "/api/v1/admin/", "/static/", "/health/", "/login/", "/logout/", "/csp-report/")
+        paths = (
+            admin_prefix,
+            "/api/v1/admin/",
+            "/static/",
+            "/health/",
+            "/login/",
+            "/logout/",
+            "/social-auth/",  # staff can still sign in with Google during maintenance
+            "/csp-report/",
+        )
         if request.path.startswith(paths):
             return True
         user = getattr(request, "user", None)

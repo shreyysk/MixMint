@@ -18,9 +18,13 @@
             <div class="absolute -top-10 -right-10 w-40 h-40 bg-[var(--accent-mint)]/10 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
             <div class="relative z-10">
+                {% if google_login_enabled %}
                 <!-- Google Auth -->
-                <a href="{% url 'social:begin' 'google-oauth2' %}"
-                    class="w-full h-[52px] rounded-[10px] border border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-center gap-3 font-body text-[15px] font-[500] text-[var(--text-primary)] hover:border-[var(--accent-mint)]/50 hover:bg-[color-mix(in_srgb,var(--accent-mint)_5%,var(--bg-elevated))] transition-all duration-300 mb-8 group">
+                <form method="post" action="{% url 'social:begin' 'google-oauth2' %}" class="mb-8" onsubmit="MM.busy(this.querySelector('button'), 'Opening Google…')">
+                    {% csrf_token %}
+                    {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
+                <button type="submit"
+                    class="w-full h-[52px] rounded-[10px] border border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-center gap-3 font-body text-[15px] font-[500] text-[var(--text-primary)] hover:border-[var(--accent-mint)]/50 hover:bg-[color-mix(in_srgb,var(--accent-mint)_5%,var(--bg-elevated))] transition-all duration-300 group">
                     <svg viewBox="0 0 24 24" class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="currentColor">
                         <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -36,7 +40,8 @@
                             fill="#EA4335" />
                     </svg>
                     Continue with Google
-                </a>
+                </button>
+                </form>
 
                 <!-- Divider -->
                 <div class="flex items-center gap-4 mb-8">
@@ -44,10 +49,12 @@
                     <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">or register with email</span>
                     <div class="flex-1 h-px bg-[var(--border)]"></div>
                 </div>
+                {% endif %}
 
                 <!-- Signup Form -->
                 <form method="post" class="space-y-5" onsubmit="MM.busy(this.querySelector('[type=submit]'), 'Creating your account…')">
                     {% csrf_token %}
+                    {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
 
                     <div>
                         <label for="full_name"
@@ -175,7 +182,7 @@
 
         <div class="text-center mt-8 p-4 rounded-[12px] bg-[var(--bg-elevated)] border border-[var(--border)]">
             <span class="font-body text-[14px] text-[var(--text-muted)]">Already have an account?</span>
-            <a href="{% url 'login' %}"
+            <a href="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
                 class="font-body text-[14px] text-[var(--accent-mint)] font-[600] ml-1 hover:text-[color-mix(in_srgb,var(--accent-mint)_80%,white)] transition-colors underline-offset-4 hover:underline">Login</a>
         </div>
 

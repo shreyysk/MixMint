@@ -689,12 +689,17 @@
                 });
                 {% endfor %}
                 
-                messages.forEach(m => {
-                    const type = m.tags === 'error' ? 'error' : (m.tags === 'warning' ? 'warning' : 'success');
+                // Alpine (deferred) registers the toast listener after this inline script runs,
+                // so wait for it — otherwise messages like "Invalid email or password" are lost.
+                const fire = () => messages.forEach(m => {
+                    const tags = ' ' + m.tags + ' ';
+                    const type = tags.includes(' error ') ? 'error' : (tags.includes(' warning ') ? 'warning' : (tags.includes(' info ') ? 'info' : 'success'));
                     window.dispatchEvent(new CustomEvent('show-toast', {
                         detail: { type, text: m.text }
                     }));
                 });
+                if (window.Alpine && document.body && document.body._x_dataStack) fire();
+                else document.addEventListener('alpine:initialized', () => setTimeout(fire, 0), { once: true });
             })();
         </script>
         {% endif %}

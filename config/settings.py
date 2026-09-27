@@ -91,6 +91,7 @@ MIDDLEWARE = [
     # Phase 3 Security Middleware [EX-01.03, EX-02.01, EX-02.02]
     "apps.core.security_middleware.SecurityMiddleware",
     "apps.core.security_middleware.AccountVelocityMiddleware",
+    "apps.accounts.social_middleware.MixMintSocialAuthExceptionMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -567,17 +568,32 @@ VERCEL_TEAM_ID = os.getenv("VERCEL_TEAM_ID")  # Optional
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_CLIENT_ID", default="")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
 
+GOOGLE_LOGIN_ENABLED = bool(SOCIAL_AUTH_GOOGLE_OAUTH2_KEY and SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET)
+# Always show Google's account chooser (people with several Google accounts).
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {"prompt": "select_account"}
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/dashboard/"
+SOCIAL_AUTH_LOGIN_ERROR_URL = "/login/"
+SOCIAL_AUTH_INACTIVE_USER_URL = "/login/"
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False
+SOCIAL_AUTH_USER_FIELDS = ["email", "first_name", "last_name"]
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ["email"]
+# Redirect URI to register in Google Cloud Console:
+#   https://<your-domain>/social-auth/complete/google-oauth2/
+
 # Social Auth Pipeline
 SOCIAL_AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.social_details",
     "social_core.pipeline.social_auth.social_uid",
     "social_core.pipeline.social_auth.auth_allowed",
     "social_core.pipeline.social_auth.social_user",
+    "apps.accounts.social_pipeline.require_verified_email",
+    "apps.accounts.social_pipeline.associate_by_verified_email",
     "social_core.pipeline.user.get_username",
     "social_core.pipeline.user.create_user",
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
     "social_core.pipeline.user.user_details",
+    "apps.accounts.social_pipeline.finish_mixmint_login",
 )
 
 SOCIAL_AUTH_URL_NAMESPACE = "social"
@@ -597,6 +613,7 @@ if ENVIRONMENT == "production":
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SOCIAL_AUTH_REDIRECT_IS_HTTPS = True  # Google redirect_uri must be https://
 
     # Cookie Security
     SESSION_COOKIE_SECURE = True

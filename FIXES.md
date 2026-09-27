@@ -111,3 +111,23 @@ test settings not overriding static storage (93 tests failed on a fresh clone) Â
   token/ownership checks, so Vercel's function limits can't cut them off. Small files still stream through the verified proxy.
 - **Migrations run automatically** on Vercel production builds (`pyproject.toml` build script); preview builds skip them.
 - CI workflow installs `pytest pytest-django pytest-cov`. 348 tests pass.
+
+## Login, sign-up, password reset, Google (round 3)
+
+- **Google sign-in was broken**: the social-auth library only accepts a POST to start sign-in, but the buttons were
+  links (405 error). They're now small forms. The button is hidden when `GOOGLE_CLIENT_ID/SECRET` aren't set.
+- Cancelling on Google's screen, an expired sign-in, or any Google error used to be a **500 error**; now it returns to
+  the login page with a clear message.
+- Signing in with Google using an email that already had a password account **crashed** (duplicate email).
+  Verified Google emails are now linked to the existing account; unverified ones are refused.
+- Google sign-ins now check frozen/banned accounts, record login history, use the Google name, apply referral codes,
+  send the welcome email, and honour `?next=`. Google's account chooser is always shown.
+- **Error messages were invisible**: toasts fired before Alpine loaded, so "Invalid email or password" never appeared.
+- Login is case-insensitive for all accounts (including old mixed-case emails); duplicate sign-ups are caught in any case.
+- Password rules accept any symbol (e.g. `/`, `~`, `'`), matching the hint text.
+- Password reset: branded subject and HTML email, and people who joined with Google can use it to set a password.
+  Frozen/banned accounts get no reset email.
+- Clear messages for "this email uses Google" on login and sign-up. Form values are kept after errors.
+- API: sign-up now enforces the password rules and handles disposable emails (was a 500). New endpoints
+  `/api/v1/accounts/token/`, `token/refresh/`, `logout/` (JWT) for mobile clients.
+- Staff can sign in with Google during maintenance mode. 376 tests pass (28 new in `tests/test_auth_flows.py`).

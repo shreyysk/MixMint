@@ -6,10 +6,19 @@ import uuid
 
 
 class UserManager(BaseUserManager):
+    def get_by_natural_key(self, email):
+        # Emails are case-insensitive: "Me@Gmail.com" and "me@gmail.com" are the same login.
+        email = (email or "").strip()
+        matches = self.filter(email__iexact=email)
+        user = matches.filter(email=email).first() or matches.order_by("date_joined").first()
+        if user is None:
+            raise self.model.DoesNotExist
+        return user
+
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError(_("The Email field must be set"))
-        email = self.normalize_email(email)
+        email = self.normalize_email(email).strip().lower()
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
