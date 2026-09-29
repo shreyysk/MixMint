@@ -78,6 +78,12 @@ def _process_single_payout(wallet_or_dj_id):
 
 def _notify_payout(payout):
     try:
+        from apps.admin_panel.telegram import notify_admins
+
+        notify_admins(f"💸 Payout #{payout.id}: ₹{payout.amount} to {payout.dj.dj_name}. Send it, then mark it paid in Admin → Payouts.")
+    except Exception:
+        pass
+    try:
         from apps.core.email_service import EmailService
 
         EmailService.send_payout_initiated(payout.dj, payout)

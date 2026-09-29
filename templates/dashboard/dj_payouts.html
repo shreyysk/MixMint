@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load tracks_filters %}
+{% block title %}Payouts — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[860px] mx-auto py-12 px-4 space-y-10">
+    <div>
+        <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
+        <h1 class="font-display text-[34px] md:text-[44px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">Payouts</h1>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Money from each sale is held for 24–48 hours (in case of refunds), then becomes ready to withdraw. You can withdraw once you have {{ threshold|money }} or more; we also pay out automatically every week.</p>
+    </div>
+
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-5">
+            <p class="font-body text-[12px] text-[var(--text-muted)]">Ready to withdraw</p>
+            <p class="font-mono text-[26px] font-bold text-[var(--accent-mint)] mt-1">{{ wallet.available_for_payout|money }}</p>
+        </div>
+        <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-5">
+            <p class="font-body text-[12px] text-[var(--text-muted)]">On hold (24–48h)</p>
+            <p class="font-mono text-[26px] font-bold text-[var(--text-primary)] mt-1">{{ wallet.escrow_amount|money }}</p>
+        </div>
+        <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-5">
+            <p class="font-body text-[12px] text-[var(--text-muted)]">Earned all time</p>
+            <p class="font-mono text-[26px] font-bold text-[var(--text-primary)] mt-1">{{ wallet.total_earnings|money }}</p>
+        </div>
+    </section>
+
+    <!-- 1. Where to send the money -->
+    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8" x-data="{ method: '{{ method|default:'upi' }}', edit: {{ has_method|yesno:'false,true' }} }">
+        <div class="flex items-start justify-between gap-4 mb-5">
+            <div>
+                <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">1. Where should we send your money?</h2>
+                <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">UPI or Indian bank account.</p>
+            </div>
+            {% if has_method %}<span class="px-3 py-1 rounded-full text-[12px] font-[600] bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] shrink-0">✓ Saved</span>{% endif %}
+        </div>
+        {% if has_method %}
+        <div x-show="!edit" class="font-body text-[14px] text-[var(--text-primary)] space-y-1">
+            {% if method == 'upi' %}<p>UPI: <span class="font-mono">{{ dj_profile.upi_id }}</span></p>
+            {% else %}<p>Bank: <span class="font-mono">{{ masked_account }}</span> · {{ dj_profile.bank_ifsc_code }}{% if account_name %} · {{ account_name }}{% endif %}</p>{% endif %}
+            {% if dj_profile.pan_number %}<p class="text-[var(--text-muted)] text-[13px]">PAN on file</p>{% endif %}
+            <button type="button" class="btn-mm btn-ghost h-[40px] px-4 text-[13px] mt-3" @click="edit = true">Change</button>
+        </div>
+        {% endif %}
+        <form method="post" x-show="edit" {% if has_method %}x-cloak{% endif %} class="space-y-5" data-payout-form>
+            {% csrf_token %}
+            <input type="hidden" name="method" :value="method">
+            <div class="grid grid-cols-2 gap-2 p-1 rounded-[10px] bg-[var(--bg-elevated)] border border-[var(--border)]" role="radiogroup" aria-label="Payout method">
+                <button type="button" role="radio" :aria-checked="method === 'upi'" @click="method = 'upi'" :class="method === 'upi' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'" class="h-[42px] rounded-[8px] text-[14px] font-[600]">UPI</button>
+                <button type="button" role="radio" :aria-checked="method === 'bank'" @click="method = 'bank'" :class="method === 'bank' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'" class="h-[42px] rounded-[8px] text-[14px] font-[600]">Bank transfer</button>
+            </div>
+            <div x-show="method === 'upi'">
+                <label for="upi_id" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">UPI ID</label>
+                <input id="upi_id" name="upi_id" class="input-mm" placeholder="yourname@okhdfcbank" value="{{ dj_profile.upi_id|default:'' }}" autocomplete="off">
+            </div>
+            <div x-show="method === 'bank'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="md:col-span-2">
+                    <label for="account_name" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Name on the account</label>
+                    <input id="account_name" name="account_name" class="input-mm" value="{{ account_name }}" autocomplete="name">
+                </div>
+                <div>
+                    <label for="bank_account_number" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Account number</label>
+                    <input id="bank_account_number" name="bank_account_number" class="input-mm font-mono" inputmode="numeric" autocomplete="off">
+                </div>
+                <div>
+                    <label for="bank_ifsc_code" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">IFSC</label>
+                    <input id="bank_ifsc_code" name="bank_ifsc_code" class="input-mm font-mono uppercase" placeholder="HDFC0001234" value="{{ dj_profile.bank_ifsc_code|default:'' }}" autocomplete="off">
+                </div>
+            </div>
+            <div>
+                <label for="pan_number" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">PAN <span class="font-normal text-[var(--text-muted)]">(needed for tax once you earn more; optional for now)</span></label>
+                <input id="pan_number" name="pan_number" class="input-mm font-mono uppercase max-w-[260px]" placeholder="ABCDE1234F" maxlength="10" autocomplete="off">
+            </div>
+            <button type="submit" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]">Save payout details</button>
+        </form>
+    </section>
+
+    <!-- 2. 2FA -->
+    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
+             x-data="{ on: {{ has_2fa|yesno:'true,false' }}, secret: '', qr: '', code: '', busy: false,
+                       async start() { this.busy = true; try { const r = await MM.api('{% url 'enable_2fa' %}'); if (r.status === 'enabled') this.on = true; else { this.secret = r.secret; this.qr = r.qr_data_uri; } } catch (e) { MM.toast('error', e.message) } this.busy = false },
+                       async confirm() { this.busy = true; try { await MM.api('{% url 'verify_2fa' %}', { body: { code: this.code } }); this.on = true; MM.toast('success', 'Two-step verification is on.') } catch (e) { MM.toast('error', e.message) } this.busy = false } }">
+        <div class="flex items-start justify-between gap-4 mb-3">
+            <div>
+                <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">2. Protect withdrawals</h2>
+                <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">Withdrawals need a 6-digit code from Google Authenticator (or Authy), so nobody else can move your money.</p>
+            </div>
+            <span x-show="on" class="px-3 py-1 rounded-full text-[12px] font-[600] bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] shrink-0">✓ On</span>
+        </div>
+        <div x-show="!on" x-cloak>
+            <button type="button" class="btn-mm btn-ghost h-[44px] px-5 text-[14px]" x-show="!secret" @click="start()" :disabled="busy">Set up authenticator app</button>
+            <div x-show="secret" class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start mt-2">
+                <div class="w-[180px] h-[180px] bg-white rounded-[10px] p-2"><img x-show="qr" :src="qr" alt="QR code to scan with your authenticator app" class="w-full h-full"></div>
+                <div class="space-y-3">
+                    <p class="font-body text-[13px] text-[var(--text-muted)]">Scan the QR code in your authenticator app, or type this key:</p>
+                    <code class="block font-mono text-[13px] text-[var(--accent-mint)] break-all" x-text="secret"></code>
+                    <label for="totp_setup" class="block font-body text-[13px] font-[600] text-[var(--text-primary)]">Code from the app</label>
+                    <div class="flex gap-2">
+                        <input id="totp_setup" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
+                        <button type="button" class="btn-mm btn-mint h-[48px] px-5 text-[14px]" @click="confirm()" :disabled="busy || code.length !== 6">Turn on</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Withdraw -->
+    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
+             x-data="{ code: '', busy: false, async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast('success', r.message); setTimeout(() => location.reload(), 1200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">3. Withdraw</h2>
+        {% if not has_method %}
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI or bank details above first.</p>
+        {% elif not has_2fa %}
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Turn on step 2 first.</p>
+        {% elif wallet.available_for_payout < threshold %}
+        <p class="font-body text-[14px] text-[var(--text-muted)]">You can withdraw once {{ threshold|money }} is ready. You have {{ wallet.available_for_payout|money }} so far.</p>
+        {% else %}
+        <p class="font-body text-[14px] text-[var(--text-muted)] mb-4">Withdraw {{ wallet.available_for_payout|money }} to {% if method == 'upi' %}{{ dj_profile.upi_id }}{% else %}your bank account {{ masked_account }}{% endif %}. It usually arrives within 3 working days.</p>
+        <div class="flex flex-wrap gap-2 items-end">
+            <div>
+                <label for="totp_withdraw" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Authenticator code</label>
+                <input id="totp_withdraw" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
+            </div>
+            <button type="button" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]" @click="withdraw()" :disabled="busy || code.length !== 6">Withdraw now</button>
+        </div>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-4">Payout history</h2>
+        {% if payouts %}
+        <div class="overflow-x-auto border border-[var(--border)] rounded-[12px]">
+            <table class="w-full text-left font-body text-[14px]">
+                <thead class="bg-[var(--bg-elevated)] text-[12px] text-[var(--text-muted)]"><tr><th class="p-3">Date</th><th class="p-3">Amount</th><th class="p-3">Status</th><th class="p-3">Reference</th></tr></thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                {% for p in payouts %}
+                <tr><td class="p-3 whitespace-nowrap">{{ p.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ p.amount|money }}</td><td class="p-3">{{ p.get_status_display }}</td><td class="p-3 font-mono text-[12px] break-all">{{ p.payment_reference|default:"—" }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="font-body text-[14px] text-[var(--text-muted)]">No payouts yet.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

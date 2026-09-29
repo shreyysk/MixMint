@@ -47,6 +47,22 @@ def _send_welcome(user):
         logging.getLogger("mixmint").exception("Welcome email could not be queued for user %s", user.pk)
 
 
+def home_for(user):
+    """Where a signed-in user lands by default: admins -> admin dashboard, approved DJs -> DJ dashboard."""
+    profile = getattr(user, "profile", None)
+    if user.is_staff or getattr(profile, "role", "") == "admin":
+        return "admin_dashboard"
+    dj = getattr(profile, "dj_profile", None) if profile is not None and hasattr(profile, "dj_profile") else None
+    if getattr(profile, "role", "") == "dj" and dj is not None and dj.status == "approved":
+        return "dj_dashboard"
+    return "dashboard"
+
+
+@login_required
+def after_login_view(request):
+    return redirect(home_for(request.user))
+
+
 def signup_view(request):
     """User registration with Profile creation [Spec §3.1, §13]."""
     if request.user.is_authenticated:
@@ -172,7 +188,7 @@ def signup_view(request):
 def login_view(request):
     """User login with login history recording [Spec §13]."""
     if request.user.is_authenticated:
-        return redirect("dashboard")
+        return redirect(home_for(request.user))
 
     if request.method == "POST":
         email = (request.POST.get("email") or request.POST.get("username", "")).strip().lower()
@@ -237,7 +253,7 @@ def login_view(request):
             next_url = request.POST.get("next") or request.GET.get("next")
             if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)
-            return redirect("dashboard")
+            return redirect(home_for(user))
         else:
             matches = list(User.objects.filter(email__iexact=email, is_active=True)[:3]) if email else []
             if matches and not any(u.has_usable_password() for u in matches):
@@ -286,10 +302,22 @@ class HomeView:
                 .order_by("-popularity_score")[:6]
             )
 
+            from apps.albums.models import AlbumPack
+
+            new_albums = (
+                AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
+                .select_related("dj")
+                .order_by("-created_at")[:4]
+            )
             return render(
                 request,
                 "home.html",
-                {"popular_tracks": popular_tracks, "featured_tracks": featured_tracks, "featured_djs": featured_djs},
+                {
+                    "popular_tracks": popular_tracks,
+                    "featured_tracks": featured_tracks,
+                    "featured_djs": featured_djs,
+                    "new_albums": new_albums,
+                },
             )
 
         return view

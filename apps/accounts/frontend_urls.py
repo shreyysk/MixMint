@@ -1,6 +1,6 @@
 from django.urls import path
 from django.shortcuts import render
-from . import dashboard_views
+from . import dashboard_views, payout_views, upload_views
 from .frontend_views import (
     HomeView,
     ExploreView,
@@ -10,6 +10,7 @@ from .frontend_views import (
     logout_view,
     WaitlistSignupView,
     ThrottledPasswordResetView,
+    after_login_view,
 )
 from .dashboard_views import (
     dashboard_view,
@@ -48,10 +49,13 @@ urlpatterns = [
     path("waitlist/signup/", WaitlistSignupView.as_view(), name="waitlist_signup"),
     path("contact/", lambda r: render(r, "contact.html"), name="contact"),
     # Dashboard
+    path("start/", after_login_view, name="after_login"),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("dashboard/dj/", dj_dashboard_view, name="dj_dashboard"),
     path("apply-dj/", dashboard_views.dj_apply_view, name="apply_as_dj"),
-    path("upload/", dashboard_views.upload_track_view, name="upload_track"),
+    path("upload/", upload_views.upload_track_view, name="upload_track"),
+    path("upload/url/", upload_views.upload_url_view, name="upload_url"),
+    path("dashboard/dj/payouts/", payout_views.dj_payouts_view, name="dj_payouts"),
     path("dashboard/bundles/", bundle_management_view, name="bundle_management"),
     path("dashboard/bundles/create/", create_bundle_view, name="create_bundle"),
     path("dashboard/bundles/<int:bundle_id>/delete/", delete_bundle_view, name="delete_bundle"),

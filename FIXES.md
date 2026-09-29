@@ -157,3 +157,25 @@ Measured with an automated audit of 208 page views (every page × guest/buyer/DJ
 - **Admin**: dashboard now shows sales/revenue (30 days), users, pending DJ applications, payouts and tickets.
 - Prices show as ₹99 / ₹1,299 / Free. Share previews (WhatsApp/Twitter) now link to the right page and say "Free".
 - Tailwind CSS rebuilt (`npm run build:css`) so every class used in templates exists.
+
+## End-to-end marketplace pass (round 5)
+
+Walked the whole loop in a browser on a fresh database (guest → DJ applies → admin approves → DJ uploads →
+buyer pays → downloads → refund → DJ withdraws → admin pays out). Found and fixed:
+
+- **DJ applications never submitted.** The form posted to a page that only displayed itself. The page now saves the
+  application (same rules as the API), shows errors with your values kept, auto-fills the store address and alerts
+  admins on Telegram.
+- **Admins could not approve DJs.** The DJ page listed the wrong statuses and its "Verify" button did nothing. Rebuilt:
+  Waiting for review / Active / Rejected tabs with Approve, Reject (reason emailed), Verified badge, Hold payouts.
+- **DJs could not upload anything.** The upload form went nowhere and Vercel can't accept large files anyway. Uploads
+  now go straight from the browser to R2 with a signed link (progress bar, type/size/quota checks), then the track or
+  album is saved after checking the file really landed. Album packs (ZIP) can now be uploaded too.
+  Needs a one-time R2 CORS setting: see `docs/R2_UPLOADS.md`.
+- **DJs had nowhere to enter payout details.** New Payouts page: UPI or bank + IFSC, authenticator setup, balance,
+  Withdraw, history. Onboarding now saves bio and city.
+- **Admins had no way to pay DJs or handle refunds.** New Admin → Payouts (send, mark paid with UTR, or return money to
+  the DJ's balance) and Admin → Refunds (approve through Razorpay or reject). Telegram alerts for both.
+- After login, admins land on the admin dashboard and DJs on the DJ dashboard.
+- Home page shows album packs. Purchase email showed "PhonePe" and a ₹9 insurance price; fixed.
+- 16 new tests in `tests/test_saas_flows.py` (415 total).

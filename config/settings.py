@@ -410,6 +410,7 @@ AWS_S3_REGION_NAME = "auto"
 # R2_BUCKET_NAME is accepted as an alias (render.yaml / older .env files use it).
 R2_PRIVATE_BUCKET = env("R2_PRIVATE_BUCKET", default=env("R2_BUCKET_NAME", default="mixmint-raw"))
 R2_PUBLIC_BUCKET = env("R2_PUBLIC_BUCKET", default="mixmint-public")
+R2_PUBLIC_URL = env("R2_PUBLIC_URL", default="")
 AWS_STORAGE_BUCKET_NAME = R2_PRIVATE_BUCKET  # Default to private
 
 AWS_S3_CUSTOM_DOMAIN = env("R2_PUBLIC_URL", default="").replace("https://", "").replace("http://", "")
@@ -523,7 +524,7 @@ TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")
 
 # Auth URLs
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
+LOGIN_REDIRECT_URL = "after_login"
 LOGOUT_REDIRECT_URL = "home"
 
 # Active payment gateway: DEFAULT_PAYMENT_GATEWAY env var, overridable by the admin
@@ -578,7 +579,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
 GOOGLE_LOGIN_ENABLED = bool(SOCIAL_AUTH_GOOGLE_OAUTH2_KEY and SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET)
 # Always show Google's account chooser (people with several Google accounts).
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {"prompt": "select_account"}
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/dashboard/"
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/start/"
 SOCIAL_AUTH_LOGIN_ERROR_URL = "/login/"
 SOCIAL_AUTH_INACTIVE_USER_URL = "/login/"
 SOCIAL_AUTH_RAISE_EXCEPTIONS = False
@@ -684,7 +685,21 @@ CSP_CONNECT_SRC = (
     "https://lumberjack.razorpay.com",
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
+    "https://*.r2.cloudflarestorage.com",  # DJ uploads go straight to R2 (signed PUT)
 )
+
+
+def _origin(url):
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url or "")
+    return f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else ""
+
+
+for _o in {_origin(AWS_S3_ENDPOINT_URL)} - {""}:
+    CSP_CONNECT_SRC += (_o,)
+for _o in {_origin(R2_PUBLIC_URL)} - {""}:
+    CSP_IMG_SRC += (_o,)
 CSP_FRAME_SRC = (
     "'self'",
     "https://www.youtube.com",

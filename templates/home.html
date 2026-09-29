@@ -373,6 +373,38 @@
     {% endif %}
 </section>
 
+{% if new_albums %}
+<section class="py-16">
+    <div class="mm-section-head">
+        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">Album packs</h2>
+        <a href="{% url 'explore' %}?type=album">View all →</a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
+        {% for album in new_albums %}
+        <div data-reveal-child class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
+            <a href="{% url 'album_detail' album.id %}" class="block h-full flex flex-col">
+                <div class="aspect-square bg-[var(--bg-elevated)] relative overflow-hidden m-3 rounded-[10px]">
+                    {% if album.cover_image %}
+                    <img src="{{ album.cover_image }}" alt="{{ album.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20" aria-hidden="true">📦</div>
+                    {% endif %}
+                    <div class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase">{% if album.track_count %}{{ album.track_count }} tracks{% else %}ZIP pack{% endif %}</div>
+                </div>
+                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ album.title }}</h3>
+                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">{{ album.dj.dj_name }}</p>
+                    </div>
+                    <span class="mt-4 font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ album.price|price_label }}</span>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 <!-- ── HOW IT WORKS ── -->
 <section class="py-24 mb-10">
     <!-- Desktop Dashed Line connection -->

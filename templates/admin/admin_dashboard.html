@@ -49,11 +49,11 @@
             <p class="mm-stat-value font-display text-[30px] font-[700] {% if kpis.pending_djs %}text-[var(--accent-amber)]{% else %}text-[var(--text-primary)]{% endif %} leading-none">{{ kpis.pending_djs }}</p>
             <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{% if kpis.pending_djs %}Waiting for review →{% else %}Nothing to review{% endif %}</p>
         </a>
-        <div class="glow-card p-5">
+        <a href="{% url 'admin_payouts' %}" class="glow-card p-5 block hover:border-[var(--accent-amber)]/50">
             <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.14em] mb-2">To handle</p>
-            <p class="mm-stat-value font-display text-[30px] font-[700] text-[var(--text-primary)] leading-none">{{ kpis.pending_payouts|add:kpis.open_tickets }}</p>
-            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{{ kpis.pending_payouts }} payout{{ kpis.pending_payouts|pluralize }} · {{ kpis.open_tickets }} ticket{{ kpis.open_tickets|pluralize }}</p>
-        </div>
+            <p class="mm-stat-value font-display text-[30px] font-[700] text-[var(--text-primary)] leading-none">{{ kpis.pending_payouts|add:kpis.open_tickets|add:kpis.pending_refunds }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{{ kpis.pending_payouts }} payout{{ kpis.pending_payouts|pluralize }} · {{ kpis.pending_refunds }} refund{{ kpis.pending_refunds|pluralize }} · {{ kpis.open_tickets }} ticket{{ kpis.open_tickets|pluralize }} →</p>
+        </a>
     </section>
     {% endif %}
 
@@ -109,13 +109,37 @@
         <a href="{% url 'admin_dj_management' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
                 <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎧</div>
-                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">DJ Management</h3>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">DJs</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
-                    Verify seller applications, manage ID compliance, and control partner payouts.
+                    Approve or reject DJ applications, give verified badges and hold payouts.
                 </p>
             </div>
             <div class="mt-8 flex items-center justify-between">
-                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Seller Ops</span>
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Sellers</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_payouts' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all" aria-hidden="true">💸</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Payouts</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">Send DJ earnings by UPI or bank and mark them paid.</p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Money out</span>
+                <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_refunds' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
+            <div>
+                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all" aria-hidden="true">↩️</div>
+                <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Refunds</h3>
+                <p class="text-[var(--text-muted)] text-sm leading-relaxed">Approve or reject buyers’ refund requests.</p>
+            </div>
+            <div class="mt-8 flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Buyers</span>
                 <span class="text-[var(--accent-mint)] group-hover:translate-x-1 transition-transform">→</span>
             </div>
         </a>

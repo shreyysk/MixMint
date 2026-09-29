@@ -10,6 +10,8 @@ from .views import (
     toggle_kill_switch,
     set_maintenance_mode,
     hold_payout,
+    payouts_admin_view,
+    refunds_admin_view,
     release_payout,
     escrow_dj_funds,
     revenue_dashboard,
@@ -49,6 +51,8 @@ urlpatterns = [
     path("security/kill-switch/", toggle_kill_switch, name="admin_kill_switch"),
     path("security/maintenance/", set_maintenance_mode, name="admin_maintenance"),
     # Payout Management [Spec P2 §9]
+    path("payouts/", payouts_admin_view, name="admin_payouts"),
+    path("refunds/", refunds_admin_view, name="admin_refunds"),
     path("payouts/hold/", hold_payout, name="admin_payout_hold"),
     path("payouts/release/", release_payout, name="admin_payout_release"),
     path("payouts/escrow/", escrow_dj_funds, name="admin_escrow"),

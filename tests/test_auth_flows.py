@@ -218,7 +218,7 @@ class TestGoogle:
         profile = {"sub": "11", "email": "back@gmail.com", "email_verified": True, "name": "Back"}
         google(Client(), profile)
         c = Client()
-        assert google(c, profile)["Location"] == "/dashboard/"
+        assert google(c, profile)["Location"] == "/start/"
         from apps.accounts.models import User
 
         assert User.objects.filter(email__iexact="back@gmail.com").count() == 1
@@ -227,7 +227,7 @@ class TestGoogle:
         _signup(Client(), "both@gmail.com", name="Both Ways")
         c = Client()
         r = google(c, {"sub": "12", "email": "Both@gmail.com", "email_verified": True, "name": "Both"})
-        assert r["Location"] == "/dashboard/"
+        assert r["Location"] == "/start/"
         u = _user("both@gmail.com")
         assert u.social_auth.filter(provider="google-oauth2").exists()
         assert u.profile.full_name == "Both Ways"  # their chosen name is kept

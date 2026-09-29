@@ -3,6 +3,7 @@ import json
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models.functions import TruncWeek
@@ -122,16 +123,17 @@ def dj_apply_view(request):
     except Exception:
         pass
 
+    if request.method == "POST":
+        from .dj_application_views import submit_dj_application
+
+        code, payload = submit_dj_application(request.user, request.POST)
+        if code == 201:
+            messages.success(request, payload["message"])
+            return redirect("apply_as_dj")
+        messages.error(request, payload["error"])
+        return render(request, "dashboard/dj_apply.html", {"form": request.POST}, status=400)
+
     return render(request, "dashboard/dj_apply.html")
-
-
-@login_required
-def upload_track_view(request):
-    """View to render the DJ upload form [Spec P3 §4]."""
-    if request.user.profile.role != "dj" or not hasattr(request.user.profile, "dj_profile"):
-        return redirect("dashboard")
-
-    return render(request, "dashboard/upload.html")
 
 
 @login_required
@@ -385,6 +387,10 @@ def update_onboarding_step(request):
     if step not in steps:
         return JsonResponse({"error": "Invalid step."}, status=400)
 
+    if "bio" in data:
+        dj_profile.bio = str(data.get("bio") or "").strip()[:2000]
+    if "location" in data:
+        dj_profile.location = str(data.get("location") or "").strip()[:255] or None
     dj_profile.onboarding_step = step
     if step == "completed":
         dj_profile.is_onboarding_complete = True

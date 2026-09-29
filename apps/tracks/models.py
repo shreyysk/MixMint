@@ -30,6 +30,7 @@ class Track(models.Model):
         ("mp3", "MP3 (320kbps)"),
         ("studio", "Studio Project (ZIP)"),
         ("aiff", "AIFF"),
+        ("flac", "FLAC"),
     )
     file_format = models.CharField(max_length=20, choices=FORMAT_CHOICES, default="wav")  # [Fix 17]
 

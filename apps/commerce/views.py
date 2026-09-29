@@ -249,29 +249,39 @@ def request_refund(request):
         status="pending",
     )
     if not eligible_for_auto:
+        _alert_refund(refund_req)
         return Response(
             {"status": "pending", "message": "Refund request submitted for admin review.", "automated": False}
         )
 
+    if not execute_refund(refund_req, note="Automatically approved: download not delivered."):
+        refund_req.admin_notes = "Automatic refund failed at the gateway; needs manual processing."
+        refund_req.save(update_fields=["admin_notes"])
+        _alert_refund(refund_req)
+        return Response(
+            {"status": "pending", "message": "We couldn't refund automatically. Support will process it shortly."},
+            status=status.HTTP_202_ACCEPTED,
+        )
+    return Response({"status": "success", "message": "Refund processed successfully.", "automated": True})
+
+
+def execute_refund(refund_req, note=""):
+    """Refund the buyer at the gateway and reverse the DJ's credit. Returns True on success."""
     from apps.payments.utils import get_gateway
     from .services import MonetizationService
 
+    purchase = refund_req.purchase
     try:
         gateway = get_gateway(purchase.payment_gateway)
         amount = purchase.amount_paise if purchase.amount_paise is not None else int(purchase.price_paid * 100)
         refund_result = gateway.process_refund(
             purchase.gateway_payment_id if purchase.payment_gateway == "razorpay" else purchase.gateway_order_id,
             amount,
-            reason=f"Auto-refund: {reason}"[:250],
+            reason=f"Refund: {refund_req.reason}"[:250],
         )
     except Exception:
         logger.exception("Refund failed for purchase %s", purchase.id)
-        refund_req.admin_notes = "Automatic refund failed at the gateway; needs manual processing."
-        refund_req.save(update_fields=["admin_notes"])
-        return Response(
-            {"status": "pending", "message": "We couldn't refund automatically. Support will process it shortly."},
-            status=status.HTTP_202_ACCEPTED,
-        )
+        return False
 
     with transaction.atomic():
         MonetizationService.reverse_purchase(purchase, reason="refund")
@@ -280,10 +290,22 @@ def request_refund(request):
         )
         refund_req.status = "processed"
         refund_req.processed_at = timezone.now()
-        refund_req.admin_notes = "Automatically approved: download not delivered."
+        refund_req.admin_notes = note or refund_req.admin_notes
         refund_req.save()
+    return True
 
-    return Response({"status": "success", "message": "Refund processed successfully.", "automated": True})
+
+def _alert_refund(refund_req):
+    try:
+        from apps.admin_panel.telegram import notify_admins
+
+        p = refund_req.purchase
+        notify_admins(
+            f"↩️ Refund request: ₹{p.price_paid} ({p.content_type} #{p.content_id}) from {p.user.user.email}\n"
+            f"Reason: {refund_req.reason[:300]}\nReview it in Admin → Refunds."
+        )
+    except Exception:
+        pass
 
 
 @api_view(["POST"])

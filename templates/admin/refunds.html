@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load tracks_filters %}
+{% block title %}Refunds — MixMint Admin{% endblock %}
+{% block content %}
+<div class="max-w-[1100px] mx-auto py-10 px-4 font-body space-y-10">
+    <div>
+        <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← Admin dashboard</a>
+        <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">Refund requests</h1>
+        <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Buyers who never downloaded are refunded automatically. Everything else waits here. Approving sends the money back through Razorpay and takes the DJ's share back out of their balance.</p>
+    </div>
+
+    <section class="space-y-4">
+        {% for row in rows %}
+        <article class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-5 md:p-6">
+            <div class="flex flex-col md:flex-row justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="font-display text-[20px] font-[700] text-[var(--text-primary)]">{{ row.p.price_paid|money }} · {{ row.title }}</p>
+                    <p class="text-[13px] text-[var(--text-muted)] mt-1 break-all">{{ row.p.user.user.email }} · bought {{ row.p.created_at|date:"d M Y" }} from {{ row.p.seller.dj_name }} · {% if row.p.download_completed %}downloaded{% else %}not downloaded{% endif %} · asked {{ row.r.created_at|date:"d M Y" }}</p>
+                    <p class="text-[14px] text-[var(--text-primary)] mt-3 whitespace-pre-line">“{{ row.r.reason|default:"No reason given" }}”</p>
+                    {% if row.r.admin_notes %}<p class="text-[12px] text-[var(--accent-amber)] mt-2">{{ row.r.admin_notes }}</p>{% endif %}
+                </div>
+                <form method="post" class="flex flex-col gap-2 md:w-[280px] shrink-0">
+                    {% csrf_token %}<input type="hidden" name="refund_id" value="{{ row.r.id }}">
+                    <label class="sr-only" for="note-{{ row.r.id }}">Note</label>
+                    <input id="note-{{ row.r.id }}" name="note" class="input-mm h-[42px] text-[13px]" placeholder="Note (optional)">
+                    <div class="flex gap-2">
+                        <button name="action" value="approve" class="btn-mm btn-mint h-[42px] px-4 text-[13px] flex-1">Refund</button>
+                        <button name="action" value="reject" class="btn-mm btn-ghost h-[42px] px-4 text-[13px] flex-1">Reject</button>
+                    </div>
+                </form>
+            </div>
+        </article>
+        {% empty %}
+        <div class="mm-empty text-center py-14 text-[var(--text-muted)] border border-[var(--border)] rounded-[14px]">No refund requests waiting.</div>
+        {% endfor %}
+    </section>
+
+    {% if recent %}
+    <section>
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-4">Recent</h2>
+        <div class="overflow-x-auto border border-[var(--border)] rounded-[12px]">
+            <table class="w-full text-left text-[14px]">
+                <thead class="bg-[var(--bg-elevated)] text-[12px] text-[var(--text-muted)]"><tr><th class="p-3">Date</th><th class="p-3">Amount</th><th class="p-3">Result</th><th class="p-3">Note</th></tr></thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                {% for r in recent %}<tr><td class="p-3 whitespace-nowrap">{{ r.processed_at|default:r.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ r.purchase.price_paid|money }}</td><td class="p-3">{{ r.get_status_display }}</td><td class="p-3 text-[13px]">{{ r.admin_notes|default:"—" }}</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
