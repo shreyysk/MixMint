@@ -109,6 +109,10 @@
                 <div class="w-px h-6 bg-[var(--border)] mx-1"></div>
 
                 {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}"
+                    class="font-body text-[14px] font-[600] px-3 py-1.5 rounded-full bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/25 transition-colors">Admin</a>
+                {% endif %}
                 {% if user.profile.role == 'dj' %}
                 <a href="{% url 'dashboard' %}"
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">My
@@ -214,6 +218,9 @@
 
             <div class="flex flex-col gap-4">
                 {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}" class="btn-mm btn-mint w-full">Admin dashboard</a>
+                {% endif %}
                 <a href="{% url 'dashboard' %}"
                     class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">
                     {% if user.is_dj %}DJ Panel{% else %}My Library{% endif %}

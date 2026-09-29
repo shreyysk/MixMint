@@ -27,3 +27,27 @@ def global_settings(request):
     ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share}
     cache.set("global_settings_ctx", ctx, 30)
     return {**ctx, **test_mode}
+
+
+def admin_nav(request):
+    """Badge counts for the admin sidebar (only computed on admin pages)."""
+    path = getattr(request, "path", "") or ""
+    user = getattr(request, "user", None)
+    if not (path.startswith("/api/v1/admin/") and user is not None and user.is_authenticated and user.is_staff):
+        return {}
+    try:
+        from apps.accounts.models import DJProfile
+        from apps.commerce.models import Payout, RefundRequest
+
+        from .models import SupportTicket
+
+        return {
+            "admin_counts": {
+                "djs": DJProfile.objects.filter(status__in=["pending", "pending_review", "pending_payment"]).count(),
+                "payouts": Payout.objects.filter(status__in=["pending", "processing"]).count(),
+                "refunds": RefundRequest.objects.filter(status="pending").count(),
+                "tickets": SupportTicket.objects.exclude(status__in=["resolved", "closed"]).count(),
+            }
+        }
+    except Exception:
+        return {"admin_counts": {}}
