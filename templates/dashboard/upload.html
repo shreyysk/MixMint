@@ -1,263 +1,212 @@
 {% extends 'base.html' %}
-{% block title %}Upload New Track — MixMint{% endblock %}
+{% block title %}Upload music — MixMint{% endblock %}
 
 {% block content %}
-<div class="max-w-[800px] mx-auto py-12 px-4">
+<div class="max-w-[800px] mx-auto py-12 px-4" x-data="mmUpload('{{ kind|default:'track' }}')">
 
-    <!-- ── HEADER ── -->
-    <div class="mb-12 border-b border-[var(--border)] pb-8">
-        <h1
-            class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">
-            Upload New Track
-        </h1>
+    <div class="mb-10 border-b border-[var(--border)] pb-8">
+        <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
+        <h1 class="font-display text-[36px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">Upload music</h1>
         <p class="font-body text-[14px] text-[var(--text-muted)]">
-            Upload your audio file, add metadata, and set your price. {% if dj_share_percent is not None %}You keep {{ dj_share_percent }}% of every sale.{% endif %}
+            Add the file, a preview link and your price. It goes live in your store straight away.
+            {% if dj_share_percent is not None %}You keep {{ dj_share_percent }}% of every sale.{% endif %}
         </p>
     </div>
 
-    <!-- ── UPLOAD FORM ── -->
-    <form method="post" enctype="multipart/form-data" class="space-y-12" x-data="{ audioName: '', audioSize: '', coverUrl: '', coverName: '' }">
+    {% if not approved %}
+    <div class="notice-warning mb-8"><p class="font-body text-[14px]">Your DJ application is still being reviewed. You can upload once it's approved.</p></div>
+    {% elif not storage_ready %}
+    <div class="notice-danger mb-8"><p class="font-body text-[14px]">File storage isn't connected yet (missing R2 keys), so uploads won't work. Please tell the MixMint admin.</p></div>
+    {% endif %}
+
+    <div class="grid grid-cols-2 gap-2 p-1 rounded-[12px] bg-[var(--bg-elevated)] border border-[var(--border)] mb-10" role="radiogroup" aria-label="What are you uploading?">
+        <button type="button" role="radio" :aria-checked="kind === 'track'" @click="setKind('track')"
+            :class="kind === 'track' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
+            class="h-[48px] rounded-[9px] font-body text-[14px] font-[600]">Single track</button>
+        <button type="button" role="radio" :aria-checked="kind === 'album'" @click="setKind('album')"
+            :class="kind === 'album' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
+            class="h-[48px] rounded-[9px] font-body text-[14px] font-[600]">Album pack (ZIP)</button>
+    </div>
+
+    <form method="post" class="space-y-12" x-ref="form" @submit.prevent="submit()" novalidate data-upload-form>
         {% csrf_token %}
+        <input type="hidden" name="kind" :value="kind">
+        <input type="hidden" name="file_key" :value="fileKey">
+        <input type="hidden" name="cover_url" :value="coverUrl">
 
-        <!-- Audio File -->
-        <div>
-            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Audio File
-            </h3>
-            <div
-                class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-12 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer">
-                <input type="file" name="audio_file" id="audio_file" accept=".mp3,.wav,.flac" required
-                    aria-describedby="audio-help"
-                    @change="const f = $event.target.files[0]; audioName = f ? f.name : ''; audioSize = f ? (f.size / 1048576).toFixed(1) + ' MB' : ''"
-                    class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <div class="text-4xl opacity-30 mb-4 group-hover:opacity-60 transition-opacity" aria-hidden="true">🎵</div>
-                <label for="audio_file" class="block font-body text-[15px] text-[var(--text-primary)] font-[600] mb-2">
-                    <span x-show="!audioName">Drop your audio file here or click to browse</span>
-                    <span x-show="audioName" x-cloak class="text-[var(--accent-mint)]">✓ <span x-text="audioName"></span> · <span x-text="audioSize"></span></span>
+        <!-- File -->
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4" x-text="kind === 'album' ? 'ZIP file with your tracks' : 'Audio file'">Audio file</h2>
+            <div class="relative border-2 border-dashed rounded-[12px] bg-[var(--bg-surface)] p-10 text-center transition-colors"
+                 :class="file ? 'border-[var(--accent-mint)]' : 'border-[var(--border)] hover:border-[var(--accent-mint)]'">
+                <input type="file" id="main_file" x-ref="file" :accept="kind === 'album' ? '.zip' : '.mp3,.wav,.flac,.aiff,.aif'"
+                       aria-describedby="file-help" @change="pick($event, 'file')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                <div class="text-4xl opacity-40 mb-3" aria-hidden="true" x-text="kind === 'album' ? '🗂️' : '🎵'">🎵</div>
+                <label for="main_file" class="block font-body text-[15px] font-[600] text-[var(--text-primary)] mb-1">
+                    <span x-show="!file">Choose a file or drop it here</span>
+                    <span x-show="file" x-cloak class="text-[var(--accent-mint)] break-all">✓ <span x-text="file && file.name"></span> · <span x-text="file && mb(file.size)"></span></span>
                 </label>
-                <p id="audio-help" class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
-                    WAV, MP3, FLAC · Max 100MB · 320kbps minimum
-                </p>
-            </div>
-        </div>
-
-        <!-- Cover Art -->
-        <div>
-            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Cover Art
-            </h3>
-            <div
-                class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-8 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer max-w-[300px]">
-                <input type="file" name="cover_art" id="cover_art" accept="image/*"
-                    @change="const f = $event.target.files[0]; coverName = f ? f.name : ''; if (coverUrl) URL.revokeObjectURL(coverUrl); coverUrl = f ? URL.createObjectURL(f) : ''"
-                    class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <img x-show="coverUrl" x-cloak :src="coverUrl" alt="Selected cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
-                <div x-show="!coverUrl" class="text-3xl opacity-30 mb-3 group-hover:opacity-60 transition-opacity" aria-hidden="true">🖼️</div>
-                <label for="cover_art" class="block font-body text-[14px] text-[var(--text-primary)] font-[500] mb-1" x-text="coverName || 'Cover artwork'">Cover artwork</label>
-                <p class="font-mono text-[11px] text-[var(--text-muted)]">JPG, PNG · 1000×1000px min</p>
-            </div>
-        </div>
-
-        <!-- Track Details -->
-        <div>
-            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Track Details
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label
-                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Title</label>
-                    <input type="text" name="title" required class="input-mm" placeholder="Track title">
+                <p id="file-help" class="font-body text-[12px] text-[var(--text-muted)]" x-text="kind === 'album' ? 'One .zip with all the tracks · max 1 GB' : 'MP3, WAV, FLAC or AIFF · max 200 MB'"></p>
+                <div x-show="progress.file > 0" x-cloak class="mt-4 h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden" role="progressbar" :aria-valuenow="progress.file" aria-valuemin="0" aria-valuemax="100">
+                    <div class="h-full bg-[var(--accent-mint)] transition-all" :style="`width:${progress.file}%`"></div>
                 </div>
-                <div>
-                    <label
-                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Genre</label>
-                    <select name="genre" id="genre" aria-label="Genre" class="input-mm cursor-pointer">
-                        <option value="">Select Genre</option>
-                        <option value="Techno">Techno</option>
-                        <option value="House">House</option>
-                        <option value="Trance">Trance</option>
-                        <option value="Dubstep">Dubstep</option>
-                        <option value="Drum & Bass">Drum & Bass</option>
-                        <option value="Hardstyle">Hardstyle</option>
-                        <option value="Bollywood">Bollywood</option>
-                        <option value="Other">Other</option>
+            </div>
+            {% if form.file_key %}<input type="hidden" x-init="fileKey = '{{ form.file_key|escapejs }}'; keptName = true">
+            <p x-show="keptName && !file" class="font-body text-[12px] text-[var(--text-muted)] mt-2">Your file is already uploaded — no need to choose it again.</p>{% endif %}
+        </section>
+
+        <!-- Cover -->
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4">Cover art <span class="font-body text-[13px] font-normal text-[var(--text-muted)]">(optional)</span></h2>
+            {% if covers_ready %}
+            <div class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-6 text-center hover:border-[var(--accent-mint)] transition-colors max-w-[300px]">
+                <input type="file" id="cover_file" accept="image/jpeg,image/png,image/webp" @change="pick($event, 'cover')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
+                <div x-show="!(coverPreview || coverUrl)" class="text-3xl opacity-40 mb-2" aria-hidden="true">🖼️</div>
+                <label for="cover_file" class="block font-body text-[14px] font-[500] text-[var(--text-primary)]" x-text="cover ? cover.name : 'Choose an image'">Choose an image</label>
+                <p class="font-body text-[12px] text-[var(--text-muted)]">Square JPG or PNG, at least 1000×1000</p>
+            </div>
+            {% else %}
+            <p class="font-body text-[13px] text-[var(--text-muted)]">Cover uploads are switched off until the admin sets R2_PUBLIC_URL. Your music will show a generated cover.</p>
+            {% endif %}
+            {% if form.cover_url %}<input type="hidden" x-init="coverUrl = '{{ form.cover_url|escapejs }}'">{% endif %}
+        </section>
+
+        <!-- Details -->
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4">Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="title" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Title</label>
+                    <input type="text" id="title" name="title" required maxlength="255" class="input-mm" value="{{ form.title|default:'' }}" :placeholder="kind === 'album' ? 'e.g. Monsoon Sessions Vol. 1' : 'e.g. Midnight Monsoon (Extended Mix)'">
+                </div>
+                <div x-show="kind === 'track'">
+                    <label for="genre" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Genre</label>
+                    <select name="genre" id="genre" class="input-mm cursor-pointer">
+                        <option value="">Choose a genre</option>
+                        {% for g in genre_choices %}<option value="{{ g }}" {% if form.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
                     </select>
                 </div>
-                <div>
-                    <label
-                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Year</label>
-                    <input type="number" name="year" class="input-mm" placeholder="2026" min="2020" max="2030">
+                <div x-show="kind === 'track'">
+                    <label for="bpm" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">BPM <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                    <input type="number" id="bpm" name="bpm" class="input-mm" placeholder="128" min="40" max="250" value="{{ form.bpm|default:'' }}">
                 </div>
-                <div>
-                    <label
-                        class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">BPM
-                        (optional)</label>
-                    <input type="number" name="bpm" class="input-mm" placeholder="128" step="1" min="60" max="200">
+                <div x-show="kind === 'track'">
+                    <label for="year" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Year <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                    <input type="number" id="year" name="year" class="input-mm" placeholder="2026" min="1950" max="2100" value="{{ form.year|default:'' }}">
+                </div>
+                <div x-show="kind === 'album'" x-cloak>
+                    <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Number of tracks in the ZIP</label>
+                    <input type="number" id="track_count" name="track_count" class="input-mm" placeholder="8" min="1" max="500" value="{{ form.track_count|default:'' }}">
                 </div>
             </div>
-
             <div class="mt-6">
-                <label
-                    class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Description</label>
-                <textarea name="description" rows="4" class="input-mm" style="height: auto; min-height: 120px;"
-                    placeholder="Describe your track, its vibe, and what makes it unique..."></textarea>
+                <label for="description" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Description <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                <textarea id="description" name="description" rows="4" maxlength="5000" class="input-mm" style="height:auto;min-height:110px"
+                    placeholder="The vibe, where it works in a set, what's included.">{{ form.description|default:'' }}</textarea>
             </div>
-        </div>
+        </section>
 
-        <!-- Preview -->
-        <div x-data="{ 
-            url: '', 
-            previewType: 'youtube', 
-            valid: false, 
-            embedUrl: '', 
-            msg: '', 
-            loading: false,
-            async validate() {
-                if(!this.url) { this.valid = false; this.msg = ''; return; }
-                this.loading = true;
-                try {
-                    const res = await fetch('/api/v1/tracks/validate-preview/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify({ url: this.url, type: this.previewType })
-                    });
-                    const data = await res.json();
-                    this.valid = data.valid;
-                    this.embedUrl = data.embed_url;
-                    this.msg = data.message || data.error;
-                } catch(e) {
-                    this.valid = false;
-                    this.msg = 'Validation failed.';
-                } finally {
-                    this.loading = false;
-                }
-            }
-        }">
-            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Preview
-                (Optional)</h3>
-            <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Add a YouTube or Instagram link so buyers can
-                preview before purchasing.</p>
-
-            <div class="flex gap-3 mb-4">
-                <button type="button" @click="previewType = 'youtube'; validate()"
-                    :class="previewType === 'youtube' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
-                    class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
-                    YouTube
-                </button>
-                <button type="button" @click="previewType = 'instagram'; validate()"
-                    :class="previewType === 'instagram' ? 'border-[var(--accent-mint)] text-[var(--accent-mint)]' : 'border-[var(--border)] text-[var(--text-muted)]'"
-                    class="px-4 py-2 rounded-[6px] border font-mono text-[11px] uppercase tracking-wider transition-colors">
-                    Instagram
-                </button>
-                <input type="hidden" name="preview_type" :value="previewType">
-            </div>
-
-            <div class="relative">
-                <input type="url" name="preview_url" class="input-mm pr-24" placeholder="Paste YouTube or Instagram URL"
-                    x-model="url" @input.debounce.500ms="validate()">
-                <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <template x-if="loading">
-                        <span class="animate-spin text-[var(--accent-mint)]">⌛</span>
-                    </template>
-                    <template x-if="!loading && url && valid">
-                        <span class="text-[var(--accent-mint)]" title="Valid link">✓</span>
-                    </template>
-                    <template x-if="!loading && url && !valid">
-                        <span class="text-[var(--accent-red)]" title="Invalid link">✕</span>
-                    </template>
+        <!-- Previews -->
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Preview link</h2>
+            <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">MixMint never streams your file. Buyers preview from your YouTube video or Instagram Reel — add at least one.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="youtube_url" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">YouTube link</label>
+                    <input type="url" id="youtube_url" name="youtube_url" class="input-mm" placeholder="https://youtu.be/…" value="{{ form.youtube_url|default:'' }}">
+                </div>
+                <div>
+                    <label for="instagram_url" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Instagram Reel link</label>
+                    <input type="url" id="instagram_url" name="instagram_url" class="input-mm" placeholder="https://www.instagram.com/reel/…" value="{{ form.instagram_url|default:'' }}">
                 </div>
             </div>
+        </section>
 
-            <p x-show="msg" :class="valid ? 'text-[var(--accent-mint)]' : 'text-[var(--accent-red)]'"
-                class="font-body text-[11px] mt-2 mb-4" x-text="msg"></p>
-
-            <!-- Live Embed Preview [Imp 08] -->
-            <template x-if="valid && embedUrl">
-                <div
-                    class="mt-6 aspect-video bg-black rounded-lg overflow-hidden border border-[var(--border)] shadow-inner">
-                    <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
-                </div>
-            </template>
-        </div>
-
-        <!-- Pricing -->
-        <div>
-            <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)] tracking-tight mb-6">Pricing</h3>
-            <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6 shadow-[var(--shadow-card)]"
-                x-data="{ price: 0, commissionRate: {{ platform_settings.platform_commission_rate|default:'15' }} / 100 }">
-                <label class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-3">
-                    Your Price (₹)
-                </label>
-                <input type="number" name="price" step="1" min="10" max="5000" required
-                    class="input-mm font-mono text-[20px] font-bold text-[var(--accent-mint)] mb-6" placeholder="₹49"
-                    x-model="price">
-
-                <!-- Live Breakdown -->
-                <div class="space-y-3 pt-4 border-t border-[var(--border)]">
-                    <div class="flex justify-between font-body text-[13px]">
-                        <span class="text-[var(--text-muted)]">Your price</span>
-                        <span class="font-mono text-[var(--text-primary)]">₹<span x-text="price || '0'"></span></span>
-                    </div>
-                    <div class="flex justify-between font-body text-[13px]">
-                        <span class="text-[var(--text-muted)] flex items-center gap-2">
-                            Platform fee ({{ platform_settings.platform_commission_rate|floatformat:0|default:"15" }}%)
-                            {% if active_promotional_offer and active_promotional_offer.show_on_dj_upload %}
-                            <span
-                                class="px-1.5 py-0.5 bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] text-[9px] uppercase tracking-wider rounded border border-[var(--accent-mint)]/20">Offer
-                                Applied</span>
-                            {% endif %}
-                        </span>
-                        <span class="font-mono text-[var(--accent-red)]">−₹<span
-                                x-text="(price * commissionRate).toFixed(0)"></span></span>
-                    </div>
-                    <div
-                        class="flex justify-between font-body text-[14px] font-[600] pt-3 border-t border-[var(--border)]">
-                        <span class="text-[var(--text-primary)]">You receive per sale</span>
-                        <span class="font-mono text-[var(--accent-mint)]">₹<span
-                                x-text="(price * (1 - commissionRate)).toFixed(0)"></span></span>
-                    </div>
-                </div>
-
-                <div class="mt-4 notice-info">
-                    <span class="font-body text-[12px] text-[var(--text-muted)]">
-                        Buyer sees: <span class="font-mono font-bold text-[var(--text-primary)]">₹<span
-                                x-text="price || '0'"></span></span> (inclusive of all charges)
-                    </span>
+        <!-- Price -->
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4">Price</h2>
+            <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6"
+                 x-data="{ price: '{{ form.price|default:'' }}', rate: {{ platform_settings.platform_commission_rate|default:'15' }} / 100 }">
+                <label for="price" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Price in ₹</label>
+                <input type="number" id="price" name="price" step="1" min="0" max="100000" required inputmode="numeric"
+                    class="input-mm font-mono text-[20px] font-bold mb-2" placeholder="99" x-model="price" aria-describedby="price-help">
+                <p id="price-help" class="font-body text-[12px] text-[var(--text-muted)] mb-5"
+                   x-text="kind === 'album' ? 'Albums start at ₹{{ min_album_price|default:49 }}.' : 'Paid tracks start at ₹{{ min_track_price|default:29 }}. Put 0 to give it away free.'"></p>
+                <div class="space-y-2 pt-4 border-t border-[var(--border)] font-body text-[13px]">
+                    <div class="flex justify-between"><span class="text-[var(--text-muted)]">Buyer pays</span><span class="font-mono" x-text="'₹' + (Number(price) || 0)"></span></div>
+                    <div class="flex justify-between"><span class="text-[var(--text-muted)]">MixMint fee ({{ platform_settings.platform_commission_rate|floatformat:0|default:"15" }}%)</span><span class="font-mono" x-text="'−₹' + ((Number(price) || 0) * rate).toFixed(0)"></span></div>
+                    <div class="flex justify-between pt-2 border-t border-[var(--border)] text-[14px] font-[600]"><span>You get per sale</span><span class="font-mono text-[var(--accent-mint)]" x-text="'₹' + ((Number(price) || 0) * (1 - rate)).toFixed(0)"></span></div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {% if form.errors %}
-        <div class="notice-danger">
-            <p class="font-body text-[13px] text-[var(--accent-red)]">
-                {% for field, errors in form.errors.items %}
-                {% for error in errors %}{{ error }}{% endfor %}
-                {% endfor %}
-            </p>
-        </div>
-        {% endif %}
+        <label class="flex items-start gap-3 p-5 rounded-[12px] border border-[var(--border)] bg-[var(--bg-elevated)] cursor-pointer">
+            <input type="checkbox" name="content_responsibility_accepted" value="on" class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-mint)]" {% if form.content_responsibility_accepted %}checked{% endif %}>
+            <span class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
+                I made this or have the rights to sell it. I understand uploading music I don't have rights to can get my account closed.
+            </span>
+        </label>
 
-        <!-- Content Responsibility -->
-        <div class="p-6 rounded-[12px] border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/5">
-            <h4 class="font-mono text-[11px] font-[700] text-[var(--accent-red)] uppercase tracking-widest mb-3">
-                Content Responsibility
-            </h4>
-            <label class="flex items-start gap-4 cursor-pointer">
-                <input type="checkbox" name="content_responsibility_accepted" required
-                    class="mt-1 w-4 h-4 accent-[var(--accent-red)] bg-transparent border-[var(--border)] rounded-sm">
-                <p class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
-                    I certify that I have the rights to distribute this content. I understand that MixMint acts as a
-                    distribution platform and I bear sole legal responsibility for all content I upload. Uploading
-                    unauthorized or unlicensed material will result in account termination.
-                </p>
-            </label>
-        </div>
+        <p x-show="error" x-cloak role="alert" class="notice-danger font-body text-[14px]" x-text="error"></p>
 
-        <!-- Submit -->
-        <button type="submit" class="btn-mm btn-mint w-full h-[60px] text-[16px] font-[600] rounded-[8px]">
-            Save & Submit for Review
+        <button type="submit" class="btn-mm btn-mint w-full h-[60px] text-[16px] font-[700] rounded-[10px]" :disabled="busy" {% if not approved or not storage_ready %}disabled{% endif %}>
+            <span x-text="busy ? status : (kind === 'album' ? 'Publish album' : 'Publish track')">Publish track</span>
         </button>
-        <p class="text-center font-body text-[12px] text-[var(--text-muted)] mt-3">
-            Tracks are reviewed within 24–48 hours before going live.
-        </p>
     </form>
 </div>
+
+<script>
+function mmUpload(initialKind) {
+    return {
+        kind: initialKind, file: null, cover: null, coverPreview: '', fileKey: '', coverUrl: '', keptName: false,
+        busy: false, status: '', error: '', progress: { file: 0, cover: 0 },
+        mb(n) { return (n / 1048576).toFixed(1) + ' MB'; },
+        setKind(k) { if (this.kind === k) return; this.kind = k; this.file = null; this.fileKey = ''; this.keptName = false; this.$refs.file.value = ''; },
+        pick(e, which) {
+            const f = e.target.files[0] || null;
+            if (which === 'file') { this.file = f; this.fileKey = ''; this.progress.file = 0; }
+            else { this.cover = f; this.coverUrl = ''; if (this.coverPreview) URL.revokeObjectURL(this.coverPreview); this.coverPreview = f ? URL.createObjectURL(f) : ''; }
+        },
+        put(target, f, key) {
+            return new Promise((resolve, reject) => {
+                const x = new XMLHttpRequest();
+                x.open('PUT', target.url);
+                Object.entries(target.headers || {}).forEach(([k, v]) => x.setRequestHeader(k, v));
+                x.upload.onprogress = (ev) => { if (ev.lengthComputable) this.progress[key] = Math.max(2, Math.round(ev.loaded / ev.total * 100)); };
+                x.onload = () => (x.status >= 200 && x.status < 300) ? resolve() : reject(new Error('Upload failed (' + x.status + '). Please try again.'));
+                x.onerror = () => reject(new Error('Upload was blocked or the connection dropped. Please try again.'));
+                x.send(f);
+            });
+        },
+        async send(kind, f, key) {
+            const target = await MM.api('{% url "upload_url" %}', { body: { kind: kind, filename: f.name, size: f.size } });
+            await this.put(target, f, key);
+            return target;
+        },
+        async submit() {
+            this.error = '';
+            const form = this.$refs.form;
+            if (!this.file && !this.fileKey) { this.error = this.kind === 'album' ? 'Choose the ZIP file to upload.' : 'Choose the audio file to upload.'; return; }
+            if (!form.title.value.trim()) { this.error = 'Give it a title.'; form.title.focus(); return; }
+            if (!form.youtube_url.value.trim() && !form.instagram_url.value.trim()) { this.error = 'Add a YouTube or Instagram preview link.'; form.youtube_url.focus(); return; }
+            if (form.price.value === '') { this.error = 'Set a price (0 for free).'; form.price.focus(); return; }
+            if (!form.content_responsibility_accepted.checked) { this.error = 'Please confirm you have the rights to sell this.'; return; }
+            this.busy = true;
+            window.onbeforeunload = () => true;
+            try {
+                if (this.cover && !this.coverUrl) { this.status = 'Uploading cover…'; this.coverUrl = (await this.send('cover', this.cover, 'cover')).public_url; }
+                if (this.file && !this.fileKey) { this.status = 'Uploading file… keep this tab open'; this.fileKey = (await this.send(this.kind === 'album' ? 'album' : 'audio', this.file, 'file')).key; }
+                this.status = 'Saving…';
+                await this.$nextTick();
+                window.onbeforeunload = null;
+                form.submit();
+            } catch (e) {
+                window.onbeforeunload = null;
+                this.error = e.message; this.busy = false;
+            }
+        },
+    };
+}
+</script>
 {% endblock %}

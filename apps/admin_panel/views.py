@@ -83,47 +83,43 @@ def list_pending_djs(request):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def dj_management_view(request):
-    """Premium UI for DJ management [Spec §3.3]."""
-    import json
+    """Admin page: review DJ applications (approve / reject) and manage active sellers."""
+    from django.db.models import Count, Q
     from django.shortcuts import render
-    from django.core.serializers.json import DjangoJSONEncoder
 
-    # 1. Pending DJs
-    pending = DJProfile.objects.filter(status="pending").select_related("profile__user")
-    pending_list = []
-    for dj in pending:
-        pending_list.append(
-            {
-                "id": dj.id,
-                "dj_name": dj.dj_name,
-                "email": dj.profile.user.email,
-                "status": dj.status,
-                "created_at": dj.created_at.isoformat(),
-            }
-        )
-
-    # 2. Active DJs (Verified)
-    active = DJProfile.objects.filter(status="verified").select_related("profile__user", "wallet")
-    active_list = []
-    for dj in active:
-        active_list.append(
-            {
-                "id": dj.id,
-                "dj_name": dj.dj_name,
-                "email": dj.profile.user.email,
-                "status": dj.status,
-                "pending_earnings": str(dj.wallet.pending_earnings if hasattr(dj, "wallet") else 0),
-            }
-        )
-
-    ctx = {
-        "pending_json": json.dumps(pending_list, cls=DjangoJSONEncoder),
-        "active_json": json.dumps(active_list, cls=DjangoJSONEncoder),
+    groups = {
+        "pending": ("pending", "pending_review", "pending_payment"),
+        "active": ("approved",),
+        "rejected": ("rejected", "banned"),
     }
-    return render(request, "admin/dj_management.html", ctx)
-
-
-# ─── Content Moderation ──────────────────────────────────────────
+    qs = (
+        DJProfile.objects.select_related("profile__user")
+        .annotate(track_count=Count("tracks", filter=Q(tracks__is_deleted=False), distinct=True))
+        .order_by("-created_at")
+    )
+    djs = {key: [] for key in groups}
+    for dj in qs:
+        key = next((k for k, statuses in groups.items() if dj.status in statuses), None)
+        if key is None:
+            continue
+        wallet = getattr(dj, "wallet", None) if hasattr(dj, "wallet") else None
+        fee = getattr(dj, "application_fee", None) if hasattr(dj, "application_fee") else None
+        djs[key].append(
+            {
+                "dj": dj,
+                "email": dj.profile.user.email,
+                "fee_status": fee.status if fee else None,
+                "available": getattr(wallet, "available_for_payout", 0) or 0,
+                "total": getattr(wallet, "total_earnings", 0) or 0,
+                "is_verified": dj.profile.is_verified_dj,
+            }
+        )
+    tab = request.GET.get("tab") if request.GET.get("tab") in groups else ("pending" if djs["pending"] else "active")
+    return render(
+        request,
+        "admin/dj_management.html",
+        {"djs": djs, "tab": tab, "counts": {k: len(v) for k, v in djs.items()}},
+    )
 
 
 @api_view(["POST"])
@@ -1012,7 +1008,7 @@ def admin_command_center(request):
     from datetime import timedelta
 
     from apps.accounts.models import User
-    from apps.commerce.models import Payout, Purchase
+    from apps.commerce.models import Payout, Purchase, RefundRequest
 
     from .models import SupportTicket
 
@@ -1026,13 +1022,107 @@ def admin_command_center(request):
         kpis = {
             "users": User.objects.count(),
             "djs": DJProfile.objects.filter(status="approved").count(),
-            "pending_djs": DJProfile.objects.filter(status="pending").count(),
+            "pending_djs": DJProfile.objects.filter(status__in=["pending", "pending_review", "pending_payment"]).count(),
             "sales_30d": paid.count(),
             "gross_30d": agg["gross"] or 0,
             "platform_30d": (agg["commission"] or 0) + (agg["fees"] or 0),
             "pending_payouts": Payout.objects.filter(status__in=["pending", "held"]).count(),
             "open_tickets": SupportTicket.objects.exclude(status__in=["resolved", "closed"]).count(),
+            "pending_refunds": RefundRequest.objects.filter(status="pending").count(),
         }
     except Exception:
         logger.exception("Admin KPI summary failed")
     return render(request, "admin/admin_dashboard.html", {"kpis": kpis})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminUser])
+def payouts_admin_view(request):
+    """Admin page: send DJ payouts by hand (UPI / bank), then mark them paid with the reference."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    if request.method == "POST":
+        payout = Payout.objects.filter(pk=request.POST.get("payout_id")).select_related("dj").first()
+        action = request.POST.get("action")
+        if payout is None:
+            messages.error(request, "Payout not found.")
+        elif action == "paid" and payout.status in ("pending", "processing", "failed"):
+            ref = (request.POST.get("reference") or "").strip()[:255]
+            if not ref:
+                messages.error(request, "Add the UPI / bank reference number so the DJ can match the payment.")
+                return redirect("admin_payouts")
+            payout.status, payout.payment_reference, payout.processed_at = "completed", ref, timezone.now()
+            payout.save(update_fields=["status", "payment_reference", "processed_at"])
+            _log_admin_action(request, f"Marked payout #{payout.id} paid", metadata={"reference": ref})
+            messages.success(request, f"Payout #{payout.id} to {payout.dj.dj_name} marked as paid.")
+        elif action == "failed" and payout.status in ("pending", "processing"):
+            from apps.commerce.models import DJWallet, LedgerEntry
+            from django.db import transaction
+
+            with transaction.atomic():
+                wallet = DJWallet.objects.select_for_update().get(dj=payout.dj)
+                wallet.available_for_payout += payout.amount
+                wallet.pending_earnings += payout.amount
+                wallet.save(update_fields=["available_for_payout", "pending_earnings", "updated_at"])
+                LedgerEntry.objects.create(
+                    wallet=wallet, amount=payout.amount, entry_type="credit",
+                    description=f"Payout #{payout.id} failed - returned to balance",
+                    metadata={"payout_id": payout.id, "type": "payout_reversal"},
+                )
+                payout.status = "failed"
+                payout.hold_reason = (request.POST.get("reason") or "").strip()[:500] or None
+                payout.auto_retry_count = 99  # money went back to the balance: never auto-retry this one
+                payout.save(update_fields=["status", "hold_reason", "auto_retry_count"])
+            _log_admin_action(request, f"Marked payout #{payout.id} failed; money returned to DJ balance")
+            messages.success(request, f"Payout #{payout.id} marked failed. The money is back in the DJ's balance.")
+        else:
+            messages.error(request, "That action isn't possible for this payout.")
+        return redirect("admin_payouts")
+
+    open_payouts = Payout.objects.filter(status__in=["pending", "processing", "held"]).select_related("dj__profile__user")
+    rows = []
+    for p in open_payouts.order_by("created_at"):
+        dj = p.dj
+        rows.append({"p": p, "dj": dj, "method": (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank"),
+                     "account_name": (dj.payout_details or {}).get("account_name", "")})
+    recent = Payout.objects.exclude(status__in=["pending", "processing", "held"]).select_related("dj").order_by("-created_at")[:30]
+    return render(request, "admin/payouts.html", {"rows": rows, "recent": recent})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminUser])
+def refunds_admin_view(request):
+    """Admin page: approve (money back via the gateway) or reject buyers' refund requests."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    from apps.commerce.models import RefundRequest
+    from apps.commerce.views import execute_refund
+
+    if request.method == "POST":
+        req = RefundRequest.objects.filter(pk=request.POST.get("refund_id"), status="pending").select_related("purchase").first()
+        note = (request.POST.get("note") or "").strip()[:1000]
+        if req is None:
+            messages.error(request, "That refund request is already handled.")
+        elif request.POST.get("action") == "approve":
+            if execute_refund(req, note=note or f"Approved by {request.user.email}"):
+                _log_admin_action(request, f"Approved refund for purchase #{req.purchase_id}")
+                messages.success(request, "Refund sent. The buyer gets the money back in 5–7 working days.")
+            else:
+                messages.error(request, "The payment gateway refused the refund. Check the Razorpay dashboard, then try again.")
+        elif request.POST.get("action") == "reject":
+            req.status, req.admin_notes, req.processed_at = "rejected", note or "Rejected", timezone.now()
+            req.save(update_fields=["status", "admin_notes", "processed_at"])
+            _log_admin_action(request, f"Rejected refund for purchase #{req.purchase_id}")
+            messages.success(request, "Refund request rejected.")
+        return redirect("admin_refunds")
+
+    pending = RefundRequest.objects.filter(status="pending").select_related("purchase__user__user", "purchase__seller").order_by("created_at")
+    rows = []
+    for r in pending:
+        p = r.purchase
+        model = Track if p.content_type == "track" else AlbumPack
+        rows.append({"r": r, "p": p, "title": getattr(model.objects.filter(pk=p.content_id).first(), "title", "(deleted)")})
+    recent = RefundRequest.objects.exclude(status="pending").select_related("purchase").order_by("-processed_at")[:30]
+    return render(request, "admin/refunds.html", {"rows": rows, "recent": recent})

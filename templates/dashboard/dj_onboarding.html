@@ -49,13 +49,13 @@
             {% elif step == 'payout_setup' %}
             <div id="step-payout" x-data="{ open: false, verified: false, showQR: false, secret: '', qr: '' }" class="space-y-8 animate-in slide-in-from-right duration-700">
                 <div>
-                    <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 2: Security & Liquidity</h4>
-                    <p class="font-body text-[14px] text-[var(--text-muted)]">Configure your payout gateway and activate hardware-grade security.</p>
+                    <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 2: Get paid</h4>
+                    <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI or bank details on the <a href="{% url 'dj_payouts' %}" class="underline text-[var(--accent-mint)]">Payouts page</a>, and turn on the authenticator app below to protect withdrawals.</p>
                 </div>
 
                 <div class="p-6 bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20 rounded-[12px]">
                     <p class="font-body text-[13px] text-[var(--accent-blue)] leading-relaxed">
-                        <strong class="font-display">Platform Protocol:</strong> 2FA (Google Authenticator) is mandatory for all withdrawal operations to protect your earnings.
+                        <strong class="font-display">Why:</strong> every withdrawal needs a code from Google Authenticator, so nobody else can move your money.
                     </p>
                 </div>
 
@@ -86,11 +86,11 @@
                     </div>
 
                     <div x-show="verified" class="p-6 bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 rounded-[12px] text-center">
-                        <p class="text-[var(--accent-mint)] font-display font-[600]">Hardware Bridge Synchronized ✓</p>
+                        <p class="text-[var(--accent-mint)] font-display font-[600]">Authenticator app linked ✓</p>
                     </div>
 
                     <button type="button" class="btn-mm btn-mint w-full py-4 text-[14px] font-[600] rounded-lg" onclick="nextStep('first_track')">
-                        Next: Deploy Your First Track
+                        Next: upload your first track
                     </button>
                     <p class="text-center font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest opacity-60">Step 2 of 3</p>
                 </div>
@@ -100,15 +100,15 @@
             <div id="step-track" class="space-y-8 animate-in scale-in duration-700 text-center">
                 <div class="py-6">
                     <div class="text-6xl mb-8 animate-bounce">🎵</div>
-                    <h4 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-3">System Online</h4>
+                    <h4 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-3">You're all set</h4>
                     <p class="font-body text-[15px] text-[var(--text-muted)] mb-12 max-w-[400px] mx-auto">Your DJ profile is ready. Upload your first track to open your store.</p>
                     
-                    <a href="{% url 'dj_dashboard' %}?upload=true" class="btn-mm btn-mint w-full py-4 text-[15px] font-[700] rounded-lg mb-4 inline-block shadow-lg shadow-[var(--accent-mint)]/20">
-                        Deploy First Track
+                    <a href="{% url 'upload_track' %}" class="btn-mm btn-mint w-full py-4 text-[15px] font-[700] rounded-lg mb-4 inline-block shadow-lg shadow-[var(--accent-mint)]/20">
+                        Upload your first track
                     </a>
                     
                     <button type="button" class="w-full font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] hover:text-[var(--text-primary)] transition-colors py-4" onclick="nextStep('completed')">
-                        Finalize Initialization
+                        Finish setup
                     </button>
                 </div>
                 <p class="text-center font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest opacity-60">Step 3 of 3</p>

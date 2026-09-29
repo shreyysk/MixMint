@@ -17,60 +17,57 @@ from apps.commerce.models import DJWallet, DJApplicationFee
 from apps.admin_panel.email_utils import send_email
 
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def apply_as_dj(request):
+def submit_dj_application(user, data):
     """
-    Submit a DJ application [Spec §7].
+    Submit a DJ application [Spec §7]. Returns (http_status, payload).
+    Used by the API below and by the /apply-dj/ page.
     Checks:
     - User is not already a DJ
     - No pending application exists
     - Application fee paid (if enabled by admin)
     - FREE for first 3 months [Spec §7]
     """
-    user = request.user
     profile = user.profile
 
     # Already a DJ?
     if profile.role == "dj":
-        return Response({"error": "You are already a DJ."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "You are already a DJ."}
 
     # Already has a DJProfile?
     if hasattr(profile, "dj_profile"):
-        return Response({"error": "You already have a DJ profile."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "You already have a DJ profile."}
 
     # Check required fields
-    dj_name = request.data.get("dj_name", "").strip()
-    slug = request.data.get("slug", "").strip().lower()
-    bio = request.data.get("bio", "").strip()
-    genres = request.data.get("genres", [])
-    legal_agreement = request.data.get("legal_agreement_accepted", False)
+    dj_name = data.get("dj_name", "").strip()
+    slug = data.get("slug", "").strip().lower()
+    bio = data.get("bio", "").strip()
+    genres = data.get("genres", [])
+    if isinstance(genres, str):  # the web form sends "Techno, House"
+        import re as _re
+
+        genres = [g.strip() for g in _re.split(r"[,/|]+", genres) if g.strip()]
+    legal_agreement = data.get("legal_agreement_accepted", False) in (True, "true", "on", "1", 1, "True")
 
     if not dj_name:
-        return Response({"error": "DJ name is required."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "DJ name is required."}
     if not slug:
-        return Response({"error": "URL slug is required."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "URL slug is required."}
     if not legal_agreement:
-        return Response(
-            {"error": "You must accept the legal agreement to proceed."}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return 400, {"error": "You must accept the legal agreement to proceed."}
 
     from django.utils.text import slugify
 
     if slugify(slug) != slug or len(slug) < 3 or len(slug) > 50:
-        return Response(
-            {"error": "URL slug must be 3-50 lowercase letters, numbers or hyphens."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return 400, {"error": "URL slug must be 3-50 lowercase letters, numbers or hyphens."}
     if len(dj_name) > 100 or len(bio) > 2000:
-        return Response({"error": "DJ name or bio is too long."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "DJ name or bio is too long."}
     RESERVED = {"admin", "api", "static", "media", "dashboard", "login", "signup", "logout", "explore", "djs"}
     if slug in RESERVED:
-        return Response({"error": "This URL slug is reserved."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "This URL slug is reserved."}
 
     # Check slug uniqueness
     if DJProfile.objects.filter(slug=slug).exists():
-        return Response({"error": "This URL slug is already taken."}, status=status.HTTP_400_BAD_REQUEST)
+        return 400, {"error": "This URL slug is already taken."}
 
     # Check application fee requirement [Spec §7: ₹99 intro, free first 3 months]
     from apps.admin_panel.models import PlatformSettings
@@ -89,6 +86,13 @@ def apply_as_dj(request):
         status="pending_payment" if fee_enabled else "pending_review",
     )
 
+    try:
+        from apps.admin_panel.telegram import notify_admins
+
+        notify_admins(f"🎛 New DJ application: {dj_name} ({user.email}) — review it in Admin → DJ Management.")
+    except Exception:
+        pass
+
     # Create application fee record if fee is enabled
     if fee_enabled:
         DJApplicationFee.objects.create(
@@ -96,26 +100,27 @@ def apply_as_dj(request):
             amount=fee_amount,
             status="pending",
         )
-        return Response(
-            {
+        return 201, {
                 "status": "pending_payment",
                 "message": f"Application submitted. Please pay ₹{fee_amount} application fee.",
                 "fee_required": True,
                 "fee_amount": fee_amount,
                 "dj_profile_id": dj_profile.id,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+            }
     else:
-        return Response(
-            {
+        return 201, {
                 "status": "pending_review",
                 "message": "Application submitted. Waiting for admin approval.",
                 "fee_required": False,
                 "dj_profile_id": dj_profile.id,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+            }
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def apply_as_dj(request):
+    code, payload = submit_dj_application(request.user, request.data)
+    return Response(payload, status=code)
 
 
 @api_view(["POST"])
@@ -155,11 +160,13 @@ def admin_approve_dj(request, dj_profile_id):
 
     # Send welcome email via Resend [Spec: Welcome email on DJ approval]
     try:
+        from django.utils.html import escape
+
         send_email(
             to_email=profile.user.email,
             subject="Welcome to MixMint DJ!",
             html_content=(
-                f"<p>Hi {dj_profile.dj_name},</p>"
+                f"<p>Hi {escape(dj_profile.dj_name)},</p>"
                 f"<p>Your DJ application has been <strong>approved</strong>. "
                 f"Your storefront is now live on MixMint.</p>"
                 f"<p>Log in to upload tracks and album packs to get started.</p>"
@@ -187,7 +194,9 @@ def admin_reject_dj(request, dj_profile_id):
     except DJProfile.DoesNotExist:
         return Response({"error": "DJ profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    reason = request.data.get("reason", "Application rejected by admin.")
+    from django.utils.html import escape
+
+    reason = str(request.data.get("reason") or "Application rejected by admin.")[:1000]
 
     dj_profile.status = "rejected"
     dj_profile.save(update_fields=["status"])
@@ -198,9 +207,9 @@ def admin_reject_dj(request, dj_profile_id):
             to_email=dj_profile.profile.user.email,
             subject="MixMint DJ Application Update",
             html_content=(
-                f"<p>Hi {dj_profile.dj_name},</p>"
+                f"<p>Hi {escape(dj_profile.dj_name)},</p>"
                 f"<p>Your DJ application was <strong>rejected</strong>.</p>"
-                f"<p>Reason: {reason}</p>"
+                f"<p>Reason: {escape(reason)}</p>"
                 f"<p>If you believe this is an error, reply to this email for a manual review.</p>"
             ),
         )

@@ -227,6 +227,8 @@ class EmailService:
                 "order_id": str(purchase.id)[:8],
                 "purchase_date": purchase.created_at.strftime("%b %d, %Y %H:%M"),
                 "download_url": f"{getattr(settings, 'BASE_URL', 'https://mixmint.site').rstrip('/')}/library/",
+                "payment_method": {"razorpay": "Razorpay", "phonepe": "PhonePe"}.get(purchase.payment_gateway or "", "Online payment"),
+                "insurance_price": "49",
             },
         )
 
