@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% comment %}Admin shell: its own top bar + sidebar, no shop navbar/footer/cart. Pages fill {% block admin_content %}.{% endcomment %}
+{% block extra_head %}
+<style>
+  .mm-adm { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: calc(100vh - 64px); }
+  .mm-adm-top { position: sticky; top: 0; z-index: 40; height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+      background: color-mix(in srgb, var(--bg-base) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  .mm-adm-top .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--text-primary); }
+  .mm-adm-pill { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: color-mix(in srgb, var(--accent-mint) 16%, transparent); color: var(--accent-mint); }
+  .mm-adm-top .spacer { flex: 1; }
+  .mm-adm-top .icon-btn { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); }
+  .mm-adm-top .icon-btn:hover { background: var(--border); color: var(--text-primary); }
+  .mm-adm-side { position: sticky; top: 64px; align-self: start; height: calc(100vh - 64px); overflow-y: auto; padding: 20px 12px;
+      border-right: 1px solid var(--border); background: var(--bg-surface); display: flex; flex-direction: column; gap: 2px; }
+  .mm-adm-side .group { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); padding: 14px 12px 6px; }
+  .mm-adm-side a { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
+  .mm-adm-side a svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .mm-adm-side a:hover { background: var(--bg-elevated); color: var(--text-primary); }
+  .mm-adm-side a[aria-current="page"] { background: color-mix(in srgb, var(--accent-mint) 14%, transparent); color: var(--text-primary); font-weight: 600; }
+  .mm-adm-side a[aria-current="page"] svg { color: var(--accent-mint); }
+  .mm-adm-badge { margin-left: auto; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+      background: var(--accent-amber); color: #000; }
+  .mm-adm-main { min-width: 0; padding: 8px 8px 64px; }
+  .mm-adm-main > * { margin-left: auto; margin-right: auto; }
+  .mm-adm-top .mm-adm-menu { display: none; }
+  .mm-adm { background: linear-gradient(to right, var(--bg-surface) 240px, transparent 240px); }
+  .mm-adm-side { border-right: 0; box-shadow: inset -1px 0 0 var(--border); }
+  .mm-adm-scrim { display: none; }
+  @media (max-width: 900px) {
+    .mm-adm { grid-template-columns: minmax(0, 1fr); }
+    .mm-adm-top .mm-adm-menu { display: inline-flex; }
+    .mm-adm { background: none; }
+    .mm-adm-side { position: fixed; top: 64px; left: 0; bottom: 0; width: 272px; height: auto; z-index: 45; transform: translateX(-100%); transition: transform .2s ease; box-shadow: var(--shadow-card); }
+    .mm-adm.open .mm-adm-side { transform: none; }
+    .mm-adm.open .mm-adm-scrim { display: block; position: fixed; inset: 64px 0 0 0; z-index: 44; background: rgba(0,0,0,.4); }
+  }
+</style>
+{% block admin_head %}{% endblock %}
+{% endblock %}
+
+{% block site_nav %}
+<header class="mm-adm-top">
+    <button type="button" class="icon-btn mm-adm-menu" aria-label="Open admin menu" aria-controls="mm-adm-side"
+        onclick="document.getElementById('mm-adm').classList.toggle('open')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <a href="{% url 'admin_dashboard' %}" class="brand">MixMint <span class="mm-adm-pill">Admin</span></a>
+    <div class="spacer"></div>
+    <a href="/" class="icon-btn" title="View the shop" aria-label="View the shop" target="_blank" rel="noopener">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>
+    </a>
+    <button type="button" onclick="toggleTheme()" data-theme-toggle class="icon-btn" aria-label="Switch theme">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+    </button>
+    <span class="hidden sm:inline font-body text-[13px] text-[var(--text-muted)] max-w-[220px] truncate">{{ user.email }}</span>
+    <form action="{% url 'logout' %}" method="post">{% csrf_token %}
+        <button type="submit" class="icon-btn" title="Log out" aria-label="Log out">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9M12 21H4V3h8"/></svg>
+        </button>
+    </form>
+</header>
+{% endblock %}
+
+{% block main_class %}relative z-10 w-full{% endblock %}
+
+{% block content %}
+<div class="mm-adm" id="mm-adm">
+    <nav class="mm-adm-side" id="mm-adm-side" aria-label="Admin">
+        <div class="group">Manage</div>
+            <a href="{% url 'admin_dashboard' %}" {% if request.path == "/api/v1/admin/dashboard/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg><span>Overview</span></a>
+            <a href="{% url 'admin_dj_management' %}" {% if request.path|slice:":17" == "/api/v1/admin/dj/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>DJs</span>{% if admin_counts.djs %}<span class="mm-adm-badge">{{ admin_counts.djs }}</span>{% endif %}</a>
+            <a href="{% url 'admin_payouts' %}" {% if request.path|slice:":22" == "/api/v1/admin/payouts/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3zM7 12h.01M17 12h.01M12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><span>Payouts</span>{% if admin_counts.payouts %}<span class="mm-adm-badge">{{ admin_counts.payouts }}</span>{% endif %}</a>
+            <a href="{% url 'admin_refunds' %}" {% if request.path|slice:":22" == "/api/v1/admin/refunds/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3"/></svg><span>Refunds</span>{% if admin_counts.refunds %}<span class="mm-adm-badge">{{ admin_counts.refunds }}</span>{% endif %}</a>
+            <a href="{% url 'admin_moderation_hub' %}" {% if request.path|slice:":22" == "/api/v1/admin/content/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Moderation</span></a>
+            <a href="{% url 'admin_revenue_dashboard' %}" {% if request.path|slice:":24" == "/api/v1/admin/analytics/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Revenue</span></a>
+            <a href="{% url 'admin_offers_pricing' %}" {% if request.path|slice:":29" == "/api/v1/admin/offers-pricing/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01"/></svg><span>Offers & pricing</span></a>
+            <a href="{% url 'admin_security_dashboard' %}" {% if request.path|slice:":23" == "/api/v1/admin/security/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 100-4 2 2 0 000 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M5 11V7a7 7 0 0114 0v4"/></svg><span>Security</span></a>
+            <a href="{% url 'admin_health' %}" {% if request.path|slice:":21" == "/api/v1/admin/health/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Health</span></a>
+        <div class="group">More</div>
+        <a href="{% url 'admin:admin_panel_supportticket_changelist' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>Support tickets</span>{% if admin_counts.tickets %}<span class="mm-adm-badge">{{ admin_counts.tickets }}</span>{% endif %}</a>
+        <a href="{% url 'admin:index' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>All data (raw)</span></a>
+        <a href="/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg><span>View shop</span></a>
+    </nav>
+    <div class="mm-adm-scrim" onclick="document.getElementById('mm-adm').classList.remove('open')"></div>
+    <div class="mm-adm-main">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block site_footer %}{% endblock %}
+{% block tabbar %}{% endblock %}

@@ -1,10 +1,9 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 {% load tracks_filters %}
 {% block title %}Refunds — MixMint Admin{% endblock %}
-{% block content %}
+{% block admin_content %}
 <div class="max-w-[1100px] mx-auto py-10 px-4 font-body space-y-10">
     <div>
-        <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← Admin dashboard</a>
         <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">Refund requests</h1>
         <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Buyers who never downloaded are refunded automatically. Everything else waits here. Approving sends the money back through Razorpay and takes the DJ's share back out of their balance.</p>
     </div>

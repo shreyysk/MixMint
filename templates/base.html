@@ -668,7 +668,7 @@
         </div>
     </div>
 
-    {% include 'components/navbar.html' %}
+    {% block site_nav %}{% include 'components/navbar.html' %}{% endblock %}
 
     {% if payments_test_mode %}
     <div role="status" class="relative z-20 w-full text-center font-mono text-[12px] py-2 px-4 bg-[var(--accent-amber)] text-black">
@@ -676,7 +676,7 @@
     </div>
     {% endif %}
 
-    <main id="main" class="container mx-auto px-4 py-10 max-w-[1280px] relative z-10">
+    <main id="main" class="{% block main_class %}container mx-auto px-4 py-10 max-w-[1280px] relative z-10{% endblock %}">
         {# Django messages → toast #}
         {% if messages %}
         <script>
@@ -708,7 +708,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% include 'components/footer.html' %}
+    {% block site_footer %}{% include 'components/footer.html' %}{% endblock %}
 
     <!-- Toast container -->
     <div class="toast-container" role="status" aria-live="polite" aria-atomic="false" x-cloak>
@@ -741,6 +741,7 @@
         </div>
     </div>
 
+    {% block tabbar %}
     {% if user.is_authenticated %}
     <!-- Mobile bottom tab bar [UI/UX spec §12] -->
     {% with p=request.path %}
@@ -751,15 +752,18 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</a>
         <a href="{% url 'library_page' %}" {% if p|slice:":9" == "/library/" %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V5m5 14V5m4 14l3-14 5 14"/></svg>Library</a>
-        {% if user.profile.role == 'dj' %}
+        {% if user.is_staff %}
+        <a href="{% url 'admin_dashboard' %}">
+        {% elif user.profile.role == 'dj' %}
         <a href="{% url 'dj_dashboard' %}" {% if p|slice:":13" == "/dashboard/dj" %}aria-current="page"{% endif %}>
         {% else %}
         <a href="{% url 'dashboard' %}" {% if p == "/dashboard/" %}aria-current="page"{% endif %}>
         {% endif %}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>{% if user.profile.role == 'dj' %}DJ Panel{% else %}Profile{% endif %}</a>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>{% if user.is_staff %}Admin{% elif user.profile.role == 'dj' %}DJ Panel{% else %}Profile{% endif %}</a>
     </nav>
     {% endwith %}
     {% endif %}
+    {% endblock %}
 
     {% block extra_js %}{% endblock %}
 

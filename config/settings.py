@@ -108,6 +108,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.admin_panel.context_processors.global_settings",
+                "apps.admin_panel.context_processors.admin_nav",
                 "apps.core.context_processors.seo_context",
                 "social_django.context_processors.backends",
                 "social_django.context_processors.login_redirect",

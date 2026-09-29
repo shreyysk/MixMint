@@ -240,3 +240,19 @@ class TestRefunds:
         assert RefundRequest.objects.get().status == "rejected"
         purchase.refresh_from_db()
         assert purchase.status == "paid"
+
+
+@pytest.mark.django_db
+def test_admin_pages_use_admin_shell(admin_user, dj_user):
+    c = _login(admin_user)
+    for path in (
+        "/api/v1/admin/dashboard/", "/api/v1/admin/dj/management/", "/api/v1/admin/payouts/", "/api/v1/admin/refunds/",
+        "/api/v1/admin/content/moderation/", "/api/v1/admin/security/dashboard/",
+        "/api/v1/admin/offers-pricing/", "/api/v1/admin/analytics/revenue-dashboard/",
+    ):
+        html = c.get(path).content.decode()
+        assert 'aria-label="Admin"' in html and 'aria-current="page"' in html, path
+        assert "Join the Waitlist" not in html, path  # no shop footer inside admin
+    shop = _login(admin_user).get("/").content.decode()
+    assert "/api/v1/admin/dashboard/" in shop  # admins get an Admin link in the shop navbar
+    assert "/api/v1/admin/dashboard/" not in _login(dj_user[0]).get("/").content.decode()
