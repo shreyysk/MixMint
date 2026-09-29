@@ -185,7 +185,7 @@
         var std = Math.max(total - pro, 0);
 
         var ctxElement = document.getElementById('tierChart');
-        if (!ctxElement) return;
+        if (!ctxElement || typeof Chart === 'undefined') return;
 
         new Chart(ctxElement.getContext('2d'), {
             type: 'doughnut',

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block title %}Admin Command Center — MixMint{% endblock %}
+{% block title %}Admin — MixMint{% endblock %}
 
 {% block content %}
 <div class="py-10 max-w-[1200px] mx-auto px-4">
@@ -13,11 +13,11 @@
                     Administrator
                 </span>
                 <span class="text-[12px] text-[var(--text-muted)] font-mono">
-                    System Hub v2.0
+                    Last 30 days
                 </span>
             </div>
-            <h1 class="font-display text-[40px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none uppercase">
-                Admin <span class="text-[var(--accent-mint)]">Command Center</span>
+            <h1 class="font-display text-[36px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                Admin <span class="text-[var(--accent-mint)]">dashboard</span>
             </h1>
         </div>
         <div class="flex items-center gap-4">
@@ -30,6 +30,32 @@
             </div>
         </div>
     </div>
+
+    {% if kpis %}
+    <!-- Key numbers -->
+    <section aria-label="Key numbers" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div class="glow-card p-5">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.14em] mb-2">Sales · 30 days</p>
+            <p class="mm-stat-value font-display text-[30px] font-[700] text-[var(--text-primary)] leading-none">{{ kpis.sales_30d }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">₹{{ kpis.gross_30d|floatformat:0 }} gross · ₹{{ kpis.platform_30d|floatformat:0 }} platform</p>
+        </div>
+        <div class="glow-card p-5">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.14em] mb-2">Users</p>
+            <p class="mm-stat-value font-display text-[30px] font-[700] text-[var(--text-primary)] leading-none">{{ kpis.users }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{{ kpis.djs }} approved DJ{{ kpis.djs|pluralize }}</p>
+        </div>
+        <a href="{% url 'admin_dj_management' %}" class="glow-card p-5 block hover:border-[var(--accent-amber)]/50">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.14em] mb-2">DJ applications</p>
+            <p class="mm-stat-value font-display text-[30px] font-[700] {% if kpis.pending_djs %}text-[var(--accent-amber)]{% else %}text-[var(--text-primary)]{% endif %} leading-none">{{ kpis.pending_djs }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{% if kpis.pending_djs %}Waiting for review →{% else %}Nothing to review{% endif %}</p>
+        </a>
+        <div class="glow-card p-5">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.14em] mb-2">To handle</p>
+            <p class="mm-stat-value font-display text-[30px] font-[700] text-[var(--text-primary)] leading-none">{{ kpis.pending_payouts|add:kpis.open_tickets }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-2">{{ kpis.pending_payouts }} payout{{ kpis.pending_payouts|pluralize }} · {{ kpis.open_tickets }} ticket{{ kpis.open_tickets|pluralize }}</p>
+        </div>
+    </section>
+    {% endif %}
 
     <!-- Dashboard Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

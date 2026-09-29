@@ -215,10 +215,23 @@ def dj_dashboard_view(request):
             Track.objects.filter(dj=dj_profile, is_deleted=False).aggregate(total=Sum("download_count"))["total"] or 0
         )
 
+    total_sales = 0
+    active_tracks = []
+    if dj_profile:
+        from apps.commerce.models import Purchase
+
+        total_sales = Purchase.objects.filter(seller=dj_profile, status="paid", is_revoked=False).count()
+        active_tracks = list(Track.objects.filter(dj=dj_profile, is_deleted=False).order_by("-created_at"))
+
     context = {
         "profile": profile,
         "dj_profile": dj_profile,
         "wallet": wallet,
+        "lifetime_earnings": getattr(wallet, "total_earnings", 0) or 0,
+        "available_balance": getattr(wallet, "available_for_payout", 0) or 0,
+        "escrow_balance": getattr(wallet, "escrow_amount", 0) or 0,
+        "total_sales": total_sales,
+        "active_tracks": active_tracks,
         "storage_used_mb": round(storage_used_mb, 2),
         "storage_quota_mb": storage_quota_mb,
         "storage_percent": min(round(storage_percent, 1), 100),

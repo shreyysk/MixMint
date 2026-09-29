@@ -1007,5 +1007,32 @@ def health_dashboard(request):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_command_center(request):
-    """Central hub for all specialized admin dashboards."""
-    return render(request, "admin/admin_dashboard.html")
+    """Central hub for all specialized admin dashboards, with today's key numbers."""
+    import logging
+    from datetime import timedelta
+
+    from apps.accounts.models import User
+    from apps.commerce.models import Payout, Purchase
+
+    from .models import SupportTicket
+
+    logger = logging.getLogger("mixmint")
+
+    since = timezone.now() - timedelta(days=30)
+    kpis = {}
+    try:
+        paid = Purchase.objects.filter(status="paid", is_revoked=False, created_at__gte=since)
+        agg = paid.aggregate(gross=Sum("price_paid"), commission=Sum("commission"), fees=Sum("platform_fee"))
+        kpis = {
+            "users": User.objects.count(),
+            "djs": DJProfile.objects.filter(status="approved").count(),
+            "pending_djs": DJProfile.objects.filter(status="pending").count(),
+            "sales_30d": paid.count(),
+            "gross_30d": agg["gross"] or 0,
+            "platform_30d": (agg["commission"] or 0) + (agg["fees"] or 0),
+            "pending_payouts": Payout.objects.filter(status__in=["pending", "held"]).count(),
+            "open_tickets": SupportTicket.objects.exclude(status__in=["resolved", "closed"]).count(),
+        }
+    except Exception:
+        logger.exception("Admin KPI summary failed")
+    return render(request, "admin/admin_dashboard.html", {"kpis": kpis})

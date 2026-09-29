@@ -384,3 +384,75 @@ html.theme-switching *, html.theme-switching *::before, html.theme-switching *::
     border: 1px solid var(--border); box-shadow: var(--shadow-card); }
 .mm-buybar[hidden] { display: none; }
 body.has-tabbar .mm-buybar { bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* ══════════════════════════════════════════════════════════════
+   UX layer v4 — layout safety, contrast, touch targets, polish.
+   ══════════════════════════════════════════════════════════════ */
+
+/* No sideways scrolling on any page. Decorative glows/blobs and the
+   ticker used to push pages 30–200px wider than the screen on phones. */
+html, body { overflow-x: clip; max-width: 100%; }
+.mesh-gradient, .noise-overlay { inset: 0; width: 100%; overflow: hidden; }
+main#main { overflow-x: clip; }
+h1, h2, h3, h4, .mm-wrap { overflow-wrap: anywhere; word-break: normal; hyphens: auto; }
+
+/* WCAG AA contrast for secondary text in both themes (was 3.3–3.8:1 in dark). */
+:root[data-theme="dark"] { --text-muted: #9494A8; }
+:root[data-theme="light"] { --text-muted: #5A5040; --accent-mint: #006B4A; --accent-amber: #8F5B00; --border-focus: #006B4A; }
+
+/* Links inside running text must be distinguishable without colour. */
+main p a:not(.btn-mm), main li a:not(.btn-mm), .notice-info a, .notice-warning a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Buttons never wrap their label onto two lines. */
+.btn-mm { white-space: nowrap; }
+@media (max-width: 380px) { .btn-mm { white-space: normal; } }
+
+/* Comfortable touch targets on phones (≥ 40px) for links in nav, footer and breadcrumbs. */
+@media (max-width: 768px) {
+    .mm-footer a, .mm-breadcrumb a, nav[aria-label="Breadcrumb"] a { display: inline-flex; align-items: center; min-height: 40px; min-width: 40px; }
+    .mm-footer ul { row-gap: 2px; }
+}
+
+/* Section headers: label and "View all" on one baseline. */
+.mm-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+.mm-section-head h2 { margin: 0; }
+.mm-section-head a { display: inline-flex; align-items: center; min-height: 40px; font-family: var(--font-mono, monospace); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+.mm-section-head a:hover { color: var(--accent-mint); }
+
+/* Initials avatar used when a DJ has no photo. */
+.mm-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px;
+    background: color-mix(in srgb, var(--accent-mint) 16%, var(--bg-elevated)); color: var(--accent-mint);
+    font-family: var(--font-display, inherit); font-weight: 700; letter-spacing: 0.02em; }
+
+/* Free items get a clear badge instead of "₹0". */
+.mm-free { color: var(--accent-mint); font-weight: 700; }
+
+/* Empty states. */
+.mm-empty { text-align: center; padding: 48px 24px; border: 1px dashed var(--border); border-radius: 16px; color: var(--text-muted); }
+.mm-empty h3 { color: var(--text-primary); font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.mm-empty .btn-mm { margin-top: 18px; }
+
+/* Skeleton shimmer for loading lists. */
+.mm-skeleton { background: linear-gradient(90deg, var(--bg-elevated) 25%, color-mix(in srgb, var(--bg-elevated) 70%, var(--text-muted)) 50%, var(--bg-elevated) 75%);
+    background-size: 200% 100%; animation: mm-shimmer 1.4s ease-in-out infinite; border-radius: 8px; }
+@keyframes mm-shimmer { to { background-position: -200% 0; } }
+
+/* If JavaScript is slow or blocked, reveal-on-scroll content must still show. */
+html:not(.js-ready) [data-reveal] { opacity: 1; transform: none; }
+
+/* Stat cards: numbers never overflow their card. */
+.mm-stat-value { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Explore search: input and button stack cleanly on phones. */
+.mm-search { display: flex; gap: 10px; align-items: stretch; }
+.mm-search input { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 640px) { .mm-search { flex-direction: column; } .mm-search .btn-mm { width: 100%; } }
+
+@media (prefers-reduced-motion: reduce) { .mm-skeleton { animation: none; } }
+
+/* Light theme: headings/labels hard-coded as white text were invisible on cream
+   backgrounds (1.04:1). Keep white only on coloured surfaces and buttons. */
+:root[data-theme="light"] .text-white:not([class*="bg-"]):not(.btn-mm):not(.btn-mm *):not([class*="bg-"] > *):not(.toast *),
+:root[data-theme="light"] .hover\:text-white:hover:not(.btn-mm),
+:root[data-theme="light"] .group:hover .group-hover\:text-white { color: var(--text-primary); }
+:root[data-theme="light"] input.text-white, :root[data-theme="light"] textarea.text-white { color: var(--text-primary); }

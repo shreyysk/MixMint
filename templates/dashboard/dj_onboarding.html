@@ -8,9 +8,9 @@
         <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,var(--accent-mint),transparent_70%)]"></div>
         
         <div class="relative z-10">
-            <h2 class="font-display text-[32px] font-[700] text-[var(--text-primary)] tracking-tight mb-8">
+            <h1 class="font-display text-[32px] font-[700] text-[var(--text-primary)] tracking-tight mb-8">
                 Welcome to MixMint, {{ dj_profile.dj_name }}!
-            </h2>
+            </h1>
 
             <!-- Progress Indicator -->
             <div class="flex gap-2 mb-12">
@@ -101,7 +101,7 @@
                 <div class="py-6">
                     <div class="text-6xl mb-8 animate-bounce">🎵</div>
                     <h4 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-3">System Online</h4>
-                    <p class="font-body text-[15px] text-[var(--text-muted)] mb-12 max-w-[400px] mx-auto">Your artist profile is now fully integrated into the MixMint grid. Ready for your first transmission?</p>
+                    <p class="font-body text-[15px] text-[var(--text-muted)] mb-12 max-w-[400px] mx-auto">Your DJ profile is ready. Upload your first track to open your store.</p>
                     
                     <a href="{% url 'dj_dashboard' %}?upload=true" class="btn-mm btn-mint w-full py-4 text-[15px] font-[700] rounded-lg mb-4 inline-block shadow-lg shadow-[var(--accent-mint)]/20">
                         Deploy First Track

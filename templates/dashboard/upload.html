@@ -11,12 +11,12 @@
             Upload New Track
         </h1>
         <p class="font-body text-[14px] text-[var(--text-muted)]">
-            Upload your audio file, add metadata, and set your price. You keep {{ 100|add:"-"|add:platform_settings.platform_commission_rate|floatformat:0 }}% of every sale.
+            Upload your audio file, add metadata, and set your price. {% if dj_share_percent is not None %}You keep {{ dj_share_percent }}% of every sale.{% endif %}
         </p>
     </div>
 
     <!-- ── UPLOAD FORM ── -->
-    <form method="post" enctype="multipart/form-data" class="space-y-12">
+    <form method="post" enctype="multipart/form-data" class="space-y-12" x-data="{ audioName: '', audioSize: '', coverUrl: '', coverName: '' }">
         {% csrf_token %}
 
         <!-- Audio File -->
@@ -25,13 +25,16 @@
             </h3>
             <div
                 class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-12 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer">
-                <input type="file" name="audio_file" accept=".mp3,.wav,.flac" required
+                <input type="file" name="audio_file" id="audio_file" accept=".mp3,.wav,.flac" required
+                    aria-describedby="audio-help"
+                    @change="const f = $event.target.files[0]; audioName = f ? f.name : ''; audioSize = f ? (f.size / 1048576).toFixed(1) + ' MB' : ''"
                     class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <div class="text-4xl opacity-30 mb-4 group-hover:opacity-60 transition-opacity">🎵</div>
-                <p class="font-body text-[15px] text-[var(--text-primary)] font-[600] mb-2">
-                    Drop your audio file here or click to browse
-                </p>
-                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
+                <div class="text-4xl opacity-30 mb-4 group-hover:opacity-60 transition-opacity" aria-hidden="true">🎵</div>
+                <label for="audio_file" class="block font-body text-[15px] text-[var(--text-primary)] font-[600] mb-2">
+                    <span x-show="!audioName">Drop your audio file here or click to browse</span>
+                    <span x-show="audioName" x-cloak class="text-[var(--accent-mint)]">✓ <span x-text="audioName"></span> · <span x-text="audioSize"></span></span>
+                </label>
+                <p id="audio-help" class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
                     WAV, MP3, FLAC · Max 100MB · 320kbps minimum
                 </p>
             </div>
@@ -43,10 +46,12 @@
             </h3>
             <div
                 class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-8 text-center hover:border-[var(--accent-mint)] transition-colors group cursor-pointer max-w-[300px]">
-                <input type="file" name="cover_art" accept="image/*"
+                <input type="file" name="cover_art" id="cover_art" accept="image/*"
+                    @change="const f = $event.target.files[0]; coverName = f ? f.name : ''; if (coverUrl) URL.revokeObjectURL(coverUrl); coverUrl = f ? URL.createObjectURL(f) : ''"
                     class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <div class="text-3xl opacity-30 mb-3 group-hover:opacity-60 transition-opacity">🖼️</div>
-                <p class="font-body text-[14px] text-[var(--text-primary)] font-[500] mb-1">Cover artwork</p>
+                <img x-show="coverUrl" x-cloak :src="coverUrl" alt="Selected cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
+                <div x-show="!coverUrl" class="text-3xl opacity-30 mb-3 group-hover:opacity-60 transition-opacity" aria-hidden="true">🖼️</div>
+                <label for="cover_art" class="block font-body text-[14px] text-[var(--text-primary)] font-[500] mb-1" x-text="coverName || 'Cover artwork'">Cover artwork</label>
                 <p class="font-mono text-[11px] text-[var(--text-muted)]">JPG, PNG · 1000×1000px min</p>
             </div>
         </div>
@@ -64,7 +69,7 @@
                 <div>
                     <label
                         class="block font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Genre</label>
-                    <select name="genre" class="input-mm cursor-pointer">
+                    <select name="genre" id="genre" aria-label="Genre" class="input-mm cursor-pointer">
                         <option value="">Select Genre</option>
                         <option value="Techno">Techno</option>
                         <option value="House">House</option>

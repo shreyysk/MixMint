@@ -1,41 +1,31 @@
-{% extends 'base.html' %}
-{% block title %}500 // System_Crash - MixMint{% endblock %}
-
-{% block content %}
-<div class="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-    <div class="mb-12 relative">
-        <div class="text-[120px] md:text-[180px] font-display font-black text-[var(--bg-elevated)] leading-none select-none">
-            500
-        </div>
-        <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-32 h-32 border-2 border-[var(--accent-red)] rounded-full animate-ping opacity-20"></div>
-        </div>
-    </div>
-
-    <div class="max-w-md mx-auto">
-        <p class="font-mono text-[10px] text-[var(--accent-red)] uppercase tracking-[0.4em] mb-4">// Critical_Nuclear_Error</p>
-        <h1 class="font-display text-3xl md:text-5xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-tight">
-            Vault_Overload_<br>Detected
-        </h1>
-        <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed mb-10">
-            Our distribution processors hit a critical state. We've notified the core operators to stabilize the network.
-        </p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onclick="window.location.reload()" class="btn-mm btn-mint h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
-                Re-initialize
-            </button>
-            <a href="{% url 'contact' %}" class="btn-mm btn-ghost h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
-                Report_Node
-            </a>
-        </div>
-    </div>
-
-    <div class="mt-20 p-6 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[16px] glow-card-mm inline-block">
-        <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase leading-relaxed">
-            Status: <span class="text-[var(--accent-red)] font-bold">RECOVERY_MODE</span><br>
-            Operators: <span class="text-[var(--text-primary)] font-bold">ALPHA_TEAM_NOTIFIED</span>
-        </p>
-    </div>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Something went wrong — MixMint</title>
+    <meta name="robots" content="noindex">
+    <style>
+        :root { color-scheme: dark light; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+               background: #0A0A0F; color: #F0F0F5; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; }
+        @media (prefers-color-scheme: light) { body { background: #F5F0E8; color: #1A1410; } p { color: #5A5040 !important; } }
+        main { max-width: 460px; }
+        .code { font-size: 96px; font-weight: 800; line-height: 1; opacity: .15; margin: 0; }
+        h1 { font-size: 30px; margin: 8px 0 12px; }
+        p { color: #9494A8; line-height: 1.6; margin: 0 0 28px; }
+        a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 12px;
+            background: #00FFB3; color: #0A0A0F; font-weight: 700; text-decoration: none; margin: 4px; }
+        a.ghost { background: transparent; color: inherit; border: 1px solid rgba(128,128,128,.4); }
+    </style>
+</head>
+<body>
+<main>
+    <p class="code" aria-hidden="true">500</p>
+    <h1>Something went wrong on our side</h1>
+    <p>We've been notified and are looking into it. Your purchases and downloads are safe. Please try again in a minute.</p>
+    <a href="/">Back to home</a>
+    <a class="ghost" href="/contact/">Contact support</a>
+</main>
+</body>
+</html>

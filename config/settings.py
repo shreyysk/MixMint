@@ -542,10 +542,17 @@ class LazyGateway:
     """Back-compat: resolves the active gateway on every attribute access."""
 
     def __getattr__(self, name):
+        if name.startswith("__"):  # introspection (e.g. Django's debug page) must not build a gateway
+            raise AttributeError(name)
         return getattr(get_payment_gateway(), name)
 
+    def __repr__(self):
+        return "<LazyGateway>"
 
-ACTIVE_GATEWAY = LazyGateway()
+
+# Not exposed as an UPPERCASE setting: Django's debug/error pages introspect every
+# setting, and resolving a gateway there crashed error reports when keys were missing.
+_active_gateway = LazyGateway()
 
 # Production Safety Guards (only run in production)
 if ENVIRONMENT == "production":

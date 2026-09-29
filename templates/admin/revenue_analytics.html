@@ -144,7 +144,7 @@ function revenueAnalytics() {
 
         initChart() {
             const ctx = document.getElementById('revenueChart');
-            if (!ctx) return;
+            if (!ctx || typeof Chart === 'undefined') return;
 
             const labels = this.weekly.map(w => 'Week ' + w.week.substring(5, 10));
             const revenueData = this.weekly.map(w => w.revenue);

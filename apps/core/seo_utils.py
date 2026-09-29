@@ -1,13 +1,23 @@
+from django.conf import settings
+
+
+def _site():
+    return (getattr(settings, "BASE_URL", "") or "https://mixmint.site").rstrip("/")
+
+
 def get_track_og_tags(track):
     """Generate OG tags for track detail page."""
+    from apps.tracks.templatetags.tracks_filters import price_label
+
+    genre = f" · {track.genre}" if track.genre else ""
     return {
         "og:title": f"{track.title} — {track.dj.dj_name} | MixMint",
         "og:description": (
             f"Support and download '{track.title}' by {track.dj.dj_name}. "
-            f"₹{track.price} · {track.genre} · mixmint.site"
+            f"{price_label(track.price)}{genre} · MixMint"
         ),
-        "og:image": track.cover_url if track.cover_url else "https://mixmint.site/static/img/default-og.png",
-        "og:url": f"https://mixmint.site/track/{track.id}",
+        "og:image": track.cover_url or f"{_site()}/static/logo/MIXMINT_WHITE.png",
+        "og:url": f"{_site()}/tracks/{track.id}/",
         "og:type": "music.song",
         "twitter:card": "summary_large_image",
     }
@@ -23,9 +33,9 @@ def get_dj_storefront_og_tags(dj_profile):
         "og:image": (
             dj_profile.profile.avatar_url
             if hasattr(dj_profile.profile, "avatar_url") and dj_profile.profile.avatar_url
-            else "https://mixmint.site/static/img/default-dj-og.png"
+            else f"{_site()}/static/logo/MIXMINT_WHITE.png"
         ),
-        "og:url": f"https://mixmint.site/dj/{dj_profile.dj_name}",
+        "og:url": f"{_site()}/dj/{dj_profile.slug}/",
         "og:type": "profile",
     }
 

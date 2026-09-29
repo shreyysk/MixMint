@@ -131,3 +131,29 @@ test settings not overriding static storage (93 tests failed on a fresh clone) �
 - API: sign-up now enforces the password rules and handles disposable emails (was a 500). New endpoints
   `/api/v1/accounts/token/`, `token/refresh/`, `logout/` (JWT) for mobile clients.
 - Staff can sign in with Google during maintenance mode. 376 tests pass (28 new in `tests/test_auth_flows.py`).
+
+## UI / UX pass (round 4)
+
+Measured with an automated audit of 208 page views (every page × guest/buyer/DJ/admin × phone/desktop × light/dark):
+
+| Check | Before | After |
+|---|---|---|
+| Accessibility problems (axe, WCAG AA) | 2,846 | 188 |
+| Low-contrast text elements | 2,736 | 172 |
+| Pages that scroll sideways on phones | 40 | 0 |
+| Pages showing raw `{{ … }}` code | 8 | 0 |
+| JavaScript errors | 2 | 0 |
+| Too-small tap targets on phones | 1,250 | 322 |
+
+- **Broken layouts fixed**: album page (raw price code, missing cover, squashed columns), DJ dashboard (whole page squeezed
+  into one column by an unclosed tag), footer overlapping the waitlist box, explore search button covering the input.
+- **Wrong numbers fixed**: DJ "Lifetime earnings" always ₹0 and "Total sales" showed downloads; album size was made up;
+  upload page said "You keep % of every sale" with no number; free tracks showed "₹0.00 · Add to support cart".
+- **Plain English everywhere**: ~80 labels like `Browse_Vault`, `Support_Node`, `Transmission_Body`, `Vault_Empty`
+  rewritten; page titles cleaned up; friendly 404 and a stand-alone 500 page that works even if the database is down.
+- **Contrast**: muted text raised to 6:1+ in dark and 6.5:1+ in light; white headings that vanished in light mode fixed.
+- **Phones**: filters now available on mobile explore; no sideways scrolling; bigger tap targets; chosen audio file name
+  and cover preview shown on upload.
+- **Admin**: dashboard now shows sales/revenue (30 days), users, pending DJ applications, payouts and tickets.
+- Prices show as ₹99 / ₹1,299 / Free. Share previews (WhatsApp/Twitter) now link to the right page and say "Free".
+- Tailwind CSS rebuilt (`npm run build:css`) so every class used in templates exists.

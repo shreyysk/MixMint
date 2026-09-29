@@ -1,38 +1,21 @@
 {% extends 'base.html' %}
-{% block title %}404 // Signal_Lost - MixMint{% endblock %}
+{% block title %}Page not found — MixMint{% endblock %}
 
 {% block content %}
-<div class="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-    <div class="mb-12 relative">
-        <div class="text-[120px] md:text-[180px] font-display font-black text-[var(--bg-elevated)] leading-none select-none">
-            404
-        </div>
-        <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-32 h-32 border-2 border-[var(--accent-red)]/20 border-t-[var(--accent-red)] rounded-full animate-spin"></div>
-        </div>
-    </div>
-
-    <div class="max-w-md mx-auto">
-        <p class="font-mono text-[10px] text-[var(--accent-red)] uppercase tracking-[0.4em] mb-4">// Transmission_Failure</p>
-        <h1 class="font-display text-3xl md:text-5xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-tight">
-            Signal_Lost_<br>In_The_Vault
-        </h1>
-        <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed mb-10">
-            The node you're looking for was either de-indexed or moved to an encrypted sector. Please re-verify your coordinates.
-        </p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="{% url 'home' %}" class="btn-mm btn-mint h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
-                Return_Home
-            </a>
-            <a href="{% url 'explore' %}" class="btn-mm btn-ghost h-[56px] px-8 rounded-[12px] font-bold uppercase tracking-widest text-[13px] w-full sm:w-auto">
-                Browse_Vault
-            </a>
-        </div>
-    </div>
-
-    <div class="mt-20 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest opacity-50">
-        Trace_ID: <span class="text-[var(--text-primary)]">{{ request.path }}</span>
+<div class="min-h-[60vh] flex flex-col items-center justify-center px-6 py-16 text-center">
+    <p class="font-display text-[96px] md:text-[140px] font-black leading-none text-[var(--bg-elevated)] select-none" aria-hidden="true">404</p>
+    <h1 class="font-display text-[30px] md:text-[42px] font-bold text-[var(--text-primary)] tracking-tight mt-2 mb-4">This page doesn't exist</h1>
+    <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed max-w-md mb-10">
+        The link may be old or mistyped, or the track may have been removed by its DJ.
+    </p>
+    <form action="{% url 'explore' %}" method="get" class="mm-search w-full max-w-md mb-8" role="search">
+        <label for="nf-q" class="sr-only">Search MixMint</label>
+        <input id="nf-q" type="search" name="q" placeholder="Search tracks or DJs" class="h-[50px] bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] px-4 font-body text-[15px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-mint)]">
+        <button type="submit" class="btn-mm btn-mint h-[50px] px-6 rounded-[12px] font-bold">Search</button>
+    </form>
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'home' %}" class="btn-mm btn-ghost h-[48px] px-6 rounded-[12px] font-semibold">Back to home</a>
+        <a href="{% url 'explore' %}" class="btn-mm btn-ghost h-[48px] px-6 rounded-[12px] font-semibold">Browse music</a>
     </div>
 </div>
 {% endblock %}
