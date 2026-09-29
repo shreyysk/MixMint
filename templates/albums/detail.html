@@ -30,8 +30,8 @@
 
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group z-10">
-                {% if album.cover_url %}
-                <img src="{{ album.cover_url }}" alt="{{ album.title }}" class="w-full h-full object-cover">
+                {% if album.cover_image %}
+                <img src="{{ album.cover_image }}" alt="Cover art for {{ album.title }}" class="w-full h-full object-cover" loading="eager">
                 {% else %}
                 <div
                     class="w-full h-full flex items-center justify-center text-8xl opacity-20 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
@@ -54,10 +54,12 @@
                         class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-amber)] font-bold uppercase tracking-wider">
                         Album Pack
                     </span>
+                    {% if tracks %}
                     <span
                         class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                        {{ tracks|length|default:"0" }} Tracks
+                        {{ tracks|length }} track{{ tracks|length|pluralize }}
                     </span>
+                    {% endif %}
                 </div>
 
                 <!-- Title -->
@@ -84,10 +86,12 @@
                         <span class="opacity-50">Uploaded:</span>
                         <span class="text-[var(--text-primary)]">{{ album.created_at|date:"M d, Y" }}</span>
                     </div>
+                    {% if album.file_size %}
                     <div class="flex items-center gap-2">
-                        <span class="opacity-50">Est. Size:</span>
-                        <span class="text-[var(--text-primary)]">~{{ tracks|length|default:"0" }}0 MB</span>
+                        <span class="opacity-50">Size:</span>
+                        <span class="text-[var(--text-primary)]">{{ album.file_size|filesizeformat }}</span>
                     </div>
+                    {% endif %}
                 </div>
 
                 <div class="h-px w-full bg-[var(--border)] mb-8"></div>
@@ -112,8 +116,7 @@
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
                     <div class="flex flex-col">
-                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{{ album.price|money
-                            }}</span>
+                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{% if album.price > 0 %}{{ album.price|money }}{% else %}Free{% endif %}</span>
                         <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
                             charges</span>
                     </div>
@@ -142,7 +145,7 @@
                         <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
                         {% else %}
                         <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            Buy &amp; Download · {{ album.price|money }}
+                            {% if album.price > 0 %}Buy &amp; Download · {{ album.price|money }}{% else %}Download free{% endif %}
                         </button>
                         <button type="button" @click.prevent="$dispatch('add-to-cart', {type: 'album', id: {{ album.id }}})"
                             class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">+ Add to cart</button>
@@ -150,12 +153,11 @@
                         {% else %}
                         <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
                             class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            Buy &amp; Download · {{ album.price|money }}
+                            {% if album.price > 0 %}Buy &amp; Download · {{ album.price|money }}{% else %}Download free{% endif %}
                         </a>
                         <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
                         {% endif %}
                     </div>
-                </div>
                 </div>
 
                 <!-- Inline Offer Notice -->
@@ -169,9 +171,7 @@
                         </svg>
                     </span>
                     <div>
-                        <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if
-                            active_promotional_offer.badge_label %}[{{ active_promotional_offer.badge_label }}] {% endif
-                            %}{{ active_promotional_offer.title }}</p>
+                        <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if active_promotional_offer.badge_label %}[{{ active_promotional_offer.badge_label }}] {% endif %}{{ active_promotional_offer.title }}</p>
                         {% if active_promotional_offer.tagline %}
                         <p class="font-body text-[12px] text-[var(--text-muted)] mt-0.5">{{ active_promotional_offer.tagline }}</p>
                         {% endif %}
@@ -197,7 +197,7 @@
 
                 <div
                     class="mt-5 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10 w-full flex items-center justify-center gap-2">
-                    <span class="font-mono uppercase tracking-wider">🔒 Protected by MixMint Secure Vault</span>
+                    <span class="font-mono uppercase tracking-wider">🔒 Secure, one-time download</span>
                 </div>
 
                 <div class="mt-3 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10">
@@ -233,8 +233,7 @@
         <div
             class="px-6 py-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
             <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Tracklist</h3>
-            <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">{{ tracks|length }}
-                Tracks</span>
+            {% if tracks %}<span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">{{ tracks|length }} track{{ tracks|length|pluralize }}</span>{% endif %}
         </div>
 
         <div class="overflow-x-auto">
@@ -258,7 +257,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="3" class="px-6 py-16 text-center">
-                            <p class="font-body text-[13px] text-[var(--text-muted)]">No tracks in this album</p>
+                            <p class="font-body text-[13px] text-[var(--text-muted)]">The track list appears here once the DJ's ZIP has been processed.</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -306,7 +305,7 @@
 <div class="mm-buybar md:hidden" id="mm-buybar" hidden>
     <div class="min-w-0">
         <p class="font-body text-[13px] font-[700] truncate">{{ album.title }}</p>
-        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ album.price|money }}</p>
+        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ album.price|price_label }}</p>
     </div>
     <button type="button" class="btn-mm btn-mint h-[48px] px-5" id="mm-buybar-btn">Buy</button>
 </div>

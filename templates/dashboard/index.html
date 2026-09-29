@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load tracks_filters %}
-{% block title %}My Library | MixMint{% endblock %}
+{% block title %}My library — MixMint{% endblock %}
 
 {% block content %}
 <div class="py-12 max-w-[1200px] mx-auto" x-data="{ tab: 'tracks' }">
@@ -69,7 +69,7 @@
                 </div>
 
                 <!-- Info -->
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 w-full">
                     <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ purchase.track.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ purchase.track.dj.dj_name }}
@@ -130,8 +130,8 @@
                 <!-- Artwork -->
                 <div
                     class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    {% if purchase.album.cover_url %}
-                    <img src="{{ purchase.album.cover_url }}" alt="{{ purchase.album.title }}"
+                    {% if purchase.album.cover_image %}
+                    <img src="{{ purchase.album.cover_image }}" alt="{{ purchase.album.title }}"
                         class="w-full h-full object-cover">
                     {% else %}
                     <span class="text-2xl opacity-20">📦</span>
@@ -139,7 +139,7 @@
                 </div>
 
                 <!-- Info -->
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 w-full">
                     <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ purchase.album.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ purchase.album.dj.dj_name }} · {{ purchase.album.tracks.count }} tracks
@@ -209,7 +209,7 @@
                 </div>
 
                 <!-- Info -->
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 w-full">
                     <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ item.track.title }}</h3>
                     <p class="font-body text-[13px] text-[var(--text-muted)] truncate mt-1">
                         by {{ item.track.dj.dj_name }}

@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Privacy_Policy // MixMint Vault{% endblock %}
+{% block title %}Privacy policy — MixMint{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-20 px-6">
     <!-- ── Header ── -->
     <div class="mb-16 border-b border-[var(--border)] pb-12 text-center md:text-left">
-        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
-            Data_Security_Protocols</p>
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">How we protect your data</p>
         <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-6 leading-none">
             Privacy Policy
         </h1>
         <p class="font-body text-xs text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
-            Effective_Date: <span class="text-[var(--text-primary)]">March 1, 2026</span>
+            Effective date: <span class="text-[var(--text-primary)]">March 1, 2026</span>
         </p>
     </div>
 
@@ -22,7 +21,7 @@
             <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
                 <div class="flex items-center gap-4 mb-8">
                     <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
-                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Data_Ingestion_Registry</h2>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">What we collect</h2>
                 </div>
                 <div class="border border-[var(--border)] overflow-hidden ml-10 rounded-xl bg-[var(--bg-base)]">
                     <table class="w-full text-left font-mono text-[11px] uppercase tracking-widest">
@@ -34,7 +33,7 @@
                         </thead>
                         <tbody class="divide-y divide-[var(--border)] text-[var(--text-primary)]/80">
                             <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
-                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Account_Node</td>
+                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Account details</td>
                                 <td class="px-6 py-4">Auth & Sync Rights</td>
                             </tr>
                             <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
@@ -42,7 +41,7 @@
                                 <td class="px-6 py-4">Fraud Detection</td>
                             </tr>
                             <tr class="hover:bg-[var(--accent-mint)]/5 transition-colors">
-                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Financial_ID</td>
+                                <td class="px-6 py-4 font-medium text-[var(--accent-mint)]">Payment details</td>
                                 <td class="px-6 py-4">Vault Payouts</td>
                             </tr>
                         </tbody>
@@ -54,7 +53,7 @@
         <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
                 <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
-                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Sync_Fingerprinting</h2>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Device information</h2>
             </div>
             <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
                 <p>
@@ -66,7 +65,7 @@
         <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
                 <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
-                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Encryption_Standards</h2>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Encryption</h2>
             </div>
             <div class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-md)] ml-10 flex flex-col md:flex-row gap-8 items-center">
                 <div class="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--accent-mint)]/10 flex items-center justify-center">
@@ -81,7 +80,7 @@
         <section class="ml-10">
             <div class="flex items-center gap-4 mb-6">
                 <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[04]</span>
-                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Node_Deletion</h2>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Deleting your account</h2>
             </div>
             <div class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed space-y-4 ml-10">
                 <p>Operators may request account decommissioning. Financial logs are retained for 7 years as per Indian tax protocols. Sync logs are purged every 12 months.</p>
@@ -92,7 +91,7 @@
 
     <!-- ── Footer ── -->
     <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
-        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <span>&copy; 2026 MixMint INDIA</span>
         <div class="flex gap-8 flex-wrap justify-center">
             <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
             <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>

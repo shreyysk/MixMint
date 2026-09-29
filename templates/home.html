@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load tracks_filters %}
-{% block title %}Home | MixMint{% endblock %}
+{% block title %}Dashboard — MixMint{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -155,9 +155,9 @@
                 style="height: 52px; border-radius: 8px;">
                 Browse Music
             </a>
-            <a href="{% url 'signup' %}" class="btn-mm btn-ghost w-full sm:w-[240px] text-[15px] font-[600]"
+            <a href="{% url 'apply_as_dj' %}" class="btn-mm btn-ghost w-full sm:w-[220px] text-[15px] font-[600]"
                 style="height: 52px; border-radius: 8px;">
-                Become a DJ Partner
+                Sell your music
             </a>
         </div>
     </div>
@@ -187,8 +187,9 @@
 
 <!-- ── FEATURED DJS ── -->
 <section class="py-24">
-    <div class="mb-8">
-        <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em]">PARTNERED DJs</span>
+    <div class="mm-section-head">
+        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">DJs on MixMint</h2>
+        <a href="{% url 'dj_directory' %}">All DJs →</a>
     </div>
 
     <div class="flex overflow-x-auto hide-scroll gap-6 pb-4 cursor-grab active:cursor-grabbing snap-x">
@@ -199,7 +200,7 @@
                     {% if dj.profile.avatar_url %}
                     <img src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">
                     {% else %}
-                    <span class="text-4xl opacity-20">🎧</span>
+                    <span class="mm-avatar w-20 h-20 text-[26px]" aria-hidden="true">{{ dj.dj_name|initials }}</span>
                     {% endif %}
                 </div>
                 <!-- Verified Badge -->
@@ -222,7 +223,7 @@
                     </div>
                 </div>
                 <div class="font-mono text-[11px] text-[var(--text-muted)]">
-                    {{ dj.tracks.count }} Tracks
+                    {% with n=dj.tracks.count %}{{ n }} track{{ n|pluralize }}{% endwith %}
                 </div>
             </div>
         </a>
@@ -232,14 +233,9 @@
 
 <!-- ── POPULAR THIS WEEK ── -->
 <section class="py-16">
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-            <span class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.1em] mb-2 block">🔥
-                POPULAR THIS WEEK</span>
-        </div>
-        <a href="{% url 'explore' %}?sort=popular"
-            class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
-            All →</a>
+    <div class="mm-section-head">
+        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">🔥 Popular this week</h2>
+        <a href="{% url 'explore' %}?sort=popular">View all →</a>
     </div>
 
     {% if popular_tracks %}
@@ -280,19 +276,20 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money }}</span>
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
                     </div>
 
                     <!-- Buy CTA -->
-                    <button @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})" 
-                        class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint group/btn relative overflow-hidden"
-                        style="height: 40px; font-size: 13px;">
-                        <span class="relative z-10">Add to Support Cart</span>
-                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                    </button>
-                    <p class="mt-2 text-[10px] font-mono text-[var(--text-muted)] text-center uppercase tracking-tighter">
-                        🎁 Bundle 3+ for <span class="text-[var(--accent-mint)]">5% OFF</span>
-                    </p>
+                    {% if track.price > 0 %}
+                    <span role="button" tabindex="0" @click.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
+                        @keydown.enter.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
+                        class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-mint"
+                        style="height: 42px; font-size: 13px;" aria-label="Add {{ track.title }} to cart">Add to cart</span>
+                    <p class="mt-2 text-[11px] font-body text-[var(--text-muted)] text-center">🎁 Buy 3+ and save 5%</p>
+                    {% else %}
+                    <span class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-ghost"
+                        style="height: 42px; font-size: 13px;">Get it free</span>
+                    {% endif %}
                 </div>
             </a>
         </div>
@@ -307,14 +304,9 @@
 
 <!-- ── NEW RELEASES ── -->
 <section class="py-16">
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-            <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.1em] mb-2 block">NEW
-                RELEASES</span>
-        </div>
-        <a href="{% url 'explore' %}"
-            class="font-mono text-[12px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] uppercase tracking-wider transition-colors">View
-            All →</a>
+    <div class="mm-section-head">
+        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">New releases</h2>
+        <a href="{% url 'explore' %}?sort=new">View all →</a>
     </div>
 
     {% if featured_tracks %}
@@ -355,19 +347,20 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|money }}</span>
+                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
                     </div>
 
                     <!-- Buy CTA -->
-                    <button @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})" 
-                        class="mt-4 w-full h-[40px] rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] uppercase transition-colors btn-mm btn-mint group/btn relative overflow-hidden"
-                        style="height: 40px; font-size: 13px;">
-                        <span class="relative z-10">Add to Support Cart</span>
-                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                    </button>
-                    <p class="mt-2 text-[10px] font-mono text-[var(--text-muted)] text-center uppercase tracking-tighter">
-                        🎁 Bundle 3+ for <span class="text-[var(--accent-mint)]">5% OFF</span>
-                    </p>
+                    {% if track.price > 0 %}
+                    <span role="button" tabindex="0" @click.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
+                        @keydown.enter.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
+                        class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-mint"
+                        style="height: 42px; font-size: 13px;" aria-label="Add {{ track.title }} to cart">Add to cart</span>
+                    <p class="mt-2 text-[11px] font-body text-[var(--text-muted)] text-center">🎁 Buy 3+ and save 5%</p>
+                    {% else %}
+                    <span class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-ghost"
+                        style="height: 42px; font-size: 13px;">Get it free</span>
+                    {% endif %}
                 </div>
             </a>
         </div>

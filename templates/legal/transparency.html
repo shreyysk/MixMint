@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Security_Transparency // MixMint Vault{% endblock %}
+{% block title %}How downloads work — MixMint{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-20 px-6 font-body">
     <!-- ── Header ── -->
     <div class="mb-16 border-b border-[var(--border)] pb-12">
-        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">//
-            Infrastructure_Report_&_Tax_Compliance</p>
+        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">How MixMint works: security, GST & payments</p>
         <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
             Transparency
         </h1>
         <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
-            Marketplace_Operations: <span class="text-[var(--text-primary)]">v2.0.4</span>
+            How the marketplace works: <span class="text-[var(--text-primary)]">v2.0.4</span>
         </p>
     </div>
 
@@ -22,17 +21,17 @@
         <section class="ml-10">
             <div class="flex items-center gap-4 mb-8">
                 <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[01]</span>
-                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Security_Architecture</h2>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Download security</h2>
             </div>
             <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-6 ml-10">
-                <p>MixedMint uses a proprietary proxy layer to handle all asset distribution. Direct file URIs are NEVER exposed to the public node or the client browser.</p>
+                <p>MixMint uses its own secure download layer for every file. Direct storage links are never shown to the public or the client browser.</p>
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
-                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">Sync_Tokens</p>
-                        <p class="text-[12px]">One-Time tokens with immediate expiration upon successful handshake.</p>
+                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">One-time download links</p>
+                        <p class="text-[12px]">Each download link works once and expires immediately after use.</p>
                     </div>
                     <div class="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
-                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">Session_Binding</p>
+                        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase mb-2">Session protection</p>
                         <p class="text-[12px]">IP-Binding and hardware fingerprinting verification per sync session.</p>
                     </div>
                 </div>
@@ -44,18 +43,18 @@
             <div class="p-8 bg-[var(--bg-surface)] rounded-[14px]">
                 <div class="flex items-center gap-4 mb-8">
                     <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[02]</span>
-                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">GST_&_Tax_Compliance</h2>
+                    <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">GST & tax</h2>
                 </div>
                 <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-6 ml-10">
                     <p>MixMint is an <span class="text-[var(--text-primary)] font-medium">ECO (Electronic Commerce Operator)</span> compliant with Indian Indirect Tax laws. All transactions are processed with applicable GST according to the Nature of Service (NOS).</p>
                     
                     <div class="grid md:grid-cols-2 gap-6">
                         <div class="border border-[var(--border)] p-5 rounded-lg bg-[var(--bg-base)]">
-                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">Sac_Code_997331</h4>
+                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">SAC code 997331</h4>
                             <p class="text-[12px] opacity-70">Licensing services for the right to use entertainment assets and digital productions.</p>
                         </div>
                         <div class="border border-[var(--border)] p-5 rounded-lg bg-[var(--bg-base)]">
-                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">B2C_Invoicing</h4>
+                            <h4 class="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-2">Invoices</h4>
                             <p class="text-[12px] opacity-70">Automated invoices are generated for every sync, including applicable IGST/CGST/SGST components.</p>
                         </div>
                     </div>
@@ -71,15 +70,15 @@
         <section class="ml-10">
             <div class="flex items-center gap-4 mb-8">
                 <span class="font-mono text-xs text-[var(--accent-mint)] font-bold">[03]</span>
-                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Piracy_Resistance</h2>
+                <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Piracy protection</h2>
             </div>
             <div class="grid md:grid-cols-2 gap-8 ml-10">
                 <div class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
-                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Asset_Watermarking</h3>
-                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Every downloaded node contains immutable metadata pulses linking the asset to the operator's vault ledger.</p>
+                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">File watermarking</h3>
+                    <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Every downloaded file carries hidden purchase details that link it to the buyer's account.</p>
                 </div>
                 <div class="border border-[var(--border)] p-6 bg-[var(--bg-elevated)] rounded-[8px] shadow-[var(--shadow-card)]">
-                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Integrity_Check</h3>
+                    <h3 class="font-mono text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Integrity check</h3>
                     <p class="font-body text-[12px] text-[var(--text-muted)] leading-[1.6]">Server-side SHA-256 byte verification ensures 100% completion before marking a sync as valid.</p>
                 </div>
             </div>
@@ -107,7 +106,7 @@
 
     <!-- ── Footer ── -->
     <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
-        <span>&copy; 2026 MixMint_Distribution // INDIA</span>
+        <span>&copy; 2026 MixMint INDIA</span>
         <div class="flex gap-8 flex-wrap justify-center">
             <a href="{% url 'legal_terms' %}" class="hover:text-[var(--accent-mint)] transition-colors">Terms</a>
             <a href="{% url 'legal_privacy' %}" class="hover:text-[var(--accent-mint)] transition-colors">Privacy</a>

@@ -1,67 +1,65 @@
-<footer class="mt-20 border-t border-[var(--border)] pt-20 pb-12 bg-[var(--bg-base)]">
+<footer class="mm-footer mt-20 border-t border-[var(--border)] pt-16 pb-10 bg-[var(--bg-base)]" aria-labelledby="footer-heading">
+    <h2 id="footer-heading" class="sr-only">Site footer</h2>
     <div class="max-w-[1280px] mx-auto px-6">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
-            <!-- Left: Brand -->
-            <div class="md:col-span-4">
-                <div class="flex items-center gap-3 mb-6">
-                    <img src="/static/logo/MIXMINT_WHITE.png" alt="MixMint" class="w-8 h-8 dark-logo-only">
-                    <img src="/static/logo/MIXMINT_BLACK.png" alt="MixMint" class="w-8 h-8 light-logo-only hidden">
-                    <span class="font-display text-[22px] font-black tracking-tight text-[var(--text-primary)] uppercase">MixMint</span>
-                </div>
-                <p class="font-body text-[14px] text-[var(--text-muted)] leading-relaxed max-w-sm mb-6">
-                    India's only DJ music marketplace where you truly support your favorite artists. No subscriptions, no streaming.
+        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-12 mb-14">
+            <!-- Brand -->
+            <div class="col-span-2 md:col-span-4">
+                <a href="/" class="inline-flex items-center gap-3 mb-5" aria-label="MixMint home">
+                    <img src="/static/logo/MIXMINT_WHITE.png" alt="" class="w-8 h-8 dark-logo-only">
+                    <img src="/static/logo/MIXMINT_BLACK.png" alt="" class="w-8 h-8 light-logo-only hidden">
+                    <span class="font-display text-[22px] font-black tracking-tight text-[var(--text-primary)]">MixMint</span>
+                </a>
+                <p class="font-body text-[14px] text-[var(--text-muted)] leading-relaxed max-w-sm mb-5">
+                    Buy exclusive edits, remixes and album packs straight from the DJs who made them. Pay once, download forever. No subscriptions, no streaming.
                 </p>
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🇮🇳</span>
-                    <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">
-                        Operated from India.
-                    </p>
-                </div>
+                <p class="font-body text-[13px] text-[var(--text-muted)]">🇮🇳 Made in India · Instant GST invoices</p>
             </div>
 
-            <!-- Center: Links -->
-            <div class="md:col-span-3">
-                <nav class="flex flex-col gap-5 font-display text-[15px] font-bold uppercase tracking-tight">
-                    <a href="{% url 'explore' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Browse_Vault</a>
-                    <a href="{% url 'signup' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Become_a_DJ</a>
-                    <a href="/legal/transparency/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Legal_&_GST</a>
-                    <a href="/legal/about/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">About_&_Mission</a>
-                    <a href="/legal/faq/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">FAQ</a>
-                    <a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Support_Node</a>
-                </nav>
-            </div>
+            <!-- Marketplace -->
+            <nav class="md:col-span-2" aria-label="Marketplace">
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Marketplace</p>
+                <ul class="flex flex-col gap-3 font-body text-[14px]">
+                    <li><a href="{% url 'explore' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Browse music</a></li>
+                    <li><a href="{% url 'explore' %}?sort=new" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">New releases</a></li>
+                    <li><a href="{% url 'dj_directory' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">DJs</a></li>
+                    <li><a href="{% url 'apply_as_dj' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Sell your music</a></li>
+                </ul>
+            </nav>
 
-            <!-- Right: Secondary Legal -->
-            <div class="md:col-span-5">
-                <div class="p-8 rounded-[20px] bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-card)]">
-                    <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">// Marketplace_Policy</p>
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-3 font-body text-[13px]">
-                        <a href="{% url 'privacy' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Privacy_Protocol</a>
-                        <a href="{% url 'terms' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Terms_of_Service</a>
-                        <a href="{% url 'refund' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Refund_Policy</a>
-                        <a href="{% url 'dmca' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors text-[var(--accent-red)]/80">Copyright_&_DMCA</a>
-                    </div>
-                </div>
+            <!-- Help -->
+            <nav class="md:col-span-2" aria-label="Help">
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Help</p>
+                <ul class="flex flex-col gap-3 font-body text-[14px]">
+                    <li><a href="/legal/faq/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">FAQ</a></li>
+                    <li><a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Contact support</a></li>
+                    <li><a href="/legal/about/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">About MixMint</a></li>
+                    <li><a href="/legal/transparency/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">How downloads work</a></li>
+                </ul>
+            </nav>
+
+            <!-- Updates -->
+            <div class="col-span-2 md:col-span-4">
                 {% include 'components/waitlist_signup.html' with source="footer" %}
             </div>
         </div>
 
-        <!-- Bottom Bar -->
-        <div class="pt-8 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="flex items-center gap-8 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
-                <span>© 2026 MixMint_Distribution</span>
-                <span class="opacity-30">//</span>
-                <span class="text-[var(--accent-mint)]">Secure_Vault_v2.0.4</span>
-            </div>
+        <!-- Bottom bar -->
+        <div class="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-5">
+            <nav aria-label="Legal" class="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1 font-body text-[13px]">
+                <a href="{% url 'terms' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Terms</a>
+                <a href="{% url 'privacy' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Privacy</a>
+                <a href="{% url 'refund' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Refunds</a>
+                <a href="{% url 'dmca' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Copyright &amp; DMCA</a>
+                <span class="text-[var(--text-muted)]">© {% now "Y" %} MixMint</span>
+            </nav>
 
-            <!-- Theme Toggle Footer -->
-            <button onclick="toggleTheme()" data-theme-toggle
-                class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] font-mono text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-mint)] transition-all uppercase tracking-widest shadow-sm"
-                aria-label="Switch Theme">
-                <svg class="w-4 h-4 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <button type="button" onclick="toggleTheme()" data-theme-toggle
+                class="flex items-center gap-2 min-h-[40px] px-4 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] font-body text-[13px] text-[var(--text-primary)] hover:border-[var(--accent-mint)] transition-colors"
+                aria-label="Switch between light and dark theme">
+                <svg class="w-4 h-4 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Cycle_Theme</span>
+                <span>Switch theme</span>
             </button>
         </div>
     </div>

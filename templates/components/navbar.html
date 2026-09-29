@@ -17,8 +17,7 @@
     <span class="flex-1 text-center">
         {{ active_promotional_offer.title }}
         {% if active_promotional_offer.tagline %}
-        <span class="font-normal opacity-80 hidden md:inline-block ml-1">&mdash; {{ active_promotional_offer.tagline
-            }}</span>
+        <span class="font-normal opacity-80 hidden md:inline-block ml-1">&mdash; {{ active_promotional_offer.tagline }}</span>
         {% endif %}
     </span>
 
@@ -164,9 +163,9 @@
                     </div>
                 </div>
                 {% else %}
-                <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
+                <a href="{% url 'login' %}{% if request.path != '/login/' and request.path != '/signup/' and request.path != '/' %}?next={{ request.path|urlencode }}{% endif %}"
                     class="font-body text-[15px] font-medium text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors cursor-pointer">{% trans "Login" %}</a>
-                <a href="{% url 'signup' %}?next={{ request.path|urlencode }}"
+                <a href="{% url 'signup' %}{% if request.path != '/login/' and request.path != '/signup/' and request.path != '/' %}?next={{ request.path|urlencode }}{% endif %}"
                     class="btn-mm btn-ghost" style="height: 40px; padding: 0 20px;">{% trans "Sign Up" %}</a>
                 {% endif %}
             </div>
@@ -227,9 +226,9 @@
                         out</button>
                 </form>
                 {% else %}
-                <a href="{% url 'login' %}?next={{ request.path|urlencode }}"
+                <a href="{% url 'login' %}{% if request.path != '/login/' and request.path != '/signup/' and request.path != '/' %}?next={{ request.path|urlencode }}{% endif %}"
                     class="w-full py-3 text-[15px] font-body font-medium text-[var(--text-primary)] text-center opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards] cursor-pointer block">Login</a>
-                <a href="{% url 'signup' %}?next={{ request.path|urlencode }}"
+                <a href="{% url 'signup' %}{% if request.path != '/login/' and request.path != '/signup/' and request.path != '/' %}?next={{ request.path|urlencode }}{% endif %}"
                     class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards] block text-center">Sign
                     Up</a>
                 {% endif %}

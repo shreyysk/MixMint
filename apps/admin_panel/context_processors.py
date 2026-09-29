@@ -19,6 +19,11 @@ def global_settings(request):
     settings = PlatformSettings.load()
     # Site-wide banner = platform offers only; DJ-owned offers show on that DJ's pages.
     active_offer = PromotionalOffer.objects.filter(is_active=True, dj__isnull=True).first()
-    ctx = {"platform_settings": settings, "active_promotional_offer": active_offer}
+    try:
+        dj_share = max(0, 100 - float(settings.platform_commission_rate))
+        dj_share = int(dj_share) if dj_share == int(dj_share) else round(dj_share, 1)
+    except (TypeError, ValueError):
+        dj_share = None
+    ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share}
     cache.set("global_settings_ctx", ctx, 30)
     return {**ctx, **test_mode}

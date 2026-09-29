@@ -194,15 +194,14 @@
             <div
                 class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)]">
                 <div class="h-[160px] bg-[var(--bg-elevated)] flex items-center justify-center text-4xl opacity-20">
-                    {% if album.cover_url %}
-                    <img src="{{ album.cover_url }}" alt="{{ album.title }}" class="w-full h-full object-cover">
+                    {% if album.cover_image %}
+                    <img src="{{ album.cover_image }}" alt="{{ album.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                     {% else %}
                     📦
                     {% endif %}
                 </div>
                 <div class="p-5">
-                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate mb-1">{{ album.title
-                        }}</h3>
+                    <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate mb-1">{{ album.title }}</h3>
                     <p class="font-mono text-[14px] text-[var(--accent-mint)] font-medium mb-4">{{ album.price|money }}
                     </p>
                     <a href="{% url 'album_detail' album.id %}" class="btn-mm btn-mint w-full text-[13px]"

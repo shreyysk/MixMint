@@ -40,10 +40,10 @@
                         DJ PREVIEW · PLAYS FROM ARTIST EMBED
                     </span>
                     {% if preview_embeds|length > 1 %}
-                    <div class="flex gap-2" role="tablist" aria-label="Preview source">
+                    <div class="flex gap-2 overflow-x-auto hide-scroll" role="tablist" aria-label="Preview source">
                         {% for key, label, html in preview_embeds %}
-                        <button type="button" data-preview-tab="{{ key }}"
-                            class="preview-tab font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--border)] {% if forloop.first %}bg-[var(--accent-mint)] text-black font-bold{% else %}text-[var(--text-muted)]{% endif %}">
+                        <button type="button" role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-preview-tab="{{ key }}"
+                            class="preview-tab whitespace-nowrap flex-shrink-0 min-h-[32px] font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--border)] {% if forloop.first %}bg-[var(--accent-mint)] text-black font-bold{% else %}text-[var(--text-muted)]{% endif %}">
                             {{ label }}
                         </button>
                         {% endfor %}
@@ -76,6 +76,7 @@
                             });
                             document.querySelectorAll('.preview-tab').forEach(b => {
                                 const on = b === btn;
+                                b.setAttribute('aria-selected', on ? 'true' : 'false');
                                 b.classList.toggle('bg-[var(--accent-mint)]', on);
                                 b.classList.toggle('text-black', on);
                                 b.classList.toggle('font-bold', on);
@@ -166,7 +167,7 @@
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
                     <div class="flex flex-col">
-                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{{ track.price|money }}</span>
+                        <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
                         <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
                             charges</span>
                     </div>
@@ -185,7 +186,7 @@
                                 </button>
                                 {% else %}
                                 <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                    Buy &amp; Download · {{ track.price|money }}
+                                    {% if track.price > 0 %}Buy &amp; Download · {{ track.price|money }}{% else %}Download free{% endif %}
                                 </button>
                                 {% endif %}
                             {% elif can_request_download %}
@@ -204,7 +205,7 @@
                             <p class="text-[12px] text-[var(--text-muted)] text-center">{{ redownload_message }}</p>
                             {% else %}
                             <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                Buy &amp; Download · {{ track.price|money }}
+                                {% if track.price > 0 %}Buy &amp; Download · {{ track.price|money }}{% else %}Download free{% endif %}
                             </button>
                             <button type="button" @click.prevent="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
                                 class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">
@@ -215,7 +216,7 @@
                         {% else %}
                             <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
                                 class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                Buy &amp; Download · {{ track.price|money }}
+                                {% if track.price > 0 %}Buy &amp; Download · {{ track.price|money }}{% else %}Download free{% endif %}
                             </a>
                             <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
                         {% endif %}
@@ -306,7 +307,7 @@
 
                 <div
                     class="mt-5 flex items-center justify-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider text-center relative z-10">
-                    <span>🔒 Protected by MixMint Secure Vault</span>
+                    <span>🔒 Secure, one-time download</span>
                 </div>
             </div>
 
@@ -391,7 +392,7 @@
 <div class="mm-buybar md:hidden" id="mm-buybar" hidden>
     <div class="min-w-0">
         <p class="font-body text-[13px] font-[700] truncate">{{ track.title }}</p>
-        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ track.price|money }}</p>
+        <p class="font-mono text-[14px] text-[var(--accent-mint)] font-bold">{{ track.price|price_label }}</p>
     </div>
     <button type="button" class="btn-mm btn-mint h-[48px] px-5" id="mm-buybar-btn">Buy</button>
 </div>

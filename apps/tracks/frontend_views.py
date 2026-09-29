@@ -1,4 +1,4 @@
-from csp.decorators import csp_update
+from csp.decorators import csp_replace, csp_update  # noqa: F401
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -98,7 +98,7 @@ def track_detail_view(request, pk):
 
 
 @xframe_options_exempt
-@csp_update(FRAME_ANCESTORS="*")
+@csp_replace(FRAME_ANCESTORS="*")  # replace 'none' (update would produce the invalid "'none' *")
 def track_embed_view(request, pk):
     """Minimalist embeddable view for external sites [Imp 17]."""
     track = get_object_or_404(Track, pk=pk, is_active=True, is_deleted=False)

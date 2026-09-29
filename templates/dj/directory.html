@@ -25,7 +25,7 @@
             <div class="w-full lg:w-[200px]">
                 <label
                     class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2 block">Genre</label>
-                <select name="genre"
+                <select name="genre" aria-label="Filter by genre"
                     class="w-full h-[56px] bg-[var(--bg-surface)] border-2 border-[var(--border)] rounded-[8px] px-4 font-body text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-mint)] transition-colors">
                     <option value="">All Genres</option>
                     <option value="Techno" {% if genre == 'Techno' %}selected{% endif %}>Techno</option>

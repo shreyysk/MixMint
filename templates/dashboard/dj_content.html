@@ -1,149 +1,99 @@
 {% extends 'base.html' %}
 {% load tracks_filters %}
-{% block title %}My Content | MixMint{% endblock %}
+{% block title %}DJ dashboard — MixMint{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 {% endblock %}
 
 {% block content %}
 {{ revenue_chart_data|json_script:"revenue-chart-data" }}
 <div class="py-12 max-w-[1200px] mx-auto" x-data="djDashboard()">
     <!-- ── DJ HEADER ── -->
-    <div class="mb-16 border-b border-[var(--border)] pb-8">
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div class="mb-10 border-b border-[var(--border)] pb-8">
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
-                <h1
-                    class="font-display text-[40px] md:text-[56px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
-                    My Tracks
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-2">DJ dashboard</p>
+                <h1 class="font-display text-[36px] md:text-[52px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">
+                    {{ dj_profile.dj_name|default:"My music" }}
                 </h1>
                 <p class="font-body text-[14px] text-[var(--text-muted)] mt-3">
-                    Manage your uploaded content, track earnings, and monitor performance.
+                    Upload music, track your earnings and manage your store.
+                    {% if dj_profile %}<a href="{% url 'dj_profile' dj_profile.slug %}" class="text-[var(--accent-mint)] underline underline-offset-4">View my store</a>{% endif %}
                 </p>
             </div>
-            <div class="flex gap-4">
-                <a href="{% url 'upload_track' %}"
-                    class="btn-mm btn-mint h-12 px-6 flex items-center gap-2 font-[600]">
-                    <span>Upload Track</span>
-                    <span class="opacity-50">+</span>
-                </a>
-                <a href="#"
-                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
-                    <span>Create Album</span>
-                    <span class="opacity-50">📦</span>
-                </a>
-                <a href="{% url 'bundle_management' %}"
-                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
-                    <span>Bundles</span>
-                    <span class="opacity-50">🎛️</span>
-                </a>
-                <a href="{% url 'announcement_management' %}"
-                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
-                    <span>Posts</span>
-                    <span class="opacity-50">📢</span>
-                </a>
-                <a href="{% url 'ambassador_management' %}"
-                    class="btn-mm btn-ghost h-12 px-6 flex items-center gap-2 font-[600]">
-                    <span>Ambassador</span>
-                    <span class="opacity-50">🤝</span>
-                </a>
-            </div>
+            <nav class="flex flex-wrap gap-3" aria-label="DJ tools">
+                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600]">+ Upload music</a>
+                <a href="{% url 'bundle_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Bundles</a>
+                <a href="{% url 'announcement_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Posts</a>
+                <a href="{% url 'ambassador_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Referrals</a>
+                <a href="{% url 'dj_onboarding' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Payout setup</a>
+            </nav>
         </div>
     </div>
 
     <!-- ── STATS ── -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8" data-reveal>
-        <!-- Storage Usage -->
-        <div class="glow-card group p-8 flex flex-col justify-between">
-            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Storage Usage</p>
-            <div class="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden mb-3">
-                <div class="h-full bg-[var(--accent-mint)] transition-all duration-500"
-                    style="--storage-pct: {{ storage_percent }}%; width: var(--storage-pct);"></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8" data-reveal>
+        <div class="glow-card p-6 flex flex-col justify-between min-h-[150px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Total earned</p>
+            <p class="mm-stat-value font-display text-[30px] md:text-[40px] font-[700] text-[var(--accent-mint)] leading-none">{{ lifetime_earnings|money }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-3">Your share after commission</p>
+        </div>
+        <div class="glow-card p-6 flex flex-col justify-between min-h-[150px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Ready to withdraw</p>
+            <p class="mm-stat-value font-display text-[30px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-none">{{ available_balance|money }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-3">{% if escrow_balance %}{{ escrow_balance|money }} on hold (released after 24–48h){% else %}Paid out weekly from ₹500{% endif %}</p>
+        </div>
+        <div class="glow-card p-6 flex flex-col justify-between min-h-[150px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Sales</p>
+            <p class="mm-stat-value font-display text-[30px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-none" data-count="{{ total_sales }}">{{ total_sales }}</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)] mt-3">{{ total_downloads }} download{{ total_downloads|pluralize }}</p>
+        </div>
+        <div class="glow-card p-6 flex flex-col justify-between min-h-[150px]">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Storage</p>
+            <div class="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden mb-3" role="progressbar" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ storage_percent }}">
+                <div class="h-full bg-[var(--accent-mint)]" style="width: {{ storage_percent }}%;"></div>
             </div>
-            <div class="flex items-baseline gap-2">
-                <span class="font-display text-2xl font-bold text-[var(--text-primary)]">
-                    {{ storage_used_mb }} MB
-                </span>
-                <span class="text-[10px] text-[var(--text-muted)]">/ {{ storage_quota_mb }} MB</span>
+            <p class="font-body text-[13px] text-[var(--text-primary)]">{{ storage_used_mb }} MB <span class="text-[var(--text-muted)]">of {{ storage_quota_mb }} MB</span></p>
+            {% if not is_pro %}<a href="{% url 'pro_landing' %}" class="font-body text-[12px] text-[var(--accent-mint)] underline underline-offset-4 mt-2">Get 20 GB with Pro</a>{% endif %}
+        </div>
+    </div>
+
+    <!-- ── REVENUE + FORECAST ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12" data-reveal>
+        <div class="glow-card p-6 md:p-8 lg:col-span-2">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Weekly revenue</h2>
+                <span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">Last 12 weeks</span>
             </div>
-            {% if not is_pro %}
-            <div class="mt-4">
-                <a href="{% url 'pro_landing' %}"
-                    class="text-[10px] text-[var(--accent-mint)] font-bold uppercase tracking-widest hover:underline">Upgrade
-                    to Pro (20GB) &rarr;</a>
+            {% if revenue_chart_data %}
+            <div class="h-[260px] w-full relative">
+                <canvas id="djRevenueChart" role="img" aria-label="Weekly revenue chart for the last 12 weeks"></canvas>
+            </div>
+            {% else %}
+            <div class="mm-empty">
+                <h3>No sales yet</h3>
+                <p>Your weekly revenue appears here after your first sale. Share your store link to get started.</p>
+                {% if dj_profile %}<a href="{% url 'dj_profile' dj_profile.slug %}" class="btn-mm btn-ghost h-10 px-5">Open my store</a>{% endif %}
             </div>
             {% endif %}
-            <div
-                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--accent-mint)]/20 group-hover:bg-[var(--accent-mint)] transition-colors rounded-b-[12px]">
-            </div>
         </div>
-        <!-- Lifetime Earnings -->
-        <div class="glow-card group p-8 flex flex-col justify-between relative overflow-hidden">
-            <div class="z-10 relative">
-                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Lifetime Earnings</p>
-                <div class="flex items-baseline gap-2 mb-2">
-                    <span class="font-display text-4xl md:text-5xl font-black text-[var(--accent-mint)] tracking-tighter">
-                        ₹{{ profile.dj_profile.total_revenue|default:"0.00" }}
-                    </span>
-                </div>
-                <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 mt-2">
-                    <span class="text-[10px] text-[var(--accent-mint)] font-bold tracking-wide">100% EARNING POTENTIAL</span>
-                    <span class="text-[10px] text-[var(--text-muted)]">| 85% Sales + 15% Ads</span>
-                </div>
-            </div>
-            <div class="absolute -right-12 -bottom-12 w-32 h-32 bg-[var(--accent-mint)]/5 rounded-full blur-2xl group-hover:bg-[var(--accent-mint)]/15 transition-all duration-700 z-0"></div>
-            <div class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--accent-mint)]/20 group-hover:bg-[var(--accent-mint)] transition-colors rounded-b-[12px]"></div>
-        </div>
-
-        <!-- Total Tracks -->
-        <div class="glow-card group p-8 flex flex-col justify-between">
-            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Total Tracks</p>
-            <div class="flex items-baseline gap-2">
-                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter">
-                    {{ profile.dj_profile.tracks.count|default:"0" }}
-                </span>
-            </div>
-            <div
-                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--border)] group-hover:bg-[var(--text-primary)] transition-colors rounded-b-[12px]">
-            </div>
-        </div>
-
-        <!-- Total Sales -->
-        <div class="glow-card group p-8 flex flex-col justify-between">
-            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4">Total Sales</p>
-            <div class="flex items-baseline gap-2">
-                <span class="font-display text-5xl font-[700] text-[var(--text-primary)] tracking-tighter" data-count="{{ total_downloads|default:'0' }}">
-                    {{ total_downloads|default:"0" }}
-                </span>
-            </div>
-            <div
-                class="absolute bottom-0 left-0 w-full h-[2px] bg-[var(--border)] group-hover:bg-[var(--text-primary)] transition-colors rounded-b-[12px]">
-            </div>
-    </div>
-
-    <!-- ── EARNINGS FORECAST [Imp 11] ── -->
-    <div class="mb-16 grid grid-cols-1 md:grid-cols-2 gap-8" data-reveal>
-        <div class="h-full">
+        <div class="flex flex-col gap-6">
             {% include 'components/earnings_forecast.html' %}
-        </div>
-        <div class="glow-card p-8 flex flex-col justify-center text-center">
-            <h4 class="font-display text-xl font-bold text-[var(--text-primary)] mb-4">Pro Perks Active</h4>
-            <p class="font-body text-[13px] text-[var(--text-muted)] mb-6">Enjoy 20GB storage, custom domain integration, and priority support.</p>
-            <div class="flex flex-wrap justify-center gap-2">
-                <span class="pill-success">Custom Domain Setup</span>
-                <span class="pill-success">Ad-Free Surface</span>
-                <span class="pill-success">Batch Export</span>
+            {% if is_pro %}
+            <div class="glow-card p-6">
+                <h2 class="font-display text-[16px] font-bold text-[var(--text-primary)] mb-2">Pro is active</h2>
+                <p class="font-body text-[13px] text-[var(--text-muted)]">20 GB storage, lower commission, custom domain and priority support.</p>
             </div>
+            {% else %}
+            <div class="glow-card p-6">
+                <h2 class="font-display text-[16px] font-bold text-[var(--text-primary)] mb-2">Go Pro</h2>
+                <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Keep more of every sale, get 20 GB storage and your own domain.</p>
+                <a href="{% url 'pro_landing' %}" class="btn-mm btn-mint h-10 px-5">See Pro plans</a>
+            </div>
+            {% endif %}
         </div>
     </div>
-
-    <!-- ── REVENUE CHART ── -->
-    <div class="glow-card p-8 mb-16">
-            <h3 class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-8">Weekly Revenue Profile</h3>
-            <div class="h-[300px] w-full relative">
-                <canvas id="djRevenueChart"></canvas>
-            </div>
-        </div>
 
         <!-- ── OFFLOAD NOTIFICATIONS (Phase 3) ── -->
         {% if offload_notifications %}
@@ -249,7 +199,7 @@
             </div>
 
             {% if recent_sales %}
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable table">
                 <table class="w-full text-left font-body">
                     <thead>
                         <tr
@@ -303,7 +253,7 @@
                 <div class="flex items-center gap-3">
                     <input type="text" x-model="searchQuery" placeholder="Search tracks..." 
                            class="bg-[var(--bg-base)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[12px] w-[240px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
-                    <select x-model="genreFilter" class="bg-[var(--bg-base)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[12px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
+                    <select x-model="genreFilter" aria-label="Filter tracks by genre" class=""bg-[var(--bg-base)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[12px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
                         <option value="">All Genres</option>
                         <option value="Techno">Techno</option>
                         <option value="House">House</option>
@@ -313,14 +263,14 @@
             </div>
 
             {% if profile.dj_profile.tracks.all %}
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable table">
                 <table class="w-full text-left font-body">
                     <thead>
                         <tr
                             class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
                             <th class="px-8 py-5 font-normal">Track</th>
                             <th class="px-8 py-5 font-normal">Price</th>
-                            <th class="px-8 py-5 font-normal">Sales</th>
+                            <th class="px-8 py-5 font-normal">Downloads</th>
                             <th class="px-8 py-5 font-normal">Status</th>
                             <th class="px-8 py-5 text-right font-normal">Actions</th>
                         </tr>
@@ -346,7 +296,7 @@
                         </td>
                         <td class="px-8 py-6 text-right">
                             <a :href="'/tracks/' + track.id + '/'"
-                                class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]">Edit</a>
+                                class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]" :aria-label="'View ' + track.title">View</a>
                         </td>
                     </tr>
                 </template>
@@ -410,7 +360,7 @@
             searchQuery: '',
             genreFilter: '',
             tracks: [
-                {% for track in profile.dj_profile.tracks.all %}
+                {% for track in active_tracks %}
                 {
                     id: {{ track.id }},
                     title: "{{ track.title|escapejs }}",
@@ -423,11 +373,16 @@
             ],
             
             init() {
-                this.initChart();
+                if (typeof Chart !== 'undefined') this.initChart();
+                else window.addEventListener('load', () => this.initChart(), { once: true });
             },
 
             initChart() {
-                const ctx = document.getElementById('djRevenueChart').getContext('2d');
+                const canvas = document.getElementById('djRevenueChart');
+                if (!canvas || typeof Chart === 'undefined') return;  // no sales yet, or chart library blocked
+                const ctx = canvas.getContext('2d');
+                const muted = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#9494A8';
+                const mint = getComputedStyle(document.documentElement).getPropertyValue('--accent-mint').trim() || '#00FFB3';
                 const data = JSON.parse(document.getElementById('revenue-chart-data').textContent || '[]');
                 
                 const labels = data.map(d => d.week);
@@ -440,13 +395,13 @@
                         datasets: [{
                             label: 'Revenue (₹)',
                             data: values,
-                            borderColor: '#00FFB3',
+                            borderColor: mint,
                             backgroundColor: 'rgba(0, 255, 179, 0.1)',
                             borderWidth: 3,
                             fill: true,
                             tension: 0.4,
                             pointRadius: 4,
-                            pointBackgroundColor: '#00FFB3',
+                            pointBackgroundColor: mint,
                             pointHoverRadius: 6
                         }]
                     },
@@ -459,11 +414,11 @@
                         scales: {
                             y: {
                                 grid: { color: 'rgba(255,255,255,0.05)' },
-                                ticks: { color: '#6B6B7E', font: { family: 'DM Mono', size: 10 } }
+                                ticks: { color: muted, font: { family: 'DM Mono', size: 11 } }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { color: '#6B6B7E', font: { family: 'DM Mono', size: 10 } }
+                                ticks: { color: muted, font: { family: 'DM Mono', size: 11 } }
                             }
                         }
                     }
