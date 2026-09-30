@@ -41,7 +41,7 @@
                 <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Run vault now</button></form>
         </div>
         <p class="text-[13px] rounded-[10px] px-3 py-2 {% if vault.worker %}bg-[var(--accent-mint)]/10 text-[var(--text-primary)]{% else %}bg-[var(--accent-amber,#b7791f)]/10 text-[var(--text-primary)]{% endif %}">
-            {% if vault.worker %}Vault worker connected (Local Bot API Server): files up to {{ vault.send_mb }} MB go to Telegram and any size can be fetched back.
+            {% if vault.worker %}{% if vault.health.bot and vault.health.r2 %}Vault server online ✓ Bot and R2 reachable{% if vault.health.queued %} · {{ vault.health.queued }} job{{ vault.health.queued|pluralize }} running{% endif %}. Files up to {{ vault.send_mb }} MB go to Telegram and any size can be fetched back.{% else %}⚠ Vault server problem: {% if vault.health.error %}can't reach it ({{ vault.health.error }}){% else %}bot {{ vault.health.bot|yesno:"ok,not reachable" }}, R2 {{ vault.health.r2|yesno:"ok,not reachable" }}{% endif %}. Check the server (docker compose logs worker).{% endif %}
             {% else %}Vault worker not connected: only files up to {{ vault.fetch_mb }} MB can live in Telegram only; bigger ones stay in R2. Set VAULT_WORKER_URL and VAULT_WORKER_SECRET after deploying vault_worker/.{% endif %}
         </p>
         <div class="grid sm:grid-cols-2 gap-3">

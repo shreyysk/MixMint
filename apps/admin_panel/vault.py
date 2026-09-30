@@ -107,11 +107,11 @@ def _call(method, *, data=None, files=None, timeout=20):
     return None, str(body.get("description") or "error")[:200]
 
 
-def _worker(path, payload=None, method="post"):
+def _worker(path, payload=None, method="post", timeout=15):
     """Talk to the vault worker. Returns (json, error)."""
     try:
         r = getattr(requests, method)(
-            f"{worker_url()}{path}", json=payload, timeout=15,
+            f"{worker_url()}{path}", json=payload, timeout=timeout,
             headers={"Authorization": f"Bearer {worker_secret()}"},
         )
         if r.status_code >= 400:
@@ -436,6 +436,14 @@ def sweep(budget_seconds=240, limit=200):
                 done[rec.status] = done.get(rec.status, 0) + 1
     done["freed"] = evict()
     return done
+
+
+def worker_health():
+    """Admin-only view of the vault server (vault.mixmint.site itself shows nothing to visitors)."""
+    if not has_worker():
+        return None
+    data, err = _worker("/health", method="get", timeout=5)
+    return data or {"bot": False, "r2": False, "error": err}
 
 
 def status():

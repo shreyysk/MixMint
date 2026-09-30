@@ -1133,6 +1133,7 @@ def _vault_ctx():
     from . import vault
 
     v = vault.status()
+    v["health"] = vault.worker_health()
     return {"vault": v, "vault_rows": [("Singles channel", v["singles"], v["singles_title"], "singles"),
                                        ("ZIP channel", v["zips"], v["zips_title"], "zips")]}
 

@@ -48,20 +48,26 @@ Reusing a `file_id` lets a bot *re-send* a big file without uploading it again. 
 
 ## Install (about 10 minutes)
 
-```bash
-# on the server (Ubuntu)
-curl -fsSL https://get.docker.com | sh
-git clone https://github.com/shreyysk/MixMint.git && cd MixMint/vault_worker
-cp .env.example .env && nano .env        # fill every line
-openssl rand -hex 32                     # use this as VAULT_WORKER_SECRET
+`vault_worker/.env` on your PC is already filled in: bot token, R2 keys, a fresh worker secret and the domain. Add `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`, then:
 
-# Move the bot off Telegram's cloud server (one time). After this, all bot calls go through
-# your server, and you can't switch back for 10 minutes.
-curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/logOut"
-
-docker compose up -d --build
-docker compose logs -f worker            # Ctrl+C to leave
+```powershell
+# on your PC (PowerShell) — copy the folder to the server
+scp -i <your-key> -r D:\mixmint2.0\vault_worker ubuntu@<server-ip>:~/
+ssh -i <your-key> ubuntu@<server-ip>
 ```
+```bash
+# on the server
+cd ~/vault_worker && bash setup.sh
+```
+
+`setup.sh` does the rest:
+
+1. Checks DNS.
+2. Installs Docker.
+3. Adds swap on small servers.
+4. Opens ports 80 and 443.
+5. Moves the bot off Telegram's cloud. It asks for YES first and only does this once.
+6. Starts everything and prints the three Vercel values.
 
 ## Connect MixMint (Vercel → Settings → Environment Variables)
 
@@ -86,7 +92,8 @@ curl -H "Authorization: Bearer <VAULT_WORKER_SECRET>" https://vault.mixmint.site
 
 ## Security notes
 
-* The Bot API server is not published. Only the worker is reachable, through Caddy with HTTPS.
+* `vault.mixmint.site` is not a website. Caddy answers 404 to everything except `/jobs`, `/health` and `/bot…`, and the Bot API server itself is never published.
+* You see the vault's health in Admin → Support. Nothing is shown on the vault address itself.
 * `/jobs` and `/health` need the worker secret.
 * The `/bot<token>/…` proxy passes only a short list of methods. It refuses local file paths, so a leaked bot token can't be used to read files from the server.
 * Keep both channels **private**. Don't delete their posts: once a file has left R2, the channel post is the only copy.

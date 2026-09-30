@@ -298,3 +298,13 @@ def test_admin_can_change_hold(env, admin_user):
         c.post("/api/v1/admin/support/", {"action": "vault_settings", "hold_days": "14", "rehold_days": "5", "evict": "on"})
     ps = PlatformSettings.load()
     assert ps.vault_hold_days == 14 and ps.vault_rehold_days == 5 and ps.vault_evict_enabled
+
+
+def test_admin_sees_worker_health(env, admin_user, settings):
+    settings.VAULT_WORKER_URL, settings.VAULT_WORKER_SECRET = "https://vault.example", "wsecret"
+    c = Client()
+    c.force_login(admin_user)
+    with mock.patch("apps.admin_panel.support.webhook_info", return_value={}), \
+         mock.patch("apps.admin_panel.vault.requests.get", return_value=mock.Mock(status_code=200, json=lambda: {"bot": True, "r2": True, "queued": 0})):
+        html = c.get("/api/v1/admin/support/").content.decode()
+    assert "Vault server online" in html
