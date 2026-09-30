@@ -233,12 +233,24 @@ class Bundle(models.Model):
     description = models.TextField(null=True, blank=True)
     # In Rupees (converted to Paise in DB if needed, but keeping decimal for consistency)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    cover_image = models.URLField(max_length=500, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
+    def live_tracks(self):
+        return [bt.track for bt in self.bundle_tracks.select_related("track").order_by("display_order")
+                if bt.track.is_active and not bt.track.is_deleted]
+
+    def list_total(self):
+        return sum((t.price for t in self.live_tracks()), 0)
+
+    def savings_percent(self):
+        total = self.list_total()
+        return int(round((1 - float(self.price) / float(total)) * 100)) if total and total > self.price else 0
 
 
 class BundleTrack(models.Model):

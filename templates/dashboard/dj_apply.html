@@ -33,6 +33,26 @@
                     <p id="slug-help" class="font-mono text-[11px] text-[var(--text-muted)] mt-2 break-all">mixmint.site/dj/<span x-text="slug || 'your-name'"></span>/</p>
                 </div>
             </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="city" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">City</label>
+                    <input type="text" id="city" name="city" required maxlength="120" class="input-mm w-full" value="{{ form.city|default:'' }}" placeholder="e.g. Mangaluru" autocomplete="address-level2">
+                </div>
+                <div>
+                    <label for="instagram" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Instagram <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                    <input type="text" id="instagram" name="instagram" maxlength="60" class="input-mm w-full" value="{{ form.instagram|default:'' }}" placeholder="@yourhandle">
+                </div>
+            </div>
+            <fieldset x-data="{ n: 1 }">
+                <legend class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-1">Links to your best work</legend>
+                <p class="text-[12px] text-[var(--text-muted)] mb-3">1 required, up to 3 — YouTube, Instagram, SoundCloud or Mixcloud. Our DJs listen before approving.</p>
+                <div class="space-y-3">
+                    <input type="url" name="links" required class="input-mm w-full" placeholder="https://youtube.com/…" aria-label="Link 1" value="{{ form.links|default:'' }}">
+                    <input type="url" name="links" x-show="n > 1" x-cloak class="input-mm w-full" placeholder="https://soundcloud.com/…" aria-label="Link 2">
+                    <input type="url" name="links" x-show="n > 2" x-cloak class="input-mm w-full" placeholder="https://instagram.com/reel/…" aria-label="Link 3">
+                </div>
+                <button type="button" x-show="n < 3" @click="n++" class="mt-2 text-[13px] underline text-[var(--text-muted)]">+ Add another link</button>
+            </fieldset>
             <div>
                 <label for="bio" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">About you <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
                 <textarea id="bio" name="bio" rows="4" maxlength="2000" class="input-mm w-full" style="height: auto; min-height: 120px;"

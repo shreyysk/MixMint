@@ -42,6 +42,8 @@ class Track(models.Model):
     preview_type = models.CharField(max_length=20, choices=PREVIEW_CHOICES, null=True, blank=True)
     youtube_url = models.URLField(max_length=500, null=True, blank=True)
     instagram_url = models.URLField(max_length=500, null=True, blank=True)
+    copies_limit = models.PositiveIntegerField(null=True, blank=True)  # limited drop: fixed number of copies
+    compare_at_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # "was" price
 
     is_active = models.BooleanField(default=True)  # Admin/DJ can disable [Spec §3.2, §3.3]
     is_deleted = models.BooleanField(default=False)  # Soft delete only [Spec P2 §3.1]

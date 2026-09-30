@@ -88,6 +88,20 @@
                             <p class="mt-2 text-[11px] text-[var(--text-muted)] italic">Tip: Price it lower than the sum
                                 of individual tracks to encourage sales.</p>
                         </div>
+                        <div x-data="mmImage('cover_url', '')">
+                            <span class="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Cover image (optional)</span>
+                            <div class="flex items-center gap-4">
+                                <div class="relative w-16 h-16 rounded-xl overflow-hidden bg-[var(--bg-base)] border border-[var(--border)] shrink-0">
+                                    <img x-show="url" x-cloak :src="url || false" alt="Bundle cover" class="w-full h-full object-cover">
+                                    <div x-show="busy" x-cloak class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-mono text-[11px]" x-text="pct + '%'"></div>
+                                </div>
+                                <input type="hidden" name="cover_url" :value="url">
+                                <label class="btn-mm btn-ghost h-[40px] px-4 text-[13px] inline-flex items-center cursor-pointer">
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="pick($event)"><span x-text="url ? 'Change' : 'Upload square image'">Upload square image</span>
+                                </label>
+                                <p x-show="err" x-cloak class="text-[12px] text-[var(--accent-red)]" x-text="err"></p>
+                            </div>
+                        </div>
                         <div>
                             <label
                                 class="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Select

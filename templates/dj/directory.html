@@ -68,7 +68,7 @@
                     <div
                         class="w-full h-full rounded-full bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden">
                         {% if dj.profile.avatar_url %}
-                        <img src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}"
+                        <img loading="lazy" decoding="async" src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}"
                             class="w-full h-full object-cover">
                         {% else %}
                         <span class="text-4xl opacity-20">🎧</span>

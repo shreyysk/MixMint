@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load tracks_filters %}
+{% block title %}{{ bundle.title }} by {{ bundle.dj.dj_name }} — MixMint{% endblock %}
+{% block meta_description %}{{ bundle.title }}: {{ tracks|length }} tracks by {{ bundle.dj.dj_name }} for {{ bundle.price|money }}{% if savings %} (save {{ savings }}%){% endif %}. Preview, pay once, download instantly.{% endblock %}
+{% block content %}
+<div class="max-w-[1100px] mx-auto py-8 md:py-12">
+    <nav class="text-[13px] text-[var(--text-muted)] mb-6" aria-label="Breadcrumb"><a href="{% url 'releases' %}" class="hover:underline">Releases</a> / <a href="{% url 'bundles' %}" class="hover:underline">Bundles</a></nav>
+    <div class="grid grid-cols-1 md:grid-cols-[minmax(0,380px)_1fr] gap-8 md:gap-12 items-start">
+        <div class="aspect-square rounded-[16px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
+            {% if bundle.cover_image %}<img src="{{ bundle.cover_image }}" alt="" fetchpriority="high" class="w-full h-full object-cover">
+            {% else %}<div class="mm-rcard-ph h-full"><span>{{ bundle.title|slice:":1"|upper }}</span></div>{% endif %}
+        </div>
+        <div class="min-w-0">
+            <span class="inline-flex px-2.5 py-1 rounded-full text-[12px] font-[700] bg-[var(--bg-elevated)] text-[var(--text-primary)] mb-3">Bundle · {{ tracks|length }} songs</span>
+            <h1 class="font-display text-[32px] md:text-[44px] font-[800] text-[var(--text-primary)] leading-[1.05] tracking-tight break-words">{{ bundle.title }}</h1>
+            <p class="text-[15px] text-[var(--text-muted)] mt-2">by <a href="{% url 'dj_profile' bundle.dj.slug %}" class="text-[var(--text-primary)] underline underline-offset-4">{{ bundle.dj.dj_name }}</a></p>
+            {% if bundle.description %}<p class="text-[15px] text-[var(--text-primary)] mt-4 whitespace-pre-line">{{ bundle.description }}</p>{% endif %}
+
+            <div class="mm-card-section mt-6">
+                <div class="flex flex-wrap items-baseline gap-3">
+                    <span class="font-mono text-[32px] font-bold text-[var(--accent-mint)]">{{ bundle.price|money }}</span>
+                    {% if savings %}<s class="text-[16px] text-[var(--text-muted)]">{{ list_total|money }}</s><strong class="text-[14px] text-[var(--accent-amber)]">Save {{ savings }}%</strong>{% endif %}
+                </div>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1">All {{ tracks|length }} songs · one payment · inclusive of all charges</p>
+                {% if all_owned %}
+                <a href="{% url 'library_page' %}" class="btn-mm btn-ghost w-full h-[54px] mt-5 text-[15px] font-[700] inline-flex items-center justify-center">You own all of these — open library</a>
+                {% else %}
+                <button type="button" id="bundle-buy" class="btn-mm btn-mint w-full h-[54px] mt-5 text-[16px] font-[700]">Buy now{% if owned %} (songs you own are skipped){% endif %}</button>
+                <p class="text-[12px] text-[var(--text-muted)] text-center mt-2">or pick individual songs below ↓</p>
+                {% endif %}
+                <div class="mm-trust mt-4 !justify-start">
+                    <span>🔒 Payments secured by Razorpay</span><span>⚡ Instant download</span><span><a href="{% url 'recover' %}" class="underline">Recover a past download</a></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="mt-12" aria-labelledby="tracklist">
+        <h2 id="tracklist" class="font-display text-[22px] font-[700] text-[var(--text-primary)] mb-4">Tracklist</h2>
+        <ol class="divide-y divide-[var(--border)] border border-[var(--border)] rounded-[14px] bg-[var(--bg-surface)] overflow-hidden">
+            {% for t in tracks %}
+            <li class="flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3.5">
+                <span class="w-6 text-center font-mono text-[13px] text-[var(--text-muted)] shrink-0">{{ forloop.counter }}</span>
+                {% with pv=t|preview %}{% if pv %}
+                <button type="button" class="w-10 h-10 rounded-full bg-[var(--bg-elevated)] text-[var(--text-primary)] inline-flex items-center justify-center shrink-0 hover:bg-[var(--accent-mint)] hover:text-[var(--bg-base)]"
+                    data-embed="{{ pv.embed }}" data-link="{{ pv.link }}" data-kind="{{ pv.kind }}" data-title="{{ t.title }}" data-artist="{{ bundle.dj.dj_name }}" data-href="{% url 'track_detail' t.pk %}" aria-label="Watch preview of {{ t.title }}">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+                {% else %}<span class="w-10 shrink-0"></span>{% endif %}{% endwith %}
+                <div class="min-w-0 flex-1">
+                    <a href="{% url 'track_detail' t.pk %}" class="block text-[15px] font-[600] text-[var(--text-primary)] truncate hover:text-[var(--accent-mint)]">{{ t.title }}</a>
+                    <p class="text-[12px] text-[var(--text-muted)] truncate">{{ t.genre|default:"" }}{% if t.bpm %}{% if t.genre %} · {% endif %}{{ t.bpm }} BPM{% endif %}</p>
+                </div>
+                {% if t.id in owned %}<span class="text-[12px] font-[700] text-[var(--accent-mint)] shrink-0">Owned ✓</span>
+                {% else %}<a href="{% url 'track_detail' t.pk %}?buy=1" class="h-[36px] px-3 rounded-[10px] border border-[var(--border)] text-[13px] font-[600] inline-flex items-center shrink-0 hover:border-[var(--accent-mint)]">{{ t.price|price_label }}</a>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
+</div>
+<script>
+(function () {
+    var b = document.getElementById('bundle-buy');
+    if (b) b.addEventListener('click', function () { MM.checkout('{% url "bundle_checkout" bundle.pk %}', {}, { button: b }); });
+})();
+</script>
+{% endblock %}

@@ -61,7 +61,7 @@
             {% if covers_ready %}
             <div class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-6 text-center hover:border-[var(--accent-mint)] transition-colors max-w-[300px]">
                 <input type="file" id="cover_file" accept="image/jpeg,image/png,image/webp" @change="pick($event, 'cover')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
+                <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl || false" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
                 <div x-show="!(coverPreview || coverUrl)" class="text-3xl opacity-40 mb-2" aria-hidden="true">🖼️</div>
                 <label for="cover_file" class="block font-body text-[14px] font-[500] text-[var(--text-primary)]" x-text="cover ? cover.name : 'Choose an image'">Choose an image</label>
                 <p class="font-body text-[12px] text-[var(--text-muted)]">Square JPG or PNG, at least 1000×1000</p>
@@ -133,7 +133,22 @@
                     class="input-mm font-mono text-[20px] font-bold mb-2" placeholder="99" x-model="price" aria-describedby="price-help">
                 <p id="price-help" class="font-body text-[12px] text-[var(--text-muted)] mb-5"
                    x-text="kind === 'album' ? 'Albums start at ₹{{ min_album_price|default:49 }}.' : 'Paid tracks start at ₹{{ min_track_price|default:29 }}. Put 0 to give it away free.'"></p>
-                <div class="space-y-2 pt-4 border-t border-[var(--border)] font-body text-[13px]">
+                <details class="mt-5 border-t border-[var(--border)] pt-4" {% if form.copies_limit or form.compare_at_price %}open{% endif %}>
+                    <summary class="cursor-pointer text-[13px] font-[600] text-[var(--text-primary)]">Offers: discount or limited drop</summary>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label for="compare_at_price" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">Was price ₹ <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                            <input id="compare_at_price" name="compare_at_price" type="number" min="0" step="1" inputmode="numeric" class="input-mm font-mono" value="{{ form.compare_at_price|default:'' }}" placeholder="e.g. 150">
+                            <p class="text-[12px] text-[var(--text-muted)] mt-1">Shows a strike-through price and “Save %”.</p>
+                        </div>
+                        <div>
+                            <label for="copies_limit" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">Limited copies <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                            <input id="copies_limit" name="copies_limit" type="number" min="1" max="100000" step="1" inputmode="numeric" class="input-mm font-mono" value="{{ form.copies_limit|default:'' }}" placeholder="e.g. 50">
+                            <p class="text-[12px] text-[var(--text-muted)] mt-1">Makes it a numbered drop that sells out.</p>
+                        </div>
+                    </div>
+                </details>
+                <div class="space-y-2 pt-4 mt-4 border-t border-[var(--border)] font-body text-[13px]">
                     <div class="flex justify-between"><span class="text-[var(--text-muted)]">Buyer pays</span><span class="font-mono" x-text="'₹' + (Number(price) || 0)"></span></div>
                     <div class="flex justify-between"><span class="text-[var(--text-muted)]">MixMint fee ({{ platform_settings.platform_commission_rate|floatformat:0|default:"15" }}%)</span><span class="font-mono" x-text="'−₹' + ((Number(price) || 0) * rate).toFixed(0)"></span></div>
                     <div class="flex justify-between pt-2 border-t border-[var(--border)] text-[14px] font-[600]"><span>You get per sale</span><span class="font-mono text-[var(--accent-mint)]" x-text="'₹' + ((Number(price) || 0) * (1 - rate)).toFixed(0)"></span></div>

@@ -77,7 +77,7 @@ class TestKillSwitch:
     def test_kill_switch_allows_normal_browsing(self):
         self._enable_kill_switch()
         client = Client()
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert response.status_code == 200
 
     def test_kill_switch_allows_login(self):
@@ -188,5 +188,5 @@ class TestDataConsistency:
         client = Client()
         response = client.get('/')
         assert response.status_code == 200
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert response.status_code == 200

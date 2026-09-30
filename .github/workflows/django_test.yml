@@ -57,7 +57,7 @@ jobs:
       - name: Security check (bandit)
         run: |
           pip install bandit
-          bandit -r apps/ -x apps/*/migrations/ -ll
+          bandit -r apps/ -x "*/migrations/*" -ll
 
       - name: Dependency audit (pip-audit)
         run: |

@@ -1,0 +1,18 @@
+{# Floating Help button → reach the MixMint team (site form, Telegram). #}
+<div x-data="Object.assign(mmHelp({{ user.is_authenticated|yesno:'true,false' }}), { open: false })" class="mm-help" @keydown.escape.window="open = false" @open-help.window="open = true; $nextTick(() => $refs.panel.focus())">
+    <button type="button" class="mm-help-btn" aria-label="Help" @click="open = !open; if (open) $nextTick(() => $refs.panel.focus())" :aria-expanded="open" aria-controls="mm-help-panel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2M12 16.5h.01"/></svg>
+        <span>Help</span>
+    </button>
+    <div id="mm-help-panel" x-ref="panel" tabindex="-1" role="dialog" aria-label="Get help from MixMint" class="mm-help-panel" x-show="open" x-cloak
+         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="flex items-start justify-between gap-3 mb-3">
+            <div>
+                <p class="font-display text-[18px] font-[700] text-[var(--text-primary)]">How can we help?</p>
+                <p class="text-[12px] text-[var(--text-muted)]">A real person replies, usually within a few hours.</p>
+            </div>
+            <button type="button" class="w-9 h-9 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--border)]" @click="open = false" aria-label="Close help">✕</button>
+        </div>
+        {% include "components/help_form.html" %}
+    </div>
+</div>

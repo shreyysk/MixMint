@@ -40,6 +40,13 @@
                     </div>
                     <p class="text-[13px] text-[var(--text-muted)] mt-1 break-all">{{ row.email }} · mixmint.site/dj/{{ dj.slug }}/ · applied {{ dj.created_at|date:"d M Y" }}</p>
                     {% if dj.genres %}<p class="text-[13px] text-[var(--text-muted)] mt-1">{{ dj.genres|join:", " }}</p>{% endif %}
+                    {% if dj.location %}<p class="text-[13px] text-[var(--text-muted)] mt-1">📍 {{ dj.location }}</p>{% endif %}
+                    {% if dj.application_links or dj.social_links %}
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        {% for l in dj.application_links %}<a href="{{ l }}" target="_blank" rel="noopener noreferrer" class="px-3 h-[32px] inline-flex items-center rounded-full border border-[var(--border)] text-[12px] font-[600] text-[var(--text-primary)] hover:border-[var(--accent-mint)] max-w-[260px] truncate">▶ Listen {{ forloop.counter }}</a>{% endfor %}
+                        {% for k, v in dj.social_links.items %}<a href="{{ v }}" target="_blank" rel="noopener noreferrer" class="px-3 h-[32px] inline-flex items-center rounded-full border border-[var(--border)] text-[12px] text-[var(--text-muted)] capitalize">{{ k }} ↗</a>{% endfor %}
+                    </div>
+                    {% endif %}
                     {% if dj.bio %}<p class="text-[14px] text-[var(--text-primary)] mt-3 max-w-2xl whitespace-pre-line">{{ dj.bio|truncatechars:400 }}</p>{% endif %}
                     {% if key == 'active' %}
                     <p class="text-[13px] text-[var(--text-muted)] mt-3">{{ dj.track_count }} track{{ dj.track_count|pluralize }} · earned {{ row.total|money }} · ready to pay out {{ row.available|money }}</p>

@@ -23,7 +23,7 @@ class TestBuyerJourney:
         assert response.status_code == 302  # Redirect to dashboard
 
         # 2. Explore tracks
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert response.status_code == 200
 
         # 3. Dashboard
@@ -47,7 +47,7 @@ class TestBuyerJourney:
                              youtube_url='https://youtube.com/watch?v=g', genre='Bollywood')
 
         client = Client()
-        response = client.get('/explore/', {'genre': 'Bollywood'})
+        response = client.get('/releases/', {'genre': 'Bollywood'})
         assert response.status_code == 200
         assert b'Bollywood Beat' in response.content
 
@@ -63,7 +63,7 @@ class TestBuyerJourney:
                              youtube_url='https://youtube.com/watch?v=q')
 
         client = Client()
-        response = client.get('/explore/', {'q': 'Unique Track'})
+        response = client.get('/releases/', {'q': 'Unique Track'})
         assert response.status_code == 200
         assert b'Unique Track Name' in response.content
 
@@ -123,16 +123,16 @@ class TestExploreFilters:
                              preview_type='youtube', youtube_url='https://youtube.com/watch?v=p2')
 
         client = Client()
-        response = client.get('/explore/', {'price_max': '100'})
+        response = client.get('/releases/', {'price_max': '100'})
         assert response.status_code == 200
         assert b'Cheap Track' in response.content
 
     def test_sort_by_popular(self):
         client = Client()
-        response = client.get('/explore/', {'sort': 'popular'})
+        response = client.get('/releases/', {'sort': 'popular'})
         assert response.status_code == 200
 
     def test_sort_by_price_low(self):
         client = Client()
-        response = client.get('/explore/', {'sort': 'price_low'})
+        response = client.get('/releases/', {'sort': 'price_low'})
         assert response.status_code == 200

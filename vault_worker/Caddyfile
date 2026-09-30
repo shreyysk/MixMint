@@ -1,0 +1,23 @@
+# vault.mixmint.site is not a website: only the MixMint site (secret key) and the bot (bot token) use it.
+# Everything except the three API paths gets a bare 404.
+{$VAULT_DOMAIN} {
+	encode gzip
+	header -Server
+	header X-Robots-Tag "noindex, nofollow"
+
+	@api path /jobs /jobs/* /health /bot*
+	handle @api {
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy worker:8000 {
+			transport http {
+				read_timeout 10m
+				write_timeout 10m
+			}
+		}
+	}
+	handle {
+		respond 404
+	}
+}

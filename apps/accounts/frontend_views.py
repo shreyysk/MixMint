@@ -288,12 +288,12 @@ class HomeView:
             # Popular tracks: Highest sales in last 7 days
             popular_tracks = Track.objects.filter(
                 is_active=True, is_deleted=False, dj__profile__store_paused=False
-            ).order_by("-sales_last_7_days", "-created_at")[:4]
+            ).select_related("dj", "dj__profile").order_by("-sales_last_7_days", "-created_at")[:4]
 
             # New Releases: Latest uploaded tracks
             featured_tracks = Track.objects.filter(
                 is_active=True, is_deleted=False, dj__profile__store_paused=False
-            ).order_by("-created_at")[:4]
+            ).select_related("dj", "dj__profile").order_by("-created_at")[:4]
 
             # Featured DJs: approved DJs sorted by popularity
             featured_djs = (
@@ -306,9 +306,27 @@ class HomeView:
 
             new_albums = (
                 AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
-                .select_related("dj")
+                .select_related("dj", "dj__profile")
                 .order_by("-created_at")[:4]
             )
+            from apps.commerce.models import Bundle
+            from apps.core.catalog import attach_stock
+
+            live = dict(is_active=True, is_deleted=False, dj__status="approved", dj__profile__store_paused=False)
+            drop_tracks = list(Track.objects.filter(copies_limit__isnull=False, **live).select_related("dj", "dj__profile").order_by("-created_at")[:4])
+            new_bundles = [
+                b for b in Bundle.objects.filter(**live).select_related("dj", "dj__profile").prefetch_related("bundle_tracks__track").order_by("-created_at")[:8]
+                if b.live_tracks()
+            ][:4]
+            popular_tracks = list(popular_tracks)
+            featured_tracks = list(featured_tracks)
+            new_albums = list(new_albums)
+            attach_stock(popular_tracks + featured_tracks + drop_tracks, "track")
+            attach_stock(new_albums, "album")
+            crate = {
+                "releases": Track.objects.filter(**live).count() + AlbumPack.objects.filter(**live).count(),
+                "djs": DJProfile.objects.filter(status="approved", profile__store_paused=False).count(),
+            }
             return render(
                 request,
                 "home.html",
@@ -317,6 +335,9 @@ class HomeView:
                     "featured_tracks": featured_tracks,
                     "featured_djs": featured_djs,
                     "new_albums": new_albums,
+                    "drop_tracks": drop_tracks,
+                    "new_bundles": new_bundles,
+                    "crate": crate,
                 },
             )
 

@@ -68,6 +68,8 @@ class DJProfile(models.Model):
     is_verified = models.BooleanField(default=False)  # Top seller badge
     verified_at = models.DateTimeField(null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
+    banner_url = models.URLField(max_length=500, null=True, blank=True)  # store cover image (public R2)
+    application_links = models.JSONField(default=list, blank=True)  # 1-3 links to their best work (DJ application)
     popularity_score = models.IntegerField(default=0)
     genres = models.JSONField(default=list, blank=True)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

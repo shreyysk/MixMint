@@ -89,7 +89,7 @@
         <div x-show="!on" x-cloak>
             <button type="button" class="btn-mm btn-ghost h-[44px] px-5 text-[14px]" x-show="!secret" @click="start()" :disabled="busy">Set up authenticator app</button>
             <div x-show="secret" class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start mt-2">
-                <div class="w-[180px] h-[180px] bg-white rounded-[10px] p-2"><img x-show="qr" :src="qr" alt="QR code to scan with your authenticator app" class="w-full h-full"></div>
+                <div class="w-[180px] h-[180px] bg-white rounded-[10px] p-2"><img x-show="qr" :src="qr || false" alt="QR code to scan with your authenticator app" class="w-full h-full"></div>
                 <div class="space-y-3">
                     <p class="font-body text-[13px] text-[var(--text-muted)]">Scan the QR code in your authenticator app, or type this key:</p>
                     <code class="block font-mono text-[13px] text-[var(--accent-mint)] break-all" x-text="secret"></code>

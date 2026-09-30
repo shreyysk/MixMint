@@ -94,15 +94,18 @@
 
             <h3 class="font-display text-2xl font-bold text-[var(--accent-red)]">Application Declined</h3>
             <p class="font-body text-[var(--text-muted)] max-w-md mx-auto">
-                Unfortunately, your application to become a DJ Partner has not been approved at this time.
+                Your application wasn't approved this time. We emailed you the reason. Fix it and apply again whenever you're ready.
             </p>
+            <form method="post">{% csrf_token %}<input type="hidden" name="reapply" value="1">
+                <button type="submit" class="btn-mm btn-mint h-[48px] px-8 text-[15px] font-[600]">Apply again</button>
+            </form>
         </div>
         {% endif %}
 
         <div class="mt-12 pt-8 border-t border-[var(--border)]">
             <a href="{% url 'dashboard' %}"
-                class="font-body text-[14px] text-[var(--text-muted)] hover:text-white transition-colors">
-                &larr; Return to Library
+                class="font-body text-[14px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                &larr; Back to my library
             </a>
         </div>
 

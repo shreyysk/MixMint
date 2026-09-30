@@ -99,7 +99,7 @@ class TestRegularBuyerPersona:
         assert signup_res.status_code == 302  # Redirects to dashboard
 
         # Browse Explore page
-        explore_res = client.get(reverse('explore'))
+        explore_res = client.get(reverse('releases'))
         assert explore_res.status_code == 200
 
         # Verify dashboard is accessible
@@ -112,7 +112,7 @@ class TestRegularBuyerPersona:
         client = Client()
         client.force_login(user)
 
-        response = client.get(reverse('explore'))
+        response = client.get(reverse('releases'))
         assert response.status_code == 200
         # HTML should contain standard UI hooks
         assert b"explore" in response.content.lower() or b"tracks" in response.content.lower()

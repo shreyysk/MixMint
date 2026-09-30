@@ -29,7 +29,7 @@ class TestCriticalPageLoads:
 
     def test_explore_page_loads(self):
         client = Client()
-        response = client.get(reverse('explore'))
+        response = client.get(reverse('releases'))
         assert response.status_code == 200
 
     def test_dj_directory_loads(self):
@@ -62,7 +62,7 @@ class TestURLResolution:
 
     def test_auth_urls_resolve(self):
         """All auth-related URLs should resolve."""
-        urls_to_check = ['signup', 'login', 'logout', 'home', 'explore']
+        urls_to_check = ['signup', 'login', 'logout', 'home', 'releases']
         for name in urls_to_check:
             try:
                 url = reverse(name)

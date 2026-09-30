@@ -27,6 +27,7 @@
                 <a href="{% url 'bundle_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Bundles</a>
                 <a href="{% url 'announcement_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Posts</a>
                 <a href="{% url 'ambassador_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Referrals</a>
+                <a href="{% url 'dj_store_profile' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Store profile</a>
                 <a href="{% url 'dj_payouts' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Payouts</a>
             </nav>
         </div>
@@ -116,8 +117,7 @@
                             {% else %}
                             This {{ notif.content_type }} is permanently free.
                             {% endif %}
-                            It's using {{ notif.storage_mb }}MB of your storage quota. Consider moving it to an external
-                            host to free up space.
+                            It's using {{ notif.storage_mb }}MB of your storage quota. Remove it from your store if you need the space.
                         </p>
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0"
@@ -130,10 +130,6 @@
                                     class="btn-mm btn-ghost h-10 px-4 text-[13px] text-center w-full md:w-auto">
                                     Export {{ notif.content_type|title }}
                                 </a>
-                                <button @click="showUrlInput = true"
-                                    class="btn-mm btn-mint h-10 px-4 text-[13px] w-full md:w-auto whitespace-nowrap">
-                                    Link External Host
-                                </button>
                             </div>
                         </template>
 
@@ -245,81 +241,27 @@
             {% endif %}
         </div>
 
-        <!-- ── CONTENT TABLE ── -->
-        <div
-            class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] overflow-hidden rounded-[12px]">
-            <div class="p-6 border-b border-[var(--border)] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg-elevated)]">
-                <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)]">All Tracks</h2>
-                <div class="flex items-center gap-3">
-                    <input type="text" x-model="searchQuery" placeholder="Search tracks..." 
-                           class="bg-[var(--bg-base)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[12px] w-[240px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
-                    <select x-model="genreFilter" aria-label="Filter tracks by genre" class=""bg-[var(--bg-base)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[12px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
-                        <option value="">All Genres</option>
-                        <option value="Techno">Techno</option>
-                        <option value="House">House</option>
-                        <option value="Bollywood">Bollywood</option>
-                    </select>
-                </div>
+        <!-- ── YOUR MUSIC ── -->
+        <section class="border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] rounded-[12px] overflow-hidden" x-data="{ q: '' }" aria-labelledby="your-music">
+            <div class="p-5 md:p-6 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-elevated)]">
+                <h2 id="your-music" class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Your music <span class="font-body text-[13px] font-normal text-[var(--text-muted)]">{{ active_tracks|length }} track{{ active_tracks|length|pluralize }} · {{ active_albums|length }} album{{ active_albums|length|pluralize }}</span></h2>
+                <label class="w-full sm:w-[260px]"><span class="sr-only">Search your music</span>
+                    <input type="search" x-model="q" placeholder="Search your music" class="input-mm h-[40px] text-[13px]"></label>
             </div>
-
-            {% if profile.dj_profile.tracks.all %}
-            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable table">
-                <table class="w-full text-left font-body">
-                    <thead>
-                        <tr
-                            class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
-                            <th class="px-8 py-5 font-normal">Track</th>
-                            <th class="px-8 py-5 font-normal">Price</th>
-                            <th class="px-8 py-5 font-normal">Downloads</th>
-                            <th class="px-8 py-5 font-normal">Status</th>
-                            <th class="px-8 py-5 text-right font-normal">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--border)]">
-                <template x-for="track in filteredTracks" :key="track.id">
-                    <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
-                        <td class="px-8 py-6">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 flex items-center justify-center bg-[var(--bg-base)] border border-[var(--border)] text-lg group-hover:border-[var(--accent-mint)] transition-colors rounded-[8px]">
-                                    🎵
-                                </div>
-                                <div>
-                                    <span class="text-[14px] text-[var(--text-primary)] font-[500] block" x-text="track.title"></span>
-                                    <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1 block" x-text="track.genre"></span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6 text-[13px] text-[var(--accent-mint)] font-mono font-bold" x-text="'₹'+track.price"></td>
-                        <td class="px-8 py-6 text-[13px] font-mono text-[var(--text-primary)]" x-text="track.sales"></td>
-                        <td class="px-8 py-6">
-                            <span :class="track.active ? 'pill-success' : 'pill-neutral'" x-text="track.active ? 'Active' : 'Paused'"></span>
-                        </td>
-                        <td class="px-8 py-6 text-right">
-                            <a :href="'/tracks/' + track.id + '/'"
-                                class="font-mono text-[11px] text-[var(--text-muted)] group-hover:text-[var(--accent-mint)] transition-colors tracking-widest border border-transparent group-hover:border-[var(--accent-mint)]/20 px-3 py-1.5 rounded-[4px]" :aria-label="'View ' + track.title">View</a>
-                        </td>
-                    </tr>
-                </template>
-                    </tbody>
-                </table>
-            </div>
+            {% if active_tracks or active_albums %}
+            <ul class="divide-y divide-[var(--border)]">
+                {% for item in active_tracks %}{% include "dashboard/_music_row.html" with item=item kind="track" cover=item.cover_url %}{% endfor %}
+                {% for item in active_albums %}{% include "dashboard/_music_row.html" with item=item kind="album" cover=item.cover_image %}{% endfor %}
+            </ul>
             {% else %}
-            <!-- Empty State -->
-            <div class="p-24 text-center">
-                <div
-                    class="w-16 h-16 border border-dashed border-[var(--border)] rounded-[8px] mx-auto flex items-center justify-center text-[var(--text-muted)] text-2xl mb-8 opacity-50">
-                    📁
-                </div>
-                <h3 class="font-display text-xl text-[var(--text-primary)] tracking-tight mb-4">
-                    No tracks uploaded</h3>
-                <p class="font-body text-[13px] text-[var(--text-muted)] mb-10 max-w-xs mx-auto leading-relaxed">
-                    Upload your first track to start selling on MixMint.
-                </p>
-                <a href="{% url 'upload_track'|default:'#' %}"
-                    class="btn-mm btn-mint h-14 px-10 text-[12px] font-[600]">Upload New Track</a>
+            <div class="p-12 md:p-20 text-center">
+                <div class="text-4xl mb-4 opacity-40" aria-hidden="true">🎧</div>
+                <h3 class="font-display text-[20px] text-[var(--text-primary)] mb-2">Nothing uploaded yet</h3>
+                <p class="text-[14px] text-[var(--text-muted)] mb-6 max-w-sm mx-auto">Upload your first track or album pack. It goes live in your store straight away.</p>
+                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-12 px-8 font-[600] inline-flex items-center">Upload music</a>
             </div>
             {% endif %}
-        </div>
+        </section>
 
         <!-- Guidelines Grid -->
         <div
@@ -357,20 +299,6 @@
     <script>
     function djDashboard() {
         return {
-            searchQuery: '',
-            genreFilter: '',
-            tracks: [
-                {% for track in active_tracks %}
-                {
-                    id: {{ track.id }},
-                    title: "{{ track.title|escapejs }}",
-                    genre: "{{ track.genre|default:'Audio'|escapejs }}",
-                    price: "{{ track.price|floatformat:0 }}",
-                    sales: {{ track.download_count|default:0 }},
-                    active: {{ track.is_active|yesno:"true,false" }}
-                }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
             
             init() {
                 if (typeof Chart !== 'undefined') this.initChart();
@@ -424,14 +352,6 @@
                     }
                 });
             },
-
-            get filteredTracks() {
-                return this.tracks.filter(t => {
-                    const matchesSearch = t.title.toLowerCase().includes(this.searchQuery.toLowerCase());
-                    const matchesGenre = !this.genreFilter || t.genre === this.genreFilter;
-                    return matchesSearch && matchesGenre;
-                });
-            }
         }
     }
     </script>

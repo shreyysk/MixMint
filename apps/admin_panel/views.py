@@ -38,6 +38,7 @@ from .models import (
     BanList,
     KillSwitch,
     MaintenanceMode,
+    SupportTicket,
 )
 
 # ─── DJ Management ───────────────────────────────────────────────
@@ -1027,7 +1028,7 @@ def admin_command_center(request):
             "gross_30d": agg["gross"] or 0,
             "platform_30d": (agg["commission"] or 0) + (agg["fees"] or 0),
             "pending_payouts": Payout.objects.filter(status__in=["pending", "held"]).count(),
-            "open_tickets": SupportTicket.objects.exclude(status__in=["resolved", "closed"]).count(),
+            "open_tickets": SupportTicket.objects.filter(status="open").count(),
             "pending_refunds": RefundRequest.objects.filter(status="pending").count(),
         }
     except Exception:
@@ -1126,3 +1127,98 @@ def refunds_admin_view(request):
         rows.append({"r": r, "p": p, "title": getattr(model.objects.filter(pk=p.content_id).first(), "title", "(deleted)")})
     recent = RefundRequest.objects.exclude(status="pending").select_related("purchase").order_by("-processed_at")[:30]
     return render(request, "admin/refunds.html", {"rows": rows, "recent": recent})
+
+
+def _vault_ctx():
+    from . import vault
+
+    v = vault.status()
+    v["health"] = vault.worker_health()
+    return {"vault": v, "vault_rows": [("Singles channel", v["singles"], v["singles_title"], "singles"),
+                                       ("ZIP channel", v["zips"], v["zips_title"], "zips")]}
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminUser])
+def support_admin_view(request):
+    """Admin → Support: every question from the Help button, contact page and Telegram bot."""
+    from django.conf import settings as dj
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    from . import support
+
+    if request.method == "POST" and request.POST.get("action") == "connect_telegram":
+        base = (getattr(dj, "BASE_URL", "") or request.build_absolute_uri("/")).rstrip("/")
+        if base.startswith("http://") and "localhost" not in base:
+            base = "https://" + base[len("http://"):]
+        ok, url = support.set_webhook(base)
+        if ok:
+            messages.success(request, f"Telegram bot connected. It now delivers messages to {url}.")
+        else:
+            messages.error(request, "Couldn't connect: check TELEGRAM_BOT_TOKEN in Vercel, then try again.")
+        return redirect("admin_support")
+    if request.method == "POST" and request.POST.get("action") == "vault_sweep":
+        from . import vault
+
+        done = vault.sweep(budget_seconds=200)
+        messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('pending', 0)} copying, {done.get('too_large', 0)} R2 only, {done.get('failed', 0)} failed, {done.get('freed', 0)} freed from R2.")
+        return redirect("/api/v1/admin/support/#vault")
+    if request.method == "POST" and request.POST.get("action") == "vault_settings":
+        from .models import PlatformSettings
+
+        ps = PlatformSettings.load()
+        try:
+            ps.vault_hold_days = min(max(int(request.POST.get("hold_days") or 10), 1), 365)
+            ps.vault_rehold_days = min(max(int(request.POST.get("rehold_days") or 3), 1), 90)
+        except ValueError:
+            messages.error(request, "Days must be whole numbers.")
+            return redirect("/api/v1/admin/support/#vault")
+        ps.vault_evict_enabled = request.POST.get("evict") == "on"
+        ps.save()
+        messages.success(request, "Vault settings saved.")
+        return redirect("/api/v1/admin/support/#vault")
+
+    status = request.GET.get("status") or "open"
+    qs = SupportTicket.objects.select_related("user__user").prefetch_related("messages").order_by("-updated_at")
+    if status == "open":
+        qs = qs.exclude(status__in=["closed", "resolved"])
+    elif status == "closed":
+        qs = qs.filter(status__in=["closed", "resolved"])
+    info = support.webhook_info() if dj.TELEGRAM_BOT_TOKEN else {}
+    return render(
+        request,
+        "admin/support.html",
+        {
+            "tickets": qs[:100],
+            "status": status,
+            "tg_token": bool(dj.TELEGRAM_BOT_TOKEN),
+            "tg_chat": bool(dj.TELEGRAM_ADMIN_CHAT_ID),
+            "tg_hooked": bool(info.get("url")),
+            "tg_error": info.get("last_error_message", ""),
+            **_vault_ctx(),
+        },
+    )
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminUser])
+def support_ticket_admin_view(request, ticket_id):
+    from django.contrib import messages
+    from django.shortcuts import get_object_or_404, redirect
+
+    from . import support
+
+    ticket = get_object_or_404(SupportTicket.objects.select_related("user__user"), pk=ticket_id)
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "reply":
+            body = (request.POST.get("body") or "").strip()
+            if body:
+                where = support.admin_reply(ticket, body, via="web")
+                messages.success(request, f"Reply sent by {where}." if where else "Reply saved, but there's no Telegram chat or email to send it to.")
+        elif action in ("close", "reopen"):
+            ticket.status = "closed" if action == "close" else "open"
+            ticket.save(update_fields=["status", "updated_at"])
+        return redirect("admin_support_ticket", ticket_id=ticket.id)
+    return render(request, "admin/support_ticket.html", {"t": ticket, "thread": ticket.messages.all()})

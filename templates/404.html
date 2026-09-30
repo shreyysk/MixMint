@@ -8,14 +8,14 @@
     <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed max-w-md mb-10">
         The link may be old or mistyped, or the track may have been removed by its DJ.
     </p>
-    <form action="{% url 'explore' %}" method="get" class="mm-search w-full max-w-md mb-8" role="search">
+    <form action="{% url 'releases' %}" method="get" class="mm-search w-full max-w-md mb-8" role="search">
         <label for="nf-q" class="sr-only">Search MixMint</label>
         <input id="nf-q" type="search" name="q" placeholder="Search tracks or DJs" class="h-[50px] bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] px-4 font-body text-[15px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-mint)]">
         <button type="submit" class="btn-mm btn-mint h-[50px] px-6 rounded-[12px] font-bold">Search</button>
     </form>
     <div class="flex flex-col sm:flex-row gap-3">
         <a href="{% url 'home' %}" class="btn-mm btn-ghost h-[48px] px-6 rounded-[12px] font-semibold">Back to home</a>
-        <a href="{% url 'explore' %}" class="btn-mm btn-ghost h-[48px] px-6 rounded-[12px] font-semibold">Browse music</a>
+        <a href="{% url 'releases' %}" class="btn-mm btn-ghost h-[48px] px-6 rounded-[12px] font-semibold">Browse music</a>
     </div>
 </div>
 {% endblock %}

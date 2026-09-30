@@ -61,7 +61,12 @@ class CopyrightReport(models.Model):
 
 
 class SupportTicket(models.Model):
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="support_tickets")
+    # A logged-in user, a guest (email) or someone chatting with the Telegram bot (chat id).
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="support_tickets", null=True, blank=True)
+    guest_email = models.EmailField(blank=True, default="")
+    guest_name = models.CharField(max_length=120, blank=True, default="")
+    telegram_chat_id = models.CharField(max_length=40, blank=True, default="", db_index=True)
+    telegram_username = models.CharField(max_length=64, blank=True, default="")
     subject = models.CharField(max_length=255)
     category = models.CharField(max_length=50)
     priority = models.CharField(max_length=20, default="medium")
@@ -69,6 +74,28 @@ class SupportTicket(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def contact_label(self):
+        if self.user_id:
+            return self.user.full_name or self.user.user.email
+        if self.telegram_username:
+            return f"@{self.telegram_username} (Telegram)"
+        return self.guest_name or self.guest_email or "Guest"
+
+    def contact_email(self):
+        return self.user.user.email if self.user_id else self.guest_email
+
+
+class SupportMessage(models.Model):
+    SENDERS = (("user", "Customer"), ("admin", "MixMint team"))
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="messages")
+    sender = models.CharField(max_length=10, choices=SENDERS)
+    body = models.TextField()
+    via = models.CharField(max_length=20, default="web")  # web | telegram | email
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
 
 
 class BanList(models.Model):
@@ -170,6 +197,16 @@ class PlatformSettings(models.Model):
     offload_low_sales_count = models.IntegerField(default=2)
     offload_low_sales_days = models.IntegerField(default=90)
 
+    # Telegram vault: private channels the bot keeps a copy of every upload in.
+    tg_singles_channel_id = models.CharField(max_length=40, blank=True, default="")
+    tg_singles_channel_title = models.CharField(max_length=120, blank=True, default="")
+    tg_zips_channel_id = models.CharField(max_length=40, blank=True, default="")
+    tg_zips_channel_title = models.CharField(max_length=120, blank=True, default="")
+    # R2 is only a holding area: files leave R2 after these many days (Telegram keeps the permanent copy).
+    vault_evict_enabled = models.BooleanField(default=True)
+    vault_hold_days = models.PositiveIntegerField(default=10)  # normal releases: days after upload
+    vault_rehold_days = models.PositiveIntegerField(default=3)  # after a file is fetched back for a buyer
+
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
@@ -263,3 +300,40 @@ class ContentReport(models.Model):
     admin_notes = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+
+
+class VaultFile(models.Model):
+    """The Telegram-channel copy of one uploaded track (singles channel) or album ZIP (zips channel)."""
+
+    STATUS = (
+        ("pending", "Copying to channel"),
+        ("archived", "Stored in channel"),
+        ("too_large", "Too big for the bot (R2 only)"),
+        ("failed", "Failed"),
+    )
+    content_type = models.CharField(max_length=10, choices=(("track", "Track"), ("album", "Album")))
+    content_id = models.PositiveBigIntegerField()
+    status = models.CharField(max_length=12, choices=STATUS, default="failed")
+    channel_id = models.CharField(max_length=40, blank=True, default="")
+    message_id = models.BigIntegerField(null=True, blank=True)
+    file_id = models.CharField(max_length=255, blank=True, default="")
+    file_unique_id = models.CharField(max_length=64, blank=True, default="")
+    size = models.BigIntegerField(null=True, blank=True)
+    file_key = models.CharField(max_length=500, blank=True, default="")
+    error = models.CharField(max_length=255, blank=True, default="")
+    restored_count = models.PositiveIntegerField(default=0)
+    # R2 holding area: is the file in R2 right now, and until when do we keep it there?
+    r2_present = models.BooleanField(default=True)
+    r2_hold_until = models.DateTimeField(null=True, blank=True)
+    evicted_at = models.DateTimeField(null=True, blank=True)
+    job_id = models.CharField(max_length=64, blank=True, default="")
+    job_started_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("content_type", "content_id")
+        indexes = [models.Index(fields=["status"])]
+
+    def __str__(self):
+        return f"{self.content_type} {self.content_id} ({self.status})"

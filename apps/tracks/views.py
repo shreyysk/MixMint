@@ -252,8 +252,12 @@ class TrackViewSet(viewsets.ModelViewSet):
         detail=True, methods=["post"], url_path="convert-external", permission_classes=[permissions.IsAuthenticated]
     )
     def convert_to_external_link(self, request, pk=None):
-        """Phase 3 Feature 1: Convert an underperforming or free track to an external link."""
-        from django.utils import timezone
+        """Retired: DJs upload files directly (no Drive / external links). Kept so old clients get a clear answer."""
+        return Response(
+            {"error": "External links are no longer supported. Upload the file directly — it's stored in MixMint's vault."},
+            status=410,
+        )
+        from django.utils import timezone  # noqa: E402 — legacy flow below is unreachable
 
         track = self.get_object()
 

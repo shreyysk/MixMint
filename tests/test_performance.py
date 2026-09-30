@@ -50,7 +50,7 @@ class TestQueryPerformance:
         client = Client()
 
         with CaptureQueriesContext(connection) as ctx:
-            response = client.get('/explore/')
+            response = client.get('/releases/')
             assert response.status_code == 200
         assert len(ctx) <= 20, f"Explore page used {len(ctx)} queries (expected ≤20)"
 
@@ -106,7 +106,7 @@ class TestResponseTimePerformance:
         from django.test import Client
         client = Client()
         start = time.time()
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         elapsed = time.time() - start
         assert response.status_code == 200
         assert elapsed < 2.0, f"Explore page took {elapsed:.1f}s (expected <2s)"
@@ -146,5 +146,5 @@ class TestStressScenarios:
         from django.test import Client
         client = Client()
         for _ in range(10):
-            response = client.get('/explore/', {'q': 'test', 'genre': 'EDM'})
+            response = client.get('/releases/', {'q': 'test', 'genre': 'EDM'})
             assert response.status_code == 200

@@ -16,7 +16,7 @@ def get_track_og_tags(track):
             f"Support and download '{track.title}' by {track.dj.dj_name}. "
             f"{price_label(track.price)}{genre} · MixMint"
         ),
-        "og:image": track.cover_url or f"{_site()}/static/logo/MIXMINT_WHITE.png",
+        "og:image": track.cover_url or f"{_site()}/static/logo/mm-white-512.png",
         "og:url": f"{_site()}/tracks/{track.id}/",
         "og:type": "music.song",
         "twitter:card": "summary_large_image",
@@ -31,9 +31,9 @@ def get_dj_storefront_og_tags(dj_profile):
         "og:title": f"{dj_profile.dj_name} — DJ Storefront | MixMint",
         "og:description": (f"{bio_trimmed} " f"Discover music from {dj_profile.dj_name} on MixMint."),
         "og:image": (
-            dj_profile.profile.avatar_url
-            if hasattr(dj_profile.profile, "avatar_url") and dj_profile.profile.avatar_url
-            else f"{_site()}/static/logo/MIXMINT_WHITE.png"
+            getattr(dj_profile, "banner_url", None)
+            or getattr(dj_profile.profile, "avatar_url", None)
+            or f"{_site()}/static/logo/mm-white-512.png"
         ),
         "og:url": f"{_site()}/dj/{dj_profile.slug}/",
         "og:type": "profile",
@@ -48,7 +48,7 @@ def get_default_og_tags():
             "India's only DJ music marketplace where you truly support your favorite artists. "
             "Secure downloads, no streaming."
         ),
-        "og:image": "https://mixmint.site/static/img/default-og.png",
+        "og:image": f"{_site()}/static/logo/mm-white-512.png",
         "og:url": "https://mixmint.site",
         "og:type": "website",
     }

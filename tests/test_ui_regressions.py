@@ -43,7 +43,7 @@ def _assert_clean(html):
 @pytest.mark.django_db
 class TestPagesRenderCleanly:
     @pytest.mark.parametrize(
-        "path", ["/", "/explore/", "/djs/", "/login/", "/signup/", "/contact/", "/legal/terms/", "/legal/faq/"]
+        "path", ["/", "/releases/", "/djs/", "/login/", "/signup/", "/contact/", "/legal/terms/", "/legal/faq/"]
     )
     def test_public_pages(self, client, track, album, path):
         r = client.get(path)

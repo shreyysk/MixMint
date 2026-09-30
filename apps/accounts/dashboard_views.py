@@ -118,6 +118,10 @@ def dj_apply_view(request):
             context = {"status": "pending_review"}
             return render(request, "dashboard/dj_apply_status.html", context)
         elif dj_profile.status == "rejected":
+            if request.method == "POST" and request.POST.get("reapply"):
+                if not dj_profile.tracks.exists() and not dj_profile.albums.exists():
+                    dj_profile.delete()  # start a fresh application
+                    return redirect("apply_as_dj")
             context = {"status": "rejected"}
             return render(request, "dashboard/dj_apply_status.html", context)
     except Exception:
@@ -219,11 +223,13 @@ def dj_dashboard_view(request):
 
     total_sales = 0
     active_tracks = []
+    active_albums = []
     if dj_profile:
         from apps.commerce.models import Purchase
 
         total_sales = Purchase.objects.filter(seller=dj_profile, status="paid", is_revoked=False).count()
         active_tracks = list(Track.objects.filter(dj=dj_profile, is_deleted=False).order_by("-created_at"))
+        active_albums = list(dj_profile.albums.filter(is_deleted=False).order_by("-created_at"))
 
     context = {
         "profile": profile,
@@ -234,6 +240,7 @@ def dj_dashboard_view(request):
         "escrow_balance": getattr(wallet, "escrow_amount", 0) or 0,
         "total_sales": total_sales,
         "active_tracks": active_tracks,
+        "active_albums": active_albums,
         "storage_used_mb": round(storage_used_mb, 2),
         "storage_quota_mb": storage_quota_mb,
         "storage_percent": min(round(storage_percent, 1), 100),
@@ -574,7 +581,15 @@ def create_bundle_view(request):
         messages.error(request, "A bundle needs a title, a positive price and at least 2 of your tracks.")
         return redirect("bundle_management")
 
-    bundle = Bundle.objects.create(dj=dj_profile, title=title, price=price)
+    cover = (request.POST.get("cover_url") or "").strip() or None
+    if cover:
+        from apps.core import r2
+
+        try:
+            r2.cover_key_from_url(cover, dj_profile)
+        except r2.UploadError:
+            cover = None
+    bundle = Bundle.objects.create(dj=dj_profile, title=title, price=price, cover_image=cover)
     for order, track in enumerate(own_tracks):
         BundleTrack.objects.create(bundle=bundle, track=track, display_order=order)
     messages.success(request, "Bundle created.")

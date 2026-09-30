@@ -61,7 +61,7 @@
                 <div
                     class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {% if purchase.track.cover_url %}
-                    <img src="{{ purchase.track.cover_url }}" alt="{{ purchase.track.title }}"
+                    <img loading="lazy" decoding="async" src="{{ purchase.track.cover_url }}" alt="{{ purchase.track.title }}"
                         class="w-full h-full object-cover">
                     {% else %}
                     <span class="text-2xl opacity-20">🎧</span>
@@ -131,7 +131,7 @@
                 <div
                     class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {% if purchase.album.cover_image %}
-                    <img src="{{ purchase.album.cover_image }}" alt="{{ purchase.album.title }}"
+                    <img loading="lazy" decoding="async" src="{{ purchase.album.cover_image }}" alt="{{ purchase.album.title }}"
                         class="w-full h-full object-cover">
                     {% else %}
                     <span class="text-2xl opacity-20">📦</span>
@@ -201,7 +201,7 @@
                 <div
                     class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {% if item.track.cover_url %}
-                    <img src="{{ item.track.cover_url }}" alt="{{ item.track.title }}"
+                    <img loading="lazy" decoding="async" src="{{ item.track.cover_url }}" alt="{{ item.track.title }}"
                         class="w-full h-full object-cover">
                     {% else %}
                     <span class="text-2xl opacity-20">🎧</span>

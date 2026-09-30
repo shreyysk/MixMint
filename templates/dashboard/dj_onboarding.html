@@ -69,7 +69,7 @@
                     <div x-show="showQR && !verified" class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] space-y-6 text-center">
                         <p class="font-body text-[13px] text-[var(--text-primary)]">Scan this QR code with Google Authenticator:</p>
                         <div id="qrcode-container" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg flex items-center justify-center">
-                            <img x-show="qr" :src="qr" alt="QR code for your authenticator app" class="w-full h-full">
+                            <img x-show="qr" :src="qr || false" alt="QR code for your authenticator app" class="w-full h-full">
                             <span x-show="!qr" class="text-black text-[10px] font-mono">Loading…</span>
                         </div>
                         <div class="text-left">

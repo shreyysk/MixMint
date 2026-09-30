@@ -522,6 +522,14 @@ GOOGLE_DRIVE_API_KEY = env("GOOGLE_DRIVE_API_KEY", default="")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_ADMIN_CHAT_ID = env("TELEGRAM_ADMIN_CHAT_ID", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")
+# Vault channels are normally linked from Telegram (/link singles <code>); these override that.
+TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")
+TELEGRAM_ZIPS_CHANNEL_ID = env("TELEGRAM_ZIPS_CHANNEL_ID", default="")
+# Self-hosted Bot API server (raises the 50 MB send / 20 MB fetch limits to 2 GB). Optional.
+TELEGRAM_API_BASE = env("TELEGRAM_API_BASE", default="https://api.telegram.org")
+# Vault worker (vault_worker/): moves files between R2 and the channels through a Local Bot API Server.
+VAULT_WORKER_URL = env("VAULT_WORKER_URL", default="")
+VAULT_WORKER_SECRET = env("VAULT_WORKER_SECRET", default="")
 
 # Auth URLs
 LOGIN_URL = "login"
@@ -687,6 +695,8 @@ CSP_CONNECT_SRC = (
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
     "https://*.r2.cloudflarestorage.com",  # DJ uploads go straight to R2 (signed PUT)
+    "https://api.fontshare.com",
+    "https://fonts.googleapis.com",
 )
 
 

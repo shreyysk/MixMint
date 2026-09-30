@@ -1,0 +1,36 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}#{{ t.id }} {{ t.subject }} — Support{% endblock %}
+{% block admin_content %}
+<div class="max-w-[820px] mx-auto py-10 px-4 space-y-6">
+    <a href="{% url 'admin_support' %}" class="inline-flex text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)]">← All questions</a>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+            <h1 class="font-display text-[26px] md:text-[32px] font-[700] text-[var(--text-primary)] leading-tight break-words">#{{ t.id }} · {{ t.subject }}</h1>
+            <p class="text-[13px] text-[var(--text-muted)] mt-2 break-all">{{ t.contact_label }}{% if t.contact_email %} · <a href="mailto:{{ t.contact_email }}" class="underline">{{ t.contact_email }}</a>{% endif %} · {{ t.category }} · opened {{ t.created_at|date:"d M Y, H:i" }}</p>
+            <p class="text-[13px] mt-1">{% if t.telegram_chat_id %}Replies go to their Telegram chat.{% elif t.contact_email %}Replies go by email.{% else %}<span class="text-[var(--accent-red)]">No way to reach them.</span>{% endif %}</p>
+        </div>
+        <form method="post">{% csrf_token %}
+            {% if t.status == 'closed' %}<button name="action" value="reopen" class="btn-mm btn-ghost h-[40px] px-4 text-[13px]">Reopen</button>
+            {% else %}<button name="action" value="close" class="btn-mm btn-ghost h-[40px] px-4 text-[13px]">Mark closed</button>{% endif %}
+        </form>
+    </div>
+
+    <ol class="space-y-3">
+        {% for m in thread %}
+        <li class="p-4 rounded-[12px] border {% if m.sender == 'admin' %}border-[var(--accent-mint)]/40 bg-[var(--accent-mint)]/5 ml-8{% else %}border-[var(--border)] bg-[var(--bg-surface)] mr-8{% endif %}">
+            <p class="text-[12px] font-[600] text-[var(--text-muted)] mb-1">{% if m.sender == 'admin' %}MixMint team{% else %}{{ t.contact_label }}{% endif %} · {{ m.created_at|date:"d M, H:i" }} · via {{ m.via }}</p>
+            <p class="text-[14px] text-[var(--text-primary)] whitespace-pre-line break-words">{{ m.body }}</p>
+        </li>
+        {% empty %}
+        <li class="p-4 rounded-[12px] border border-[var(--border)] text-[14px] whitespace-pre-line">{{ t.description }}</li>
+        {% endfor %}
+    </ol>
+
+    <form method="post" class="mm-card-section space-y-3">
+        {% csrf_token %}<input type="hidden" name="action" value="reply">
+        <label for="reply" class="block text-[13px] font-[600] text-[var(--text-primary)]">Your reply</label>
+        <textarea id="reply" name="body" rows="5" required class="input-mm text-[14px]" style="height:auto;min-height:120px" placeholder="Hi! …"></textarea>
+        <button class="btn-mm btn-mint h-[46px] px-6 text-[14px] font-[700]">Send reply</button>
+    </form>
+</div>
+{% endblock %}

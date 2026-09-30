@@ -55,10 +55,11 @@
         } catch (e) {
             /* non-JSON response */
         }
-        if (res.status === 401 || (res.status === 403 && data.detail && /credentials/i.test(data.detail))) {
+        var toLogin = res.redirected && /\/login\//.test(res.url);  // @login_required bounced us
+        if (res.status === 401 || toLogin || (res.status === 403 && data.detail && /credentials/i.test(data.detail))) {
             if (opts.redirectOnAuth !== false) loginRedirect();
             var authErr = new Error(data.error || "Please log in to continue.");
-            authErr.status = res.status;
+            authErr.status = 401;
             throw authErr;
         }
         if (!res.ok) {
@@ -86,6 +87,29 @@
             button.removeAttribute("aria-busy");
             button.classList.remove("is-busy");
         };
+    }
+
+    /*
+     * Upload a file straight to R2: ask MixMint for a signed URL, then PUT the file.
+     * kind: "audio" | "album" | "cover". Resolves to {key, public_url}.
+     */
+    async function upload(kind, file, onProgress) {
+        var target = await api("/upload/url/", { body: { kind: kind, filename: file.name, size: file.size } });
+        await new Promise(function (resolve, reject) {
+            var x = new XMLHttpRequest();
+            x.open("PUT", target.url);
+            Object.keys(target.headers || {}).forEach(function (k) { x.setRequestHeader(k, target.headers[k]); });
+            x.upload.onprogress = function (ev) {
+                if (ev.lengthComputable && onProgress) onProgress(Math.max(2, Math.round((ev.loaded / ev.total) * 100)));
+            };
+            x.onload = function () {
+                if (x.status >= 200 && x.status < 300) resolve();
+                else reject(new Error("Upload failed (" + x.status + "). Please try again."));
+            };
+            x.onerror = function () { reject(new Error("Upload was blocked or the connection dropped. Please try again.")); };
+            x.send(file);
+        });
+        return target;
     }
 
     function loadScript(src) {
@@ -124,8 +148,18 @@
     async function checkout(url, body, opts) {
         opts = opts || {};
         var restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+        var canGuest = !!document.getElementById("mm-guest");
         try {
-            var data = await api(url, { body: body || {} });
+            var data;
+            try {
+                data = await api(url, { body: body || {}, redirectOnAuth: !canGuest });
+            } catch (authErr) {
+                if (authErr.status !== 401 || !canGuest) throw authErr;
+                restore();
+                if (!(await guest())) return;
+                restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+                data = await api(url, { body: body || {} });
+            }
             if (data.checkout === "redirect" && data.redirect_url) {
                 showOverlay("pending", "Redirecting to PhonePe…", "Don't close this tab.");
                 window.location.href = data.redirect_url;
@@ -185,6 +219,38 @@
         }
     }
 
+    // Guest checkout: ask for an email, make the account, carry on paying. Resolves true when signed in.
+    function guest() {
+        var dlg = document.getElementById("mm-guest");
+        if (!dlg) { loginRedirect(); return Promise.resolve(false); }
+        var form = dlg.querySelector("form"), msg = dlg.querySelector("[data-msg]"), email = form.querySelector("input[type=email]");
+        var send = dlg.querySelector("[data-send-link]");
+        msg.textContent = ""; send.hidden = true;
+        dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+        setTimeout(function () { email.focus(); }, 30);
+        return new Promise(function (resolve) {
+            function done(ok) { form.onsubmit = null; dlg.onclose = null; if (dlg.open) dlg.close(); resolve(ok); }
+            dlg.onclose = function () { resolve(false); };
+            form.onsubmit = async function (e) {
+                e.preventDefault();
+                var btn = form.querySelector("[type=submit]"), r = busy(btn, "One moment…");
+                try {
+                    await api("/checkout/guest/", { body: { email: email.value }, redirectOnAuth: false });
+                    r(); done(true);
+                } catch (err) {
+                    r(); msg.textContent = err.message;
+                    send.hidden = !(err.data && err.data.exists);
+                }
+            };
+            send.onclick = async function () {
+                var fd = new FormData(); fd.append("email", email.value); fd.append("csrfmiddlewaretoken", csrf());
+                try { await fetch("/recover/", { method: "POST", body: fd, credentials: "same-origin" }); } catch (x) { }
+                msg.textContent = "Check your inbox: we sent a sign-in link to " + email.value + ". Open it on this device, then tap Buy again.";
+                send.hidden = true;
+            };
+        });
+    }
+
     async function deviceHash() {
         var key = "mm_device_hash_v1";
         try {
@@ -219,7 +285,16 @@
         var restore = busy(opts.button, "Preparing secure link…");
         try {
             var hash = await deviceHash();
-            var data = await api(tokenUrl, { body: { device_hash: hash }, headers: { "X-Device-Hash": hash } });
+            var data, started = Date.now(), told = false;
+            // 202 = the file is being fetched back from the Telegram vault into R2: wait and retry.
+            for (;;) {
+                data = await api(tokenUrl, { body: { device_hash: hash }, headers: { "X-Device-Hash": hash } });
+                if (!data.preparing) break;
+                if (!told) { toast("info", data.message || "Fetching your file from the vault…"); told = true; }
+                if (opts.button) opts.button.textContent = "Fetching from vault… " + Math.round((Date.now() - started) / 1000) + "s";
+                if (Date.now() - started > 15 * 60 * 1000) throw new Error("This is taking longer than usual. Please try again in a few minutes.");
+                await new Promise(function (r) { setTimeout(r, (data.retry_after || 5) * 1000); });
+            }
             if (data.warning) toast("warning", data.warning);
             window.location.href = data.page_url || data.download_url;
         } catch (e) {
@@ -236,6 +311,9 @@
     window.MM = {
         api: api,
         busy: busy,
+        upload: upload,
+        preview: preview,
+        guest: guest,
         checkout: checkout,
         csrf: csrf,
         deviceHash: deviceHash,
@@ -243,6 +321,89 @@
         toast: toast,
         loginRedirect: loginRedirect,
     };
+
+    // <div x-data="mmImage('cover_url', 'https://…current.jpg')"> — pick an image, it uploads to R2 and
+    // fills the hidden input named `field` with its public URL.
+    document.addEventListener("alpine:init", function () {
+        window.Alpine.data("mmImage", function (field, current) {
+            return {
+                field: field, url: current || "", busy: false, pct: 0, err: "",
+                async pick(e) {
+                    var f = e.target.files[0];
+                    if (!f) return;
+                    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { this.err = "Choose a JPG, PNG or WebP image."; return; }
+                    this.err = ""; this.busy = true; this.pct = 0;
+                    var form = e.target.form, submit = form && form.querySelector("[type=submit]");
+                    if (submit) submit.disabled = true;
+                    try {
+                        var t = await upload("cover", f, (p) => { this.pct = p; });
+                        this.url = t.public_url;
+                    } catch (x) { this.err = x.message; }
+                    this.busy = false;
+                    if (submit) submit.disabled = false;
+                    e.target.value = "";
+                },
+                clear() { this.url = ""; },
+            };
+        });
+
+        // Help desk: ask a question (guests give an email), see my questions + replies, answer back.
+        window.Alpine.data("mmHelp", function (loggedIn) {
+            return {
+                loggedIn: !!loggedIn, tab: "ask", category: "other", message: "", email: "", name: "", website: "",
+                sending: false, sent: "", error: "", tickets: [], loadingMine: false, openId: null, replyText: "",
+                async send() {
+                    this.error = ""; this.sending = true;
+                    try {
+                        var r = await api("/api/v1/platform/support/ticket/", { body: {
+                            message: this.message, category: this.category, email: this.email, name: this.name, website: this.website,
+                        }, redirectOnAuth: false });
+                        this.sent = r.message; this.message = "";
+                        if (this.loggedIn) this.loadMine();
+                    } catch (e) { this.error = e.message; }
+                    this.sending = false;
+                },
+                async loadMine() {
+                    if (!this.loggedIn) return;
+                    this.loadingMine = true;
+                    try { this.tickets = await api("/api/v1/platform/support/tickets/", { redirectOnAuth: false }); } catch (e) { this.tickets = []; }
+                    this.loadingMine = false;
+                },
+                async reply(t) {
+                    if (!this.replyText.trim()) return;
+                    try {
+                        var updated = await api("/api/v1/platform/support/tickets/" + t.id + "/reply/", { body: { message: this.replyText } });
+                        Object.assign(t, updated); this.replyText = "";
+                    } catch (e) { toast("error", e.message); }
+                },
+                when(iso) { try { return new Date(iso).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } },
+                label(s) { return { open: "Waiting for us", answered: "Answered", closed: "Closed", resolved: "Closed" }[s] || s; },
+            };
+        });
+    });
+
+    // ── Preview: the DJ's own YouTube / Instagram clip in a pop-up (MixMint never streams the file) ──
+    function preview(btn) {
+        var dlg = document.getElementById("mm-preview");
+        if (!dlg) { window.open(btn.getAttribute("data-link") || btn.getAttribute("data-embed"), "_blank", "noopener"); return; }
+        var frame = dlg.querySelector("iframe"), box = dlg.querySelector("[data-box]");
+        dlg.querySelector("[data-title]").textContent = btn.getAttribute("data-title") || "Preview";
+        dlg.querySelector("[data-artist]").textContent = btn.getAttribute("data-artist") || "";
+        var link = dlg.querySelector("[data-open]");
+        link.href = btn.getAttribute("data-link") || "#";
+        link.textContent = btn.getAttribute("data-kind") === "instagram" ? "Open on Instagram ↗" : "Open on YouTube ↗";
+        var more = dlg.querySelector("[data-more]");
+        more.href = btn.getAttribute("data-href") || "#";
+        more.hidden = !btn.getAttribute("data-href");
+        box.dataset.kind = btn.getAttribute("data-kind") || "youtube";
+        frame.src = btn.getAttribute("data-embed");
+        dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+        dlg.addEventListener("close", function () { frame.src = "about:blank"; }, { once: true });
+    }
+    document.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-embed]");
+        if (b) { e.preventDefault(); e.stopPropagation(); preview(b); }
+    });
 
     // Payment result banner (PhonePe returns to /library/?payment=...).
     document.addEventListener("DOMContentLoaded", function () {

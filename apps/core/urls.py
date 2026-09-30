@@ -1,5 +1,5 @@
 from django.urls import path
-from .support_views import create_support_ticket, my_support_tickets
+from .support_views import create_support_ticket, my_support_tickets, reply_support_ticket
 from .improvements import (
     # DJ Experience
     dj_quick_stats,
@@ -85,4 +85,5 @@ urlpatterns = [
     # Support tickets + Telegram bridge
     path("support/ticket/", create_support_ticket, name="create_support_ticket"),
     path("support/tickets/", my_support_tickets, name="my_support_tickets"),
+    path("support/tickets/<int:ticket_id>/reply/", reply_support_ticket, name="reply_support_ticket"),
 ]

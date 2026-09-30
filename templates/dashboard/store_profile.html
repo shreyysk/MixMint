@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Store profile — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[820px] mx-auto py-10 px-4">
+    <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-8 border-b border-[var(--border)] pb-6">
+        <div>
+            <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-tight">Store profile</h1>
+            <p class="text-[14px] text-[var(--text-muted)] mt-2">What buyers see at mixmint.site/dj/{{ dj.slug }}/</p>
+        </div>
+        <a href="{% url 'dj_profile' dj.slug %}" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[42px] px-4 text-[13px] inline-flex items-center">View my store ↗</a>
+    </div>
+
+    <form method="post" class="space-y-10" data-store-profile>
+        {% csrf_token %}
+        <section class="space-y-4" x-data="mmImage('banner_url', '{{ dj.banner_url|default_if_none:''|escapejs }}')">
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Cover image</h2>
+            <div class="relative w-full aspect-[4/1] min-h-[110px] rounded-[14px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
+                <img x-show="url" x-cloak :src="url || false" alt="Store cover image" class="w-full h-full object-cover">
+                <div x-show="!url" class="w-full h-full flex items-center justify-center text-[13px] text-[var(--text-muted)]">Wide image, e.g. 1600×400</div>
+                <div x-show="busy" x-cloak class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-mono text-[13px]" x-text="pct + '%'"></div>
+            </div>
+            <input type="hidden" name="banner_url" :value="url">
+            <div class="flex items-center gap-3">
+                <label class="btn-mm btn-ghost h-[40px] px-4 text-[13px] inline-flex items-center cursor-pointer">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="pick($event)"><span x-text="url ? 'Change cover' : 'Add cover'">Add cover</span>
+                </label>
+                <button type="button" x-show="url" x-cloak @click="clear()" class="text-[13px] underline text-[var(--text-muted)]">Remove</button>
+                <p x-show="err" x-cloak class="text-[13px] text-[var(--accent-red)]" x-text="err"></p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-6 items-center" x-data="mmImage('avatar_url', '{{ dj.profile.avatar_url|default_if_none:''|escapejs }}')">
+            <div class="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
+                <img x-show="url" x-cloak :src="url || false" alt="Profile photo" class="w-full h-full object-cover">
+                <div x-show="!url" class="w-full h-full flex items-center justify-center font-display text-[40px] font-bold text-[var(--text-muted)]" aria-hidden="true">{{ dj.dj_name|slice:":1"|upper }}</div>
+                <div x-show="busy" x-cloak class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-mono text-[13px]" x-text="pct + '%'"></div>
+            </div>
+            <div class="space-y-2">
+                <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Profile photo</h2>
+                <input type="hidden" name="avatar_url" :value="url">
+                <label class="btn-mm btn-ghost h-[40px] px-4 text-[13px] inline-flex items-center cursor-pointer">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="pick($event)"><span x-text="url ? 'Change photo' : 'Add photo'">Add photo</span>
+                </label>
+                <button type="button" x-show="url" x-cloak @click="clear()" class="ml-2 text-[13px] underline text-[var(--text-muted)]">Remove</button>
+                <p x-show="err" x-cloak class="text-[13px] text-[var(--accent-red)]" x-text="err"></p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="dj_name" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">DJ name</label>
+                <input id="dj_name" name="dj_name" required maxlength="100" class="input-mm" value="{{ dj.dj_name }}">
+            </div>
+            <div>
+                <label for="location" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">City</label>
+                <input id="location" name="location" maxlength="255" class="input-mm" value="{{ dj.location|default_if_none:'' }}" placeholder="e.g. Bengaluru">
+            </div>
+            <div class="md:col-span-2">
+                <label for="bio" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">About you</label>
+                <textarea id="bio" name="bio" rows="4" maxlength="2000" class="input-mm" style="height:auto;min-height:120px" placeholder="Your sound, where you play, what fans get here.">{{ dj.bio|default_if_none:'' }}</textarea>
+            </div>
+            <div class="md:col-span-2">
+                <label for="genres" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">Genres</label>
+                <input id="genres" name="genres" class="input-mm" value="{{ dj.genres|join:', ' }}" placeholder="Techno, House, Bollywood remix">
+            </div>
+        </section>
+
+        <section>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4">Links</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% for key, label, domain in social %}
+                <div>
+                    <label for="link-{{ key }}" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">{{ label }}</label>
+                    <input id="link-{{ key }}" name="{{ key }}" type="url" class="input-mm" placeholder="https://{% if domain %}{{ domain }}/…{% else %}yoursite.com{% endif %}"
+                           value="{% for k, v in links.items %}{% if k == key %}{{ v }}{% endif %}{% endfor %}">
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <label class="flex items-start gap-3 p-4 rounded-[12px] border border-[var(--border)] bg-[var(--bg-elevated)] cursor-pointer">
+            <input type="checkbox" name="store_paused" {% if dj.profile.store_paused %}checked{% endif %} class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-amber)]">
+            <span class="text-[13px]"><strong class="font-[600] text-[var(--text-primary)]">Pause my store</strong><br><span class="text-[var(--text-muted)]">Hides all your music until you untick this (e.g. while you're away). Buyers keep what they bought.</span></span>
+        </label>
+
+        <button type="submit" class="btn-mm btn-mint h-[52px] px-8 text-[15px] font-[700]">Save profile</button>
+    </form>
+</div>
+{% endblock %}

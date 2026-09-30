@@ -12,6 +12,8 @@ from .views import (
     hold_payout,
     payouts_admin_view,
     refunds_admin_view,
+    support_admin_view,
+    support_ticket_admin_view,
     release_payout,
     escrow_dj_funds,
     revenue_dashboard,
@@ -53,6 +55,8 @@ urlpatterns = [
     # Payout Management [Spec P2 §9]
     path("payouts/", payouts_admin_view, name="admin_payouts"),
     path("refunds/", refunds_admin_view, name="admin_refunds"),
+    path("support/", support_admin_view, name="admin_support"),
+    path("support/<int:ticket_id>/", support_ticket_admin_view, name="admin_support_ticket"),
     path("payouts/hold/", hold_payout, name="admin_payout_hold"),
     path("payouts/release/", release_payout, name="admin_payout_release"),
     path("payouts/escrow/", escrow_dj_funds, name="admin_escrow"),

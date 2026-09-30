@@ -85,6 +85,23 @@ def _previews(post):
     return yt or None, ig or None, "youtube" if yt else "instagram"
 
 
+def _offers(post, price):
+    """(compare_at_price, copies_limit) from the optional 'Offers' fields."""
+    was = None
+    raw = (post.get("compare_at_price") or "").strip()
+    if raw:
+        try:
+            was = Decimal(raw).quantize(Decimal("0.01"))
+        except (InvalidOperation, TypeError):
+            raise ValidationError("The 'was' price must be a number.")
+        if was <= price:
+            raise ValidationError("The 'was' price must be higher than the price (or leave it empty).")
+    copies = _int_or_none(post.get("copies_limit"), 1, 100000) if (post.get("copies_limit") or "").strip() else None
+    if (post.get("copies_limit") or "").strip() and copies is None:
+        raise ValidationError("Limited copies must be a whole number from 1.")
+    return was, copies
+
+
 def _int_or_none(raw, lo, hi):
     try:
         v = int(str(raw).strip())
@@ -138,7 +155,10 @@ def upload_track_view(request):
         cover_url = (post.get("cover_url") or "").strip()
         if cover_url:
             r2.cover_key_from_url(cover_url, dj)
+        was, copies = _offers(post, price)
         common = dict(
+            compare_at_price=was,
+            copies_limit=copies,
             dj=dj,
             title=title,
             description=(post.get("description") or "").strip()[:5000] or None,
@@ -182,6 +202,9 @@ def upload_track_view(request):
         messages.error(request, _first_error(exc))
         return render(request, "dashboard/upload.html", {**ctx, "form": post, "kind": kind}, status=400)
 
+    from apps.admin_panel.vault import archive_after_upload
+
+    archive_after_upload(kind, item)
     messages.success(request, f"“{item.title}” is live in your store.")
     return redirect("album_detail" if kind == "album" else "track_detail", pk=item.pk)
 

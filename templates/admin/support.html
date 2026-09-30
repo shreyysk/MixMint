@@ -1,0 +1,91 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Support — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="max-w-[1000px] mx-auto py-10 px-4 space-y-8">
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--border)] pb-6">
+        <div>
+            <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-none">Support</h1>
+            <p class="text-[14px] text-[var(--text-muted)] mt-2">Questions from the Help button, the contact page and the Telegram bot. Answer here or by replying in Telegram.</p>
+        </div>
+        <nav class="flex gap-2" aria-label="Filter">
+            <a href="?status=open" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'open' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">Open</a>
+            <a href="?status=closed" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'closed' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">Closed</a>
+            <a href="?status=all" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'all' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">All</a>
+        </nav>
+    </div>
+
+    <section class="mm-card-section flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Telegram bot</h2>
+            <p class="text-[13px] text-[var(--text-muted)] mt-1">
+                {% if not tg_token %}Add TELEGRAM_BOT_TOKEN in Vercel first.
+                {% elif not tg_chat %}Add TELEGRAM_ADMIN_CHAT_ID in Vercel so alerts reach you.
+                {% elif tg_hooked %}Connected ✓ Alerts come to your Telegram; reply to one to answer.{% if tg_error %} Last error: {{ tg_error }}{% endif %}
+                {% else %}Not connected yet: customers can't chat with the bot and your Telegram replies won't arrive.{% endif %}
+            </p>
+        </div>
+        {% if tg_token %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="connect_telegram">
+            <button class="btn-mm {% if tg_hooked %}btn-ghost{% else %}btn-mint{% endif %} h-[42px] px-5 text-[13px] shrink-0">{% if tg_hooked %}Reconnect{% else %}Connect Telegram bot{% endif %}</button></form>
+        {% endif %}
+    </section>
+
+    {% if tg_token %}
+    <section class="mm-card-section space-y-5" id="vault">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">File vault (private Telegram channels)</h2>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1 max-w-[600px]">Telegram keeps the permanent copy of every upload: tracks in the singles channel, album ZIPs in the ZIP channel. R2 only holds a file for a while so buyers get fast temporary links; after that it's fetched back from Telegram when someone buys it.</p>
+            </div>
+            <form method="post" class="shrink-0">{% csrf_token %}<input type="hidden" name="action" value="vault_sweep">
+                <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Run vault now</button></form>
+        </div>
+        <p class="text-[13px] rounded-[10px] px-3 py-2 {% if vault.worker %}bg-[var(--accent-mint)]/10 text-[var(--text-primary)]{% else %}bg-[var(--accent-amber,#b7791f)]/10 text-[var(--text-primary)]{% endif %}">
+            {% if vault.worker %}{% if vault.health.bot and vault.health.r2 %}Vault server online ✓ Bot and R2 reachable{% if vault.health.queued %} · {{ vault.health.queued }} job{{ vault.health.queued|pluralize }} running{% endif %}. Files up to {{ vault.send_mb }} MB go to Telegram and any size can be fetched back.{% else %}⚠ Vault server problem: {% if vault.health.error %}can't reach it ({{ vault.health.error }}){% else %}bot {{ vault.health.bot|yesno:"ok,not reachable" }}, R2 {{ vault.health.r2|yesno:"ok,not reachable" }}{% endif %}. Check the server (docker compose logs worker).{% endif %}
+            {% else %}Vault worker not connected: only files up to {{ vault.fetch_mb }} MB can live in Telegram only; bigger ones stay in R2. Set VAULT_WORKER_URL and VAULT_WORKER_SECRET after deploying vault_worker/.{% endif %}
+        </p>
+        <div class="grid sm:grid-cols-2 gap-3">
+            {% for label, cid, title, word in vault_rows %}
+            <div class="rounded-[12px] border border-[var(--border)] p-4">
+                <p class="text-[12px] uppercase tracking-wider text-[var(--text-muted)] font-mono">{{ label }}</p>
+                {% if cid %}
+                <p class="text-[14px] font-[600] text-[var(--text-primary)] mt-1">✓ {{ title|default:cid }}</p>
+                {% else %}
+                <p class="text-[14px] font-[600] text-[var(--text-primary)] mt-1">Not linked</p>
+                <p class="text-[12px] text-[var(--text-muted)] mt-1">Add the bot to the private channel as an admin, then post:</p>
+                <code class="block mt-2 px-3 py-2 rounded-lg bg-[var(--bg-elevated)] font-mono text-[13px] select-all">/link {{ word }} {{ vault.code }}</code>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <form method="post" class="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end">{% csrf_token %}<input type="hidden" name="action" value="vault_settings">
+            <label class="flex items-center gap-2 text-[13px] text-[var(--text-primary)] h-[42px]"><input type="checkbox" name="evict" {% if vault.evict %}checked{% endif %} class="w-4 h-4 accent-[var(--accent-mint)]"> Free R2 after the hold</label>
+            <label class="text-[12px] text-[var(--text-muted)]">Normal release: keep in R2 (days after upload)
+                <input type="number" name="hold_days" min="1" max="365" value="{{ vault.hold_days }}" class="input-mm h-[42px] mt-1 font-mono"></label>
+            <label class="text-[12px] text-[var(--text-muted)]">After fetching back for a buyer (days)
+                <input type="number" name="rehold_days" min="1" max="90" value="{{ vault.rehold_days }}" class="input-mm h-[42px] mt-1 font-mono"></label>
+            <button class="btn-mm btn-mint h-[42px] px-5 text-[13px]">Save</button>
+        </form>
+        <p class="text-[12px] text-[var(--text-muted)]">Limited drops stay in R2 until they sell out. In Telegram: {{ vault.counts.archived }} ({{ vault.counts.in_r2 }} also in R2, {{ vault.counts.telegram_only }} Telegram-only) · Copying: {{ vault.counts.pending }} · R2 only: {{ vault.counts.too_large }} · Failed: {{ vault.counts.failed }}</p>
+    </section>
+    {% endif %}
+
+    <ul class="space-y-3">
+        {% for t in tickets %}
+        <li>
+            <a href="{% url 'admin_support_ticket' t.id %}" class="mm-card-section block hover:border-[var(--accent-mint)]/50 transition-colors">
+                <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[15px] font-[600] text-[var(--text-primary)] truncate">#{{ t.id }} · {{ t.subject }}</p>
+                        <p class="text-[12px] text-[var(--text-muted)] mt-1 truncate">{{ t.contact_label }} · {{ t.get_category_display|default:t.category }} · {{ t.messages.all|length }} message{{ t.messages.all|length|pluralize }} · {{ t.updated_at|timesince }} ago</p>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-[700] shrink-0 {% if t.status == 'open' %}bg-[var(--accent-amber)] text-black{% elif t.status == 'answered' %}bg-[var(--accent-mint)]/15 text-[var(--accent-mint)]{% else %}bg-[var(--bg-elevated)] text-[var(--text-muted)]{% endif %}">{% if t.status == 'open' %}Needs reply{% else %}{{ t.status|capfirst }}{% endif %}</span>
+                </div>
+            </a>
+        </li>
+        {% empty %}
+        <li class="mm-empty text-center py-14 text-[var(--text-muted)] border border-[var(--border)] rounded-[14px]">No questions here.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

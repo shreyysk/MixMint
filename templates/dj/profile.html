@@ -66,16 +66,16 @@
 {% block content %}
 <!-- ── DJ Banner ── -->
 <div class="dj-banner mb-0">
-    {% if dj.profile.banner_url %}
-    <img src="{{ dj.profile.banner_url }}" alt="{{ dj.dj_name }} banner" class="w-full h-full object-cover">
+    {% if dj.banner_url %}
+    <img src="{{ dj.banner_url }}" alt="" fetchpriority="high" class="w-full h-full object-cover">
     {% endif %}
 </div>
 
 <!-- ── DJ Header ── -->
 <div class="max-w-[1200px] mx-auto px-4 mb-8">
     <div class="flex flex-col sm:flex-row items-start sm:items-end gap-6">
-        <div class="dj-avatar">
-            {{ dj.dj_name|slice:":1"|upper }}
+        <div class="dj-avatar overflow-hidden">
+            {% if dj.profile.avatar_url %}<img loading="lazy" decoding="async" src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">{% else %}{{ dj.dj_name|slice:":1"|upper }}{% endif %}
         </div>
         <div class="flex flex-col gap-2 pb-2">
             <div class="flex items-center gap-3 flex-wrap">
@@ -94,9 +94,18 @@
             <p class="font-body text-[14px] text-[var(--text-muted)] max-w-lg leading-[1.65]">
                 {{ dj.bio|default:"This DJ hasn't written a bio yet." }}
             </p>
-            <div class="flex items-center gap-3 font-mono text-[12px] text-[var(--text-muted)]">
-                <span>Member since {{ dj.created_at|date:"M Y" }}</span>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--text-muted)]">
+                {% if dj.location %}<span>📍 {{ dj.location }}</span><span aria-hidden="true">·</span>{% endif %}
+                {% if dj.genres %}<span>{{ dj.genres|join:", " }}</span><span aria-hidden="true">·</span>{% endif %}
+                <span>On MixMint since {{ dj.created_at|date:"M Y" }}</span>
             </div>
+            {% if dj.social_links %}
+            <div class="flex flex-wrap gap-2 mt-2">
+                {% for key, url in dj.social_links.items %}
+                <a href="{{ url }}" target="_blank" rel="noopener nofollow ugc" class="px-3 h-[34px] inline-flex items-center rounded-full border border-[var(--border)] text-[13px] text-[var(--text-primary)] hover:border-[var(--accent-mint)] hover:text-[var(--accent-mint)] capitalize">{{ key }} ↗</a>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
