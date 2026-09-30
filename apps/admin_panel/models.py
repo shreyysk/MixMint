@@ -197,6 +197,12 @@ class PlatformSettings(models.Model):
     offload_low_sales_count = models.IntegerField(default=2)
     offload_low_sales_days = models.IntegerField(default=90)
 
+    # Telegram vault: private channels the bot keeps a copy of every upload in.
+    tg_singles_channel_id = models.CharField(max_length=40, blank=True, default="")
+    tg_singles_channel_title = models.CharField(max_length=120, blank=True, default="")
+    tg_zips_channel_id = models.CharField(max_length=40, blank=True, default="")
+    tg_zips_channel_title = models.CharField(max_length=120, blank=True, default="")
+
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
@@ -290,3 +296,33 @@ class ContentReport(models.Model):
     admin_notes = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+
+
+class VaultFile(models.Model):
+    """The Telegram-channel copy of one uploaded track (singles channel) or album ZIP (zips channel)."""
+
+    STATUS = (
+        ("archived", "Stored in channel"),
+        ("too_large", "Over the bot's 50 MB limit (R2 only)"),
+        ("failed", "Failed"),
+    )
+    content_type = models.CharField(max_length=10, choices=(("track", "Track"), ("album", "Album")))
+    content_id = models.PositiveBigIntegerField()
+    status = models.CharField(max_length=12, choices=STATUS, default="failed")
+    channel_id = models.CharField(max_length=40, blank=True, default="")
+    message_id = models.BigIntegerField(null=True, blank=True)
+    file_id = models.CharField(max_length=255, blank=True, default="")
+    file_unique_id = models.CharField(max_length=64, blank=True, default="")
+    size = models.BigIntegerField(null=True, blank=True)
+    file_key = models.CharField(max_length=500, blank=True, default="")
+    error = models.CharField(max_length=255, blank=True, default="")
+    restored_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("content_type", "content_id")
+        indexes = [models.Index(fields=["status"])]
+
+    def __str__(self):
+        return f"{self.content_type} {self.content_id} ({self.status})"

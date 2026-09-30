@@ -56,7 +56,7 @@ def tg_send(chat_id, text):
 
 def set_webhook(base_url):
     url = base_url.rstrip("/") + "/telegram/webhook/"
-    ok = tg("setWebhook", {"url": url, "secret_token": webhook_secret(), "allowed_updates": ["message"]})
+    ok = tg("setWebhook", {"url": url, "secret_token": webhook_secret(), "allowed_updates": ["message", "channel_post", "my_chat_member"]})
     tg("setMyCommands", {"commands": [{"command": "start", "description": "Talk to the MixMint team"}]})
     return ok is not None, url
 
@@ -150,8 +150,11 @@ WELCOME = (
 
 
 def handle_update(update):
+    from . import vault
     from .models import SupportTicket
 
+    if vault.handle_channel_update(update):
+        return
     msg = update.get("message") or {}
     chat = msg.get("chat") or {}
     chat_id = str(chat.get("id") or "")

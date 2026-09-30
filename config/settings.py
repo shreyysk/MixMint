@@ -522,6 +522,11 @@ GOOGLE_DRIVE_API_KEY = env("GOOGLE_DRIVE_API_KEY", default="")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_ADMIN_CHAT_ID = env("TELEGRAM_ADMIN_CHAT_ID", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")
+# Vault channels are normally linked from Telegram (/link singles <code>); these override that.
+TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")
+TELEGRAM_ZIPS_CHANNEL_ID = env("TELEGRAM_ZIPS_CHANNEL_ID", default="")
+# Self-hosted Bot API server (raises the 50 MB send / 20 MB fetch limits to 2 GB). Optional.
+TELEGRAM_API_BASE = env("TELEGRAM_API_BASE", default="https://api.telegram.org")
 
 # Auth URLs
 LOGIN_URL = "login"

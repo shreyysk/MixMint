@@ -117,8 +117,7 @@
                             {% else %}
                             This {{ notif.content_type }} is permanently free.
                             {% endif %}
-                            It's using {{ notif.storage_mb }}MB of your storage quota. Consider moving it to an external
-                            host to free up space.
+                            It's using {{ notif.storage_mb }}MB of your storage quota. Remove it from your store if you need the space.
                         </p>
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0"
@@ -131,10 +130,6 @@
                                     class="btn-mm btn-ghost h-10 px-4 text-[13px] text-center w-full md:w-auto">
                                     Export {{ notif.content_type|title }}
                                 </a>
-                                <button @click="showUrlInput = true"
-                                    class="btn-mm btn-mint h-10 px-4 text-[13px] w-full md:w-auto whitespace-nowrap">
-                                    Link External Host
-                                </button>
                             </div>
                         </template>
 

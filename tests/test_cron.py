@@ -23,7 +23,7 @@ class TestCronEndpoints:
         resp = client.get("/cron/cleanup/?secret=s3cr3t")
         assert resp.status_code == 200
         body = resp.json()
-        assert body["ok"] is True and body["ran"] == ["cleanup_tokens"]
+        assert body["ok"] is True and body["ran"] == ["cleanup_tokens", "telegram_vault"]
 
     def test_warm_cache_registered(self, client, settings):
         settings.CRON_SECRET = "s3cr3t"

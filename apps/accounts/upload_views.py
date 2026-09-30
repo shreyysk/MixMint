@@ -202,6 +202,9 @@ def upload_track_view(request):
         messages.error(request, _first_error(exc))
         return render(request, "dashboard/upload.html", {**ctx, "form": post, "kind": kind}, status=400)
 
+    from apps.admin_panel.vault import archive_after_upload
+
+    archive_after_upload(kind, item)
     messages.success(request, f"“{item.title}” is live in your store.")
     return redirect("album_detail" if kind == "album" else "track_detail", pk=item.pk)
 

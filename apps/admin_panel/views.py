@@ -1129,6 +1129,14 @@ def refunds_admin_view(request):
     return render(request, "admin/refunds.html", {"rows": rows, "recent": recent})
 
 
+def _vault_ctx():
+    from . import vault
+
+    v = vault.status()
+    return {"vault": v, "vault_rows": [("Singles channel", v["singles"], v["singles_title"], "singles"),
+                                       ("ZIP channel", v["zips"], v["zips_title"], "zips")]}
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def support_admin_view(request):
@@ -1149,6 +1157,12 @@ def support_admin_view(request):
         else:
             messages.error(request, "Couldn't connect: check TELEGRAM_BOT_TOKEN in Vercel, then try again.")
         return redirect("admin_support")
+    if request.method == "POST" and request.POST.get("action") == "vault_sweep":
+        from . import vault
+
+        done = vault.sweep(budget_seconds=200)
+        messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('too_large', 0)} too big for Telegram (R2 only), {done.get('failed', 0)} failed.")
+        return redirect("/api/v1/admin/support/#vault")
 
     status = request.GET.get("status") or "open"
     qs = SupportTicket.objects.select_related("user__user").prefetch_related("messages").order_by("-updated_at")
@@ -1167,6 +1181,7 @@ def support_admin_view(request):
             "tg_chat": bool(dj.TELEGRAM_ADMIN_CHAT_ID),
             "tg_hooked": bool(info.get("url")),
             "tg_error": info.get("last_error_message", ""),
+            **_vault_ctx(),
         },
     )
 

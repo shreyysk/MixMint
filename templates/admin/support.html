@@ -30,6 +30,34 @@
         {% endif %}
     </section>
 
+    {% if tg_token %}
+    <section class="mm-card-section space-y-4" id="vault">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Upload vault (private Telegram channels)</h2>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1 max-w-[560px]">Every upload is also posted by the bot to a private channel: single tracks to one, album ZIPs to the other. Buyers still download from R2 with a temporary link; if a file ever goes missing in R2, it's restored from the channel automatically (files up to {{ vault.fetch_mb }} MB).</p>
+            </div>
+            <form method="post" class="shrink-0">{% csrf_token %}<input type="hidden" name="action" value="vault_sweep">
+                <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Copy missing files now</button></form>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+            {% for label, cid, title, word in vault_rows %}
+            <div class="rounded-[12px] border border-[var(--border)] p-4">
+                <p class="text-[12px] uppercase tracking-wider text-[var(--text-muted)] font-mono">{{ label }}</p>
+                {% if cid %}
+                <p class="text-[14px] font-[600] text-[var(--text-primary)] mt-1">✓ {{ title|default:cid }}</p>
+                {% else %}
+                <p class="text-[14px] font-[600] text-[var(--text-primary)] mt-1">Not linked</p>
+                <p class="text-[12px] text-[var(--text-muted)] mt-1">Add the bot to the private channel as an admin, then post:</p>
+                <code class="block mt-2 px-3 py-2 rounded-lg bg-[var(--bg-elevated)] font-mono text-[13px] select-all">/link {{ word }} {{ vault.code }}</code>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <p class="text-[12px] text-[var(--text-muted)]">Stored: {{ vault.counts.archived }} · Over {{ vault.send_mb }} MB (R2 only, listed in the channel): {{ vault.counts.too_large }} · Failed: {{ vault.counts.failed }}</p>
+    </section>
+    {% endif %}
+
     <ul class="space-y-3">
         {% for t in tickets %}
         <li>

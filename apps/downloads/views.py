@@ -117,7 +117,15 @@ def download_content(request, token_str):
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         )
-        s3_object = s3.get_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
+        try:
+            s3_object = s3.get_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
+        except Exception as missing:
+            # Missing in R2? Put it back from the Telegram vault copy, then serve as usual.
+            from apps.admin_panel.vault import restore
+
+            if not restore(token.content_type, content):
+                raise missing
+            s3_object = s3.get_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
     except Exception as exc:
         _release_slot(cache_key)
         # Give the attempt back: a storage failure is not the buyer's fault.
