@@ -66,7 +66,7 @@
         <template x-for="item in filteredItems" :key="item.id">
             <article class="mm-row" :aria-label="item.content_title">
                 <a :href="detailUrl(item)" class="block" :aria-label="'Open ' + (item.content_title || 'item')" tabindex="-1">
-                    <img x-show="item.cover_url" :src="item.cover_url" :alt="''" class="mm-row__art" loading="lazy">
+                    <img x-show="item.cover_url" :src="item.cover_url || false" :alt="''" class="mm-row__art" loading="lazy">
                     <div x-show="!item.cover_url" class="mm-row__art flex items-center justify-center text-2xl opacity-40" aria-hidden="true"
                         x-text="item.content_type === 'track' ? '🎵' : '💿'"></div>
                 </a>

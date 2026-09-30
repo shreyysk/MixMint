@@ -9,9 +9,11 @@ def global_settings(request):
     from django.conf import settings as dj_settings
     from django.core.cache import cache
 
+    bot = (getattr(dj_settings, "TELEGRAM_BOT_USERNAME", "") or "").lstrip("@")
     test_mode = {
         "payments_test_mode": getattr(dj_settings, "PAYMENTS_TEST_MODE", False),
         "google_login_enabled": getattr(dj_settings, "GOOGLE_LOGIN_ENABLED", False),
+        "help_telegram_url": f"https://t.me/{bot}?start=help" if bot else "",
     }
     cached = cache.get("global_settings_ctx")
     if cached is not None:
@@ -46,7 +48,7 @@ def admin_nav(request):
                 "djs": DJProfile.objects.filter(status__in=["pending", "pending_review", "pending_payment"]).count(),
                 "payouts": Payout.objects.filter(status__in=["pending", "processing"]).count(),
                 "refunds": RefundRequest.objects.filter(status="pending").count(),
-                "tickets": SupportTicket.objects.exclude(status__in=["resolved", "closed"]).count(),
+                "tickets": SupportTicket.objects.filter(status="open").count(),
             }
         }
     except Exception:

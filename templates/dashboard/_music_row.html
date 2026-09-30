@@ -1,0 +1,11 @@
+{% load tracks_filters %}<li class="flex items-center gap-4 px-5 md:px-6 py-4" x-show="!q || $el.dataset.s.includes(q.toLowerCase())" data-s="{{ item.title|lower }}">
+    <div class="w-12 h-12 rounded-[8px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)] shrink-0 flex items-center justify-center">
+        {% if cover %}<img src="{{ cover }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">{% else %}<span aria-hidden="true">{% if kind == 'album' %}📦{% else %}🎵{% endif %}</span>{% endif %}
+    </div>
+    <div class="min-w-0 flex-1">
+        <a href="{% if kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'track_detail' item.pk %}{% endif %}" class="block text-[15px] font-[600] text-[var(--text-primary)] truncate hover:text-[var(--accent-mint)]">{{ item.title }}</a>
+        <p class="text-[12px] text-[var(--text-muted)] truncate">{% if kind == 'album' %}Album pack{% if item.track_count %} · {{ item.track_count }} tracks{% endif %}{% else %}{{ item.genre|default:"Track" }}{% endif %} · {{ item.price|price_label }}{% if kind == 'track' %} · {{ item.download_count|default:0 }} download{{ item.download_count|default:0|pluralize }}{% endif %}</p>
+    </div>
+    {% if not item.is_active %}<span class="hidden sm:inline px-2 py-0.5 rounded-full text-[11px] font-[600] bg-[var(--bg-elevated)] text-[var(--text-muted)] shrink-0">Hidden</span>{% endif %}
+    <a href="{% url 'edit_music' kind item.pk %}" class="btn-mm btn-ghost h-[38px] px-4 text-[13px] shrink-0 inline-flex items-center" aria-label="Edit {{ item.title }}">Edit</a>
+</li>

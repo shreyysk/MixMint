@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n static %}
 <!-- Promotional Offer Banner [Spec P3] -->
 {% if active_promotional_offer and active_promotional_offer.show_on_navbar %}
 <div x-data="{ showOffer: false }"
@@ -39,10 +39,10 @@
             <a href="/" class="flex items-center gap-2 group">
                 <div class="relative w-8 h-8 flex items-center justify-center">
                     <!-- White logo for dark mode -->
-                    <img src="/static/logo/MIXMINT_WHITE.png" alt="MixMint"
+                    <img src="{% static 'logo/mm-white-64.png' %}" width="32" height="32" alt="MixMint"
                         class="w-full h-full object-contain block dark-logo-only transition-transform duration-300 group-hover:scale-110">
                     <!-- Black logo for light mode (if ever used) -->
-                    <img src="/static/logo/MIXMINT_BLACK.png" alt="MixMint"
+                    <img src="{% static 'logo/mm-black-64.png' %}" width="32" height="32" alt="MixMint"
                         class="w-full h-full object-contain hidden light-logo-only transition-transform duration-300 group-hover:scale-110">
                 </div>
                 <div class="flex items-center">
@@ -157,6 +157,9 @@
                                 Account</p>
                             <p class="text-[13px] font-body font-semibold text-[var(--text-primary)] truncate">{{ user.email }}</p>
                         </div>
+                        <a href="{% url 'account_settings' %}" class="block px-4 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--border)] rounded-[var(--radius-sm)]">Account settings</a>
+                        <a href="{% url 'library_page' %}" class="block px-4 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--border)] rounded-[var(--radius-sm)]">My purchases</a>
+                        {% if user.profile.role == 'dj' %}<a href="{% url 'dj_store_profile' %}" class="block px-4 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--border)] rounded-[var(--radius-sm)]">Store profile</a>{% endif %}
                         <form action="{% url 'logout' %}" method="post">
                             {% csrf_token %}
                             <button type="submit"
@@ -221,10 +224,11 @@
                 {% if user.is_staff %}
                 <a href="{% url 'admin_dashboard' %}" class="btn-mm btn-mint w-full">Admin dashboard</a>
                 {% endif %}
-                <a href="{% url 'dashboard' %}"
-                    class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">
-                    {% if user.is_dj %}DJ Panel{% else %}My Library{% endif %}
-                </a>
+                {% if user.profile.role == 'dj' %}
+                <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">DJ dashboard</a>
+                {% endif %}
+                <a href="{% url 'dashboard' %}" class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">My library</a>
+                <a href="{% url 'account_settings' %}" class="btn-mm btn-ghost w-full opacity-0 animate-[staggerFadeIn_0.3s_ease-out_220ms_forwards]">Account settings</a>
                 <form action="{% url 'logout' %}" method="post"
                     class="opacity-0 animate-[staggerFadeIn_0.3s_ease-out_250ms_forwards]">
                     {% csrf_token %}

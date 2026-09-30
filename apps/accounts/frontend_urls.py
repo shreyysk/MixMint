@@ -1,6 +1,6 @@
 from django.urls import path
 from django.shortcuts import render
-from . import dashboard_views, payout_views, upload_views
+from . import account_views, dashboard_views, music_views, payout_views, upload_views
 from .frontend_views import (
     HomeView,
     ExploreView,
@@ -56,6 +56,10 @@ urlpatterns = [
     path("upload/", upload_views.upload_track_view, name="upload_track"),
     path("upload/url/", upload_views.upload_url_view, name="upload_url"),
     path("dashboard/dj/payouts/", payout_views.dj_payouts_view, name="dj_payouts"),
+    path("dashboard/dj/profile/", music_views.store_profile_view, name="dj_store_profile"),
+    path("account/", account_views.account_settings_view, name="account_settings"),
+    path("dashboard/dj/<str:kind>/<int:pk>/edit/", music_views.edit_music_view, name="edit_music"),
+    path("dashboard/dj/<str:kind>/<int:pk>/delete/", music_views.delete_music_view, name="delete_music"),
     path("dashboard/bundles/", bundle_management_view, name="bundle_management"),
     path("dashboard/bundles/create/", create_bundle_view, name="create_bundle"),
     path("dashboard/bundles/<int:bundle_id>/delete/", delete_bundle_view, name="delete_bundle"),

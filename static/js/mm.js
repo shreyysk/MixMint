@@ -88,6 +88,29 @@
         };
     }
 
+    /*
+     * Upload a file straight to R2: ask MixMint for a signed URL, then PUT the file.
+     * kind: "audio" | "album" | "cover". Resolves to {key, public_url}.
+     */
+    async function upload(kind, file, onProgress) {
+        var target = await api("/upload/url/", { body: { kind: kind, filename: file.name, size: file.size } });
+        await new Promise(function (resolve, reject) {
+            var x = new XMLHttpRequest();
+            x.open("PUT", target.url);
+            Object.keys(target.headers || {}).forEach(function (k) { x.setRequestHeader(k, target.headers[k]); });
+            x.upload.onprogress = function (ev) {
+                if (ev.lengthComputable && onProgress) onProgress(Math.max(2, Math.round((ev.loaded / ev.total) * 100)));
+            };
+            x.onload = function () {
+                if (x.status >= 200 && x.status < 300) resolve();
+                else reject(new Error("Upload failed (" + x.status + "). Please try again."));
+            };
+            x.onerror = function () { reject(new Error("Upload was blocked or the connection dropped. Please try again.")); };
+            x.send(file);
+        });
+        return target;
+    }
+
     function loadScript(src) {
         return new Promise(function (resolve, reject) {
             if (document.querySelector('script[src="' + src + '"]')) return resolve();
@@ -236,6 +259,7 @@
     window.MM = {
         api: api,
         busy: busy,
+        upload: upload,
         checkout: checkout,
         csrf: csrf,
         deviceHash: deviceHash,
@@ -243,6 +267,66 @@
         toast: toast,
         loginRedirect: loginRedirect,
     };
+
+    // <div x-data="mmImage('cover_url', 'https://…current.jpg')"> — pick an image, it uploads to R2 and
+    // fills the hidden input named `field` with its public URL.
+    document.addEventListener("alpine:init", function () {
+        window.Alpine.data("mmImage", function (field, current) {
+            return {
+                field: field, url: current || "", busy: false, pct: 0, err: "",
+                async pick(e) {
+                    var f = e.target.files[0];
+                    if (!f) return;
+                    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { this.err = "Choose a JPG, PNG or WebP image."; return; }
+                    this.err = ""; this.busy = true; this.pct = 0;
+                    var form = e.target.form, submit = form && form.querySelector("[type=submit]");
+                    if (submit) submit.disabled = true;
+                    try {
+                        var t = await upload("cover", f, (p) => { this.pct = p; });
+                        this.url = t.public_url;
+                    } catch (x) { this.err = x.message; }
+                    this.busy = false;
+                    if (submit) submit.disabled = false;
+                    e.target.value = "";
+                },
+                clear() { this.url = ""; },
+            };
+        });
+
+        // Help desk: ask a question (guests give an email), see my questions + replies, answer back.
+        window.Alpine.data("mmHelp", function (loggedIn) {
+            return {
+                loggedIn: !!loggedIn, tab: "ask", category: "other", message: "", email: "", name: "", website: "",
+                sending: false, sent: "", error: "", tickets: [], loadingMine: false, openId: null, replyText: "",
+                async send() {
+                    this.error = ""; this.sending = true;
+                    try {
+                        var r = await api("/api/v1/platform/support/ticket/", { body: {
+                            message: this.message, category: this.category, email: this.email, name: this.name, website: this.website,
+                        }, redirectOnAuth: false });
+                        this.sent = r.message; this.message = "";
+                        if (this.loggedIn) this.loadMine();
+                    } catch (e) { this.error = e.message; }
+                    this.sending = false;
+                },
+                async loadMine() {
+                    if (!this.loggedIn) return;
+                    this.loadingMine = true;
+                    try { this.tickets = await api("/api/v1/platform/support/tickets/", { redirectOnAuth: false }); } catch (e) { this.tickets = []; }
+                    this.loadingMine = false;
+                },
+                async reply(t) {
+                    if (!this.replyText.trim()) return;
+                    try {
+                        var updated = await api("/api/v1/platform/support/tickets/" + t.id + "/reply/", { body: { message: this.replyText } });
+                        Object.assign(t, updated); this.replyText = "";
+                    } catch (e) { toast("error", e.message); }
+                },
+                when(iso) { try { return new Date(iso).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } },
+                label(s) { return { open: "Waiting for us", answered: "Answered", closed: "Closed", resolved: "Closed" }[s] || s; },
+            };
+        });
+    });
 
     // Payment result banner (PhonePe returns to /library/?payment=...).
     document.addEventListener("DOMContentLoaded", function () {

@@ -687,6 +687,8 @@ CSP_CONNECT_SRC = (
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
     "https://*.r2.cloudflarestorage.com",  # DJ uploads go straight to R2 (signed PUT)
+    "https://api.fontshare.com",
+    "https://fonts.googleapis.com",
 )
 
 

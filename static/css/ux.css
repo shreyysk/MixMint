@@ -456,3 +456,31 @@ html:not(.js-ready) [data-reveal] { opacity: 1; transform: none; }
 :root[data-theme="light"] .hover\:text-white:hover:not(.btn-mm),
 :root[data-theme="light"] .group:hover .group-hover\:text-white { color: var(--text-primary); }
 :root[data-theme="light"] input.text-white, :root[data-theme="light"] textarea.text-white { color: var(--text-primary); }
+
+/* ── Settings sections (account, store profile) ── */
+.mm-card-section { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+@media (min-width: 640px) { .mm-card-section { padding: 28px; } }
+
+/* ── Floating Help button + panel ── */
+.mm-help { position: fixed; right: 16px; bottom: 16px; z-index: 60; }
+.mm-help-btn { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border-radius: 999px;
+    background: var(--text-primary); color: var(--bg-base); font-weight: 700; font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18); transition: transform .15s ease; }
+.mm-help-btn:hover { transform: translateY(-1px); }
+.mm-help-btn:focus-visible { outline: 2px solid var(--accent-mint); outline-offset: 3px; }
+.mm-help-panel { position: absolute; right: 0; bottom: 60px; width: min(380px, calc(100vw - 32px)); max-height: min(640px, calc(100vh - 120px));
+    overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25); outline: none; }
+@media (max-width: 767px) {
+  /* sit above the phone tab bar */
+  body:has(.mm-tabbar) .mm-help { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .mm-help-btn { height: 44px; padding: 0 14px; }
+  .mm-help-btn span { display: none; }
+  .mm-help-panel { position: fixed; left: 16px; right: 16px; width: auto; bottom: calc(136px + env(safe-area-inset-bottom)); max-height: calc(100vh - 200px); }
+}
+@media print { .mm-help { display: none; } }
+@media (max-width: 767px) {
+  /* product pages: keep Help above the sticky Buy bar */
+  body:has(.mm-buybar:not([hidden])) .mm-help { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  body.has-tabbar:has(.mm-buybar:not([hidden])) .mm-help { bottom: calc(148px + env(safe-area-inset-bottom)); }
+}

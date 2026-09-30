@@ -24,7 +24,7 @@
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group skeleton">
                 {% if track.cover_url %}
-                <img src="{{ track.cover_url }}" alt="{{ track.title }}"
+                <img fetchpriority="high" decoding="async" src="{{ track.cover_url }}" alt="{{ track.title }}"
                     class="w-full h-full object-cover transition-opacity duration-300"
                     onload="this.parentElement.classList.remove('skeleton')">
                 {% else %}

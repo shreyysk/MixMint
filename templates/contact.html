@@ -1,89 +1,36 @@
 {% extends 'base.html' %}
 {% block title %}Contact support — MixMint{% endblock %}
-
+{% block meta_description %}Get help with orders, downloads, DJ payouts or your account. A real person from MixMint replies within hours, by email or Telegram.{% endblock %}
+{% block help_widget %}{% endblock %}
 {% block content %}
-<div class="max-w-[800px] mx-auto py-20 px-6 font-body">
-    <!-- ── Header ── -->
-    <div class="mb-16 border-b border-[var(--border)] pb-12">
-        <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">Help & support</p>
-        <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 leading-none">
-            Contact Us
-        </h1>
-        <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest leading-relaxed">
-            Status: <span class="text-[var(--accent-mint)]">ONLINE</span>
-        </p>
+<div class="max-w-[960px] mx-auto py-12 md:py-16 px-4">
+    <div class="mb-10 border-b border-[var(--border)] pb-8">
+        <p class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.2em] mb-3">Help & support</p>
+        <h1 class="font-display text-[36px] md:text-[52px] font-[800] text-[var(--text-primary)] tracking-tight leading-none mb-3">Talk to us</h1>
+        <p class="text-[15px] text-[var(--text-muted)] max-w-xl">Orders, downloads, DJ payouts or your account — send a question and a real person from MixMint replies, usually within a few hours.</p>
     </div>
 
-    <div class="grid md:grid-cols-5 gap-16">
-        <!-- ── Sidebar Info ── -->
-        <div class="md:col-span-2 space-y-12">
-            <section>
-                <h4 class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Support</h4>
-                <div class="space-y-2">
-                    <p class="text-[14px] text-[var(--text-primary)] font-bold">General Inquiries</p>
-                    <a href="mailto:support@mixmint.site" class="text-[var(--accent-mint)] hover:underline text-[13px] font-mono">support@mixmint.site</a>
-                </div>
-            </section>
-
-            <section>
-                <h4 class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Security</h4>
-                <div class="space-y-2">
-                    <p class="text-[14px] text-[var(--text-primary)] font-bold">Vulnerability Reports</p>
-                    <a href="mailto:security@mixmint.site" class="text-[var(--accent-mint)] hover:underline text-[13px] font-mono">security@mixmint.site</a>
-                </div>
-            </section>
-
-            <section class="p-6 bg-[var(--bg-elevated)] border border-[var(--accent-mint)]/30 rounded-[16px]">
-                <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-widest mb-2">Fastest response</p>
-                <p class="text-[14px] text-[var(--text-primary)] font-bold mb-2">Chat on Telegram</p>
-                <p class="font-body text-[12px] text-[var(--text-muted)] mb-4">Urgent order, download or payout issue? Message us — tickets filed here also ping our team instantly.</p>
-                <a href="https://t.me/mixmint_support_bot" target="_blank" rel="noopener"
-                    class="btn-mm btn-mint w-full h-[48px] text-[13px] font-bold flex items-center justify-center">
-                    Open Telegram Support
-                </a>
-            </section>
-
-            <section class="p-6 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[16px] glow-card-mm">
-                <p class="font-mono text-[10px] text-[var(--text-muted)] uppercase leading-relaxed">
-                    Expected Response Latency:<br>
-                    <span class="text-[var(--text-primary)] font-bold">12–24_HOURS</span>
-                </p>
-            </section>
-        </div>
-
-        <!-- ── Contact Form ── -->
-        <div class="md:col-span-3">
-            <div class="bg-[var(--bg-surface)] border border-[var(--border)] p-8 rounded-[24px] shadow-[var(--shadow-card)]">
-                <form class="space-y-8">
-                    <div>
-                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Your name</label>
-                        <input type="text" placeholder="e.g. ALPHA_USER" class="input-mm w-full">
-                    </div>
-                    <div>
-                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Your email</label>
-                        <input type="email" placeholder="user@domain.com" class="input-mm w-full">
-                    </div>
-                    <div>
-                        <label class="block font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3">Your message</label>
-                        <textarea rows="5" placeholder="Describe your inquiry..." class="input-mm w-full" style="height: auto; min-height: 160px;"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn-mm btn-mint w-full h-[56px] text-[14px] font-bold rounded-[12px] uppercase tracking-widest">
-                        Send message
-                    </button>
-                </form>
+    <div class="grid md:grid-cols-5 gap-10">
+        <div class="md:col-span-3 order-1">
+            <div class="mm-card-section" x-data="mmHelp({{ user.is_authenticated|yesno:'true,false' }})">
+                {% include "components/help_form.html" %}
             </div>
         </div>
-    </div>
-
-    <!-- ── Footer ── -->
-    <div class="mt-24 pt-12 border-t border-[var(--border)] border-dashed flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em]">
-        <span>&copy; 2026 MixMint Support</span>
-        <div class="flex gap-8">
-            <a href="/legal/transparency/" class="hover:text-[var(--accent-mint)] transition-colors">Transparency</a>
-            <a href="/legal/security/" class="hover:text-[var(--accent-mint)] transition-colors">Security</a>
-            <a href="/" class="hover:text-[var(--accent-mint)] transition-colors">Home</a>
-        </div>
+        <aside class="md:col-span-2 order-2 space-y-6 text-[14px]">
+            <section class="mm-card-section">
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)] mb-2">Quick answers</h2>
+                <ul class="space-y-2 text-[var(--text-muted)]">
+                    <li><a href="/legal/faq/" class="underline text-[var(--text-primary)]">How downloads work</a> — each purchase includes a verified download on your device.</li>
+                    <li><a href="/legal/refund/" class="underline text-[var(--text-primary)]">Refunds</a> — automatic if you never downloaded the file.</li>
+                    <li><a href="{% url 'apply_as_dj' %}" class="underline text-[var(--text-primary)]">Selling your music</a> — apply as a DJ, we review within 24–48 hours.</li>
+                </ul>
+            </section>
+            <section class="mm-card-section">
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)] mb-2">Email</h2>
+                <p class="text-[var(--text-muted)]">Support: <a href="mailto:support@mixmint.site" class="text-[var(--accent-mint)] underline">support@mixmint.site</a></p>
+                <p class="text-[var(--text-muted)] mt-1">Security reports: <a href="mailto:security@mixmint.site" class="text-[var(--accent-mint)] underline">security@mixmint.site</a></p>
+            </section>
+        </aside>
     </div>
 </div>
 {% endblock %}

@@ -6,10 +6,39 @@
     }
   },
   "crons": [
-    { "path": "/cron/release-escrow/", "schedule": "0 1 * * *" },
-    { "path": "/cron/payout-cron/", "schedule": "0 2 * * *" },
-    { "path": "/cron/cleanup/", "schedule": "0 3 * * *" },
-    { "path": "/cron/weekly-sales/", "schedule": "0 4 * * *" },
-    { "path": "/cron/payouts/", "schedule": "30 5 * * 5" }
+    {
+      "path": "/cron/release-escrow/",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/cron/payout-cron/",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/cron/cleanup/",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/cron/weekly-sales/",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/cron/payouts/",
+      "schedule": "30 5 * * 5"
+    }
+  ],
+  "regions": [
+    "bom1"
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=2592000"
+        }
+      ]
+    }
   ]
 }

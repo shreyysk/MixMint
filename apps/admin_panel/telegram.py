@@ -48,7 +48,7 @@ def notify_admins(text):
 
 
 def notify_support_ticket(ticket):
-    user_label = ticket.user.full_name or ticket.user.user.email
+    user_label = ticket.contact_label()
     return notify_admins(
         "🎧 New MixMint support ticket\n"
         f"#{ticket.id} [{ticket.category}/{ticket.priority}] — {ticket.status}\n"

@@ -198,7 +198,7 @@
             <div class="relative h-[60%] w-full overflow-hidden border-b border-[var(--border)]">
                 <div class="w-full h-full bg-[var(--bg-elevated)] flex items-center justify-center dj-photo">
                     {% if dj.profile.avatar_url %}
-                    <img src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">
+                    <img loading="lazy" decoding="async" src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">
                     {% else %}
                     <span class="mm-avatar w-20 h-20 text-[26px]" aria-hidden="true">{{ dj.dj_name|initials }}</span>
                     {% endif %}

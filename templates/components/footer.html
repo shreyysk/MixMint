@@ -1,3 +1,4 @@
+{% load static %}
 <footer class="mm-footer mt-20 border-t border-[var(--border)] pt-16 pb-10 bg-[var(--bg-base)]" aria-labelledby="footer-heading">
     <h2 id="footer-heading" class="sr-only">Site footer</h2>
     <div class="max-w-[1280px] mx-auto px-6">
@@ -5,8 +6,8 @@
             <!-- Brand -->
             <div class="col-span-2 md:col-span-4">
                 <a href="/" class="inline-flex items-center gap-3 mb-5" aria-label="MixMint home">
-                    <img src="/static/logo/MIXMINT_WHITE.png" alt="" class="w-8 h-8 dark-logo-only">
-                    <img src="/static/logo/MIXMINT_BLACK.png" alt="" class="w-8 h-8 light-logo-only hidden">
+                    <img loading="lazy" decoding="async" src="{% static 'logo/mm-white-64.png' %}" width="32" height="32" alt="" class="w-8 h-8 dark-logo-only">
+                    <img loading="lazy" decoding="async" src="{% static 'logo/mm-black-64.png' %}" width="32" height="32" alt="" class="w-8 h-8 light-logo-only hidden">
                     <span class="font-display text-[22px] font-black tracking-tight text-[var(--text-primary)]">MixMint</span>
                 </a>
                 <p class="font-body text-[14px] text-[var(--text-muted)] leading-relaxed max-w-sm mb-5">

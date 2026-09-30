@@ -61,7 +61,7 @@
             {% if covers_ready %}
             <div class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-6 text-center hover:border-[var(--accent-mint)] transition-colors max-w-[300px]">
                 <input type="file" id="cover_file" accept="image/jpeg,image/png,image/webp" @change="pick($event, 'cover')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
+                <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl || false" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
                 <div x-show="!(coverPreview || coverUrl)" class="text-3xl opacity-40 mb-2" aria-hidden="true">🖼️</div>
                 <label for="cover_file" class="block font-body text-[14px] font-[500] text-[var(--text-primary)]" x-text="cover ? cover.name : 'Choose an image'">Choose an image</label>
                 <p class="font-body text-[12px] text-[var(--text-muted)]">Square JPG or PNG, at least 1000×1000</p>

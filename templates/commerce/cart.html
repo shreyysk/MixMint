@@ -36,7 +36,7 @@
                     <div
                         class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
                         <template x-if="item.image_url">
-                            <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
+                            <img loading="lazy" decoding="async" :src="item.image_url || false" :alt="item.title" class="w-full h-full object-cover">
                         </template>
                         <template x-if="!item.image_url">
                             <span class="text-3xl opacity-20">🎵</span>

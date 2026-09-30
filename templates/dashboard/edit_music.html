@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ item.title }} — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[760px] mx-auto py-10 px-4">
+    <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-8 border-b border-[var(--border)] pb-6">
+        <div class="min-w-0">
+            <p class="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)] mb-2">Edit {% if kind == 'album' %}album pack{% else %}track{% endif %}</p>
+            <h1 class="font-display text-[30px] md:text-[38px] font-[700] text-[var(--text-primary)] leading-tight break-words">{{ item.title }}</h1>
+        </div>
+        <a href="{% if kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'track_detail' item.pk %}{% endif %}" class="btn-mm btn-ghost h-[42px] px-4 text-[13px] inline-flex items-center">View page</a>
+    </div>
+
+    <form method="post" class="space-y-10" data-edit-music>
+        {% csrf_token %}
+        <section class="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-6 items-start" x-data="mmImage('cover_url', '{{ cover|escapejs }}')">
+            <div class="relative w-[180px] aspect-square rounded-[12px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
+                <img x-show="url" x-cloak :src="url || false" alt="Cover art" class="w-full h-full object-cover">
+                <div x-show="!url" class="w-full h-full flex items-center justify-center text-4xl opacity-30" aria-hidden="true">{% if kind == 'album' %}📦{% else %}🎵{% endif %}</div>
+                <div x-show="busy" x-cloak class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-mono text-[13px]" x-text="pct + '%'"></div>
+            </div>
+            <div class="space-y-3">
+                <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Cover art</h2>
+                <input type="hidden" name="cover_url" :value="url">
+                <label class="btn-mm btn-ghost h-[42px] px-4 text-[13px] inline-flex items-center cursor-pointer">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="pick($event)">
+                    <span x-text="url ? 'Change image' : 'Add image'">Add image</span>
+                </label>
+                <button type="button" x-show="url" x-cloak @click="clear()" class="ml-2 text-[13px] underline text-[var(--text-muted)]">Remove</button>
+                <p x-show="err" x-cloak class="text-[13px] text-[var(--accent-red)]" x-text="err"></p>
+                <p class="text-[12px] text-[var(--text-muted)]">Square JPG or PNG, at least 1000×1000.</p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label for="title" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Title</label>
+                <input id="title" name="title" required maxlength="255" class="input-mm" value="{{ request.POST.title|default:item.title }}">
+            </div>
+            {% if kind == 'track' %}
+            <div>
+                <label for="genre" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Genre</label>
+                <select id="genre" name="genre" class="input-mm">
+                    <option value="">Choose a genre</option>
+                    {% for g in genre_choices %}<option value="{{ g }}" {% if item.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+                    {% if item.genre and item.genre not in genre_choices %}<option value="{{ item.genre }}" selected>{{ item.genre }}</option>{% endif %}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="bpm" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">BPM</label>
+                    <input id="bpm" name="bpm" type="number" min="40" max="250" class="input-mm" value="{{ item.bpm|default_if_none:'' }}">
+                </div>
+                <div>
+                    <label for="year" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Year</label>
+                    <input id="year" name="year" type="number" min="1950" max="2100" class="input-mm" value="{{ item.year|default_if_none:'' }}">
+                </div>
+            </div>
+            {% else %}
+            <div>
+                <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Tracks in the ZIP</label>
+                <input id="track_count" name="track_count" type="number" min="1" max="500" class="input-mm" value="{{ item.track_count|default:'' }}">
+            </div>
+            {% endif %}
+            <div class="md:col-span-2">
+                <label for="description" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Description</label>
+                <textarea id="description" name="description" rows="4" maxlength="5000" class="input-mm" style="height:auto;min-height:110px">{{ item.description|default_if_none:'' }}</textarea>
+            </div>
+            <div>
+                <label for="youtube_url" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">YouTube preview</label>
+                <input id="youtube_url" name="youtube_url" type="url" class="input-mm" value="{{ item.youtube_url|default_if_none:'' }}" placeholder="https://youtu.be/…">
+            </div>
+            <div>
+                <label for="instagram_url" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Instagram Reel preview</label>
+                <input id="instagram_url" name="instagram_url" type="url" class="input-mm" value="{{ item.instagram_url|default_if_none:'' }}" placeholder="https://www.instagram.com/reel/…">
+            </div>
+            <div>
+                <label for="price" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Price in ₹</label>
+                <input id="price" name="price" type="number" min="0" step="1" required inputmode="numeric" class="input-mm font-mono" value="{{ item.price|floatformat:0 }}">
+                <p class="text-[12px] text-[var(--text-muted)] mt-2">{% if kind == 'album' %}Albums start at ₹49.{% else %}0 = free. Paid tracks start at ₹29.{% endif %} Changing the price doesn't affect past buyers.</p>
+            </div>
+            <label class="flex items-start gap-3 p-4 rounded-[12px] border border-[var(--border)] bg-[var(--bg-elevated)] cursor-pointer self-end">
+                <input type="checkbox" name="is_active" {% if item.is_active %}checked{% endif %} class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-mint)]">
+                <span class="text-[13px] text-[var(--text-primary)]"><strong class="font-[600]">Show in my store</strong><br><span class="text-[var(--text-muted)]">Untick to hide it without deleting.</span></span>
+            </label>
+        </section>
+
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="btn-mm btn-mint h-[52px] px-8 text-[15px] font-[700]">Save changes</button>
+            <a href="{% url 'dj_dashboard' %}" class="btn-mm btn-ghost h-[52px] px-6 text-[14px] inline-flex items-center">Cancel</a>
+        </div>
+    </form>
+
+    <form method="post" action="{% url 'delete_music' kind item.pk %}" class="mt-14 p-5 rounded-[12px] border border-[var(--accent-red)]/30"
+          onsubmit="return confirm('Remove “{{ item.title|escapejs }}” from your store? People who bought it keep their copy.');">
+        {% csrf_token %}
+        <h2 class="font-display text-[16px] font-[600] text-[var(--text-primary)] mb-1">Remove from MixMint</h2>
+        <p class="text-[13px] text-[var(--text-muted)] mb-4">It disappears from your store and search. Buyers keep it in their library.</p>
+        <button type="submit" class="btn-mm h-[42px] px-5 text-[13px] border border-[var(--accent-red)] text-[var(--accent-red)]">Remove {% if kind == 'album' %}album{% else %}track{% endif %}</button>
+    </form>
+</div>
+{% endblock %}

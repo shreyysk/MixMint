@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Account settings — MixMint{% endblock %}
+{% block content %}
+<div class="max-w-[720px] mx-auto py-10 px-4 space-y-8">
+    <div>
+        <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-tight">Account settings</h1>
+        <p class="text-[14px] text-[var(--text-muted)] mt-2 break-all">{{ user.email }}{% if google %} · signed in with Google{% endif %}</p>
+    </div>
+
+    <section class="mm-card-section">
+        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4">Your name</h2>
+        <form method="post" class="flex flex-col sm:flex-row gap-3">
+            {% csrf_token %}<input type="hidden" name="action" value="name">
+            <label for="full_name" class="sr-only">Full name</label>
+            <input id="full_name" name="full_name" required maxlength="120" autocomplete="name" class="input-mm flex-1" value="{{ profile.full_name }}">
+            <button class="btn-mm btn-mint h-[48px] px-6 text-[14px] shrink-0">Save</button>
+        </form>
+        <p class="text-[12px] text-[var(--text-muted)] mt-2">Shown on your invoices and to DJs you buy from.</p>
+    </section>
+
+    <section class="mm-card-section">
+        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">{% if has_password %}Change password{% else %}Set a password{% endif %}</h2>
+        {% if not has_password %}<p class="text-[13px] text-[var(--text-muted)] mb-4">You sign in with Google. Set a password if you also want to log in with your email.</p>{% endif %}
+        <form method="post" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4" x-data="{ show: false }">
+            {% csrf_token %}<input type="hidden" name="action" value="password">
+            {% if has_password %}
+            <div class="sm:col-span-2">
+                <label for="current_password" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">Current password</label>
+                <input id="current_password" name="current_password" :type="show ? 'text' : 'password'" required autocomplete="current-password" class="input-mm">
+            </div>
+            {% endif %}
+            <div>
+                <label for="new_password" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">New password</label>
+                <input id="new_password" name="new_password" :type="show ? 'text' : 'password'" required minlength="8" autocomplete="new-password" class="input-mm" aria-describedby="pw-help">
+            </div>
+            <div>
+                <label for="confirm_password" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-2">New password again</label>
+                <input id="confirm_password" name="confirm_password" :type="show ? 'text' : 'password'" required minlength="8" autocomplete="new-password" class="input-mm">
+            </div>
+            <p id="pw-help" class="sm:col-span-2 text-[12px] text-[var(--text-muted)]">At least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol.</p>
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-4">
+                <button class="btn-mm btn-mint h-[48px] px-6 text-[14px]">{% if has_password %}Change password{% else %}Set password{% endif %}</button>
+                <label class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] cursor-pointer"><input type="checkbox" x-model="show" class="w-4 h-4"> Show passwords</label>
+                {% if has_password %}<a href="{% url 'password_reset' %}" class="text-[13px] underline text-[var(--text-muted)]">Forgot it?</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="mm-card-section">
+        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Devices</h2>
+        <p class="text-[13px] text-[var(--text-muted)] mb-4">{% if other_sessions %}You're also logged in on {{ other_sessions }} other device{{ other_sessions|pluralize }}.{% else %}You're only logged in here.{% endif %}</p>
+        {% if other_sessions %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="logout_others">
+            <button class="btn-mm btn-ghost h-[44px] px-5 text-[14px]">Log out everywhere else</button></form>
+        {% endif %}
+    </section>
+
+    <section class="mm-card-section">
+        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Your data</h2>
+        <p class="text-[13px] text-[var(--text-muted)] mb-4">Download everything MixMint keeps about you: profile, purchases, downloads.</p>
+        <a href="{% url 'export_data' %}" class="btn-mm btn-ghost h-[44px] px-5 text-[14px] inline-flex items-center">Download my data</a>
+    </section>
+
+    <section class="mm-card-section border-[var(--accent-red)]/40" x-data="{ open: false }">
+        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Close my account</h2>
+        <p class="text-[13px] text-[var(--text-muted)] mb-4">You'll be logged out and can't log back in. {% if profile.role == 'dj' %}Your store goes offline. Unpaid earnings are paid out first. {% endif %}Your data is removed within 30 days; invoices are kept as the law requires.</p>
+        <button type="button" class="btn-mm h-[44px] px-5 text-[14px] border border-[var(--accent-red)] text-[var(--accent-red)]" x-show="!open" @click="open = true">Close my account…</button>
+        <form method="post" x-show="open" x-cloak class="flex flex-col sm:flex-row gap-3">
+            {% csrf_token %}<input type="hidden" name="action" value="delete">
+            <label for="confirm-delete" class="sr-only">{% if has_password %}Your password{% else %}Type DELETE{% endif %}</label>
+            <input id="confirm-delete" name="confirm" required class="input-mm flex-1" {% if has_password %}type="password" autocomplete="current-password" placeholder="Enter your password to confirm"{% else %}placeholder="Type DELETE to confirm"{% endif %}>
+            <button class="btn-mm h-[48px] px-5 text-[14px] bg-[var(--accent-red)] text-white shrink-0">Close account</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

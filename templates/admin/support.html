@@ -1,0 +1,51 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Support — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="max-w-[1000px] mx-auto py-10 px-4 space-y-8">
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--border)] pb-6">
+        <div>
+            <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-none">Support</h1>
+            <p class="text-[14px] text-[var(--text-muted)] mt-2">Questions from the Help button, the contact page and the Telegram bot. Answer here or by replying in Telegram.</p>
+        </div>
+        <nav class="flex gap-2" aria-label="Filter">
+            <a href="?status=open" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'open' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">Open</a>
+            <a href="?status=closed" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'closed' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">Closed</a>
+            <a href="?status=all" class="px-3 h-[36px] inline-flex items-center rounded-full text-[13px] font-[600] border {% if status == 'all' %}border-[var(--accent-mint)] text-[var(--accent-mint)]{% else %}border-[var(--border)] text-[var(--text-muted)]{% endif %}">All</a>
+        </nav>
+    </div>
+
+    <section class="mm-card-section flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Telegram bot</h2>
+            <p class="text-[13px] text-[var(--text-muted)] mt-1">
+                {% if not tg_token %}Add TELEGRAM_BOT_TOKEN in Vercel first.
+                {% elif not tg_chat %}Add TELEGRAM_ADMIN_CHAT_ID in Vercel so alerts reach you.
+                {% elif tg_hooked %}Connected ✓ Alerts come to your Telegram; reply to one to answer.{% if tg_error %} Last error: {{ tg_error }}{% endif %}
+                {% else %}Not connected yet: customers can't chat with the bot and your Telegram replies won't arrive.{% endif %}
+            </p>
+        </div>
+        {% if tg_token %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="connect_telegram">
+            <button class="btn-mm {% if tg_hooked %}btn-ghost{% else %}btn-mint{% endif %} h-[42px] px-5 text-[13px] shrink-0">{% if tg_hooked %}Reconnect{% else %}Connect Telegram bot{% endif %}</button></form>
+        {% endif %}
+    </section>
+
+    <ul class="space-y-3">
+        {% for t in tickets %}
+        <li>
+            <a href="{% url 'admin_support_ticket' t.id %}" class="mm-card-section block hover:border-[var(--accent-mint)]/50 transition-colors">
+                <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[15px] font-[600] text-[var(--text-primary)] truncate">#{{ t.id }} · {{ t.subject }}</p>
+                        <p class="text-[12px] text-[var(--text-muted)] mt-1 truncate">{{ t.contact_label }} · {{ t.get_category_display|default:t.category }} · {{ t.messages.all|length }} message{{ t.messages.all|length|pluralize }} · {{ t.updated_at|timesince }} ago</p>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-[700] shrink-0 {% if t.status == 'open' %}bg-[var(--accent-amber)] text-black{% elif t.status == 'answered' %}bg-[var(--accent-mint)]/15 text-[var(--accent-mint)]{% else %}bg-[var(--bg-elevated)] text-[var(--text-muted)]{% endif %}">{% if t.status == 'open' %}Needs reply{% else %}{{ t.status|capfirst }}{% endif %}</span>
+                </div>
+            </a>
+        </li>
+        {% empty %}
+        <li class="mm-empty text-center py-14 text-[var(--text-muted)] border border-[var(--border)] rounded-[14px]">No questions here.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

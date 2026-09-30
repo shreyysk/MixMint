@@ -61,7 +61,12 @@ class CopyrightReport(models.Model):
 
 
 class SupportTicket(models.Model):
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="support_tickets")
+    # A logged-in user, a guest (email) or someone chatting with the Telegram bot (chat id).
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="support_tickets", null=True, blank=True)
+    guest_email = models.EmailField(blank=True, default="")
+    guest_name = models.CharField(max_length=120, blank=True, default="")
+    telegram_chat_id = models.CharField(max_length=40, blank=True, default="", db_index=True)
+    telegram_username = models.CharField(max_length=64, blank=True, default="")
     subject = models.CharField(max_length=255)
     category = models.CharField(max_length=50)
     priority = models.CharField(max_length=20, default="medium")
@@ -69,6 +74,28 @@ class SupportTicket(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def contact_label(self):
+        if self.user_id:
+            return self.user.full_name or self.user.user.email
+        if self.telegram_username:
+            return f"@{self.telegram_username} (Telegram)"
+        return self.guest_name or self.guest_email or "Guest"
+
+    def contact_email(self):
+        return self.user.user.email if self.user_id else self.guest_email
+
+
+class SupportMessage(models.Model):
+    SENDERS = (("user", "Customer"), ("admin", "MixMint team"))
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="messages")
+    sender = models.CharField(max_length=10, choices=SENDERS)
+    body = models.TextField()
+    via = models.CharField(max_length=20, default="web")  # web | telegram | email
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
 
 
 class BanList(models.Model):
