@@ -581,7 +581,15 @@ def create_bundle_view(request):
         messages.error(request, "A bundle needs a title, a positive price and at least 2 of your tracks.")
         return redirect("bundle_management")
 
-    bundle = Bundle.objects.create(dj=dj_profile, title=title, price=price)
+    cover = (request.POST.get("cover_url") or "").strip() or None
+    if cover:
+        from apps.core import r2
+
+        try:
+            r2.cover_key_from_url(cover, dj_profile)
+        except r2.UploadError:
+            cover = None
+    bundle = Bundle.objects.create(dj=dj_profile, title=title, price=price, cover_image=cover)
     for order, track in enumerate(own_tracks):
         BundleTrack.objects.create(bundle=bundle, track=track, display_order=order)
     messages.success(request, "Bundle created.")

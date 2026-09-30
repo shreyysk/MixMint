@@ -19,7 +19,7 @@ class TestAnonymousJourney:
 
     def test_discovery_next(self, client, track, dj_user):
         _, dj = dj_user
-        assert client.get("/explore/").status_code == 200
+        assert client.get("/releases/").status_code == 200
         assert client.get("/djs/").status_code == 200
         assert client.get(f"/tracks/{track.id}/").status_code == 200
         assert client.get(f"/tracks/embed/{track.id}/").status_code == 200
@@ -189,7 +189,7 @@ class TestUXLayer:
     """Site-wide UX system present on every page."""
 
     def test_ux_assets_on_base_pages(self, client, track):
-        for url in ("/", "/explore/", f"/tracks/{track.id}/", "/login/", "/djs/", "/legal/faq/"):
+        for url in ("/", "/releases/", f"/tracks/{track.id}/", "/login/", "/djs/", "/legal/faq/"):
             html = client.get(url).content.decode()
             # hashed (css/ux.<hash>.css) or plain — manifest storage renames in prod
             assert "css/ux." in html, url
@@ -198,7 +198,7 @@ class TestUXLayer:
 
     def test_reveal_on_key_pages(self, client, track):
         assert "data-reveal" in client.get("/").content.decode()
-        assert "data-reveal" in client.get("/explore/").content.decode()
+        assert "data-reveal" in client.get("/releases/").content.decode()
         assert "data-reveal" in client.get(f"/tracks/{track.id}/").content.decode()
 
     def test_pro_landing_renders_with_working_ctas(self, client, dj_user):
@@ -218,13 +218,13 @@ class TestCartWithoutDrawer:
     """Cart drawer popup removed: cart lives on the /cart/ page."""
 
     def test_no_drawer_markup_sitewide(self, client):
-        for url in ("/", "/explore/", "/login/"):
+        for url in ("/", "/releases/", "/login/"):
             html = client.get(url).content.decode()
             assert "My Support Cart" not in html, url
             assert "open-cart" not in html or "TEMP-DISABLED" in html or True
 
     def test_no_auth_modal_markup_sitewide(self, client):
-        for url in ("/", "/explore/", "/login/"):
+        for url in ("/", "/releases/", "/login/"):
             html = client.get(url).content.decode()
             assert "Continue to full authentication page" not in html, url
             # login/signup navigate via real links with return address

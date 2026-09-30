@@ -84,12 +84,14 @@
 
             <!-- Center: Navigation Links (Desktop) -->
             <div class="hidden md:flex items-center gap-8 font-body text-[15px] font-medium">
-                <a href="{% url 'explore' %}"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Browse" %}</a>
-                <a href="{% url 'explore' %}?sort=new"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "New Releases" %}</a>
+                <a href="{% url 'releases' %}"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Releases" %}</a>
                 <a href="{% url 'dj_directory' %}"
-                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "DJs" %}</a>
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Artists" %}</a>
+                <a href="{% url 'bundles' %}"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Bundles" %}</a>
+                <a href="{% url 'sell' %}"
+                    class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">{% trans "Get listed" %}</a>
             </div>
 
             <!-- Right: Actions (Desktop) -->
@@ -208,13 +210,12 @@
             @keyup.escape.window="open = false" x-cloak>
 
             <nav class="flex flex-col gap-6 font-body text-[18px] font-medium">
-                <a href="{% url 'explore' %}"
-                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_50ms_forwards]">Browse</a>
-                <a href="{% url 'explore' %}?sort=new"
-                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_100ms_forwards]">New
-                    Releases</a>
-                <a href="{% url 'dj_directory' %}"
-                    class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_150ms_forwards]">DJs</a>
+                <a href="{% url 'releases' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_50ms_forwards]">Releases</a>
+                <a href="{% url 'dj_directory' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_80ms_forwards]">Artists</a>
+                <a href="{% url 'bundles' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_110ms_forwards]">Bundles</a>
+                <a href="{% url 'drops' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_140ms_forwards]">Limited drops</a>
+                <a href="{% url 'recover' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_170ms_forwards]">Recover a download</a>
+                <a href="{% url 'sell' %}" class="text-[var(--accent-mint)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">Get listed — sell your music</a>
             </nav>
 
             <div class="h-px bg-[var(--border)] my-8"></div>

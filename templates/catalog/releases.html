@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} — MixMint{% endblock %}
+{% block meta_description %}{% if forced == 'drops' %}Limited drops: numbered DJ releases with a fixed number of copies. Once they're gone, they're gone.{% elif forced == 'bundles' %}DJ bundles: multi-track packs built for a whole night, cheaper than buying the songs one by one.{% else %}Every release on MixMint: exclusive DJ edits, remixes, album packs and bundles from Indian DJs. Preview, pay once, download.{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-[1200px] mx-auto py-8 md:py-12">
+    <header class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="font-display text-[32px] md:text-[44px] font-[800] text-[var(--text-primary)] tracking-tight leading-none">{{ heading }}</h1>
+            <p class="text-[14px] text-[var(--text-muted)] mt-2">
+                {% if forced == 'drops' %}Numbered releases with a fixed number of copies. Once they're gone, they're gone.
+                {% elif forced == 'bundles' %}Multi-track packs built for a night, not a moment — cheaper than buying each song.
+                {% else %}{{ total }} release{{ total|pluralize }} in the crate{% if q %} for “{{ q }}”{% endif %}.{% endif %}
+            </p>
+        </div>
+        <form method="get" role="search" class="w-full md:w-[340px]">
+            {% if not forced and kind != 'all' %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+            {% if genre %}<input type="hidden" name="genre" value="{{ genre }}">{% endif %}
+            <label class="sr-only" for="rq">Search releases</label>
+            <div class="relative">
+                <input id="rq" type="search" name="q" value="{{ q }}" placeholder="Search tracks, DJs, genres" class="input-mm h-[46px] text-[14px]" style="padding-left:44px">
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            </div>
+        </form>
+    </header>
+
+    {% if not forced %}
+    <nav class="mm-chips mb-3" aria-label="Release type">
+        {% for key, label in types %}
+        <a class="mm-chip" href="?{% if key != 'all' %}type={{ key }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}{% if genre %}genre={{ genre|urlencode }}&{% endif %}sort={{ sort }}" {% if kind == key %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </nav>
+    {% endif %}
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-8">
+        {% if genres and forced != 'bundles' %}
+        <nav class="mm-chips flex-1 min-w-0" aria-label="Genre">
+            <a class="mm-chip" href="?{% if not forced and kind != 'all' %}type={{ kind }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}" {% if not genre %}aria-current="page"{% endif %}>All genres</a>
+            {% for g in genres %}<a class="mm-chip" href="?{% if not forced and kind != 'all' %}type={{ kind }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}genre={{ g|urlencode }}&sort={{ sort }}" {% if genre|lower == g|lower %}aria-current="page"{% endif %}>{{ g }}</a>{% endfor %}
+        </nav>
+        {% else %}<div class="flex-1"></div>{% endif %}
+        <form method="get" class="shrink-0">
+            {% if not forced and kind != 'all' %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            {% if genre %}<input type="hidden" name="genre" value="{{ genre }}">{% endif %}
+            <label class="sr-only" for="rsort">Sort by</label>
+            <select id="rsort" name="sort" class="input-mm h-[40px] text-[13px] pr-8" onchange="this.form.submit()">
+                {% for key, label in sorts %}<option value="{{ key }}" {% if sort == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if page.object_list %}
+    <div class="mm-rgrid" data-reveal>
+        {% for pair in page.object_list %}{% with kind=pair.0 item=pair.1 %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}
+    </div>
+    {% if page.has_other_pages %}
+    <nav class="flex items-center justify-center gap-4 mt-10 text-[14px]" aria-label="Pages">
+        {% if page.has_previous %}<a class="mm-chip" rel="prev" href="?{% if not forced and kind != 'all' %}type={{ kind }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}{% if genre %}genre={{ genre|urlencode }}&{% endif %}sort={{ sort }}&page={{ page.previous_page_number }}">← Previous</a>{% endif %}
+        <span class="text-[var(--text-muted)]">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a class="mm-chip" rel="next" href="?{% if not forced and kind != 'all' %}type={{ kind }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}{% if genre %}genre={{ genre|urlencode }}&{% endif %}sort={{ sort }}&page={{ page.next_page_number }}">Next →</a>{% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="mm-empty text-center py-20 border border-[var(--border)] rounded-[16px] bg-[var(--bg-surface)]">
+        <p class="text-[16px] font-[600] text-[var(--text-primary)] mb-1">{% if forced == 'drops' %}No limited drops right now.{% elif forced == 'bundles' %}No bundles yet.{% else %}Nothing matches that.{% endif %}</p>
+        <p class="text-[14px] text-[var(--text-muted)]">{% if q or genre %}Try another search or <a class="underline" href="?">clear the filters</a>.{% else %}Check back soon — new music lands every week.{% endif %}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

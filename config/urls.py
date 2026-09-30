@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.core.sitemaps import SITEMAPS
-from apps.core import cron_views, support_views
+from apps.core import catalog_views, cron_views, support_views
 from apps.payments import views as payment_views
 from apps.payments.webhooks import phonepe_webhook
 from django.views.generic import RedirectView
@@ -97,6 +97,16 @@ urlpatterns = [
     path("checkout/", RedirectView.as_view(url="/cart/", permanent=False)),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
     path("telegram/webhook/", support_views.telegram_webhook, name="telegram_webhook"),
+    # Catalogue, guest checkout, download recovery, "get listed"
+    path("releases/", catalog_views.releases_view, name="releases"),
+    path("bundles/", catalog_views.bundles_view, name="bundles"),
+    path("bundles/<int:pk>/", catalog_views.bundle_detail_view, name="bundle_detail"),
+    path("bundles/<int:pk>/checkout/", catalog_views.bundle_checkout, name="bundle_checkout"),
+    path("drops/", catalog_views.drops_view, name="drops"),
+    path("sell/", catalog_views.sell_view, name="sell"),
+    path("recover/", catalog_views.recover_view, name="recover"),
+    path("recover/<str:token>/", catalog_views.recover_link_view, name="recover_link"),
+    path("checkout/guest/", catalog_views.guest_checkout_start, name="guest_checkout"),
     # API Schema & Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

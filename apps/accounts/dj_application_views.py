@@ -76,6 +76,31 @@ def submit_dj_application(user, data):
     fee_enabled = settings_obj.dj_application_fee_enabled
     fee_amount = settings_obj.dj_application_fee
 
+    # Where to listen to them + where they're based (reviewers need at least one link)
+    from urllib.parse import urlsplit
+
+    raw_links = data.getlist("links") if hasattr(data, "getlist") else data.get("links", [])
+    if isinstance(raw_links, str):
+        raw_links = [raw_links]
+    links = []
+    for link in raw_links or []:
+        link = str(link or "").strip()
+        if not link:
+            continue
+        if not link.startswith(("http://", "https://")):
+            link = "https://" + link
+        host = (urlsplit(link).hostname or "").lower()
+        if "." not in host:
+            return 400, {"error": f"“{link}” doesn't look like a link."}
+        if host.endswith(("drive.google.com", "docs.google.com")):
+            return 400, {"error": "Please share a YouTube, Instagram, SoundCloud or Mixcloud link — not Google Drive."}
+        links.append(link[:300])
+    if not links:
+        return 400, {"error": "Add at least one link to your music (YouTube, Instagram, SoundCloud…)."}
+    links = links[:3]
+    instagram = str(data.get("instagram") or "").strip().lstrip("@")[:60]
+    city = str(data.get("city") or "").strip()[:120]
+
     # Create DJProfile in pending status
     dj_profile = DJProfile.objects.create(
         profile=profile,
@@ -83,13 +108,20 @@ def submit_dj_application(user, data):
         slug=slug,
         bio=bio,
         genres=[str(g)[:40] for g in genres][:10] if isinstance(genres, list) else [],
+        location=city or None,
+        application_links=links,
+        social_links={"instagram": f"https://instagram.com/{instagram}"} if instagram else {},
         status="pending_payment" if fee_enabled else "pending_review",
     )
 
     try:
         from apps.admin_panel.telegram import notify_admins
 
-        notify_admins(f"🎛 New DJ application: {dj_name} ({user.email}) — review it in Admin → DJ Management.")
+        notify_admins(
+            f"🎛 New DJ application: {dj_name} ({user.email}){' · ' + city if city else ''}\n"
+            + "\n".join(links)
+            + "\nReview it in Admin → DJs."
+        )
     except Exception:
         pass
 

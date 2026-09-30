@@ -1,0 +1,17 @@
+{# Preview pop-up: plays the DJ's YouTube video / Instagram Reel for a release. #}
+<dialog id="mm-preview" class="mm-dialog mm-preview" aria-labelledby="mm-preview-title">
+    <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="min-w-0">
+            <h2 id="mm-preview-title" class="font-display text-[18px] font-[700] text-[var(--text-primary)] truncate" data-title>Preview</h2>
+            <p class="text-[13px] text-[var(--text-muted)] truncate" data-artist></p>
+        </div>
+        <form method="dialog"><button class="w-9 h-9 rounded-full text-[var(--text-muted)] hover:bg-[var(--border)] shrink-0" aria-label="Close preview">✕</button></form>
+    </div>
+    <div class="mm-preview-box" data-box data-kind="youtube">
+        <iframe src="about:blank" title="Release preview" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+    <div class="flex items-center justify-between gap-3 mt-3 text-[13px]">
+        <a data-open href="#" target="_blank" rel="noopener" class="underline text-[var(--text-muted)]">Open on YouTube ↗</a>
+        <a data-more href="#" class="btn-mm btn-mint h-[40px] px-4 text-[13px] inline-flex items-center">View &amp; buy</a>
+    </div>
+</dialog>

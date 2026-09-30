@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core import r2
 
-from .upload_views import GENRES, _first_error, _int_or_none, _previews, _price
+from .upload_views import GENRES, _first_error, _int_or_none, _offers, _previews, _price
 
 SOCIAL = [
     ("instagram", "Instagram", "instagram.com"),
@@ -70,6 +70,7 @@ def edit_music_view(request, kind, pk):
             item.title = title
             item.description = (post.get("description") or "").strip()[:5000] or None
             item.price = _price(post.get("price"), kind)
+            item.compare_at_price, item.copies_limit = _offers(post, item.price)
             item.youtube_url, item.instagram_url, item.preview_type = _previews(post)
             new_cover = (post.get("cover_url") or "").strip()
             if new_cover != (getattr(item, cover_field) or ""):

@@ -94,6 +94,13 @@ def track_detail_view(request, pk):
         "dj_offers": dj_offers,
         "og_tags": get_track_og_tags(track),
     }
+    from apps.core.catalog import copies_left, savings_percent
+
+    context["stock_left"] = copies_left(track, "track")
+    context["savings"] = savings_percent(track.price, track.compare_at_price)
+    context["more_from_dj"] = list(
+        track.dj.tracks.filter(is_active=True, is_deleted=False).exclude(pk=track.pk).order_by("-created_at")[:4]
+    )
     return render(request, "tracks/detail.html", context)
 
 

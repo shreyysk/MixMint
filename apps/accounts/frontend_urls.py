@@ -1,4 +1,5 @@
 from django.urls import path
+from apps.core import catalog_views
 from django.shortcuts import render
 from . import account_views, dashboard_views, music_views, payout_views, upload_views
 from .frontend_views import (
@@ -41,7 +42,7 @@ from django.contrib.auth.decorators import login_required
 urlpatterns = [
     path("", HomeView.as_view(), name="index"),
     path("home/", HomeView.as_view(), name="home"),
-    path("explore/", ExploreView.as_view(), name="explore"),
+    path("explore/", catalog_views.explore_redirect, name="explore"),
     path("djs/", DJDirectoryView.as_view(), name="dj_directory"),
     path("login/", login_view, name="login"),
     path("signup/", signup_view, name="signup"),

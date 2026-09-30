@@ -8,9 +8,9 @@
     <!-- ── BREADCRUMBS ── -->
     <nav class="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-10"
         aria-label="Breadcrumb">
-        <a href="{% url 'explore' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
+        <a href="{% url 'releases' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
         <span>/</span>
-        <a href="{% url 'explore' %}?type=album" class="hover:text-[var(--text-primary)] transition-colors">Albums</a>
+        <a href="{% url 'releases' %}?type=albums" class="hover:text-[var(--text-primary)] transition-colors">Albums</a>
         <span>/</span>
         <span class="text-[var(--text-primary)] truncate max-w-[200px]">{{ album.title }}</span>
     </nav>
@@ -117,6 +117,8 @@
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
                     <div class="flex flex-col">
                         <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{% if album.price > 0 %}{{ album.price|money }}{% else %}Free{% endif %}</span>
+                        {% if savings %}<span class="text-[13px] mt-1"><s class="text-[var(--text-muted)]">{{ album.compare_at_price|money }}</s> <strong class="text-[var(--accent-amber)]">Save {{ savings }}%</strong></span>{% endif %}
+                        {% if stock_left is not None %}<span class="mt-2 inline-flex self-start px-2.5 py-1 rounded-full text-[12px] font-[700] {% if stock_left > 0 %}bg-[var(--accent-amber)] text-black{% else %}bg-[var(--bg-elevated)] text-[var(--text-muted)]{% endif %}">{% if stock_left > 0 %}Limited drop · {{ stock_left }} of {{ album.copies_limit }} left{% else %}Sold out · all {{ album.copies_limit }} copies gone{% endif %}</span>{% endif %}
                         <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
                             charges</span>
                     </div>
@@ -151,11 +153,13 @@
                             class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">+ Add to cart</button>
                         {% endif %}
                         {% else %}
-                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
-                            class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            {% if album.price > 0 %}Buy &amp; Download · {{ album.price|money }}{% else %}Download free{% endif %}
-                        </a>
-                        <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
+                        {% if album.price > 0 %}
+                        <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">Buy now · {{ album.price|money }}</button>
+                        <p class="text-[12px] text-[var(--text-muted)] text-center">Guest checkout with just your email · instant download</p>
+                        {% else %}
+                        <a href="{% url 'login' %}?next={{ request.path|urlencode }}" id="buy-now-link" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">Download free</a>
+                        <p class="text-[12px] text-[var(--text-muted)] text-center">Free with a MixMint account.</p>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -267,6 +271,7 @@
     </div>
 </div>
 
+{% if stock_left == 0 %}<script>document.addEventListener('DOMContentLoaded', function () { ['buy-now-btn', 'mm-buybar-btn'].forEach(function (id) { var b = document.getElementById(id); if (b) { b.disabled = true; b.textContent = 'Sold out'; } }); });</script>{% endif %}
 <!-- ── Scripts ── -->
 <script>
 (function () {

@@ -8,9 +8,9 @@
     <!-- ── BREADCRUMBS ── -->
     <nav class="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-10"
         aria-label="Breadcrumb">
-        <a href="{% url 'explore' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
+        <a href="{% url 'releases' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
         <span>/</span>
-        <a href="{% url 'explore' %}?type=track" class="hover:text-[var(--text-primary)] transition-colors">Tracks</a>
+        <a href="{% url 'releases' %}?type=singles" class="hover:text-[var(--text-primary)] transition-colors">Tracks</a>
         <span>/</span>
         <span class="text-[var(--text-primary)] truncate max-w-[200px]">{{ track.title }}</span>
     </nav>
@@ -168,6 +168,8 @@
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
                     <div class="flex flex-col">
                         <span class="font-mono text-[28px] font-bold text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
+                        {% if savings %}<span class="text-[13px] mt-1"><s class="text-[var(--text-muted)]">{{ track.compare_at_price|money }}</s> <strong class="text-[var(--accent-amber)]">Save {{ savings }}%</strong></span>{% endif %}
+                        {% if stock_left is not None %}<span class="mt-2 inline-flex self-start px-2.5 py-1 rounded-full text-[12px] font-[700] {% if stock_left > 0 %}bg-[var(--accent-amber)] text-black{% else %}bg-[var(--bg-elevated)] text-[var(--text-muted)]{% endif %}">{% if stock_left > 0 %}Limited drop · {{ stock_left }} of {{ track.copies_limit }} left{% else %}Sold out · all {{ track.copies_limit }} copies gone{% endif %}</span>{% endif %}
                         <span class="font-body text-[12px] text-[var(--text-muted)] mt-1">Inclusive of all
                             charges</span>
                     </div>
@@ -214,11 +216,13 @@
                             <p class="text-[11px] font-mono text-[var(--text-muted)] text-center">3+ items in your cart = bundle discount</p>
                             {% endif %}
                         {% else %}
-                            <a href="{% url 'login' %}?next={{ request.path|urlencode }}%3Fbuy%3D1" id="buy-now-link"
-                                class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                {% if track.price > 0 %}Buy &amp; Download · {{ track.price|money }}{% else %}Download free{% endif %}
-                            </a>
-                            <p class="text-[12px] text-[var(--text-muted)] text-center">You'll log in first, then checkout continues right here.</p>
+                            {% if track.price > 0 %}
+                            <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">Buy now · {{ track.price|money }}</button>
+                            <p class="text-[12px] text-[var(--text-muted)] text-center">Guest checkout with just your email · instant download</p>
+                            {% else %}
+                            <a href="{% url 'login' %}?next={{ request.path|urlencode }}" id="buy-now-link" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">Download free</a>
+                            <p class="text-[12px] text-[var(--text-muted)] text-center">Free with a MixMint account.</p>
+                            {% endif %}
                         {% endif %}
                             <button type="button" @click="showShareModal = true"
                                 class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">
@@ -343,6 +347,14 @@
     </div>
 </div>
 
+{% if more_from_dj %}
+<section class="max-w-[1200px] mx-auto px-4 mt-16" aria-labelledby="more-dj">
+    <div class="mm-section-head"><h2 id="more-dj" class="font-display text-[22px] font-[700] text-[var(--text-primary)]">More from {{ track.dj.dj_name }}</h2>
+        <a href="{% url 'dj_profile' track.dj.slug %}">View store →</a></div>
+    <div class="mm-rgrid">{% for item in more_from_dj %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
+</section>
+{% endif %}
+{% if stock_left == 0 %}<script>document.addEventListener('DOMContentLoaded', function () { ['buy-now-btn', 'mm-buybar-btn'].forEach(function (id) { var b = document.getElementById(id); if (b) { b.disabled = true; b.textContent = 'Sold out'; } }); });</script>{% endif %}
 <!-- ── Scripts ── -->
 <script>
 (function () {

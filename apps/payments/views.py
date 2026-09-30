@@ -144,6 +144,10 @@ def initiate_purchase(request):
         return JsonResponse({"error": "You cannot purchase your own content.", "self_purchase": True}, status=400)
     if content_obj.price <= 0:
         return JsonResponse({"error": "This item is free — use the download button.", "free": True}, status=400)
+    from apps.core.catalog import sold_out
+
+    if not is_redownload and sold_out(content_obj, content_type):
+        return JsonResponse({"error": "Sold out — every copy of this limited drop is taken.", "sold_out": True}, status=400)
 
     owned = Purchase.objects.filter(
         user=profile, content_type=content_type, content_id=content_id, status="paid", is_revoked=False
@@ -380,6 +384,10 @@ def cart_checkout(request):
             return JsonResponse({"error": "You cannot purchase your own content."}, status=400)
         if content.price <= 0 or content.dj.profile.store_paused:
             return JsonResponse({"error": f"“{content.title}” can't be bought right now. Remove it."}, status=400)
+        from apps.core.catalog import sold_out
+
+        if sold_out(content, item.content_type):
+            return JsonResponse({"error": f"“{content.title}” just sold out. Remove it from your cart."}, status=400)
         lines.append((item, content, int((Decimal(content.price) * 100).to_integral_value())))
 
     fraud_ok, _risk, _flags = run_fraud_checks(

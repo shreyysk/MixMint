@@ -132,33 +132,25 @@
 <section class="hero-section text-center -mt-10 mb-0 relative" data-reveal>
     <div class="ux-blob" style="width:420px;height:420px;top:-140px;left:-120px;background:var(--accent-mint);"></div>
     <div class="ux-blob" style="width:340px;height:340px;top:-80px;right:-100px;background:var(--accent-blue);animation-delay:-4s;"></div>
-    <!-- Decorative Geo Art (angular lines suggesting mixing board grooves) -->
-    <svg class="geo-decoration" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path d="M10,90 L90,10 M20,90 L90,20 M30,90 L90,30 M40,90 L90,40 M50,90 L90,50 M60,90 L90,60"
-            stroke="currentColor" stroke-width="0.5" fill="none" class="text-[var(--text-muted)]" />
-        <path d="M10,80 L80,10 M10,70 L70,10 M10,60 L60,10 M10,50 L50,10 M10,40 L40,10" stroke="currentColor"
-            stroke-width="0.5" fill="none" class="text-[var(--text-muted)]" />
-    </svg>
-
     <div class="relative z-10 w-full max-w-5xl px-4">
-        <h1
-            class="font-display text-[64px] sm:text-[80px] lg:text-[96px] font-[700] leading-[0.9] tracking-[-0.03em] text-[var(--text-primary)] mb-6">
-            Home of DJ Releases.
-        </h1>
-
-        <p class="font-body text-[18px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.6] mb-12">
-            India's only DJ music marketplace where you truly support your favorite artists. No subscriptions, no streaming.
+        <p class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[12px] font-[600] text-[var(--text-muted)] mb-7">
+            <span class="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse" aria-hidden="true"></span>
+            Live crate · {{ crate.releases }} release{{ crate.releases|pluralize }} · {{ crate.djs }} DJ{{ crate.djs|pluralize }} · updated weekly
         </p>
-
-        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <a href="{% url 'explore' %}" class="btn-mm btn-mint w-full sm:w-[200px] text-[15px] font-[600]"
-                style="height: 52px; border-radius: 8px;">
-                Browse Music
-            </a>
-            <a href="{% url 'apply_as_dj' %}" class="btn-mm btn-ghost w-full sm:w-[220px] text-[15px] font-[600]"
-                style="height: 52px; border-radius: 8px;">
-                Sell your music
-            </a>
+        <h1 class="font-display text-[52px] sm:text-[80px] lg:text-[96px] font-[800] leading-[0.92] tracking-[-0.035em] text-[var(--text-primary)] mb-6">
+            Unreleased.<br>Unheard.<br><span class="text-[var(--accent-mint)]">DJ-only.</span>
+        </h1>
+        <p class="font-body text-[17px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.55] mb-10">
+            Private edits, remixes and album packs straight from India's DJs. Preview, pay once with just your email, download instantly.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+            <a href="{% url 'releases' %}" class="btn-mm btn-mint w-full sm:w-[220px] h-[54px] text-[15px] font-[700] inline-flex items-center justify-center">Browse all releases</a>
+            <a href="{% url 'dj_directory' %}" class="btn-mm btn-ghost w-full sm:w-[200px] h-[54px] text-[15px] font-[600] inline-flex items-center justify-center">Browse artists</a>
+        </div>
+        <div class="mm-trust mt-8">
+            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Payments secured by Razorpay</span>
+            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Guest checkout · instant download</span>
+            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/></svg><a href="{% url 'recover' %}" class="underline underline-offset-2">Recover a past download</a></span>
         </div>
     </div>
 </section>
@@ -168,7 +160,7 @@
     <div class="ticker">
         <!-- Sequence 1 -->
         <div class="ticker-item">🔒 Secure Token Downloads</div>
-        <div class="ticker-item">85% Revenue to DJs</div>
+        <div class="ticker-item">{{ dj_share_percent|default:85 }}% to the DJ</div>
         <div class="ticker-item">📦 ZIP Album Packs</div>
         <div class="ticker-item">No Streaming</div>
         <div class="ticker-item">Device-Locked Files</div>
@@ -176,7 +168,7 @@
         <div class="ticker-item">No Subscriptions</div>
         <!-- Sequence 2 (duplicate for seamless loop) -->
         <div class="ticker-item">🔒 Secure Token Downloads</div>
-        <div class="ticker-item">85% Revenue to DJs</div>
+        <div class="ticker-item">{{ dj_share_percent|default:85 }}% to the DJ</div>
         <div class="ticker-item">📦 ZIP Album Packs</div>
         <div class="ticker-item">No Streaming</div>
         <div class="ticker-item">Device-Locked Files</div>
@@ -231,177 +223,58 @@
     </div>
 </section>
 
-<!-- ── POPULAR THIS WEEK ── -->
-<section class="py-16">
-    <div class="mm-section-head">
-        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">🔥 Popular this week</h2>
-        <a href="{% url 'explore' %}?sort=popular">View all →</a>
-    </div>
-
-    {% if popular_tracks %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
-        {% for track in popular_tracks %}
-        <div data-reveal-child
-            class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
-            <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
-                <!-- Artwork -->
-                <div
-                    class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
-                    {% if track.cover_url %}
-                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
-                    {% endif %}
-
-                    <div
-                        class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
-                        {{ track.genre|default:"AUDIO" }}
-                    </div>
-
-                    {% if track.file_format %}
-                    <div
-                        class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase z-10">
-                        {{ track.get_file_format_display|default:"WAV" }}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Info block -->
-                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title }}</h3>
-                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
-                            {{ track.dj.dj_name }}
-                        </p>
-                    </div>
-
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
-                    </div>
-
-                    <!-- Buy CTA -->
-                    {% if track.price > 0 %}
-                    <span role="button" tabindex="0" @click.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
-                        @keydown.enter.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
-                        class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-mint"
-                        style="height: 42px; font-size: 13px;" aria-label="Add {{ track.title }} to cart">Add to cart</span>
-                    <p class="mt-2 text-[11px] font-body text-[var(--text-muted)] text-center">🎁 Buy 3+ and save 5%</p>
-                    {% else %}
-                    <span class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-ghost"
-                        style="height: 42px; font-size: 13px;">Get it free</span>
-                    {% endif %}
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="py-20 border border-[var(--border)] rounded-[12px] text-center bg-[var(--bg-surface)]">
-        <p class="font-body text-[15px] text-[var(--text-muted)]">No trending tracks this week. Check back soon.</p>
-    </div>
-    {% endif %}
-</section>
-
 <!-- ── NEW RELEASES ── -->
-<section class="py-16">
+{% if featured_tracks %}
+<section class="py-14" aria-labelledby="h-new">
     <div class="mm-section-head">
-        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">New releases</h2>
-        <a href="{% url 'explore' %}?sort=new">View all →</a>
+        <div><h2 id="h-new" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">New releases</h2></div>
+        <a href="{% url 'releases' %}">All releases →</a>
     </div>
-
-    {% if featured_tracks %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
-        {% for track in featured_tracks %}
-        <div data-reveal-child
-            class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-0 overflow-hidden transition-all duration-200 hover:-translate-y-[2px] hover:border-[color-mix(in_srgb,var(--accent-mint)_40%,transparent)] shadow-[var(--shadow-card)]">
-            <a href="{% url 'track_detail' track.id %}" class="block h-full flex flex-col">
-                <!-- Artwork -->
-                <div
-                    class="aspect-square bg-[var(--bg-elevated)] border-b border-[var(--border)] relative overflow-hidden m-3 rounded-[10px]">
-                    {% if track.cover_url %}
-                    <img src="{{ track.cover_url }}" alt="{{ track.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20">🎧</div>
-                    {% endif %}
-
-                    <div
-                        class="absolute top-2 left-2 bg-[var(--bg-base)]/80 backdrop-blur-sm px-2 py-0.5 border border-[var(--border)] rounded-sm font-mono text-[10px] text-[var(--text-primary)] uppercase">
-                        {{ track.genre|default:"AUDIO" }}
-                    </div>
-
-                    {% if track.file_format %}
-                    <div
-                        class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase z-10">
-                        {{ track.get_file_format_display|default:"WAV" }}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Info block -->
-                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ track.title }}</h3>
-                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">
-                            {{ track.dj.dj_name }}
-                        </p>
-                    </div>
-
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ track.price|price_label }}</span>
-                    </div>
-
-                    <!-- Buy CTA -->
-                    {% if track.price > 0 %}
-                    <span role="button" tabindex="0" @click.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
-                        @keydown.enter.prevent.stop="$dispatch('add-to-cart', {type: 'track', id: {{ track.id }}})"
-                        class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-mint"
-                        style="height: 42px; font-size: 13px;" aria-label="Add {{ track.title }} to cart">Add to cart</span>
-                    <p class="mt-2 text-[11px] font-body text-[var(--text-muted)] text-center">🎁 Buy 3+ and save 5%</p>
-                    {% else %}
-                    <span class="mt-4 w-full rounded-[6px] flex items-center justify-center font-body text-[13px] font-[600] btn-mm btn-ghost"
-                        style="height: 42px; font-size: 13px;">Get it free</span>
-                    {% endif %}
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="py-20 border border-[var(--border)] rounded-[12px] text-center bg-[var(--bg-surface)]">
-        <p class="font-body text-[15px] text-[var(--text-muted)]">No releases available yet. Check back soon.</p>
-    </div>
-    {% endif %}
+    <div class="mm-rgrid" data-reveal>{% for item in featured_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
 </section>
+{% endif %}
 
-{% if new_albums %}
-<section class="py-16">
+<!-- ── LIMITED DROPS ── -->
+{% if drop_tracks %}
+<section class="py-14" aria-labelledby="h-drops">
     <div class="mm-section-head">
-        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">Album packs</h2>
-        <a href="{% url 'explore' %}?type=album">View all →</a>
+        <div><h2 id="h-drops" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Limited drops</h2><p class="text-[14px] text-[var(--text-muted)] mt-1">Numbered copies. Once they're gone, they're gone.</p></div>
+        <a href="{% url 'drops' %}">All drops →</a>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
-        {% for album in new_albums %}
-        <div data-reveal-child class="group lift relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
-            <a href="{% url 'album_detail' album.id %}" class="block h-full flex flex-col">
-                <div class="aspect-square bg-[var(--bg-elevated)] relative overflow-hidden m-3 rounded-[10px]">
-                    {% if album.cover_image %}
-                    <img src="{{ album.cover_image }}" alt="{{ album.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full flex items-center justify-center text-4xl opacity-20" aria-hidden="true">📦</div>
-                    {% endif %}
-                    <div class="absolute bottom-2 right-2 bg-[var(--accent-mint)] text-[var(--bg-base)] px-2 py-0.5 rounded-sm font-mono text-[9px] font-bold uppercase">{% if album.track_count %}{{ album.track_count }} tracks{% else %}ZIP pack{% endif %}</div>
-                </div>
-                <div class="p-4 pt-1 flex-[1] flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-body text-[16px] font-[600] text-[var(--text-primary)] truncate">{{ album.title }}</h3>
-                        <p class="font-body text-[13px] text-[var(--text-muted)] mt-1 truncate">{{ album.dj.dj_name }}</p>
-                    </div>
-                    <span class="mt-4 font-mono text-[18px] font-medium text-[var(--accent-mint)]">{{ album.price|price_label }}</span>
-                </div>
-            </a>
-        </div>
-        {% endfor %}
+    <div class="mm-rgrid" data-reveal>{% for item in drop_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<!-- ── BUNDLES ── -->
+{% if new_bundles %}
+<section class="py-14" aria-labelledby="h-bundles">
+    <div class="mm-section-head">
+        <div><h2 id="h-bundles" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Bundles</h2><p class="text-[14px] text-[var(--text-muted)] mt-1">Built for a night, not a moment.</p></div>
+        <a href="{% url 'bundles' %}">All bundles →</a>
     </div>
+    <div class="mm-rgrid" data-reveal>{% for item in new_bundles %}{% with kind="bundle" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<!-- ── POPULAR THIS WEEK ── -->
+{% if popular_tracks %}
+<section class="py-14" aria-labelledby="h-popular">
+    <div class="mm-section-head">
+        <div><h2 id="h-popular" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Popular this week</h2></div>
+        <a href="{% url 'releases' %}?sort=popular">See more →</a>
+    </div>
+    <div class="mm-rgrid" data-reveal>{% for item in popular_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<!-- ── ALBUM PACKS ── -->
+{% if new_albums %}
+<section class="py-14" aria-labelledby="h-albums">
+    <div class="mm-section-head">
+        <div><h2 id="h-albums" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Album packs</h2></div>
+        <a href="{% url 'releases' %}?type=albums">All album packs →</a>
+    </div>
+    <div class="mm-rgrid" data-reveal>{% for item in new_albums %}{% with kind="album" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
 </section>
 {% endif %}
 

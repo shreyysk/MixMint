@@ -1,0 +1,33 @@
+{% load tracks_filters %}{# Release card. Needs: item, kind ("track" | "album" | "bundle"). #}
+{% with left=item|left:kind %}
+<article class="mm-rcard group" data-kind="{{ kind }}">
+    <a href="{% if kind == 'track' %}{% url 'track_detail' item.pk %}{% elif kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'bundle_detail' item.pk %}{% endif %}" class="mm-rcard-link" aria-label="{{ item.title }} by {{ item.dj.dj_name }}">
+        <div class="mm-rcard-art">
+            {% if kind == 'track' and item.cover_url %}<img src="{{ item.cover_url }}" alt="" loading="lazy" decoding="async">
+            {% elif kind == 'album' and item.cover_image %}<img src="{{ item.cover_image }}" alt="" loading="lazy" decoding="async">
+            {% elif kind == 'bundle' and item.cover_image %}<img src="{{ item.cover_image }}" alt="" loading="lazy" decoding="async">
+            {% else %}<div class="mm-rcard-ph" aria-hidden="true"><span>{{ item.title|slice:":1"|upper }}</span></div>{% endif %}
+            <span class="mm-badge">{% if kind == 'track' %}Single{% elif kind == 'album' %}Album pack{% else %}Bundle{% endif %}</span>
+            {% if left is not None %}<span class="mm-badge mm-badge-hot">{% if left <= 0 %}Sold out{% else %}{{ left }} left{% endif %}</span>
+            {% elif item.dj.profile.is_pro_dj %}<span class="mm-badge mm-badge-pro">Pro drop</span>{% endif %}
+        </div>
+    </a>
+    {% with pv=item|preview %}{% if pv %}
+    <button type="button" class="mm-rcard-play" data-embed="{{ pv.embed }}" data-link="{{ pv.link }}" data-kind="{{ pv.kind }}"
+        data-title="{{ item.title }}" data-artist="{{ item.dj.dj_name }}"
+        data-href="{% if kind == 'track' %}{% url 'track_detail' item.pk %}{% elif kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'bundle_detail' item.pk %}{% endif %}"
+        aria-label="Watch preview of {{ item.title }}">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+    {% endif %}{% endwith %}
+    <div class="mm-rcard-body">
+        <h3 class="mm-rcard-title"><a href="{% if kind == 'track' %}{% url 'track_detail' item.pk %}{% elif kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'bundle_detail' item.pk %}{% endif %}">{{ item.title }}</a></h3>
+        <p class="mm-rcard-meta"><a href="{% url 'dj_profile' item.dj.slug %}">{{ item.dj.dj_name }}</a>{% if kind == 'track' and item.bpm %} · {{ item.bpm }} BPM{% endif %}{% if kind == 'album' and item.track_count %} · {{ item.track_count }} tracks{% endif %}{% if kind == 'bundle' %} · {{ item.live_tracks|length }} tracks{% endif %}</p>
+        <p class="mm-rcard-price">
+            <strong>{{ item.price|price_label }}</strong>
+            {% if kind == 'bundle' %}{% with s=item.savings_percent %}{% if s %}<s>{{ item.list_total|money }}</s> <em>Save {{ s }}%</em>{% endif %}{% endwith %}
+            {% else %}{% with s=item|off %}{% if s %}<s>{{ item.compare_at_price|money }}</s> <em>Save {{ s }}%</em>{% endif %}{% endwith %}{% endif %}
+        </p>
+    </div>
+</article>
+{% endwith %}

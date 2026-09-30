@@ -52,6 +52,10 @@ def album_detail_view(request, pk):
         context["dj_offers"] = PromotionalOffer.active_for_dj(album.dj)
     except Exception:
         context["dj_offers"] = []
+    from apps.core.catalog import copies_left, savings_percent
+
+    context["stock_left"] = copies_left(album, "album")
+    context["savings"] = savings_percent(album.price, album.compare_at_price)
     return render(request, "albums/detail.html", context)
 
 

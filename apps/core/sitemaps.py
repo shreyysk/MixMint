@@ -55,7 +55,7 @@ class StaticSitemap(Sitemap):
     priority = 0.5
 
     def items(self):
-        return ["/", "/explore/", "/djs/", "/legal/about/", "/legal/faq/", "/contact/"]
+        return ["/", "/releases/", "/bundles/", "/drops/", "/djs/", "/sell/", "/legal/about/", "/legal/faq/", "/contact/"]
 
     def location(self, item):
         return item

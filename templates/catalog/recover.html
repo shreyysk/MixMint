@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Recover your download — MixMint{% endblock %}
+{% block meta_description %}Bought music on MixMint? Enter the email you paid with and we'll send a link straight to your downloads. No password needed.{% endblock %}
+{% block content %}
+<div class="max-w-[520px] mx-auto py-12 md:py-20">
+    <h1 class="font-display text-[34px] md:text-[44px] font-[800] text-[var(--text-primary)] tracking-tight leading-none mb-3">Recover your download</h1>
+    <p class="text-[15px] text-[var(--text-muted)] mb-8">Enter the email you used at checkout. We'll send a one-time link that opens your library — no password, no stress.</p>
+    {% if sent %}
+    <div class="mm-card-section" role="status">
+        <p class="text-[16px] font-[600] text-[var(--text-primary)] mb-1">Check your inbox ✉️</p>
+        <p class="text-[14px] text-[var(--text-muted)]">If that email bought anything on MixMint, a sign-in link is on its way. It works once, for 30 minutes. Look in Promotions/Spam too.</p>
+        <a href="{% url 'recover' %}" class="inline-block mt-4 text-[13px] underline text-[var(--text-muted)]">Use a different email</a>
+    </div>
+    {% else %}
+    <form method="post" class="mm-card-section space-y-4">
+        {% csrf_token %}
+        <label for="rec-email" class="block text-[13px] font-[600] text-[var(--text-primary)]">Email used at checkout</label>
+        <input id="rec-email" name="email" type="email" required autocomplete="email" inputmode="email" class="input-mm h-[50px] text-[15px]" placeholder="you@gmail.com">
+        <button class="btn-mm btn-mint w-full h-[50px] text-[15px] font-[700]">Send my link</button>
+    </form>
+    {% endif %}
+    <p class="text-[13px] text-[var(--text-muted)] mt-6">Still stuck? Tap <button type="button" class="underline" onclick="window.dispatchEvent(new CustomEvent('open-help'))">Help</button>{% if help_telegram_url %} or <a href="{{ help_telegram_url }}" target="_blank" rel="noopener" class="underline">message us on Telegram</a>{% endif %} — a real person replies.</p>
+</div>
+{% endblock %}

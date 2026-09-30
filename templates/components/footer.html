@@ -14,27 +14,30 @@
                     Buy exclusive edits, remixes and album packs straight from the DJs who made them. Pay once, download forever. No subscriptions, no streaming.
                 </p>
                 <p class="font-body text-[13px] text-[var(--text-muted)]">🇮🇳 Made in India · Instant GST invoices</p>
+                <p class="font-body text-[13px] text-[var(--text-muted)] mt-2">🔒 Payments secured by Razorpay · All sales are digital downloads</p>
             </div>
 
-            <!-- Marketplace -->
-            <nav class="md:col-span-2" aria-label="Marketplace">
-                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Marketplace</p>
+            <!-- Browse -->
+            <nav class="md:col-span-2" aria-label="Browse">
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Browse</p>
                 <ul class="flex flex-col gap-3 font-body text-[14px]">
-                    <li><a href="{% url 'explore' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Browse music</a></li>
-                    <li><a href="{% url 'explore' %}?sort=new" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">New releases</a></li>
-                    <li><a href="{% url 'dj_directory' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">DJs</a></li>
-                    <li><a href="{% url 'apply_as_dj' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Sell your music</a></li>
+                    <li><a href="{% url 'releases' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">All releases</a></li>
+                    <li><a href="{% url 'dj_directory' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Artists</a></li>
+                    <li><a href="{% url 'bundles' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Bundles</a></li>
+                    <li><a href="{% url 'drops' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Limited drops</a></li>
+                    <li><a href="{% url 'recover' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Recover your download</a></li>
                 </ul>
             </nav>
 
-            <!-- Help -->
-            <nav class="md:col-span-2" aria-label="Help">
-                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Help</p>
+            <!-- Company -->
+            <nav class="md:col-span-2" aria-label="Company">
+                <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-4">Company</p>
                 <ul class="flex flex-col gap-3 font-body text-[14px]">
+                    <li><a href="/legal/about/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">About</a></li>
+                    <li><a href="{% url 'sell' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Get listed</a></li>
                     <li><a href="/legal/faq/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">FAQ</a></li>
-                    <li><a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Contact support</a></li>
-                    <li><a href="/legal/about/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">About MixMint</a></li>
-                    <li><a href="/legal/transparency/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">How downloads work</a></li>
+                    <li><a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Contact</a></li>
+                    {% if help_telegram_url %}<li><a href="{{ help_telegram_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[var(--text-primary)] hover:text-[#29A9EB] transition-colors"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.8 15.3l-.4 5.2c.6 0 .8-.2 1.1-.5l2.6-2.5 5.4 4c1 .5 1.7.3 2-.9l3.6-17c.3-1.5-.5-2.1-1.5-1.7L1.4 9.9c-1.4.6-1.4 1.4-.2 1.7l5.4 1.7L19 5.6c.6-.4 1.1-.2.7.2z"/></svg>Telegram support</a></li>{% endif %}
                 </ul>
             </nav>
 
@@ -49,8 +52,9 @@
             <nav aria-label="Legal" class="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1 font-body text-[13px]">
                 <a href="{% url 'terms' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Terms</a>
                 <a href="{% url 'privacy' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Privacy</a>
-                <a href="{% url 'refund' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Refunds</a>
-                <a href="{% url 'dmca' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Copyright &amp; DMCA</a>
+                <a href="{% url 'refund' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Cancellation &amp; refund</a>
+                <a href="{% url 'shipping' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Shipping &amp; delivery</a>
+                <a href="{% url 'dmca' %}" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Copyright takedown</a>
                 <span class="text-[var(--text-muted)]">© {% now "Y" %} MixMint</span>
             </nav>
 

@@ -55,10 +55,11 @@
         } catch (e) {
             /* non-JSON response */
         }
-        if (res.status === 401 || (res.status === 403 && data.detail && /credentials/i.test(data.detail))) {
+        var toLogin = res.redirected && /\/login\//.test(res.url);  // @login_required bounced us
+        if (res.status === 401 || toLogin || (res.status === 403 && data.detail && /credentials/i.test(data.detail))) {
             if (opts.redirectOnAuth !== false) loginRedirect();
             var authErr = new Error(data.error || "Please log in to continue.");
-            authErr.status = res.status;
+            authErr.status = 401;
             throw authErr;
         }
         if (!res.ok) {
@@ -147,8 +148,18 @@
     async function checkout(url, body, opts) {
         opts = opts || {};
         var restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+        var canGuest = !!document.getElementById("mm-guest");
         try {
-            var data = await api(url, { body: body || {} });
+            var data;
+            try {
+                data = await api(url, { body: body || {}, redirectOnAuth: !canGuest });
+            } catch (authErr) {
+                if (authErr.status !== 401 || !canGuest) throw authErr;
+                restore();
+                if (!(await guest())) return;
+                restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+                data = await api(url, { body: body || {} });
+            }
             if (data.checkout === "redirect" && data.redirect_url) {
                 showOverlay("pending", "Redirecting to PhonePe…", "Don't close this tab.");
                 window.location.href = data.redirect_url;
@@ -208,6 +219,38 @@
         }
     }
 
+    // Guest checkout: ask for an email, make the account, carry on paying. Resolves true when signed in.
+    function guest() {
+        var dlg = document.getElementById("mm-guest");
+        if (!dlg) { loginRedirect(); return Promise.resolve(false); }
+        var form = dlg.querySelector("form"), msg = dlg.querySelector("[data-msg]"), email = form.querySelector("input[type=email]");
+        var send = dlg.querySelector("[data-send-link]");
+        msg.textContent = ""; send.hidden = true;
+        dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+        setTimeout(function () { email.focus(); }, 30);
+        return new Promise(function (resolve) {
+            function done(ok) { form.onsubmit = null; dlg.onclose = null; if (dlg.open) dlg.close(); resolve(ok); }
+            dlg.onclose = function () { resolve(false); };
+            form.onsubmit = async function (e) {
+                e.preventDefault();
+                var btn = form.querySelector("[type=submit]"), r = busy(btn, "One moment…");
+                try {
+                    await api("/checkout/guest/", { body: { email: email.value }, redirectOnAuth: false });
+                    r(); done(true);
+                } catch (err) {
+                    r(); msg.textContent = err.message;
+                    send.hidden = !(err.data && err.data.exists);
+                }
+            };
+            send.onclick = async function () {
+                var fd = new FormData(); fd.append("email", email.value); fd.append("csrfmiddlewaretoken", csrf());
+                try { await fetch("/recover/", { method: "POST", body: fd, credentials: "same-origin" }); } catch (x) { }
+                msg.textContent = "Check your inbox: we sent a sign-in link to " + email.value + ". Open it on this device, then tap Buy again.";
+                send.hidden = true;
+            };
+        });
+    }
+
     async function deviceHash() {
         var key = "mm_device_hash_v1";
         try {
@@ -260,6 +303,8 @@
         api: api,
         busy: busy,
         upload: upload,
+        preview: preview,
+        guest: guest,
         checkout: checkout,
         csrf: csrf,
         deviceHash: deviceHash,
@@ -326,6 +371,29 @@
                 label(s) { return { open: "Waiting for us", answered: "Answered", closed: "Closed", resolved: "Closed" }[s] || s; },
             };
         });
+    });
+
+    // ── Preview: the DJ's own YouTube / Instagram clip in a pop-up (MixMint never streams the file) ──
+    function preview(btn) {
+        var dlg = document.getElementById("mm-preview");
+        if (!dlg) { window.open(btn.getAttribute("data-link") || btn.getAttribute("data-embed"), "_blank", "noopener"); return; }
+        var frame = dlg.querySelector("iframe"), box = dlg.querySelector("[data-box]");
+        dlg.querySelector("[data-title]").textContent = btn.getAttribute("data-title") || "Preview";
+        dlg.querySelector("[data-artist]").textContent = btn.getAttribute("data-artist") || "";
+        var link = dlg.querySelector("[data-open]");
+        link.href = btn.getAttribute("data-link") || "#";
+        link.textContent = btn.getAttribute("data-kind") === "instagram" ? "Open on Instagram ↗" : "Open on YouTube ↗";
+        var more = dlg.querySelector("[data-more]");
+        more.href = btn.getAttribute("data-href") || "#";
+        more.hidden = !btn.getAttribute("data-href");
+        box.dataset.kind = btn.getAttribute("data-kind") || "youtube";
+        frame.src = btn.getAttribute("data-embed");
+        dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+        dlg.addEventListener("close", function () { frame.src = "about:blank"; }, { once: true });
+    }
+    document.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-embed]");
+        if (b) { e.preventDefault(); e.stopPropagation(); preview(b); }
     });
 
     // Payment result banner (PhonePe returns to /library/?payment=...).

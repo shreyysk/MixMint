@@ -50,6 +50,7 @@ urlpatterns = [
     path("anti-resale/", anti_resale_page, name="legal_anti_resale"),
     path("about/", about_page, name="legal_about"),
     path("faq/", faq_page, name="legal_faq"),
+    path("shipping/", lambda r: render(r, "legal/shipping.html"), name="shipping"),
     # Legacy flat names for the global footer component
     path("terms/", terms_page, name="terms"),
     path("privacy/", privacy_page, name="privacy"),

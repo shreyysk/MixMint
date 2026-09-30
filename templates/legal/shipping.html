@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Shipping &amp; delivery — MixMint{% endblock %}
+{% block meta_description %}MixMint sells digital downloads only. Nothing is shipped: your music is ready to download right after payment.{% endblock %}
+{% block content %}
+<div class="max-w-[760px] mx-auto py-12 md:py-16">
+    <h1 class="font-display text-[34px] md:text-[46px] font-[800] text-[var(--text-primary)] tracking-tight leading-none mb-3">Shipping &amp; delivery</h1>
+    <p class="text-[13px] text-[var(--text-muted)] mb-10">Last updated: September 30, 2026</p>
+    <div class="space-y-6 text-[15px] leading-relaxed text-[var(--text-muted)]">
+        <section class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">Digital products only</h2>
+            <p>Everything on MixMint is a digital download (audio files and ZIP packs). Nothing is shipped and there are no shipping charges.</p></section>
+        <section class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">When you get it</h2>
+            <p>Right after your payment is confirmed — usually within seconds. Your purchase appears in <a href="{% url 'library_page' %}" class="underline text-[var(--text-primary)]">My library</a> with a Download button, and we email you a receipt and GST invoice.</p></section>
+        <section class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">If you don't see it</h2>
+            <p>Payments can take up to 15 minutes to confirm with some banks. If it still isn't there, use <a href="{% url 'recover' %}" class="underline text-[var(--text-primary)]">Recover your download</a> or tap Help — we reply within a few hours. If a payment went through but we can't deliver, you get a full refund (see the <a href="{% url 'refund' %}" class="underline text-[var(--text-primary)]">refund policy</a>).</p></section>
+        <section class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">Where we deliver</h2>
+            <p>Anywhere with an internet connection. Prices are in Indian rupees (₹) and include all charges.</p></section>
+    </div>
+</div>
+{% endblock %}

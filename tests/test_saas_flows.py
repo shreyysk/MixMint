@@ -44,12 +44,14 @@ class TestDJApplication:
         c = _login(user)
         r = c.post(
             "/apply-dj/",
-            {"dj_name": "Aurora", "slug": "aurora", "genres": "Techno, House", "legal_agreement_accepted": "true"},
+            {"dj_name": "Aurora", "slug": "aurora", "genres": "Techno, House", "legal_agreement_accepted": "true",
+             "city": "Pune", "links": ["https://soundcloud.com/aurora/set"]},
         )
         assert r.status_code == 302
         dj = user.profile.dj_profile
         assert dj.status == "pending_review" and dj.genres == ["Techno", "House"]
         assert "Under Review" in c.get("/apply-dj/").content.decode()
+        assert dj.location == "Pune" and dj.application_links == ["https://soundcloud.com/aurora/set"]
 
     def test_form_errors_are_shown_and_values_kept(self, user):
         r = _login(user).post("/apply-dj/", {"dj_name": "Aurora", "slug": "admin", "legal_agreement_accepted": "on"})
@@ -57,7 +59,8 @@ class TestDJApplication:
         assert r.status_code == 400 and "reserved" in html and "Aurora" in html
 
     def test_admin_page_lists_and_approves(self, user, admin_user):
-        _login(user).post("/apply-dj/", {"dj_name": "Aurora", "slug": "aurora", "legal_agreement_accepted": "on"})
+        _login(user).post("/apply-dj/", {"dj_name": "Aurora", "slug": "aurora", "legal_agreement_accepted": "on",
+                                         "city": "Pune", "links": "https://youtu.be/abc"})
         admin = _login(admin_user)
         html = admin.get("/api/v1/admin/dj/management/").content.decode()
         assert "Aurora" in html and "Approve" in html

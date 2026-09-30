@@ -38,7 +38,7 @@ class TestDJStorefrontIsolation:
                              youtube_url='https://youtube.com/watch?v=p')
 
         client = Client()
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert b'Active Track' in response.content
         assert b'Paused Track' not in response.content
 
@@ -56,7 +56,7 @@ class TestDJStorefrontIsolation:
                              youtube_url='https://youtube.com/watch?v=h', is_active=False)
 
         client = Client()
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert b'Hidden Track' not in response.content
 
     def test_deleted_track_not_visible(self):
@@ -73,7 +73,7 @@ class TestDJStorefrontIsolation:
                              youtube_url='https://youtube.com/watch?v=d', is_deleted=True)
 
         client = Client()
-        response = client.get('/explore/')
+        response = client.get('/releases/')
         assert b'Deleted Track' not in response.content
 
 
