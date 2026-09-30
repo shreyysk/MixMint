@@ -1,0 +1,44 @@
+# MixMint vault: Local Bot API Server + vault worker + HTTPS (Caddy).
+# On the server:  cp .env.example .env  →  fill it in  →  docker compose up -d
+services:
+  bot-api:
+    image: aiogram/telegram-bot-api:latest
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+      TELEGRAM_LOCAL: "1"              # no upload/download size limits (2 GB per file)
+      TELEGRAM_STAT: "0"
+    volumes:
+      - botdata:/var/lib/telegram-bot-api
+    # not published: only the worker talks to it
+
+  worker:
+    build: .
+    restart: unless-stopped
+    depends_on: [bot-api]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      VAULT_WORKER_SECRET: ${VAULT_WORKER_SECRET}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      BOT_API_URL: http://bot-api:8081
+      WORKERS: ${WORKERS:-2}
+    volumes:
+      - botdata:/var/lib/telegram-bot-api   # same path as bot-api, so "file://" paths match
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [worker]
+    ports: ["80:80", "443:443"]
+    environment:
+      VAULT_DOMAIN: ${VAULT_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+
+volumes:
+  botdata:
+  caddydata:

@@ -136,3 +136,18 @@ def telegram_webhook(request):
 
         logging.getLogger("mixmint").exception("Telegram update failed")
     return JsonResponse({"ok": True})  # always 200 so Telegram doesn't retry forever
+
+
+@csrf_exempt
+@require_POST
+def vault_callback(request):
+    """Vault worker → MixMint: a copy to Telegram or a fetch back into R2 finished."""
+    from apps.admin_panel import vault
+
+    if not vault.verify_worker(request):
+        return HttpResponse(status=403)
+    try:
+        data = json.loads(request.body or b"{}")
+    except ValueError:
+        return HttpResponse(status=400)
+    return JsonResponse({"ok": vault.apply_worker_result(data)})

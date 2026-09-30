@@ -40,7 +40,9 @@ def tg(method, payload):
     if not _token():
         return None
     try:
-        r = requests.post(f"https://api.telegram.org/bot{_token()}/{method}", json=payload, timeout=10)
+        from .vault import api_base
+
+        r = requests.post(f"{api_base()}/bot{_token()}/{method}", json=payload, timeout=10)
         data = r.json()
         return data.get("result") if data.get("ok") else None
     except Exception as exc:  # the URL holds the token: never log the exception text

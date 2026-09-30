@@ -527,6 +527,9 @@ TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")
 TELEGRAM_ZIPS_CHANNEL_ID = env("TELEGRAM_ZIPS_CHANNEL_ID", default="")
 # Self-hosted Bot API server (raises the 50 MB send / 20 MB fetch limits to 2 GB). Optional.
 TELEGRAM_API_BASE = env("TELEGRAM_API_BASE", default="https://api.telegram.org")
+# Vault worker (vault_worker/): moves files between R2 and the channels through a Local Bot API Server.
+VAULT_WORKER_URL = env("VAULT_WORKER_URL", default="")
+VAULT_WORKER_SECRET = env("VAULT_WORKER_SECRET", default="")
 
 # Auth URLs
 LOGIN_URL = "login"

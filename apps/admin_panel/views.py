@@ -1161,7 +1161,21 @@ def support_admin_view(request):
         from . import vault
 
         done = vault.sweep(budget_seconds=200)
-        messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('too_large', 0)} too big for Telegram (R2 only), {done.get('failed', 0)} failed.")
+        messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('pending', 0)} copying, {done.get('too_large', 0)} R2 only, {done.get('failed', 0)} failed, {done.get('freed', 0)} freed from R2.")
+        return redirect("/api/v1/admin/support/#vault")
+    if request.method == "POST" and request.POST.get("action") == "vault_settings":
+        from .models import PlatformSettings
+
+        ps = PlatformSettings.load()
+        try:
+            ps.vault_hold_days = min(max(int(request.POST.get("hold_days") or 10), 1), 365)
+            ps.vault_rehold_days = min(max(int(request.POST.get("rehold_days") or 3), 1), 90)
+        except ValueError:
+            messages.error(request, "Days must be whole numbers.")
+            return redirect("/api/v1/admin/support/#vault")
+        ps.vault_evict_enabled = request.POST.get("evict") == "on"
+        ps.save()
+        messages.success(request, "Vault settings saved.")
         return redirect("/api/v1/admin/support/#vault")
 
     status = request.GET.get("status") or "open"

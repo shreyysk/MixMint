@@ -124,6 +124,15 @@ class DownloadManager:
         else:
             msg, remaining = None, None
 
+        # Files older than the R2 hold live only in Telegram: fetch it back before issuing a link.
+        from apps.admin_panel.vault import ensure_in_r2
+
+        if not ensure_in_r2(content_type, content):
+            return Response(
+                {"preparing": True, "retry_after": 5,
+                 "message": "Fetching your file from the MixMint vault. This usually takes under a minute."},
+                status=202,
+            )
         token = cls.generate_token(profile, content.id, content_type, access_source, client_ip, user_agent, device_hash)
         data = {
             "download_url": f"/api/v1/downloads/{token.token}/",

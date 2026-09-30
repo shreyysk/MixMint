@@ -130,7 +130,7 @@ def test_missing_r2_object_is_restored_from_channel(env, dj_user):
     t = _track(dj_user[1], s3)
     vault.archive("track", t)
     s3.delete_object(Bucket="raw", Key=t.file_key)
-    assert vault.restore("track", t) is True
+    assert vault.restore("track", t) == "ready"
     assert s3.get_object(Bucket="raw", Key=t.file_key)["Body"].read() == b"R" * 1000
 
 
@@ -160,3 +160,141 @@ def test_external_link_conversion_is_retired(dj_user, track):
     r = c.post(f"/api/v1/tracks/{track.id}/convert-external/", json.dumps({"external_link_url": "https://drive.google.com/x"}),
                content_type="application/json")
     assert r.status_code == 410
+
+
+# ───────────────── R2 as a holding area, Telegram as the permanent store ─────────────────
+from datetime import timedelta  # noqa: E402
+
+from django.utils import timezone  # noqa: E402
+
+
+def _archived(env, dj, **kw):
+    from apps.admin_panel import vault
+
+    s3, tg = env
+    _link("singles")
+    t = _track(dj, s3, **kw)
+    rec = vault.archive("track", t)
+    assert rec.status == "archived"
+    return t, rec
+
+
+def test_hold_is_10_days_from_upload_then_r2_is_freed(env, dj_user):
+    from apps.admin_panel import vault
+
+    s3, tg = env
+    t, rec = _archived(env, dj_user[1])
+    assert abs((rec.r2_hold_until - t.created_at) - timedelta(days=10)) < timedelta(seconds=5)
+    assert vault.evict() == 0  # day 0: still held
+    assert vault.evict(now=timezone.now() + timedelta(days=11)) == 1
+    rec.refresh_from_db()
+    assert rec.r2_present is False
+    assert s3.list_objects_v2(Bucket="raw").get("KeyCount", 0) == 0
+
+
+def test_limited_drop_stays_in_r2_until_sold_out(env, dj_user, user):
+    from apps.admin_panel import vault
+    from apps.commerce.models import Purchase
+
+    s3, tg = env
+    t, rec = _archived(env, dj_user[1], title="Drop")
+    t.copies_limit = 1
+    t.save()
+    later = timezone.now() + timedelta(days=30)
+    assert vault.evict(now=later) == 0
+    Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                            price_paid=t.price, status="paid", gateway_order_id="MM_SOLD")
+    assert vault.evict(now=later) == 1
+
+
+def test_evicted_file_is_fetched_back_before_download_link(env, dj_user, user):
+    from apps.admin_panel.models import VaultFile
+    from apps.commerce.models import Purchase
+
+    s3, tg = env
+    t, rec = _archived(env, dj_user[1])
+    from apps.admin_panel import vault
+
+    vault.evict(now=timezone.now() + timedelta(days=11))
+    Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                            price_paid=t.price, status="paid", gateway_order_id="MM_B")
+    c = Client()
+    c.force_login(user)
+    r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+    assert r.status_code == 200 and "download_url" in r.json()  # no worker: ≤20 MB restored inline
+    rec = VaultFile.objects.get(pk=rec.pk)
+    assert rec.r2_present and rec.restored_count == 1
+    assert rec.r2_hold_until > timezone.now() + timedelta(days=2)
+
+
+def test_worker_mode_archive_and_restore_via_callbacks(env, dj_user, user, settings):
+    from apps.admin_panel import vault
+    from apps.admin_panel.models import VaultFile
+    from apps.commerce.models import Purchase
+
+    s3, tg = env
+    settings.VAULT_WORKER_URL, settings.VAULT_WORKER_SECRET = "https://vault.example", "wsecret"
+    jobs = []
+
+    def worker_post(url, json=None, timeout=None, headers=None, data=None, files=None):
+        if url.startswith("https://vault.example"):
+            jobs.append(json)
+            return mock.Mock(status_code=200, json=lambda: {"job_id": f"J{len(jobs)}"})
+        return tg.post(url, data=data, files=files, json=json, timeout=timeout)
+
+    tg.post_orig = tg.post
+    with mock.patch.object(tg, "post", worker_post):
+        _link("singles")
+        t = _track(dj_user[1], s3, size=300 * 1024 * 1024 // 1000)  # size field only matters for limits
+        t.file_size = 300 * 1024 * 1024
+        t.save()
+        rec = vault.archive("track", t)
+        assert rec.status == "pending" and jobs[-1]["action"] == "archive" and jobs[-1]["chat_id"] == "-100111"
+
+        c = Client()
+        bad = c.post("/vault/callback/", json.dumps({}), content_type="application/json", HTTP_AUTHORIZATION="Bearer nope")
+        assert bad.status_code == 403
+        cb = dict(action="archive", kind="track", content_id=t.id, key=t.file_key, ok=True, message_id=9, file_id="BIG", file_unique_id="u")
+        assert c.post("/vault/callback/", json.dumps(cb), content_type="application/json", HTTP_AUTHORIZATION="Bearer wsecret").json()["ok"]
+        rec.refresh_from_db()
+        assert rec.status == "archived" and rec.file_id == "BIG"
+
+        assert vault.evict(now=timezone.now() + timedelta(days=11)) == 1  # 300 MB is restorable with the worker
+        Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                                price_paid=t.price, status="paid", gateway_order_id="MM_W")
+        buyer = Client()
+        buyer.force_login(user)
+        r = buyer.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+        assert r.status_code == 202 and r.json()["preparing"]
+        assert jobs[-1]["action"] == "restore" and jobs[-1]["file_id"] == "BIG"
+        n = len(jobs)
+        assert buyer.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json").status_code == 202
+        assert len(jobs) == n  # no duplicate restore job
+
+        s3.put_object(Bucket="raw", Key=t.file_key, Body=b"x")  # the worker put it back
+        cb = dict(action="restore", kind="track", content_id=t.id, key=t.file_key, ok=True)
+        c.post("/vault/callback/", json.dumps(cb), content_type="application/json", HTTP_AUTHORIZATION="Bearer wsecret")
+        assert VaultFile.objects.get(pk=rec.pk).r2_present
+        r = buyer.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+        assert r.status_code == 200 and "download_url" in r.json()
+
+
+def test_not_evicted_when_it_cannot_come_back(env, dj_user):
+    from apps.admin_panel import vault
+
+    s3, tg = env
+    t, rec = _archived(env, dj_user[1])
+    rec.size = 100 * 1024 * 1024  # over 20 MB and no worker → keep in R2
+    rec.save()
+    assert vault.evict(now=timezone.now() + timedelta(days=11)) == 0
+
+
+def test_admin_can_change_hold(env, admin_user):
+    from apps.admin_panel.models import PlatformSettings
+
+    c = Client()
+    c.force_login(admin_user)
+    with mock.patch("apps.admin_panel.support.webhook_info", return_value={}):
+        c.post("/api/v1/admin/support/", {"action": "vault_settings", "hold_days": "14", "rehold_days": "5", "evict": "on"})
+    ps = PlatformSettings.load()
+    assert ps.vault_hold_days == 14 and ps.vault_rehold_days == 5 and ps.vault_evict_enabled

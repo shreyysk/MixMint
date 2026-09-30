@@ -202,6 +202,10 @@ class PlatformSettings(models.Model):
     tg_singles_channel_title = models.CharField(max_length=120, blank=True, default="")
     tg_zips_channel_id = models.CharField(max_length=40, blank=True, default="")
     tg_zips_channel_title = models.CharField(max_length=120, blank=True, default="")
+    # R2 is only a holding area: files leave R2 after these many days (Telegram keeps the permanent copy).
+    vault_evict_enabled = models.BooleanField(default=True)
+    vault_hold_days = models.PositiveIntegerField(default=10)  # normal releases: days after upload
+    vault_rehold_days = models.PositiveIntegerField(default=3)  # after a file is fetched back for a buyer
 
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -302,8 +306,9 @@ class VaultFile(models.Model):
     """The Telegram-channel copy of one uploaded track (singles channel) or album ZIP (zips channel)."""
 
     STATUS = (
+        ("pending", "Copying to channel"),
         ("archived", "Stored in channel"),
-        ("too_large", "Over the bot's 50 MB limit (R2 only)"),
+        ("too_large", "Too big for the bot (R2 only)"),
         ("failed", "Failed"),
     )
     content_type = models.CharField(max_length=10, choices=(("track", "Track"), ("album", "Album")))
@@ -317,6 +322,12 @@ class VaultFile(models.Model):
     file_key = models.CharField(max_length=500, blank=True, default="")
     error = models.CharField(max_length=255, blank=True, default="")
     restored_count = models.PositiveIntegerField(default=0)
+    # R2 holding area: is the file in R2 right now, and until when do we keep it there?
+    r2_present = models.BooleanField(default=True)
+    r2_hold_until = models.DateTimeField(null=True, blank=True)
+    evicted_at = models.DateTimeField(null=True, blank=True)
+    job_id = models.CharField(max_length=64, blank=True, default="")
+    job_started_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

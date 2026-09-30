@@ -31,15 +31,19 @@
     </section>
 
     {% if tg_token %}
-    <section class="mm-card-section space-y-4" id="vault">
+    <section class="mm-card-section space-y-5" id="vault">
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
-                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Upload vault (private Telegram channels)</h2>
-                <p class="text-[13px] text-[var(--text-muted)] mt-1 max-w-[560px]">Every upload is also posted by the bot to a private channel: single tracks to one, album ZIPs to the other. Buyers still download from R2 with a temporary link; if a file ever goes missing in R2, it's restored from the channel automatically (files up to {{ vault.fetch_mb }} MB).</p>
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">File vault (private Telegram channels)</h2>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1 max-w-[600px]">Telegram keeps the permanent copy of every upload: tracks in the singles channel, album ZIPs in the ZIP channel. R2 only holds a file for a while so buyers get fast temporary links; after that it's fetched back from Telegram when someone buys it.</p>
             </div>
             <form method="post" class="shrink-0">{% csrf_token %}<input type="hidden" name="action" value="vault_sweep">
-                <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Copy missing files now</button></form>
+                <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Run vault now</button></form>
         </div>
+        <p class="text-[13px] rounded-[10px] px-3 py-2 {% if vault.worker %}bg-[var(--accent-mint)]/10 text-[var(--text-primary)]{% else %}bg-[var(--accent-amber,#b7791f)]/10 text-[var(--text-primary)]{% endif %}">
+            {% if vault.worker %}Vault worker connected (Local Bot API Server): files up to {{ vault.send_mb }} MB go to Telegram and any size can be fetched back.
+            {% else %}Vault worker not connected: only files up to {{ vault.fetch_mb }} MB can live in Telegram only; bigger ones stay in R2. Set VAULT_WORKER_URL and VAULT_WORKER_SECRET after deploying vault_worker/.{% endif %}
+        </p>
         <div class="grid sm:grid-cols-2 gap-3">
             {% for label, cid, title, word in vault_rows %}
             <div class="rounded-[12px] border border-[var(--border)] p-4">
@@ -54,7 +58,15 @@
             </div>
             {% endfor %}
         </div>
-        <p class="text-[12px] text-[var(--text-muted)]">Stored: {{ vault.counts.archived }} · Over {{ vault.send_mb }} MB (R2 only, listed in the channel): {{ vault.counts.too_large }} · Failed: {{ vault.counts.failed }}</p>
+        <form method="post" class="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end">{% csrf_token %}<input type="hidden" name="action" value="vault_settings">
+            <label class="flex items-center gap-2 text-[13px] text-[var(--text-primary)] h-[42px]"><input type="checkbox" name="evict" {% if vault.evict %}checked{% endif %} class="w-4 h-4 accent-[var(--accent-mint)]"> Free R2 after the hold</label>
+            <label class="text-[12px] text-[var(--text-muted)]">Normal release: keep in R2 (days after upload)
+                <input type="number" name="hold_days" min="1" max="365" value="{{ vault.hold_days }}" class="input-mm h-[42px] mt-1 font-mono"></label>
+            <label class="text-[12px] text-[var(--text-muted)]">After fetching back for a buyer (days)
+                <input type="number" name="rehold_days" min="1" max="90" value="{{ vault.rehold_days }}" class="input-mm h-[42px] mt-1 font-mono"></label>
+            <button class="btn-mm btn-mint h-[42px] px-5 text-[13px]">Save</button>
+        </form>
+        <p class="text-[12px] text-[var(--text-muted)]">Limited drops stay in R2 until they sell out. In Telegram: {{ vault.counts.archived }} ({{ vault.counts.in_r2 }} also in R2, {{ vault.counts.telegram_only }} Telegram-only) · Copying: {{ vault.counts.pending }} · R2 only: {{ vault.counts.too_large }} · Failed: {{ vault.counts.failed }}</p>
     </section>
     {% endif %}
 

@@ -123,7 +123,12 @@ def download_content(request, token_str):
             # Missing in R2? Put it back from the Telegram vault copy, then serve as usual.
             from apps.admin_panel.vault import restore
 
-            if not restore(token.content_type, content):
+            state = restore(token.content_type, content)
+            if state == "working":
+                _release_slot(cache_key)
+                DownloadToken.objects.filter(pk=token.pk).update(is_used=False)
+                return JsonResponse({"error": "Fetching your file from the vault. Try again in a minute.", "preparing": True}, status=503)
+            if state != "ready":
                 raise missing
             s3_object = s3.get_object(Bucket=settings.R2_PRIVATE_BUCKET, Key=content.file_key)
     except Exception as exc:

@@ -97,6 +97,7 @@ urlpatterns = [
     path("checkout/", RedirectView.as_view(url="/cart/", permanent=False)),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
     path("telegram/webhook/", support_views.telegram_webhook, name="telegram_webhook"),
+    path("vault/callback/", support_views.vault_callback, name="vault_callback"),
     # Catalogue, guest checkout, download recovery, "get listed"
     path("releases/", catalog_views.releases_view, name="releases"),
     path("bundles/", catalog_views.bundles_view, name="bundles"),

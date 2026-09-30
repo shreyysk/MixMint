@@ -285,7 +285,16 @@
         var restore = busy(opts.button, "Preparing secure link…");
         try {
             var hash = await deviceHash();
-            var data = await api(tokenUrl, { body: { device_hash: hash }, headers: { "X-Device-Hash": hash } });
+            var data, started = Date.now(), told = false;
+            // 202 = the file is being fetched back from the Telegram vault into R2: wait and retry.
+            for (;;) {
+                data = await api(tokenUrl, { body: { device_hash: hash }, headers: { "X-Device-Hash": hash } });
+                if (!data.preparing) break;
+                if (!told) { toast("info", data.message || "Fetching your file from the vault…"); told = true; }
+                if (opts.button) opts.button.textContent = "Fetching from vault… " + Math.round((Date.now() - started) / 1000) + "s";
+                if (Date.now() - started > 15 * 60 * 1000) throw new Error("This is taking longer than usual. Please try again in a few minutes.");
+                await new Promise(function (r) { setTimeout(r, (data.retry_after || 5) * 1000); });
+            }
             if (data.warning) toast("warning", data.warning);
             window.location.href = data.page_url || data.download_url;
         } catch (e) {

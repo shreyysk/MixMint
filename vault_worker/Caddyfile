@@ -1,0 +1,12 @@
+{$VAULT_DOMAIN} {
+	encode gzip
+	request_body {
+		max_size 60MB
+	}
+	reverse_proxy worker:8000 {
+		transport http {
+			read_timeout 10m
+			write_timeout 10m
+		}
+	}
+}
