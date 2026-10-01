@@ -212,6 +212,8 @@ def dj_dashboard_view(request):
 
     storage_used_mb = total_bytes / (1024 * 1024)
     storage_quota_mb = profile.storage_quota_mb
+    if profile.is_pro_dj:  # Pro always gets 20 GB, even if the stored quota lags behind
+        storage_quota_mb = max(storage_quota_mb or 0, 20480)
     storage_percent = (storage_used_mb / storage_quota_mb) * 100 if storage_quota_mb > 0 else 0
 
     # Calculate total downloads across all DJ tracks

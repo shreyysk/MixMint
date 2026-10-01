@@ -61,13 +61,13 @@
 
     <!-- CREATE MODAL -->
     <template x-if="showCreateModal">
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-            <div @click.away="showCreateModal = false"
+        <div role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto" @click.self="showCreateModal = false" @keydown.escape.window="showCreateModal = false">
+            <div
                 class="bg-[var(--bg-surface)] border border-[var(--border)] w-full max-w-[600px] rounded-[24px] overflow-hidden shadow-2xl">
                 <div class="p-8 border-b border-[var(--border)] flex justify-between items-center">
                     <h2 class="font-display text-2xl font-bold text-white">Create New Bundle</h2>
                     <button @click="showCreateModal = false"
-                        class="text-[var(--text-muted)] hover:text-white">&times;</button>
+                        aria-label="Close" class="w-10 h-10 -mr-2 inline-flex items-center justify-center rounded-full text-2xl text-[var(--text-muted)] hover:text-[var(--text-primary)]">&times;</button>
                 </div>
                 <form action="{% url 'create_bundle' %}" method="POST" class="p-8">
                     {% csrf_token %}

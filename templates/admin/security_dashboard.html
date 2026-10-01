@@ -53,13 +53,13 @@
                 <span class="text-2xl">🚫</span> IP / Device Ban
             </h2>
             <div class="space-y-6">
-                <div class="flex gap-4">
-                    <select x-model="banType" aria-label="Ban type" class=""bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
+                <div class="flex flex-wrap gap-3">
+                    <select x-model="banType" aria-label="Ban type" class="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
                         <option value="ip">IP Address</option>
                         <option value="device">Device ID</option>
                     </select>
                     <input type="text" x-model="banValue" placeholder="Address or ID..." 
-                           class="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-6 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
+                           class="flex-1 min-w-[160px] bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-red)] outline-none">
                     <button @click="performBan" class="btn-mm bg-[var(--accent-red)] text-white px-8">Ban</button>
                 </div>
                 <p class="text-xs text-[var(--text-muted)] font-mono">Banned entities are blocked from accessing the site at the firewall/edge level.</p>
