@@ -300,7 +300,23 @@ def _rehold(rec):
         rec.r2_hold_until = until
 
 
-def restore(kind, item):
+INLINE_MAX = 40 * MB  # fetched back while the buyer's page waits; bigger files go to a background run
+
+
+def _mtproto_restore_now(kind, item, rec):
+    from . import mtproto
+
+    res = mtproto.restore(kind, item, rec.channel_id or channels().get(kind), rec.message_id)
+    if res.get("busy"):
+        return "working"
+    cache.delete(f"vault_restore_{kind}_{item.id}")
+    if not res.get("ok"):
+        return ""
+    _mark_restored(rec)
+    return "ready"
+
+
+def restore(kind, item, inline=False):
     """Put the file back into R2 from the channel copy.
     Returns "ready" (in R2 now), "working" (the worker is fetching it) or "" (can't)."""
     from .models import VaultFile
@@ -323,17 +339,17 @@ def restore(kind, item):
         return "working"
 
     if has_mtproto():
-        # Runs right here, inside the buyer's own request (the page waits for it), so nothing
-        # depends on a background job. Another transfer running → "working", the page asks again.
-        from . import mtproto
+        # Small files come back right inside the buyer's request (a few seconds). Big ones are
+        # fetched in a separate run, and the buyer is told by email/Telegram when it's ready.
+        if (rec.size or 0) <= INLINE_MAX or inline:
+            return _mtproto_restore_now(kind, item, rec)
+        if cache.add(f"vault_restore_{kind}_{item.id}", "mtproto", timeout=6 * 60):
+            from . import mtproto
 
-        res = mtproto.restore(kind, item, rec.channel_id or channels().get(kind), rec.message_id)
-        if res.get("busy"):
-            return "working"
-        if not res.get("ok"):
-            return ""
-        _mark_restored(rec)
-        return "ready"
+            if not mtproto.trigger("restore", kind, item.id):
+                cache.delete(f"vault_restore_{kind}_{item.id}")
+                return ""
+        return "working"
 
     info, err = _call("getFile", data={"file_id": rec.file_id})
     path = (info or {}).get("file_path")
@@ -359,6 +375,98 @@ def _mark_restored(rec):
     _rehold(rec)
     rec.save()
     cache.delete(f"vault_restore_{rec.content_type}_{rec.content_id}")
+    _notify_ready(rec.content_type, rec.content_id)
+
+
+# ─────────────────────────────── "we'll message you when it's ready" ───────────────────────────────
+def _item_url(kind, cid):
+    base = (getattr(settings, "BASE_URL", "") or "https://mixmint.site").rstrip("/")
+    return f"{base}/{'tracks' if kind == 'track' else 'albums'}/{cid}/?download=1"
+
+
+def telegram_link_payload(profile):
+    """/start payload that links a buyer's Telegram chat to their account (fits Telegram's 64 chars)."""
+    pid = str(profile.pk).replace("-", "")
+    sig = hmac.new(f"tg-link:{settings.SECRET_KEY}".encode(), pid.encode(), hashlib.sha256).hexdigest()[:16]
+    return f"dl_{pid}_{sig}"
+
+
+def profile_from_link_payload(payload):
+    from apps.accounts.models import Profile
+
+    try:
+        _, pid, sig = payload.split("_", 2)
+    except ValueError:
+        return None
+    good = hmac.new(f"tg-link:{settings.SECRET_KEY}".encode(), pid.encode(), hashlib.sha256).hexdigest()[:16]
+    if not hmac.compare_digest(sig, good):
+        return None
+    import uuid
+
+    try:
+        return Profile.objects.filter(pk=uuid.UUID(pid)).first()
+    except ValueError:
+        return None
+
+
+def wait_for(profile, kind, item):
+    """The buyer's file is on its way back from Telegram: remember to tell them, and say how."""
+    from apps.admin_panel.telegram import bot_deep_link
+
+    from .models import TelegramLink, VaultNotify
+
+    VaultNotify.objects.get_or_create(profile=profile, content_type=kind, content_id=item.id, notified_at=None)
+    from .models import VaultFile
+
+    if VaultFile.objects.filter(content_type=kind, content_id=item.id, r2_present=True).exists():
+        _notify_ready(kind, item.id)  # it came back while we were answering: tell them now
+    email = profile.user.email or ""
+    name, _, domain = email.partition("@")
+    masked = (name[:2] + "•••@" + domain) if domain else ""
+    linked = TelegramLink.objects.filter(profile=profile).exists()
+    return {"email": masked, "telegram_linked": linked,
+            "telegram_link": "" if linked else bot_deep_link(telegram_link_payload(profile))}
+
+
+def clear_wait(profile, kind, content_id):
+    from .models import VaultNotify
+
+    VaultNotify.objects.filter(profile=profile, content_type=kind, content_id=content_id, notified_at=None).update(
+        notified_at=timezone.now())
+
+
+def _notify_ready(kind, cid):
+    from . import support
+    from .models import TelegramLink, VaultNotify
+
+    waits = list(VaultNotify.objects.filter(content_type=kind, content_id=cid, notified_at=None).select_related("profile__user"))
+    if not waits:
+        return
+    item = _model(kind).objects.filter(pk=cid).first()
+    title = getattr(item, "title", "your file")
+    url = _item_url(kind, cid)
+    for w in waits:
+        try:
+            from apps.admin_panel.email_utils import send_email
+            from django.utils.html import escape
+
+            send_email(
+                to_email=w.profile.user.email,
+                subject=f"Your download is ready: {title}",
+                html_content=(
+                    f"<p>“{escape(title)}” is ready to download.</p>"
+                    f"<p><a href='{url}' style='display:inline-block;padding:12px 20px;background:#006B4A;color:#fff;"
+                    f"border-radius:8px;text-decoration:none;font-weight:600'>Download now</a></p>"
+                    "<p style='color:#666;font-size:13px'>Open it on the device you'll download with. "
+                    "It counts as a normal download from your library.</p>"
+                ),
+            )
+        except Exception:
+            logger.exception("Ready email failed for %s", w.pk)
+        link = TelegramLink.objects.filter(profile=w.profile).first()
+        if link:
+            support.tg_send(link.chat_id, f"✅ “{title}” is ready to download:\n{url}")
+    VaultNotify.objects.filter(pk__in=[w.pk for w in waits]).update(notified_at=timezone.now())
 
 
 def ensure_in_r2(kind, item):
@@ -459,7 +567,11 @@ def run_job(data):
             return {"ok": False, "busy": True}
         out = {"ok": rec.status == "archived", "status": rec.status}
     elif action == "restore":
-        out = {"ok": restore(kind, item) == "ready"}
+        state = restore(kind, item, inline=True)
+        if state == "working":  # another transfer holds the line: _kick_next picks this up later
+            cache.delete(f"vault_restore_{kind}_{cid}")
+            return {"ok": False, "busy": True}
+        out = {"ok": state == "ready"}
     else:
         return {"ok": False, "error": "bad action"}
     _kick_next()
@@ -470,10 +582,17 @@ def _kick_next():
     """One transfer runs at a time; when one ends, start the next upload that is waiting."""
     from .models import VaultFile
 
+    from . import mtproto
+    from .models import VaultNotify
+
+    # Buyers waiting for a file come first, then uploads waiting to be copied.
+    for w in VaultNotify.objects.filter(notified_at=None).order_by("created_at")[:20]:
+        rec = VaultFile.objects.filter(content_type=w.content_type, content_id=w.content_id, r2_present=False).first()
+        if rec and cache.add(f"vault_restore_{w.content_type}_{w.content_id}", "mtproto", timeout=6 * 60):
+            mtproto.trigger("restore", w.content_type, w.content_id)
+            return
     nxt = VaultFile.objects.filter(status="failed", error__startswith="busy").order_by("updated_at").first()
     if nxt:
-        from . import mtproto
-
         VaultFile.objects.filter(pk=nxt.pk).update(status="pending", job_started_at=timezone.now(), error="")
         mtproto.trigger("archive", nxt.content_type, nxt.content_id)
 
@@ -524,7 +643,20 @@ def sweep(budget_seconds=240, limit=200):
     """Archive uploads the vault hasn't got yet (backfill + retries), then free R2. Returns counts."""
     from .models import VaultFile
 
-    started, done = time.monotonic(), {"archived": 0, "pending": 0, "too_large": 0, "failed": 0}
+    started, done = time.monotonic(), {"archived": 0, "pending": 0, "too_large": 0, "failed": 0, "restored": 0}
+    from .models import VaultFile, VaultNotify
+
+    for w in VaultNotify.objects.filter(notified_at=None).order_by("created_at")[:20]:  # waiting buyers first
+        if time.monotonic() - started > budget_seconds:
+            break
+        rec = VaultFile.objects.filter(content_type=w.content_type, content_id=w.content_id).first()
+        item = _model(w.content_type).objects.filter(pk=w.content_id).first()
+        if not (rec and item):
+            continue
+        if rec.r2_present:
+            _notify_ready(w.content_type, w.content_id)
+        elif restore(w.content_type, item, inline=True) == "ready":
+            done["restored"] += 1
     for kind in ("track", "album"):
         if not enabled(kind):
             continue

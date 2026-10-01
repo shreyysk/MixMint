@@ -280,19 +280,45 @@
         return hex;
     }
 
+    function showLater(button, n) {
+        var box = document.getElementById("mm-later") || document.createElement("div");
+        box.id = "mm-later";
+        box.className = "mm-later";
+        box.setAttribute("role", "status");
+        var html = "<p class='mm-later-title'>We're getting this file ready for you</p>" +
+            "<p>It's an older release, so it takes a few minutes to bring back. You don't need to wait here: " +
+            "we'll send the download link to <b>" + esc(n.email || "your email") + "</b>" +
+            (n.telegram_linked ? " and to your <b>Telegram</b>" : "") + " as soon as it's ready.</p>";
+        if (n.telegram_link) {
+            html += "<a class='btn-mm btn-ghost mm-later-tg' target='_blank' rel='noopener' href='" + esc(n.telegram_link) +
+                "'>Also send it to my Telegram</a>";
+        }
+        box.innerHTML = html;
+        if (button && button.parentNode && !box.parentNode) button.parentNode.insertBefore(box, button.nextSibling);
+        else if (!box.parentNode) toast("info", "We'll email you the download link as soon as it's ready.");
+    }
+
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+    }
+
     async function download(tokenUrl, opts) {
         opts = opts || {};
         var restore = busy(opts.button, "Preparing secure link…");
         try {
             var hash = await deviceHash();
-            var data, started = Date.now(), told = false;
-            // 202 = the file is being fetched back from the Telegram vault into R2: wait and retry.
+            var data, started = Date.now();
+            // 202 = an older file is coming back from the Telegram vault. Wait a little; if it's
+            // taking long, tell the buyer we'll email (and Telegram) them the link, and stop waiting.
             for (;;) {
                 data = await api(tokenUrl, { body: { device_hash: hash }, headers: { "X-Device-Hash": hash } });
                 if (!data.preparing) break;
-                if (!told) { toast("info", data.message || "Fetching your file from the vault…"); told = true; }
-                if (opts.button) opts.button.textContent = "Fetching from vault… " + Math.round((Date.now() - started) / 1000) + "s";
-                if (Date.now() - started > 15 * 60 * 1000) throw new Error("This is taking longer than usual. Please try again in a few minutes.");
+                if (opts.button) opts.button.textContent = "Getting your file ready… " + Math.round((Date.now() - started) / 1000) + "s";
+                if (Date.now() - started > 25 * 1000) {
+                    restore();
+                    showLater(opts.button, data.notify || {});
+                    return;
+                }
                 await new Promise(function (r) { setTimeout(r, (data.retry_after || 5) * 1000); });
             }
             if (data.warning) toast("warning", data.warning);
@@ -308,6 +334,13 @@
         }
     }
 
+    // Links in "your download is ready" messages end with ?download=1: start it right away.
+    document.addEventListener("DOMContentLoaded", function () {
+        if (new URLSearchParams(location.search).get("download") !== "1") return;
+        var btn = document.getElementById("download-btn");
+        if (btn) setTimeout(function () { btn.click(); }, 400);
+    });
+
     window.MM = {
         api: api,
         busy: busy,
@@ -318,6 +351,7 @@
         csrf: csrf,
         deviceHash: deviceHash,
         download: download,
+        showLater: showLater,
         toast: toast,
         loginRedirect: loginRedirect,
     };

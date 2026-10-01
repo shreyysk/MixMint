@@ -195,6 +195,17 @@ def handle_update(update):
         return
 
     # ── Anyone else talking to the bot ──
+    if text.startswith("/start dl_"):
+        from . import vault
+        from .models import TelegramLink
+
+        profile = vault.profile_from_link_payload(text.split(" ", 1)[1].strip())
+        if profile is None:
+            tg_send(chat_id, "That link didn't work. Open it again from the download page on mixmint.site.")
+            return
+        TelegramLink.objects.update_or_create(profile=profile, defaults={"chat_id": chat_id, "username": (chat.get("username") or "")[:64]})
+        tg_send(chat_id, "✓ Linked to your MixMint account. I'll send your download links here as soon as they're ready.")
+        return
     if text.startswith("/start"):
         tg_send(chat_id, WELCOME)
         return
