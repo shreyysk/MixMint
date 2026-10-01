@@ -525,6 +525,7 @@ def test_test_mode_banner(client, settings):
     from django.core.cache import cache
 
     cache.clear()
+    settings.DEFAULT_PAYMENT_GATEWAY = "razorpay"
     settings.PAYMENTS_TEST_MODE = True
     assert b"TEST MODE" in client.get("/").content
     cache.clear()

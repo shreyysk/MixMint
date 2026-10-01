@@ -683,6 +683,9 @@ def toggle_payment_gateway(request):
         defaults={"value": {"gateway": gateway}, "description": "Active payment gateway for the platform"},
     )
     _log_admin_action(request, f"Switched payment gateway to {gateway}")
+    from django.core.cache import cache
+
+    cache.delete_many(["payments_test_mode", "payment_gateway_label"])
     return Response({"active_gateway": gateway})
 
 
@@ -1129,6 +1132,25 @@ def refunds_admin_view(request):
     return render(request, "admin/refunds.html", {"rows": rows, "recent": recent})
 
 
+def _payments_ctx():
+    from django.conf import settings as s
+
+    from apps.payments.utils import active_gateway_name
+
+    from .context_processors import payments_test_mode
+
+    base = (getattr(s, "BASE_URL", "") or "https://mixmint.site").rstrip("/")
+    return {"pay": {
+        "active": active_gateway_name(),
+        "phonepe_ready": bool(s.PHONEPE_CLIENT_ID and s.PHONEPE_CLIENT_SECRET) or bool(s.PHONEPE_MERCHANT_ID and s.PHONEPE_SALT_KEY),
+        "phonepe_env": (s.PHONEPE_ENV or "sandbox").lower(),
+        "webhook_ready": bool(s.PHONEPE_WEBHOOK_USERNAME and s.PHONEPE_WEBHOOK_PASSWORD),
+        "webhook_url": f"{base}/api/v1/payments/webhook/phonepe/",
+        "razorpay_ready": bool(s.RAZORPAY_KEY_ID and s.RAZORPAY_KEY_SECRET),
+        "test_mode": payments_test_mode(),
+    }}
+
+
 def _vault_ctx():
     from . import vault
 
@@ -1164,6 +1186,33 @@ def support_admin_view(request):
         done = vault.sweep(budget_seconds=200)
         messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('pending', 0)} copying, {done.get('too_large', 0)} R2 only, {done.get('failed', 0)} failed, {done.get('freed', 0)} freed from R2.")
         return redirect("/api/v1/admin/support/#vault")
+    if request.method == "POST" and request.POST.get("action") == "gateway_switch":
+        from django.core.cache import cache
+
+        gw = request.POST.get("gateway")
+        if gw in ("phonepe", "razorpay"):
+            SystemSetting.objects.update_or_create(
+                key="active_payment_gateway",
+                defaults={"value": {"gateway": gw}, "description": "Active payment gateway for the platform"},
+            )
+            cache.delete_many(["payments_test_mode", "payment_gateway_label"])
+            _log_admin_action(request, f"Switched payment gateway to {gw}")
+            messages.success(request, f"New payments now go through {'PhonePe' if gw == 'phonepe' else 'Razorpay'}. "
+                             "Orders already started finish on the gateway they began on.")
+        return redirect("/api/v1/admin/support/#payments")
+    if request.method == "POST" and request.POST.get("action") == "gateway_test":
+        try:
+            from apps.payments.phonepe import PhonePeGateway
+
+            gw = PhonePeGateway()
+            if gw.v2:
+                gw._token(force=True)
+                messages.success(request, f"PhonePe connection OK ({gw.env} keys).")
+            else:
+                messages.success(request, "PhonePe is set up with the old salt-key API. It can't be tested from here.")
+        except Exception as exc:
+            messages.error(request, f"PhonePe connection failed: {str(exc)[:200]}")
+        return redirect("/api/v1/admin/support/#payments")
     if request.method == "POST" and request.POST.get("action") == "vault_test":
         from . import mtproto
 
@@ -1203,6 +1252,7 @@ def support_admin_view(request):
             "tg_hooked": bool(info.get("url")),
             "tg_error": info.get("last_error_message", ""),
             **_vault_ctx(),
+            **_payments_ctx(),
         },
     )
 

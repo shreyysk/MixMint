@@ -29,7 +29,7 @@
                 <p class="text-[12px] text-[var(--text-muted)] text-center mt-2">or pick individual songs below ↓</p>
                 {% endif %}
                 <div class="mm-trust mt-4 !justify-start">
-                    <span>🔒 Payments secured by Razorpay</span><span>⚡ Instant download</span><span><a href="{% url 'recover' %}" class="underline">Recover a past download</a></span>
+                    <span>🔒 Payments secured by {{ payment_gateway_label }}</span><span>⚡ Instant download</span><span><a href="{% url 'recover' %}" class="underline">Recover a past download</a></span>
                 </div>
             </div>
         </div>

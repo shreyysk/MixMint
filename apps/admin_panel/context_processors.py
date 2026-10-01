@@ -1,6 +1,46 @@
 from apps.admin_panel.models import PlatformSettings, PromotionalOffer
 
 
+def payments_test_mode():
+    """True when the gateway taking payments right now is on test/sandbox keys (shows the yellow banner)."""
+    from django.conf import settings as dj_settings
+    from django.core.cache import cache
+
+    cached = cache.get("payments_test_mode")
+    if cached is not None:
+        return cached
+    try:
+        from apps.payments.utils import active_gateway_name
+
+        name = active_gateway_name()
+    except Exception:
+        name = getattr(dj_settings, "DEFAULT_PAYMENT_GATEWAY", "razorpay")
+    if name == "phonepe":
+        if getattr(dj_settings, "PHONEPE_CLIENT_ID", ""):
+            test = (getattr(dj_settings, "PHONEPE_ENV", "sandbox") or "sandbox").lower() != "production"
+        else:
+            test = "preprod" in (getattr(dj_settings, "PHONEPE_BASE_URL", "") or "")
+    else:
+        test = bool(getattr(dj_settings, "PAYMENTS_TEST_MODE", False))
+    cache.set("payments_test_mode", test, 30)
+    return test
+
+
+def _gateway_label():
+    from django.core.cache import cache
+
+    label = cache.get("payment_gateway_label")
+    if label is None:
+        try:
+            from apps.payments.utils import active_gateway_name
+
+            label = "PhonePe" if active_gateway_name() == "phonepe" else "Razorpay"
+        except Exception:
+            label = "Razorpay"
+        cache.set("payment_gateway_label", label, 30)
+    return label
+
+
 def global_settings(request):
     """
     Injects global platform settings and the active promotional offer into all templates.
@@ -11,7 +51,8 @@ def global_settings(request):
 
     bot = (getattr(dj_settings, "TELEGRAM_BOT_USERNAME", "") or "").lstrip("@")
     test_mode = {
-        "payments_test_mode": getattr(dj_settings, "PAYMENTS_TEST_MODE", False),
+        "payments_test_mode": payments_test_mode(),
+        "payment_gateway_label": _gateway_label(),
         "google_login_enabled": getattr(dj_settings, "GOOGLE_LOGIN_ENABLED", False),
         "help_telegram_url": f"https://t.me/{bot}?start=help" if bot else "",
     }
