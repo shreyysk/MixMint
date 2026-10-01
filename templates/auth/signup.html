@@ -88,7 +88,7 @@
                                 autocomplete="new-password" minlength="8" aria-describedby="password-hint" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]"
                                 placeholder="Min. 8 characters" @input="strength = testStrength($event.target.value)">
                             <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword.toString()"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none">
+                                class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-mint)]">
                                 <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -120,7 +120,7 @@
                             <input :type="showPassword ? 'text' : 'password'" name="confirm_password" id="confirm_password"
                                 required autocomplete="new-password" class="input-mm w-full h-[52px] bg-[var(--bg-base)] border border-[var(--border)] focus:border-[var(--accent-mint)] transition-colors pr-12 rounded-[8px]" placeholder="Re-enter password">
                             <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword.toString()"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none">
+                                class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-mint)]">
                                 <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
