@@ -32,6 +32,7 @@ from datetime import timedelta
 import requests
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Q
 from django.utils import timezone
 
 logger = logging.getLogger("mixmint")
@@ -56,12 +57,21 @@ def has_worker():
     return bool(worker_url() and worker_secret())
 
 
+def has_mtproto():
+    """Big files over Telegram's native protocol, run inside MixMint (no extra server)."""
+    if has_worker():
+        return False
+    from . import mtproto
+
+    return mtproto.configured()
+
+
 def send_limit():
-    return (2000 if has_worker() else 49) * MB
+    return (2000 if has_worker() or has_mtproto() else 49) * MB
 
 
 def fetch_limit():
-    return 2000 * MB if has_worker() else 20 * MB
+    return 2000 * MB if has_worker() or has_mtproto() else 20 * MB
 
 
 def link_code():
@@ -177,7 +187,7 @@ def _size(item):
 
 
 # ─────────────────────────────── archive (R2 → channel) ───────────────────────────────
-def archive(kind, item, force=False):
+def archive(kind, item, force=False, inline=False):
     """Copy one upload into its channel. Returns the VaultFile row, or None when the vault is off."""
     from .models import VaultFile
 
@@ -207,7 +217,7 @@ def archive(kind, item, force=False):
     if size > send_limit():
         msg, err = _call("sendMessage", data={
             "chat_id": channel, "disable_notification": "true",
-            "text": caption + "\n⚠ Too big for the bot without the vault worker: kept in R2 only.",
+            "text": caption + "\n⚠ Too big for the bot without the Telegram API keys: kept in R2 only.",
         })
         rec.status = "too_large" if msg else "failed"
         rec.message_id = (msg or {}).get("message_id")
@@ -224,6 +234,18 @@ def archive(kind, item, force=False):
         rec.status = "pending" if job else "failed"
         rec.job_id, rec.job_started_at, rec.error = (job or {}).get("job_id", ""), timezone.now(), err
         rec.save()
+        return rec
+
+    if has_mtproto():
+        rec.status, rec.job_started_at, rec.job_id = "pending", timezone.now(), "mtproto"
+        rec.save()
+        if inline:
+            return _run_archive(kind, item, rec)
+        from . import mtproto
+
+        if not mtproto.trigger("archive", kind, item.id):
+            rec.status, rec.error = "failed", "could not start the transfer"
+            rec.save()
         return rec
 
     try:
@@ -245,9 +267,9 @@ def archive(kind, item, force=False):
 
 def _apply_archive(rec, msg, err):
     doc = (msg or {}).get("document") or (msg or {}).get("audio") or {}
-    if msg and doc.get("file_id"):
+    if msg and (doc.get("file_id") or msg.get("message_id")):
         rec.status, rec.message_id = "archived", msg.get("message_id")
-        rec.file_id, rec.file_unique_id = doc["file_id"], doc.get("file_unique_id", "")
+        rec.file_id, rec.file_unique_id = doc.get("file_id") or "", doc.get("file_unique_id", "")
         rec.error = ""
     else:
         rec.status, rec.error = "failed", (err or "No file in reply")[:255]
@@ -266,7 +288,9 @@ def archive_after_upload(kind, item):
 
 # ─────────────────────────────── restore (channel → R2) ───────────────────────────────
 def restorable(rec):
-    return bool(rec and rec.status == "archived" and rec.file_id and (rec.size or 0) <= fetch_limit())
+    if not rec or rec.status != "archived" or (rec.size or 0) > fetch_limit():
+        return False
+    return bool(rec.file_id or (has_mtproto() and rec.message_id))
 
 
 def _rehold(rec):
@@ -297,6 +321,19 @@ def restore(kind, item):
             return ""
         cache.set(lock, job.get("job_id", "1"), timeout=15 * 60)
         return "working"
+
+    if has_mtproto():
+        # Runs right here, inside the buyer's own request (the page waits for it), so nothing
+        # depends on a background job. Another transfer running → "working", the page asks again.
+        from . import mtproto
+
+        res = mtproto.restore(kind, item, rec.channel_id or channels().get(kind), rec.message_id)
+        if res.get("busy"):
+            return "working"
+        if not res.get("ok"):
+            return ""
+        _mark_restored(rec)
+        return "ready"
 
     info, err = _call("getFile", data={"file_id": rec.file_id})
     path = (info or {}).get("file_path")
@@ -373,6 +410,74 @@ def apply_worker_result(data):
     return False
 
 
+# ─────────────────────────────── MTProto jobs (run inside MixMint) ───────────────────────────────
+def _run_archive(kind, item, rec):
+    from . import mtproto
+
+    started = time.monotonic()
+    res = mtproto.archive(kind, item, rec.channel_id or channels().get(kind), _caption(kind, item, rec.size or 0),
+                          _filename(kind, item))
+    res["seconds"] = int(time.monotonic() - started)
+    if res.get("busy"):
+        rec.status, rec.error = "failed", "busy: queued for the next run"
+        rec.save()
+        return rec
+    apply_worker_result({**res, "action": "archive", "kind": kind, "content_id": item.id, "key": item.file_key})
+    rec.refresh_from_db()
+    if rec.status == "archived":  # remember how long it took: slow files are never removed from R2
+        rec.job_id = f"mtproto:{res['seconds']}s"
+        rec.save(update_fields=["job_id", "updated_at"])
+    return rec
+
+
+SAFE_SECONDS = 150  # a fetch-back must finish inside one 300 s request; keep slower files in R2
+
+
+def _too_slow(rec):
+    if not (rec.job_id or "").startswith("mtproto:"):
+        return False
+    try:
+        return int(rec.job_id.split(":")[1].rstrip("s")) > SAFE_SECONDS
+    except ValueError:
+        return False
+
+
+def run_job(data):
+    """POST /vault/run/ (signed): do one transfer now, inside this request."""
+    from .models import VaultFile
+
+    kind, cid, action = data.get("kind"), data.get("content_id"), data.get("action")
+    if kind not in ("track", "album"):
+        return {"ok": False, "error": "bad kind"}
+    item = _model(kind).objects.filter(pk=cid).first()
+    rec = VaultFile.objects.filter(content_type=kind, content_id=cid).first()
+    if item is None or rec is None:
+        return {"ok": False, "error": "unknown item"}
+    if action == "archive":
+        rec = _run_archive(kind, item, rec)
+        if rec.error.startswith("busy"):
+            return {"ok": False, "busy": True}
+        out = {"ok": rec.status == "archived", "status": rec.status}
+    elif action == "restore":
+        out = {"ok": restore(kind, item) == "ready"}
+    else:
+        return {"ok": False, "error": "bad action"}
+    _kick_next()
+    return out
+
+
+def _kick_next():
+    """One transfer runs at a time; when one ends, start the next upload that is waiting."""
+    from .models import VaultFile
+
+    nxt = VaultFile.objects.filter(status="failed", error__startswith="busy").order_by("updated_at").first()
+    if nxt:
+        from . import mtproto
+
+        VaultFile.objects.filter(pk=nxt.pk).update(status="pending", job_started_at=timezone.now(), error="")
+        mtproto.trigger("archive", nxt.content_type, nxt.content_id)
+
+
 # ─────────────────────────────── eviction (R2 holding area) ───────────────────────────────
 def _limited_drop_live(kind, item):
     if not getattr(item, "copies_limit", None) or not item.is_active or item.is_deleted:
@@ -391,9 +496,9 @@ def evict(now=None, limit=500):
         return 0
     now = now or timezone.now()
     evicted = 0
-    due = VaultFile.objects.filter(status="archived", r2_present=True, r2_hold_until__lt=now).exclude(file_id="")[:limit]
+    due = VaultFile.objects.filter(status="archived", r2_present=True, r2_hold_until__lt=now)[:limit]
     for rec in due:
-        if not restorable(rec):
+        if not restorable(rec) or (has_mtproto() and _too_slow(rec)):
             continue
         item = _model(rec.content_type).objects.filter(pk=rec.content_id).first()
         if item is None or item.file_key != rec.file_key:
@@ -423,15 +528,18 @@ def sweep(budget_seconds=240, limit=200):
     for kind in ("track", "album"):
         if not enabled(kind):
             continue
-        have = VaultFile.objects.filter(content_type=kind, status__in=["archived", "pending"]).values_list("content_id", flat=True)
-        if not has_worker():  # without the worker, "too big" is final; with it, retry those
-            have = VaultFile.objects.filter(content_type=kind, status__in=["archived", "pending", "too_large"]).values_list("content_id", flat=True)
+        fresh = timezone.now() - JOB_TIMEOUT
+        done_q = VaultFile.objects.filter(content_type=kind).filter(
+            Q(status="archived") | Q(status="pending", job_started_at__gte=fresh))
+        if not (has_worker() or has_mtproto()):  # without big-file support, "too big" is final
+            done_q = done_q | VaultFile.objects.filter(content_type=kind, status="too_large")
+        have = done_q.values_list("content_id", flat=True)
         todo = (_model(kind).objects.filter(is_deleted=False).exclude(file_key="").exclude(file_key__isnull=True)
                 .exclude(id__in=list(have)).select_related("dj").order_by("id")[:limit])
         for item in todo:
             if time.monotonic() - started > budget_seconds:
                 return done
-            rec = archive(kind, item, force=True)
+            rec = archive(kind, item, force=True, inline=has_mtproto())
             if rec:
                 done[rec.status] = done.get(rec.status, 0) + 1
     done["freed"] = evict()
@@ -456,7 +564,7 @@ def status():
     return {
         "singles": ps.tg_singles_channel_id, "singles_title": ps.tg_singles_channel_title,
         "zips": ps.tg_zips_channel_id, "zips_title": ps.tg_zips_channel_title,
-        "code": link_code(), "counts": counts, "worker": has_worker(),
+        "code": link_code(), "counts": counts, "worker": has_worker(), "mtproto": has_mtproto(),
         "send_mb": send_limit() // MB, "fetch_mb": fetch_limit() // MB,
         "evict": ps.vault_evict_enabled, "hold_days": ps.vault_hold_days, "rehold_days": ps.vault_rehold_days,
     }

@@ -206,6 +206,7 @@ class PlatformSettings(models.Model):
     vault_evict_enabled = models.BooleanField(default=True)
     vault_hold_days = models.PositiveIntegerField(default=10)  # normal releases: days after upload
     vault_rehold_days = models.PositiveIntegerField(default=3)  # after a file is fetched back for a buyer
+    tg_mtproto_session = models.TextField(blank=True, default="")  # the bot's saved MTProto login (vault)
 
     updated_at = models.DateTimeField(auto_now=True)
 

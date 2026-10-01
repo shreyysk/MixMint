@@ -37,12 +37,15 @@
                 <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">File vault (private Telegram channels)</h2>
                 <p class="text-[13px] text-[var(--text-muted)] mt-1 max-w-[600px]">Telegram keeps the permanent copy of every upload: tracks in the singles channel, album ZIPs in the ZIP channel. R2 only holds a file for a while so buyers get fast temporary links; after that it's fetched back from Telegram when someone buys it.</p>
             </div>
-            <form method="post" class="shrink-0">{% csrf_token %}<input type="hidden" name="action" value="vault_sweep">
+            <div class="flex flex-wrap gap-2 shrink-0"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="vault_sweep">
                 <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not vault.singles and not vault.zips %}disabled{% endif %}>Run vault now</button></form>
+            {% if vault.mtproto %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="vault_test">
+                <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]">Test connection</button></form>{% endif %}</div>
         </div>
         <p class="text-[13px] rounded-[10px] px-3 py-2 {% if vault.worker %}bg-[var(--accent-mint)]/10 text-[var(--text-primary)]{% else %}bg-[var(--accent-amber,#b7791f)]/10 text-[var(--text-primary)]{% endif %}">
             {% if vault.worker %}{% if vault.health.bot and vault.health.r2 %}Vault server online ✓ Bot and R2 reachable{% if vault.health.queued %} · {{ vault.health.queued }} job{{ vault.health.queued|pluralize }} running{% endif %}. Files up to {{ vault.send_mb }} MB go to Telegram and any size can be fetched back.{% else %}⚠ Vault server problem: {% if vault.health.error %}can't reach it ({{ vault.health.error }}){% else %}bot {{ vault.health.bot|yesno:"ok,not reachable" }}, R2 {{ vault.health.r2|yesno:"ok,not reachable" }}{% endif %}. Check the server (docker compose logs worker).{% endif %}
-            {% else %}Vault worker not connected: only files up to {{ vault.fetch_mb }} MB can live in Telegram only; bigger ones stay in R2. Set VAULT_WORKER_URL and VAULT_WORKER_SECRET after deploying vault_worker/.{% endif %}
+            {% elif vault.mtproto %}Telegram API keys set ✓ Files up to {{ vault.send_mb }} MB go to Telegram and come back to R2 when a buyer needs them, all inside MixMint (no extra server). Use “Test connection” once to log the bot in.
+            {% else %}Add TELEGRAM_API_ID and TELEGRAM_API_HASH (from my.telegram.org) in Vercel: until then only files up to {{ vault.fetch_mb }} MB can live in Telegram only; bigger ones stay in R2.{% endif %}
         </p>
         <div class="grid sm:grid-cols-2 gap-3">
             {% for label, cid, title, word in vault_rows %}

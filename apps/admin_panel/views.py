@@ -1164,6 +1164,12 @@ def support_admin_view(request):
         done = vault.sweep(budget_seconds=200)
         messages.success(request, f"Vault: {done.get('archived', 0)} stored, {done.get('pending', 0)} copying, {done.get('too_large', 0)} R2 only, {done.get('failed', 0)} failed, {done.get('freed', 0)} freed from R2.")
         return redirect("/api/v1/admin/support/#vault")
+    if request.method == "POST" and request.POST.get("action") == "vault_test":
+        from . import mtproto
+
+        ok, detail = mtproto.check()
+        (messages.success if ok else messages.error)(request, f"Telegram vault connection: {detail}")
+        return redirect("/api/v1/admin/support/#vault")
     if request.method == "POST" and request.POST.get("action") == "vault_settings":
         from .models import PlatformSettings
 
