@@ -204,8 +204,9 @@ class PlatformSettings(models.Model):
     tg_zips_channel_title = models.CharField(max_length=120, blank=True, default="")
     # R2 is only a holding area: files leave R2 after these many days (Telegram keeps the permanent copy).
     vault_evict_enabled = models.BooleanField(default=True)
-    vault_hold_days = models.PositiveIntegerField(default=10)  # normal releases: days after upload
+    vault_hold_days = models.PositiveIntegerField(default=30)  # normal releases: days after upload
     vault_rehold_days = models.PositiveIntegerField(default=3)  # after a file is fetched back for a buyer
+    tg_mtproto_session = models.TextField(blank=True, default="")  # the bot's saved MTProto login (vault)
 
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -337,3 +338,23 @@ class VaultFile(models.Model):
 
     def __str__(self):
         return f"{self.content_type} {self.content_id} ({self.status})"
+class VaultNotify(models.Model):
+    """A buyer is waiting for an older file to come back from Telegram: tell them when it's ready."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="vault_waits")
+    content_type = models.CharField(max_length=10)
+    content_id = models.PositiveBigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    notified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["content_type", "content_id", "notified_at"])]
+
+
+class TelegramLink(models.Model):
+    """A buyer's Telegram chat, linked through the bot, for "your download is ready" messages."""
+
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name="telegram_link")
+    chat_id = models.CharField(max_length=40)
+    username = models.CharField(max_length=64, blank=True, default="")
+    linked_at = models.DateTimeField(auto_now=True)

@@ -151,3 +151,18 @@ def vault_callback(request):
     except ValueError:
         return HttpResponse(status=400)
     return JsonResponse({"ok": vault.apply_worker_result(data)})
+
+
+@csrf_exempt
+@require_POST
+def vault_run(request):
+    """MixMint → itself: run one vault transfer (signed, so only this site can start one)."""
+    from apps.admin_panel import mtproto, vault
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except ValueError:
+        return HttpResponse(status=400)
+    if not mtproto.check_signature(data, request.headers.get("X-Vault-Sig", "")):
+        return HttpResponse(status=403)
+    return JsonResponse(vault.run_job(data))

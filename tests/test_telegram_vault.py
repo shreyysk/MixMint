@@ -179,14 +179,14 @@ def _archived(env, dj, **kw):
     return t, rec
 
 
-def test_hold_is_10_days_from_upload_then_r2_is_freed(env, dj_user):
+def test_hold_is_30_days_from_upload_then_r2_is_freed(env, dj_user):
     from apps.admin_panel import vault
 
     s3, tg = env
     t, rec = _archived(env, dj_user[1])
-    assert abs((rec.r2_hold_until - t.created_at) - timedelta(days=10)) < timedelta(seconds=5)
+    assert abs((rec.r2_hold_until - t.created_at) - timedelta(days=30)) < timedelta(seconds=5)
     assert vault.evict() == 0  # day 0: still held
-    assert vault.evict(now=timezone.now() + timedelta(days=11)) == 1
+    assert vault.evict(now=timezone.now() + timedelta(days=31)) == 1
     rec.refresh_from_db()
     assert rec.r2_present is False
     assert s3.list_objects_v2(Bucket="raw").get("KeyCount", 0) == 0
@@ -215,7 +215,7 @@ def test_evicted_file_is_fetched_back_before_download_link(env, dj_user, user):
     t, rec = _archived(env, dj_user[1])
     from apps.admin_panel import vault
 
-    vault.evict(now=timezone.now() + timedelta(days=11))
+    vault.evict(now=timezone.now() + timedelta(days=31))
     Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
                             price_paid=t.price, status="paid", gateway_order_id="MM_B")
     c = Client()
@@ -259,7 +259,7 @@ def test_worker_mode_archive_and_restore_via_callbacks(env, dj_user, user, setti
         rec.refresh_from_db()
         assert rec.status == "archived" and rec.file_id == "BIG"
 
-        assert vault.evict(now=timezone.now() + timedelta(days=11)) == 1  # 300 MB is restorable with the worker
+        assert vault.evict(now=timezone.now() + timedelta(days=31)) == 1  # 300 MB is restorable with the worker
         Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
                                 price_paid=t.price, status="paid", gateway_order_id="MM_W")
         buyer = Client()
@@ -286,7 +286,7 @@ def test_not_evicted_when_it_cannot_come_back(env, dj_user):
     t, rec = _archived(env, dj_user[1])
     rec.size = 100 * 1024 * 1024  # over 20 MB and no worker → keep in R2
     rec.save()
-    assert vault.evict(now=timezone.now() + timedelta(days=11)) == 0
+    assert vault.evict(now=timezone.now() + timedelta(days=31)) == 0
 
 
 def test_admin_can_change_hold(env, admin_user):
@@ -308,3 +308,236 @@ def test_admin_sees_worker_health(env, admin_user, settings):
          mock.patch("apps.admin_panel.vault.requests.get", return_value=mock.Mock(status_code=200, json=lambda: {"bot": True, "r2": True, "queued": 0})):
         html = c.get("/api/v1/admin/support/").content.decode()
     assert "Vault server online" in html
+
+
+# ───────────────── MTProto mode: big files inside MixMint, no extra server ─────────────────
+class FakeMTProto:
+    """Stands in for Telethon's TelegramClient."""
+
+    store = {}
+    logins = 0
+
+    def __init__(self, session, api_id, api_hash, **kw):
+        self.session = mock.Mock(save=lambda: "SAVED-SESSION")
+
+    async def connect(self):
+        return True
+
+    async def is_user_authorized(self):
+        return False
+
+    async def sign_in(self, bot_token=None):
+        FakeMTProto.logins += 1
+
+    async def disconnect(self):
+        return None
+
+    async def get_input_entity(self, peer):
+        raise ValueError("not cached")
+
+    async def __call__(self, request):
+        return mock.Mock(chats=[mock.Mock(id=111, access_hash=999)])
+
+    async def upload_file(self, reader, file_size=None, file_name=None):
+        data = b""
+        while len(data) < file_size:
+            part = reader.read(512 * 1024)
+            assert part and (len(part) == 512 * 1024 or len(data) + len(part) == file_size)
+            data += part
+        FakeMTProto.store["last"] = data
+        return "UPLOADED"
+
+    async def send_file(self, entity, uploaded, caption=None, force_document=False, silent=None):
+        assert force_document and uploaded == "UPLOADED" and entity.channel_id == 111
+        return mock.Mock(id=77, media=mock.Mock(document=object()))
+
+    async def get_messages(self, entity, ids=None):
+        assert ids == 77
+        return mock.Mock(media=mock.Mock(document=object()))
+
+    async def iter_download(self, doc, request_size=None):
+        data = FakeMTProto.store["last"]
+        for i in range(0, len(data), 300_000):
+            yield data[i:i + 300_000]
+
+    async def get_me(self):
+        return mock.Mock(username="mixmint_bot", id=1)
+
+
+@pytest.fixture
+def mtproto_mode(env, settings):
+    from apps.admin_panel import mtproto, vault
+
+    settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH = "12345", "hash"
+    FakeMTProto.store, FakeMTProto.logins = {}, 0
+    with mock.patch.object(mtproto, "_client_class", lambda: FakeMTProto), \
+         mock.patch("telethon.utils.pack_bot_file_id", lambda doc: "BOT-FILE-ID"), \
+         mock.patch.object(mtproto, "trigger", lambda action, kind, cid: vault.run_job({"action": action, "kind": kind, "content_id": cid}) or True):
+        yield env
+
+
+def test_mtproto_big_file_round_trip(mtproto_mode, dj_user, user):
+    from apps.admin_panel import vault
+    from apps.admin_panel.models import PlatformSettings, VaultFile
+    from apps.commerce.models import Purchase
+
+    s3, tg = mtproto_mode
+    _link("singles")
+    size = 9 * 1024 * 1024 + 123  # bigger than an R2 multipart part and than the 20 MB… scaled down for speed
+    t = _track(dj_user[1], s3, size=size)
+    t.file_size = 300 * 1024 * 1024  # pretend 300 MB: only MTProto can carry it
+    t.save()
+    s3.put_object(Bucket="raw", Key=t.file_key, Body=b"Q" * size)
+    t.file_size = size
+    t.save()
+    rec = vault.archive("track", t)
+    rec.refresh_from_db()
+    assert rec.status == "archived" and rec.message_id == 77 and rec.file_id == "BOT-FILE-ID"
+    assert FakeMTProto.store["last"] == b"Q" * size
+    assert PlatformSettings.load().tg_mtproto_session == "SAVED-SESSION"
+
+    assert vault.evict(now=timezone.now() + timedelta(days=31)) == 1
+    Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                            price_paid=t.price, status="paid", gateway_order_id="MM_MT")
+    c = Client()
+    c.force_login(user)
+    r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+    assert r.status_code == 200 and "download_url" in r.json()  # fetched back inside the buyer's request
+    assert s3.get_object(Bucket="raw", Key=t.file_key)["Body"].read() == b"Q" * size
+    assert VaultFile.objects.get(pk=rec.pk).restored_count == 1
+
+
+def test_mtproto_one_transfer_at_a_time(mtproto_mode, dj_user):
+    from django.core.cache import cache
+
+    from apps.admin_panel import mtproto, vault
+
+    s3, tg = mtproto_mode
+    _link("singles")
+    t = _track(dj_user[1], s3)
+    cache.add(mtproto.LOCK_KEY, 1, timeout=60)
+    rec = vault.archive("track", t)
+    rec.refresh_from_db()
+    assert rec.status == "failed" and rec.error.startswith("busy")
+    cache.delete(mtproto.LOCK_KEY)
+    vault._kick_next()
+    rec.refresh_from_db()
+    assert rec.status == "archived"
+
+
+def test_vault_run_endpoint_is_signed(mtproto_mode, dj_user):
+    from apps.admin_panel import mtproto
+
+    c = Client()
+    payload = {"action": "archive", "kind": "track", "content_id": 1}
+    assert c.post("/vault/run/", json.dumps(payload), content_type="application/json").status_code == 403
+    assert c.post("/vault/run/", json.dumps(payload), content_type="application/json", HTTP_X_VAULT_SIG="bad").status_code == 403
+    r = c.post("/vault/run/", json.dumps(payload), content_type="application/json", HTTP_X_VAULT_SIG=mtproto.sign(payload))
+    assert r.status_code == 200 and r.json()["error"] == "unknown item"
+
+
+def test_mtproto_connection_check(mtproto_mode, admin_user):
+    c = Client()
+    c.force_login(admin_user)
+    with mock.patch("apps.admin_panel.support.webhook_info", return_value={}):
+        c.post("/api/v1/admin/support/", {"action": "vault_test"})
+        html = c.get("/api/v1/admin/support/").content.decode()
+    assert "logged in as @mixmint_bot" in html and "Telegram API keys set" in html
+
+
+def test_mtproto_slow_files_stay_in_r2(mtproto_mode, dj_user):
+    from apps.admin_panel import vault
+
+    s3, tg = mtproto_mode
+    _link("singles")
+    t = _track(dj_user[1], s3)
+    rec = vault.archive("track", t)
+    rec.refresh_from_db()
+    assert rec.job_id.startswith("mtproto:")
+    rec.job_id = "mtproto:200s"
+    rec.save()
+    assert vault.evict(now=timezone.now() + timedelta(days=31)) == 0
+
+
+def test_mtproto_busy_restore_asks_again(mtproto_mode, dj_user):
+    from django.core.cache import cache
+
+    from apps.admin_panel import mtproto, vault
+
+    s3, tg = mtproto_mode
+    _link("singles")
+    t = _track(dj_user[1], s3)
+    vault.archive("track", t)
+    vault.evict(now=timezone.now() + timedelta(days=31))
+    cache.add(mtproto.LOCK_KEY, 1, timeout=60)
+    assert vault.ensure_in_r2("track", t) is False
+    cache.delete(mtproto.LOCK_KEY)
+    assert vault.ensure_in_r2("track", t) is True
+
+
+def test_big_old_file_buyer_gets_told_and_notified(mtproto_mode, dj_user, user, settings):
+    from apps.admin_panel import vault
+    from apps.admin_panel.models import TelegramLink, VaultNotify
+    from apps.admin_panel.support import handle_update
+    from apps.commerce.models import Purchase
+
+    settings.TELEGRAM_BOT_USERNAME = "mixmint_bot"
+    s3, tg = mtproto_mode
+    _link("singles")
+    t = _track(dj_user[1], s3)
+    vault.archive("track", t)
+    rec = t and vault.VaultFile if False else None  # noqa
+    from apps.admin_panel.models import VaultFile
+
+    VaultFile.objects.filter(content_id=t.id).update(size=500 * 1024 * 1024)  # a big ZIP-sized file
+    vault.evict(now=timezone.now() + timedelta(days=31))
+    Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                            price_paid=t.price, status="paid", gateway_order_id="MM_BIG")
+
+    # The buyer links Telegram through the bot first (as offered on the page).
+    payload = vault.telegram_link_payload(user.profile)
+    assert len(payload) <= 64
+    handle_update({"message": {"chat": {"id": 4242, "username": "buyer"}, "text": f"/start {payload}"}})
+    assert TelegramLink.objects.get(profile=user.profile).chat_id == "4242"
+    handle_update({"message": {"chat": {"id": 5555}, "text": "/start dl_" + "0" * 32 + "_bad"}})
+    assert TelegramLink.objects.count() == 1
+
+    c = Client()
+    c.force_login(user)
+    with mock.patch("apps.admin_panel.email_utils.send_email") as mail:
+        r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+    assert r.status_code == 202 and r.json()["preparing"]
+    n = r.json()["notify"]
+    assert n["email"].startswith("bu") and "•••@" in n["email"] and n["telegram_linked"] is True
+    # The background run (synchronous in tests) brought it back and told the buyer both ways.
+    assert mail.called and "ready" in mail.call_args.kwargs["subject"]
+    assert "?download=1" in mail.call_args.kwargs["html_content"]
+    sent = [c for c in tg.calls if c[0] == "sendMessage" and (c[1] or {}).get("chat_id") in (4242, "4242")]
+    assert sent and "ready to download" in sent[-1][1]["text"]
+    assert VaultNotify.objects.get(profile=user.profile).notified_at is not None
+    # Next click downloads straight away.
+    r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+    assert r.status_code == 200
+
+
+def test_unlinked_buyer_gets_telegram_link_offer(mtproto_mode, dj_user, user, settings):
+    from apps.admin_panel import mtproto, vault
+    from apps.admin_panel.models import VaultFile
+    from apps.commerce.models import Purchase
+
+    settings.TELEGRAM_BOT_USERNAME = "mixmint_bot"
+    s3, tg = mtproto_mode
+    _link("singles")
+    t = _track(dj_user[1], s3)
+    vault.archive("track", t)
+    VaultFile.objects.filter(content_id=t.id).update(size=500 * 1024 * 1024)
+    vault.evict(now=timezone.now() + timedelta(days=31))
+    Purchase.objects.create(user=user.profile, content_type="track", content_id=t.id, seller=t.dj, original_price=t.price,
+                            price_paid=t.price, status="paid", gateway_order_id="MM_U")
+    c = Client()
+    c.force_login(user)
+    with mock.patch.object(mtproto, "trigger", lambda *a: True):  # background run hasn't finished yet
+        r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
+    n = r.json()["notify"]
+    assert r.status_code == 202 and n["telegram_linked"] is False
+    assert n["telegram_link"].startswith("https://t.me/mixmint_bot?start=dl_")

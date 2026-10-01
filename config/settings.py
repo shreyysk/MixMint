@@ -527,7 +527,10 @@ TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")
 TELEGRAM_ZIPS_CHANNEL_ID = env("TELEGRAM_ZIPS_CHANNEL_ID", default="")
 # Self-hosted Bot API server (raises the 50 MB send / 20 MB fetch limits to 2 GB). Optional.
 TELEGRAM_API_BASE = env("TELEGRAM_API_BASE", default="https://api.telegram.org")
-# Vault worker (vault_worker/): moves files between R2 and the channels through a Local Bot API Server.
+# Telegram API keys (my.telegram.org): let the vault move files up to 2 GB over MTProto, inside MixMint.
+TELEGRAM_API_ID = env("TELEGRAM_API_ID", default="")
+TELEGRAM_API_HASH = env("TELEGRAM_API_HASH", default="")
+# Optional external vault worker (vault_worker/) — only if you run your own server instead.
 VAULT_WORKER_URL = env("VAULT_WORKER_URL", default="")
 VAULT_WORKER_SECRET = env("VAULT_WORKER_SECRET", default="")
 

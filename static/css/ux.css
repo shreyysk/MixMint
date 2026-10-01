@@ -541,3 +541,10 @@ html:not(.js-ready) [data-reveal] { opacity: 1; transform: none; }
 .mm-dialog { width: min(440px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 18px; padding: 22px;
     background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 24px 60px rgba(0,0,0,.35); }
 .mm-dialog::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(3px); }
+
+/* "We'll send you the link" note under a download button (vault fetch-back) */
+.mm-later { margin-top: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg-elevated); font-size: 14px; line-height: 1.5; color: var(--text-secondary, var(--text-muted)); }
+.mm-later-title { font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.mm-later b { color: var(--text-primary); font-weight: 600; }
+.mm-later-tg { margin-top: 10px; min-height: 40px; height: auto; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; justify-content: center; width: 100%; text-transform: none; letter-spacing: normal; white-space: normal; text-align: center; }
