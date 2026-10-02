@@ -31,10 +31,10 @@
         <div class="space-y-4 mb-10" x-show="cart">
             <template x-for="item in cart.items" :key="item.id">
                 <div
-                    class="flex items-center gap-5 border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-5 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)] transition-colors group">
+                    class="flex items-center gap-3 sm:gap-5 border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-3 sm:p-5 shadow-[var(--shadow-card)] hover:border-[var(--accent-mint)] transition-colors group">
                     <!-- Artwork Placeholder -->
                     <div
-                        class="w-16 h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
+                        class="w-12 h-12 sm:w-16 sm:h-16 rounded-[8px] bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden shrink-0">
                         <template x-if="item.image_url">
                             <img loading="lazy" decoding="async" :src="item.image_url || false" :alt="item.title" class="w-full h-full object-cover">
                         </template>
@@ -45,7 +45,7 @@
 
                     <!-- Info -->
                     <div class="flex-1 min-w-0">
-                        <p class="font-display font-[600] text-[15px] text-[var(--text-primary)] truncate"
+                        <p class="font-display font-[600] text-[15px] leading-snug text-[var(--text-primary)] line-clamp-2 break-words"
                             x-text="item.title"></p>
                         <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mt-1 truncate"
                             x-text="item.dj_name"></p>
@@ -55,7 +55,7 @@
                     </div>
 
                     <!-- Price -->
-                    <div class="font-mono text-[18px] font-bold text-[var(--accent-mint)] shrink-0">
+                    <div class="font-mono text-[16px] sm:text-[18px] font-bold text-[var(--accent-mint)] shrink-0">
                         ₹<span x-text="rupees(item.price)"></span>
                     </div>
 

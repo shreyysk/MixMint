@@ -16,10 +16,10 @@
     </nav>
 
     <!-- ── TWO-COLUMN LAYOUT ── -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-start" data-reveal>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start" data-reveal>
 
         <!-- LEFT: Artwork & Preview -->
-        <div class="md:col-span-5 space-y-8" data-reveal="left">
+        <div class="lg:col-span-5 space-y-8 w-full max-w-[560px] mx-auto lg:max-w-none" data-reveal="left">
             <!-- Artwork -->
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group skeleton">
@@ -35,7 +35,7 @@
             <!-- Preview Module -->
             <div
                 class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
-                <div class="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between gap-2">
+                <div class="px-4 py-3 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2">
                     <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.1em]">
                         DJ PREVIEW · PLAYS FROM ARTIST EMBED
                     </span>
@@ -89,7 +89,7 @@
         </div>
 
         <!-- RIGHT: Info & Purchase -->
-        <div class="md:col-span-7 flex flex-col justify-between min-h-full" data-reveal="right">
+        <div class="lg:col-span-7 flex flex-col justify-between min-h-full" data-reveal="right">
             <div>
                 <!-- DJ Row -->
                 <div class="flex items-center gap-4 mb-6">
@@ -123,6 +123,7 @@
                 </h1>
 
                 <!-- Tags -->
+                <div class="flex flex-wrap gap-2 mb-4">
                 <span
                     class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-wider font-bold">
                     {{ track.get_file_format_display|default:"WAV" }}
@@ -135,6 +136,7 @@
                     class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
                     {{ track.created_at|date:"Y" }}
                 </span>
+                </div>
 
                 <!-- Track Metadata -->
                 <div class="flex flex-wrap items-center gap-6 font-mono text-[12px] text-[var(--text-muted)] mb-8">
@@ -233,8 +235,8 @@
                         <!-- SHARE MODAL -->
                         <template x-if="showShareModal">
                             <div role="dialog" aria-modal="true" aria-label="Share track" @keydown.escape.window="showShareModal = false"
-                                class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-                                <div @click.away="showShareModal = false"
+                                class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm overflow-y-auto" @click.self="showShareModal = false">
+                                <div
                                     class="bg-[var(--bg-surface)] border border-[var(--border)] w-full max-w-[500px] rounded-[24px] overflow-hidden shadow-2xl">
                                     <div class="p-8 border-b border-[var(--border)] flex justify-between items-center">
                                         <h2 class="font-display text-2xl font-bold text-[var(--text-primary)]">Share Track</h2>

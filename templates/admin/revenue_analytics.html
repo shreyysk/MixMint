@@ -29,22 +29,22 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Total Sales</div>
-            <div class="font-display text-[32px] font-[700] text-[var(--text-primary)] leading-none mb-2" x-text="'₹' + totals.total_sales"></div>
+            <div class="font-display text-[32px] font-[700] text-[var(--text-primary)] leading-none mb-2" x-text="inr(totals.total_sales)"></div>
             <div class="font-body text-[12px] text-[var(--text-muted)]" x-text="totals.purchase_count + ' Transactions'"></div>
         </div>
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Platform Gross</div>
-            <div class="font-display text-[32px] font-[700] text-[#a78bfa] leading-none mb-2" x-text="'₹' + totals.total_commission"></div>
+            <div class="font-display text-[32px] font-[700] text-[#a78bfa] leading-none mb-2" x-text="inr(totals.total_commission)"></div>
             <div class="font-body text-[12px] text-[var(--text-muted)]">From Content Sales</div>
         </div>
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Ad Revenue</div>
-            <div class="font-display text-[32px] font-[700] text-[#38bdf8] leading-none mb-2" x-text="'₹' + totals.total_ad_revenue"></div>
+            <div class="font-display text-[32px] font-[700] text-[#38bdf8] leading-none mb-2" x-text="inr(totals.total_ad_revenue)"></div>
             <div class="font-body text-[12px] text-[var(--text-muted)]">Platform Share (85%)</div>
         </div>
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Pending Payouts</div>
-            <div class="font-display text-[32px] font-[700] text-[#f472b6] leading-none mb-2" x-text="'₹' + pending_payouts"></div>
+            <div class="font-display text-[32px] font-[700] text-[#f472b6] leading-none mb-2" x-text="inr(pending_payouts)"></div>
             <div class="font-body text-[12px] text-[var(--text-muted)]">Owed to DJ Partners</div>
         </div>
     </div>
@@ -70,7 +70,7 @@
                                     <div class="font-medium text-[var(--text-primary)]" x-text="alert.buyer + ' → ' + alert.dj"></div>
                                     <div class="text-[11px] text-[var(--text-muted)] font-mono" x-text="alert.created_at"></div>
                                 </td>
-                                <td class="p-6 text-right font-mono font-bold text-[var(--accent-mint)]" x-text="'₹' + alert.amount"></td>
+                                <td class="p-6 text-right font-mono font-bold text-[var(--accent-mint)]" x-text="inr(alert.amount)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -99,7 +99,7 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-[var(--text-muted)]">Checkout Fee Yield</span>
-                        <span class="font-mono font-bold text-[var(--text-primary)]" x-text="'₹' + totals.total_checkout_fees"></span>
+                        <span class="font-mono font-bold text-[var(--text-primary)]" x-text="inr(totals.total_checkout_fees)"></span>
                     </div>
                 </div>
             </div>
@@ -107,7 +107,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/vendor/chart.umd.min.js' %}"></script>
 <script>
 function revenueAnalytics() {
     return {
@@ -121,6 +121,8 @@ function revenueAnalytics() {
         pending_payouts: '0.00',
         weekly: [],
         alerts: [],
+
+        inr(v) { const n = Number(v); return '₹' + (isNaN(n) ? '0' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 })); },
 
         init() {
             this.fetchData();

@@ -548,3 +548,27 @@ html:not(.js-ready) [data-reveal] { opacity: 1; transform: none; }
 .mm-later-title { font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
 .mm-later b { color: var(--text-primary); font-weight: 600; }
 .mm-later-tg { margin-top: 10px; min-height: 40px; height: auto; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; justify-content: center; width: 100%; text-transform: none; letter-spacing: normal; white-space: normal; text-align: center; }
+
+/* ── Responsive polish: every page, every screen size ── */
+/* A button whose label wraps grows taller instead of clipping its text. */
+.btn-mm[class] { height: auto; min-height: 40px; padding-top: 8px; padding-bottom: 8px; line-height: 1.25; text-align: center; }
+/* Nothing on the site is smaller than 11px. */
+[class*="text-[8px]"], [class*="text-[9px]"], [class*="text-[10px]"] { font-size: 11px !important; }
+input[type="checkbox"], input[type="radio"] { min-width: 18px; min-height: 18px; }
+/* Wide tables scroll inside their card instead of squashing columns. */
+.glow-card:has(> table), .glow-card:has(> div > table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.mm-tabs-scroll { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+.mm-tabs-scroll::-webkit-scrollbar { display: none; }
+.mm-tabs-scroll > * { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 640px) {
+  .btn-mm { letter-spacing: .08em; }
+  /* Big page titles scale to the screen, so long words never break mid-word. */
+  h1[class*="text-[4"], h1[class*="text-[5"], h1[class*="text-[6"], h1[class*="text-[7"], h1[class*="text-[9"],
+  h1[class*="text-5xl"], h1[class*="text-6xl"], h1[class*="text-7xl"] { font-size: clamp(28px, 10vw, 44px) !important; line-height: 1.06 !important; overflow-wrap: normal; word-break: normal; }
+  /* Title + action rows stack instead of squeezing the title. */
+  main .flex.justify-between.items-end, main .flex.justify-between.items-center:has(> div > h1) { flex-wrap: wrap; gap: 16px; }
+  /* Roomy desktop cards get phone-sized padding. */
+  .glow-card.p-10, .glow-card.p-12, .glow-card.p-8 { padding: 20px; }
+  .glow-card > table, .glow-card > div > table { min-width: 560px; }
+  .glow-card > table th, .glow-card > table td { padding: 12px 14px; }
+}

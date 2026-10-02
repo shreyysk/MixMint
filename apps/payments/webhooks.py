@@ -36,6 +36,9 @@ def phonepe_webhook(request):
         logger.error("PhonePe webhook received but PhonePe is not configured.")
         return HttpResponse(status=503)
 
+    if gateway.v2:
+        return _phonepe_v2_webhook(request, gateway, data)
+
     if not gateway.verify_payment(payload_base64, x_verify):
         logger.warning("PhonePe webhook: invalid signature.")
         return HttpResponse(status=401)
@@ -86,3 +89,45 @@ def razorpay_webhook(request):
     from .webhooks_razorpay import razorpay_webhook as handler
 
     return handler(request)
+
+
+def _phonepe_v2_webhook(request, gateway, data):
+    """Standard Checkout v2 webhook: {"event": ..., "payload": {...}}, Authorization = sha256(user:pass).
+    The webhook only tells us *which* order changed; the Order Status API decides what happened."""
+    if not gateway.verify_payment(data, request.headers.get("Authorization", "")):
+        logger.warning("PhonePe webhook: bad Authorization header.")
+        return HttpResponse(status=401)
+    event = str(data.get("event") or "")
+    payload = data.get("payload") or {}
+    if event.startswith("checkout.order."):
+        order_id = payload.get("merchantOrderId")
+        if not order_id:
+            return HttpResponse(status=400)
+        log_key = f"phonepe:{order_id}:{payload.get('state', '')}"
+        if WebhookLog.objects.filter(transaction_id=log_key, processed=True).exists():
+            return HttpResponse(status=200)
+        webhook_log, _ = WebhookLog.objects.get_or_create(
+            transaction_id=log_key, defaults={"gateway": "phonepe", "payload": data, "status": payload.get("state", "")}
+        )
+        try:
+            from .views import _fulfil_from_status
+
+            outcome = _fulfil_from_status(order_id, "phonepe")
+            webhook_log.error = None if outcome != "failed" or payload.get("state") == "FAILED" else outcome
+            webhook_log.processed = outcome in ("success", "failed")
+            webhook_log.save()
+        except Exception as exc:
+            logger.exception("PhonePe webhook processing failed for %s", order_id)
+            webhook_log.error = str(exc)[:500]
+            webhook_log.save()
+            return HttpResponse(status=500)  # PhonePe retries
+        return HttpResponse(status=200)
+    if event == "pg.refund.failed":
+        try:
+            from apps.admin_panel.telegram import notify_admins
+
+            notify_admins(f"⚠ PhonePe refund FAILED for order {payload.get('originalMerchantOrderId', '?')} "
+                          f"(refund {payload.get('merchantRefundId', '?')}). Check the PhonePe dashboard.")
+        except Exception:
+            pass
+    return HttpResponse(status=200)

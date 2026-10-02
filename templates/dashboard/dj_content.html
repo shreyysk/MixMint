@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% load tracks_filters %}
+{% load tracks_filters static %}
 {% block title %}DJ dashboard — MixMint{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/vendor/chart.umd.min.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -22,8 +22,8 @@
                     {% if dj_profile %}<a href="{% url 'dj_profile' dj_profile.slug %}" class="text-[var(--accent-mint)] underline underline-offset-4">View my store</a>{% endif %}
                 </p>
             </div>
-            <nav class="flex flex-wrap gap-3" aria-label="DJ tools">
-                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600]">+ Upload music</a>
+            <nav class="grid grid-cols-2 sm:flex sm:flex-wrap gap-3" aria-label="DJ tools">
+                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600] col-span-2">+ Upload music</a>
                 <a href="{% url 'bundle_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Bundles</a>
                 <a href="{% url 'announcement_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Posts</a>
                 <a href="{% url 'ambassador_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Referrals</a>
@@ -55,7 +55,7 @@
             <div class="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden mb-3" role="progressbar" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ storage_percent }}">
                 <div class="h-full bg-[var(--accent-mint)]" style="width: {{ storage_percent }}%;"></div>
             </div>
-            <p class="font-body text-[13px] text-[var(--text-primary)]">{{ storage_used_mb }} MB <span class="text-[var(--text-muted)]">of {{ storage_quota_mb }} MB</span></p>
+            <p class="font-body text-[13px] text-[var(--text-primary)]">{{ storage_used_mb|floatformat:1 }} MB <span class="text-[var(--text-muted)]">of {% if storage_quota_mb >= 1024 %}{% widthratio storage_quota_mb 1024 1 %} GB{% else %}{{ storage_quota_mb }} MB{% endif %}</span></p>
             {% if not is_pro %}<a href="{% url 'pro_landing' %}" class="font-body text-[12px] text-[var(--accent-mint)] underline underline-offset-4 mt-2">Get 20 GB with Pro</a>{% endif %}
         </div>
     </div>
@@ -200,24 +200,24 @@
                     <thead>
                         <tr
                             class="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-widest border-b border-[var(--border)] bg-transparent">
-                            <th class="px-8 py-5 font-normal">Date</th>
-                            <th class="px-8 py-5 font-normal">Item</th>
-                            <th class="px-8 py-5 font-normal">Buyer</th>
-                            <th class="px-8 py-5 font-normal text-right">Net Revenue</th>
+                            <th class="px-4 sm:px-8 py-4 sm:py-5 font-normal">Date</th>
+                            <th class="px-4 sm:px-8 py-4 sm:py-5 font-normal">Item</th>
+                            <th class="px-4 sm:px-8 py-4 sm:py-5 font-normal">Buyer</th>
+                            <th class="px-4 sm:px-8 py-4 sm:py-5 font-normal text-right">Net Revenue</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--border)]">
                         {% for sale in recent_sales %}
                         <tr class="hover:bg-[var(--bg-elevated)] transition-colors group">
-                            <td class="px-8 py-6 text-[13px] text-[var(--text-muted)] font-mono">
+                            <td class="px-4 sm:px-8 py-4 sm:py-6 text-[13px] text-[var(--text-muted)] font-mono whitespace-nowrap">
                                 {{ sale.created_at|date:"M d, Y" }}
                             </td>
-                            <td class="px-8 py-6">
+                            <td class="px-4 sm:px-8 py-4 sm:py-6">
                                         <p class="text-[13px] font-bold text-white mb-1">{{ sale.get_content_object.title|default:"Item" }}</p>
                                 <span
                                     class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mt-1">{{ sale.content_type }}</span>
                             </td>
-                            <td class="px-8 py-6">
+                            <td class="px-4 sm:px-8 py-4 sm:py-6">
                                 <span
                                     class="text-[14px] {% if sale.buyer_role == 'dj' %}text-[var(--accent-mint)]{% else %}text-[var(--text-primary)]{% endif %} font-[500] flex items-center gap-1.5">
                                     {{ sale.user.full_name|default:sale.user.user.email }}
@@ -226,7 +226,7 @@
                                     {% endif %}
                                 </span>
                             </td>
-                            <td class="px-8 py-6 text-right text-[13px] text-[var(--accent-mint)] font-mono font-bold">
+                            <td class="px-4 sm:px-8 py-4 sm:py-6 text-right text-[13px] text-[var(--accent-mint)] font-mono font-bold">
                                 {{ sale.dj_revenue|money }}
                             </td>
                         </tr>
@@ -317,20 +317,15 @@
                 const values = data.map(d => d.revenue);
 
                 new Chart(ctx, {
-                    type: 'line',
+                    type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [{
                             label: 'Revenue (₹)',
                             data: values,
-                            borderColor: mint,
-                            backgroundColor: 'rgba(0, 255, 179, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 4,
-                            pointBackgroundColor: mint,
-                            pointHoverRadius: 6
+                            backgroundColor: mint,
+                            borderRadius: 6,
+                            maxBarThickness: 36
                         }]
                     },
                     options: {
@@ -341,7 +336,8 @@
                         },
                         scales: {
                             y: {
-                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                beginAtZero: true,
+                                grid: { color: 'rgba(127,127,127,0.12)' },
                                 ticks: { color: muted, font: { family: 'DM Mono', size: 11 } }
                             },
                             x: {

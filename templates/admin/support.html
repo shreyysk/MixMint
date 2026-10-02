@@ -30,6 +30,30 @@
         {% endif %}
     </section>
 
+    <section class="mm-card-section space-y-4" id="payments">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+                <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Payments</h2>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1">New orders go through <b class="text-[var(--text-primary)]">{% if pay.active == 'phonepe' %}PhonePe{% else %}Razorpay{% endif %}</b>{% if pay.test_mode %} on <b class="text-[var(--text-primary)]">test keys</b>: no real money moves, and the yellow banner shows on the site{% else %} with <b class="text-[var(--text-primary)]">live keys</b>{% endif %}.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 shrink-0">
+                {% if pay.phonepe_ready %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="gateway_test">
+                    <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]">Test PhonePe</button></form>{% endif %}
+                <form method="post">{% csrf_token %}<input type="hidden" name="action" value="gateway_switch">
+                    {% if pay.active == 'phonepe' %}<input type="hidden" name="gateway" value="razorpay">
+                    <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not pay.razorpay_ready %}disabled{% endif %}>Switch to Razorpay</button>
+                    {% else %}<input type="hidden" name="gateway" value="phonepe">
+                    <button class="btn-mm btn-mint h-[42px] px-5 text-[13px]" {% if not pay.phonepe_ready %}disabled title="Add the PhonePe keys in Vercel first"{% endif %}>Switch to PhonePe</button>{% endif %}
+                </form>
+            </div>
+        </div>
+        <ul class="text-[13px] space-y-1 text-[var(--text-muted)]">
+            <li>{% if pay.phonepe_ready %}✓ PhonePe keys set ({{ pay.phonepe_env }}){% else %}✗ PhonePe keys missing: add PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET, PHONEPE_CLIENT_VERSION and PHONEPE_ENV in Vercel{% endif %}</li>
+            <li>{% if pay.webhook_ready %}✓ PhonePe webhook login set{% else %}✗ PhonePe webhook: add PHONEPE_WEBHOOK_USERNAME and PHONEPE_WEBHOOK_PASSWORD in Vercel (payments still confirm when buyers return, the webhook is the backup){% endif %}</li>
+            <li>Webhook URL for the PhonePe dashboard: <code class="font-mono text-[12px] select-all text-[var(--text-primary)]">{{ pay.webhook_url }}</code></li>
+        </ul>
+    </section>
+
     {% if tg_token %}
     <section class="mm-card-section space-y-5" id="vault">
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">

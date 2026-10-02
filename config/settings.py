@@ -429,7 +429,14 @@ RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 # env change: swap in rzp_live_ keys + the live webhook secret and redeploy.
 PAYMENTS_TEST_MODE = RAZORPAY_KEY_ID.startswith("rzp_test_")
 
-# PhonePe Config [Spec P1 Section A]
+# PhonePe Standard Checkout v2 (PhonePe Business dashboard → Developer Settings / API keys)
+PHONEPE_CLIENT_ID = env("PHONEPE_CLIENT_ID", default="")
+PHONEPE_CLIENT_SECRET = env("PHONEPE_CLIENT_SECRET", default="")
+PHONEPE_CLIENT_VERSION = env("PHONEPE_CLIENT_VERSION", default="1")
+PHONEPE_ENV = env("PHONEPE_ENV", default="sandbox")  # "sandbox" (test keys) or "production" (live keys)
+PHONEPE_WEBHOOK_USERNAME = env("PHONEPE_WEBHOOK_USERNAME", default="")
+PHONEPE_WEBHOOK_PASSWORD = env("PHONEPE_WEBHOOK_PASSWORD", default="")
+# Legacy salt-key API (only for merchants onboarded before v2)
 PHONEPE_MERCHANT_ID = env("PHONEPE_MERCHANT_ID", default="")
 PHONEPE_SALT_KEY = env("PHONEPE_SALT_KEY", default="")
 PHONEPE_SALT_INDEX = env("PHONEPE_SALT_INDEX", default="1")
@@ -571,7 +578,10 @@ _active_gateway = LazyGateway()
 if ENVIRONMENT == "production":
     # Allow either gateway in production, but verify configuration
     if DEFAULT_PAYMENT_GATEWAY == "phonepe":
-        assert "preprod" not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
+        if PHONEPE_CLIENT_ID and PHONEPE_ENV != "production":
+            logging.getLogger("mixmint").warning("PhonePe SANDBOX keys in production: payments are simulated (test-mode banner shown).")
+        elif not PHONEPE_CLIENT_ID:
+            assert "preprod" not in PHONEPE_BASE_URL, "Production is using PhonePe SANDBOX URL"
     elif DEFAULT_PAYMENT_GATEWAY == "razorpay":
         assert RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, "Razorpay keys not configured for production"
         if not RAZORPAY_WEBHOOK_SECRET:
