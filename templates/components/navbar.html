@@ -97,7 +97,7 @@
             <!-- Right: Actions (Desktop) -->
             <div class="hidden lg:flex items-center gap-6">
                 <!-- Theme Toggle -->
-                <button onclick="toggleTheme()" data-theme-toggle
+                {% if dark_mode_enabled %}<button onclick="toggleTheme()" data-theme-toggle
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-amber)] hover:bg-[var(--border)] transition-all"
                     aria-label="Switch to light mode">
                     <!-- Sun icon (shown in dark mode) -->
@@ -106,7 +106,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                </button>
+                </button>{% endif %}
 
                 <div class="w-px h-6 bg-[var(--border)] mx-1"></div>
 
@@ -181,7 +181,7 @@
 
             <!-- Mobile Menu Toggle & Theme Toggle -->
             <div class="lg:hidden flex items-center gap-4">
-                <button onclick="toggleTheme()" data-theme-toggle
+                {% if dark_mode_enabled %}<button onclick="toggleTheme()" data-theme-toggle
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)]"
                     aria-label="Switch to light mode">
                     <svg class="w-5 h-5 theme-toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -189,7 +189,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                </button>
+                </button>{% endif %}
                 <button class="w-10 h-10 flex flex-col items-center justify-center gap-1.5 focus:outline-none"
                     @click="open = !open" aria-label="Toggle navigation menu">
                     <span class="w-6 h-[2px] bg-[var(--text-primary)] transition-all duration-300"

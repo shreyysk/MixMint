@@ -1,6 +1,6 @@
 {% load tracks_filters static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="{% if dark_mode_enabled %}dark{% else %}light{% endif %}">
 
 <head>
     <meta charset="UTF-8">
@@ -15,6 +15,17 @@
             --text-primary: #F0F0F5;
             --text-muted: #6B6B7E;
         }
+        {% if not dark_mode_enabled %}
+        :root {
+            --accent-mint: #007A55;
+            --bg-base: #F5F0E8;
+            --bg-surface: #FDFAF4;
+            --text-primary: #1A1410;
+            --text-muted: #5A5040;
+        }
+        .embed-card { border-color: rgba(0, 0, 0, 0.08) !important; }
+        .premium-btn { color: #fff !important; }
+        {% endif %}
 
         body {
             background: var(--bg-base);

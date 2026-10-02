@@ -23,6 +23,14 @@
                 <button class="cx-btn primary">Save</button>
             </form>
         </section>
+        <section class="cx-card">
+            <h2>Appearance</h2>
+            <p class="cx-muted" style="margin-bottom:12px">The site uses the light theme. Turn dark mode on to give visitors a light/dark switch (it follows their device setting until they pick one).</p>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="appearance">
+                <label class="cx-check" style="margin-bottom:12px"><input type="checkbox" name="dark_mode" {% if dark_mode_on %}checked{% endif %}> Allow dark mode</label>
+                <button class="cx-btn primary">Save</button>
+            </form>
+        </section>
         <section class="cx-card" style="grid-column:1/-1">
             <h2>Ads</h2>
             <p class="cx-muted" style="margin-bottom:12px">Google AdSense ads, at most one per screen, on shop pages only (home, releases, DJ stores, release pages). Never in checkout, the library, dashboards or admin. Each ad loads only when scrolled near, so pages stay fast.</p>

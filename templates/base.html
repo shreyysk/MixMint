@@ -1,6 +1,6 @@
 {% load i18n static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -80,30 +80,28 @@
 
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
 
-    <!-- Theme initialization (prevent flash) -->
+    <!-- Theme: light only, unless the admin has switched dark mode on (Admin -> Settings -> Appearance). -->
     <script>
+        window.MM_DARK_MODE = {% if dark_mode_enabled %}true{% else %}false{% endif %};
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('mm-theme'); } catch (e) { }
-            if (saved === 'light' || saved === 'dark') {
-                document.documentElement.setAttribute('data-theme', saved);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                document.documentElement.setAttribute('data-theme', 'light');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
+            var root = document.documentElement, theme = 'light';
+            if (window.MM_DARK_MODE) {
+                var saved = null;
+                try { saved = localStorage.getItem('mm-theme'); } catch (e) { }
+                if (saved === 'light' || saved === 'dark') theme = saved;
+                else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
             }
+            root.setAttribute('data-theme', theme);
         })();
 
         function toggleTheme() {
+            if (!window.MM_DARK_MODE) return;
             var root = document.documentElement;
-            var current = root.getAttribute('data-theme');
-            var next = current === 'dark' ? 'light' : 'dark';
+            var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             root.classList.add('theme-switching');
             root.setAttribute('data-theme', next);
             setTimeout(function () { root.classList.remove('theme-switching'); }, 350);
             try { localStorage.setItem('mm-theme', next); } catch (e) { }
-
-            // Update ARIA labels on all theme toggle buttons
             document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
                 btn.setAttribute('aria-label', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
             });

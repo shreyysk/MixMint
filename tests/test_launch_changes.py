@@ -260,3 +260,27 @@ def test_sell_page_listing_fee_and_earn_line(platform_settings):
     body = Client().get("/sell/").content.decode()
     assert "100% earning opportunity" in body
     assert "No listing fee" in body or "listing fee" in body.lower()
+
+
+# ── Dark mode: off by default, admin switch ──
+@pytest.mark.django_db
+def test_light_only_by_default():
+    body = Client().get("/").content.decode()
+    assert 'data-theme="light"' in body and "window.MM_DARK_MODE = false" in body
+    assert 'onclick="toggleTheme()" data-theme-toggle' not in body
+
+
+@pytest.mark.django_db
+def test_admin_can_allow_dark_mode(admin_user):
+    from django.core.cache import cache
+
+    c = Client()
+    c.force_login(admin_user)
+    r = c.post("/api/v1/admin/settings/", {"action": "appearance", "dark_mode": "on"})
+    assert r.status_code == 302
+    cache.clear()
+    body = Client().get("/").content.decode()
+    assert "window.MM_DARK_MODE = true" in body and 'onclick="toggleTheme()" data-theme-toggle' in body
+    c.post("/api/v1/admin/settings/", {"action": "appearance"})
+    cache.clear()
+    assert 'onclick="toggleTheme()" data-theme-toggle' not in Client().get("/").content.decode()
