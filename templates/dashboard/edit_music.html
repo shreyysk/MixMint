@@ -42,7 +42,7 @@
                 <label for="genre" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Genre</label>
                 <select id="genre" name="genre" class="input-mm">
                     <option value="">Choose a genre</option>
-                    {% for g in genre_choices %}<option value="{{ g }}" {% if item.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+                    {% for label, group in genre_groups %}<optgroup label="{{ label }}">{% for g in group %}<option value="{{ g }}" {% if item.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}</optgroup>{% endfor %}
                     {% if item.genre and item.genre not in genre_choices %}<option value="{{ item.genre }}" selected>{{ item.genre }}</option>{% endif %}
                 </select>
             </div>

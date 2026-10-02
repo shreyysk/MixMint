@@ -31,7 +31,16 @@ from apps.core.net import get_client_ip
 
 PAGE = 24
 TYPES = [("all", "All"), ("singles", "Singles"), ("albums", "Album packs"), ("bundles", "Bundles"), ("drops", "Limited drops")]
-SORTS = [("new", "Newest"), ("popular", "Popular"), ("price_low", "Price: low to high"), ("price_high", "Price: high to low")]
+SORTS = [
+    ("new", "Newest upload"), ("old", "Oldest upload"), ("popular", "Popular this week"), ("downloads", "Most downloaded"),
+    ("price_low", "Price: low to high"), ("price_high", "Price: high to low"), ("title_az", "Title: A to Z"),
+    ("title_za", "Title: Z to A"), ("bpm_low", "BPM: low to high"), ("bpm_high", "BPM: high to low"),
+]
+PRICES = [("free", "Free", 0, 0), ("u50", "Under ₹50", 0.01, 49.99), ("50-99", "₹50–99", 50, 99.99),
+          ("100-199", "₹100–199", 100, 199.99), ("200", "₹200 and up", 200, None)]
+BPMS = [("slow", "Under 100", None, 99), ("100-120", "100–120", 100, 120), ("121-128", "121–128", 121, 128),
+        ("129-140", "129–140", 129, 140), ("fast", "Over 140", 141, None)]
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 
 def _live(qs):
@@ -39,16 +48,28 @@ def _live(qs):
 
 
 def releases_view(request, forced_type=None):
+    from collections import Counter
+
+    from django.utils import timezone as tz
+
     from apps.albums.models import AlbumPack
     from apps.commerce.models import Bundle
+    from apps.core.genres import GENRE_GROUPS
     from apps.tracks.models import Track
 
-    kind = forced_type or request.GET.get("type") or "all"
+    g = request.GET
+    kind = forced_type or g.get("type") or "all"
     if kind not in dict(TYPES):
         kind = "all"
-    q = (request.GET.get("q") or "").strip()[:80]
-    genre = (request.GET.get("genre") or "").strip()[:60]
-    sort = request.GET.get("sort") if request.GET.get("sort") in dict(SORTS) else "new"
+    q = (g.get("q") or "").strip()[:80]
+    genre = (g.get("genre") or "").strip()[:60]
+    sort = g.get("sort") if g.get("sort") in dict(SORTS) else "new"
+    year = int(g["year"]) if (g.get("year") or "").isdigit() and 2000 < int(g["year"]) < 2200 else None
+    month = int(g["month"]) if (g.get("month") or "").isdigit() and 1 <= int(g["month"]) <= 12 else None
+    price = g.get("price") if g.get("price") in {k for k, *_ in PRICES} else ""
+    bpm = g.get("bpm") if g.get("bpm") in {k for k, *_ in BPMS} else ""
+    dj_slug = (g.get("dj") or "").strip()[:80]
+    verified = g.get("verified") == "1"
 
     tracks = _live(Track.objects.select_related("dj", "dj__profile"))
     albums = _live(AlbumPack.objects.select_related("dj", "dj__profile"))
@@ -59,40 +80,116 @@ def releases_view(request, forced_type=None):
         bundles = bundles.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q))
     if genre:
         tracks = tracks.filter(genre__iexact=genre)
-        albums = albums.none() if kind != "albums" else albums
+        albums = albums.none()
         bundles = bundles.filter(bundle_tracks__track__genre__iexact=genre).distinct()
     if kind == "drops":
         tracks, albums, bundles = tracks.filter(copies_limit__isnull=False), albums.filter(copies_limit__isnull=False), bundles.none()
+    if dj_slug:
+        tracks, albums, bundles = tracks.filter(dj__slug=dj_slug), albums.filter(dj__slug=dj_slug), bundles.filter(dj__slug=dj_slug)
+    if verified:
+        tracks, albums, bundles = tracks.filter(dj__is_verified=True), albums.filter(dj__is_verified=True), bundles.filter(dj__is_verified=True)
+    if price:
+        _, _, lo, hi = next(p for p in PRICES if p[0] == price)
+        rng = Q(price__gte=lo) & (Q(price__lte=hi) if hi is not None else Q())
+        tracks, albums, bundles = tracks.filter(rng), albums.filter(rng), bundles.filter(rng)
+    if bpm:
+        _, _, lo, hi = next(b for b in BPMS if b[0] == bpm)
+        f = Q(bpm__isnull=False) & (Q(bpm__gte=lo) if lo is not None else Q()) & (Q(bpm__lte=hi) if hi is not None else Q())
+        tracks, albums, bundles = tracks.filter(f), albums.none(), bundles.none()
 
-    items = []
+    pool = []
     if kind in ("all", "singles", "drops"):
-        items += [("track", t) for t in tracks]
+        pool += [("track", t) for t in tracks]
     if kind in ("all", "albums", "drops"):
-        items += [("album", a) for a in albums]
+        pool += [("album", a) for a in albums]
     if kind in ("all", "bundles"):
-        items += [("bundle", b) for b in bundles if b.live_tracks()]
+        pool += [("bundle", b) for b in bundles if b.live_tracks()]
 
-    popularity = {"track": lambda o: o.sales_last_7_days or 0}
-    keyf = {
-        "new": lambda kv: kv[1].created_at,
-        "popular": lambda kv: popularity.get(kv[0], lambda o: 0)(kv[1]),
-        "price_low": lambda kv: kv[1].price,
-        "price_high": lambda kv: kv[1].price,
+    # Upload year / month: counts come from everything else that is filtered, so the menus show what exists.
+    local = lambda o: tz.localtime(o.created_at)  # noqa: E731
+    year_counts = Counter(local(o).year for _, o in pool)
+    month_counts = Counter(local(o).month for _, o in pool if year is None or local(o).year == year)
+    items = [(k, o) for k, o in pool if (year is None or local(o).year == year) and (month is None or local(o).month == month)]
+
+    def bpm_key(o):
+        return getattr(o, "bpm", None) or 0
+
+    keyf, rev = {
+        "new": (lambda kv: kv[1].created_at, True),
+        "old": (lambda kv: kv[1].created_at, False),
+        "popular": (lambda kv: getattr(kv[1], "sales_last_7_days", 0) or 0, True),
+        "downloads": (lambda kv: getattr(kv[1], "download_count", 0) or 0, True),
+        "price_low": (lambda kv: kv[1].price, False),
+        "price_high": (lambda kv: kv[1].price, True),
+        "title_az": (lambda kv: (kv[1].title or "").lower(), False),
+        "title_za": (lambda kv: (kv[1].title or "").lower(), True),
+        "bpm_low": (lambda kv: (bpm_key(kv[1]) == 0, bpm_key(kv[1])), False),
+        "bpm_high": (lambda kv: bpm_key(kv[1]), True),
     }[sort]
-    items.sort(key=keyf, reverse=sort in ("new", "popular", "price_high"))
+    items.sort(key=keyf, reverse=rev)
 
-    page = Paginator(items, PAGE).get_page(request.GET.get("page"))
+    page = Paginator(items, PAGE).get_page(g.get("page"))
     attach_stock([o for k, o in page.object_list if k == "track"], "track")
     attach_stock([o for k, o in page.object_list if k == "album"], "album")
-
-    genres = sorted({g.strip() for g in _live(Track.objects).exclude(genre__isnull=True).exclude(genre="").values_list("genre", flat=True)}, key=str.lower)
     total = page.paginator.count
+
+    # Newest/oldest: show the results under month headings ("October 2026").
+    groups = []
+    if sort in ("new", "old"):
+        for k, o in page.object_list:
+            d = local(o)
+            label = f"{MONTHS[d.month - 1]} {d.year}"
+            if not groups or groups[-1]["label"] != label:
+                groups.append({"label": label, "items": []})
+            groups[-1]["items"].append((k, o))
+
+    live_genres = Counter((t or "").strip() for t in _live(Track.objects).exclude(genre__isnull=True).exclude(genre="").values_list("genre", flat=True))
+    known = {x for _, grp in GENRE_GROUPS for x in grp}
+    genre_groups = [(label, [(x, live_genres.get(x, 0)) for x in grp]) for label, grp in GENRE_GROUPS]
+    extra = sorted((x for x in live_genres if x and x not in known), key=str.lower)
+    if extra:
+        genre_groups.append(("Also on MixMint", [(x, live_genres[x]) for x in extra]))
+    genres = [x for x, n in sorted(live_genres.items(), key=lambda kv: -kv[1]) if x][:12]
+
+    from apps.accounts.models import DJProfile
+
+    djs = DJProfile.objects.filter(status="approved", profile__store_paused=False).order_by("dj_name").values("slug", "dj_name")
+
+    filtered = bool(q or genre or year or month or price or bpm or dj_slug or verified)
+    params = g.copy()
+    params.pop("page", None)
+    qs = params.urlencode()
+
+    def without(*keys):
+        p2 = params.copy()
+        for k in keys:
+            p2.pop(k, None)
+        return "?" + p2.urlencode()
+
+    labels = {k: lab for k, lab, *_ in PRICES}
+    blabels = {k: lab for k, lab, *_ in BPMS}
+    active = []
+    if q:
+        active.append((f"“{q}”", without("q")))
+    if genre:
+        active.append((genre, without("genre")))
+    if year:
+        active.append((str(year), without("year", "month") if not month else without("year")))
+    if month:
+        active.append((MONTHS[month - 1], without("month")))
+    if price:
+        active.append((labels.get(price, price), without("price")))
+    if bpm:
+        active.append((f"{blabels.get(bpm, bpm)} BPM", without("bpm")))
+    if dj_slug:
+        name = next((d["dj_name"] for d in djs if d["slug"] == dj_slug), dj_slug)
+        active.append((name, without("dj")))
+    if verified:
+        active.append(("Verified DJs", without("verified")))
 
     # Browsing everything (no search/filter): open with Netflix-style rows, the full grid follows.
     rows = []
-    if not forced_type and kind == "all" and not q and not genre and sort == "new" and page.number == 1 and total > 8:
-        from collections import Counter
-
+    if not forced_type and kind == "all" and not filtered and sort == "new" and page.number == 1 and total > 8:
         all_tracks = [o for k, o in items if k == "track"]
         all_albums = [o for k, o in items if k == "album"]
         all_bundles = [o for k, o in items if k == "bundle"]
@@ -108,14 +205,19 @@ def releases_view(request, forced_type=None):
         row("albums", "Album packs", all_albums, "album", "?type=albums")
         row("drops", "Limited drops", [t for t in all_tracks if t.copies_limit], "track", "/drops/", "Numbered copies. Once they're gone, they're gone.")
         row("bundles", "Bundles", all_bundles, "bundle", "/bundles/")
-        for g, n in Counter((t.genre or "").strip() for t in all_tracks if t.genre).most_common(4):
+        for gname, n in Counter((t.genre or "").strip() for t in all_tracks if t.genre).most_common(4):
             if n >= 3:
-                row("g-" + g.lower().replace(" ", "-"), g, [t for t in all_tracks if (t.genre or "").strip() == g], "track", f"?genre={g}")
+                row("g-" + gname.lower().replace(" ", "-"), gname, [t for t in all_tracks if (t.genre or "").strip() == gname], "track", f"?genre={gname}")
     ctx = {
         "page": page, "total": total, "kind": kind, "types": TYPES, "q": q, "genre": genre, "genres": genres,
-        "sort": sort, "sorts": SORTS, "forced": forced_type,
+        "genre_groups": genre_groups, "sort": sort, "sorts": SORTS, "forced": forced_type,
         "heading": {"drops": "Limited drops", "bundles": "Bundles"}.get(forced_type or "", "All releases"),
-        "rows": rows,
+        "rows": rows, "groups": groups, "qs": qs, "filtered": filtered, "active": active,
+        "year": year, "month": month, "price": price, "bpm": bpm, "dj": dj_slug, "verified": verified,
+        "years": sorted(year_counts.items(), reverse=True),
+        "months": [(i, MONTHS[i - 1], month_counts.get(i, 0)) for i in range(1, 13)],
+        "prices": [(k, lab) for k, lab, *_ in PRICES], "bpms": [(k, lab) for k, lab, *_ in BPMS], "djs": djs,
+        "n_filters": sum(bool(x) for x in (genre, year, month, price, bpm, dj_slug, verified)) + (kind != "all" and not forced_type),
     }
     return render(request, "catalog/releases.html", ctx)
 

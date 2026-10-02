@@ -22,11 +22,7 @@ from apps.core.embeds import instagram_code, youtube_id
 
 logger = logging.getLogger("mixmint")
 
-GENRES = [
-    "Techno", "House", "Tech House", "Deep House", "Afro House", "Progressive", "Trance", "Psytrance",
-    "Dubstep", "Drum & Bass", "Hardstyle", "EDM", "Hip-Hop", "Bollywood", "Bollywood Remix", "Punjabi",
-    "Tollywood", "Lo-fi", "Other",
-]
+from apps.core.genres import GENRE_GROUPS, GENRES  # noqa: E402,F401
 
 
 def _approved_dj(request):
@@ -129,7 +125,7 @@ def upload_track_view(request):
         "storage_ready": r2.configured(),
         "covers_ready": bool(r2.public_url("x")),
         "approved": dj is not None,
-        "genre_choices": GENRES,
+        "genre_choices": GENRES, "genre_groups": GENRE_GROUPS,
         "min_track_price": int(settings.MIN_TRACK_PRICE),
         "min_album_price": int(settings.MIN_ALBUM_PRICE),
         "kind": "album" if request.GET.get("kind") == "album" else "track",

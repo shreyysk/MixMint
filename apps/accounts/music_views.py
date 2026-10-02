@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core import r2
 
-from .upload_views import GENRES, _first_error, _int_or_none, _offers, _previews, _price
+from .upload_views import GENRE_GROUPS, GENRES, _first_error, _int_or_none, _offers, _previews, _price
 
 SOCIAL = [
     ("instagram", "Instagram", "instagram.com"),
@@ -59,7 +59,7 @@ def edit_music_view(request, kind, pk):
         return redirect("dashboard")
     item = get_object_or_404(_model(kind), pk=pk, dj=dj, is_deleted=False)
     cover_field = "cover_image" if kind == "album" else "cover_url"
-    ctx = {"item": item, "kind": kind, "genre_choices": GENRES, "cover": getattr(item, cover_field) or ""}
+    ctx = {"item": item, "kind": kind, "genre_choices": GENRES, "genre_groups": GENRE_GROUPS, "cover": getattr(item, cover_field) or ""}
 
     if request.method == "POST":
         post = request.POST

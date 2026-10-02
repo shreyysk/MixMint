@@ -37,6 +37,7 @@ from apps.accounts.models import DJProfile, InAppNotification, LoginHistory, Pro
 from apps.albums.models import AlbumPack
 from apps.commerce.models import Bundle, Payout, Purchase, RefundRequest, WebhookLog
 from apps.core.net import get_client_ip
+from apps.core.genres import GENRES
 from apps.tracks.models import Track
 
 from .models import AuditLog, ContentReport, CopyrightReport, FraudAlert, MaintenanceMode, SupportTicket, SystemSetting
@@ -501,6 +502,19 @@ def _catalog_rows(request):
         qs = qs.filter(is_deleted=True)
     if request.GET.get("dj"):
         qs = qs.filter(dj__slug=request.GET["dj"])
+    y, m = request.GET.get("year") or "", request.GET.get("month") or ""
+    if y.isdigit():
+        qs = qs.filter(created_at__year=int(y))
+    if m.isdigit() and 1 <= int(m) <= 12:
+        qs = qs.filter(created_at__month=int(m))
+    genre = (request.GET.get("genre") or "").strip()
+    if genre and kind == "track":
+        qs = qs.filter(genre__iexact=genre)
+    order = {"new": "-created_at", "old": "created_at", "title_az": "title", "title_za": "-title",
+             "price_high": "-price", "price_low": "price"}
+    if kind == "track":
+        order.update({"downloads": "-download_count", "bpm_high": "-bpm", "bpm_low": "bpm"})
+    qs = qs.order_by(order.get(request.GET.get("sort"), "-created_at"), "-pk")
     return kind, qs
 
 
@@ -531,6 +545,9 @@ def catalog_view(request):
     return render(request, "admin/console/catalog.html", {
         "page": page, "kind": kind, "counts": counts, "qs": _qs_without_page(request), "f": request.GET,
         "djs": DJProfile.objects.filter(status="approved").order_by("dj_name").values("slug", "dj_name"),
+        "years": sorted({d.year for d in KINDS.get(kind, Track).objects.dates("created_at", "year")}, reverse=True),
+        "months": list(enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)),
+        "genre_list": GENRES,
     })
 
 

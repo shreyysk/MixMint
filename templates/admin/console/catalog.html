@@ -24,6 +24,24 @@
         </select>
         <label class="sr-only" for="cdj">DJ</label>
         <select id="cdj" name="dj" onchange="this.form.submit()"><option value="">All DJs</option>{% for d in djs %}<option value="{{ d.slug }}" {% if f.dj == d.slug %}selected{% endif %}>{{ d.dj_name }}</option>{% endfor %}</select>
+        <label class="sr-only" for="cyr">Upload year</label>
+        <select id="cyr" name="year" onchange="this.form.submit()"><option value="">Any year</option>{% for y in years %}<option value="{{ y }}" {% if f.year == y|stringformat:"d" %}selected{% endif %}>{{ y }}</option>{% endfor %}</select>
+        <label class="sr-only" for="cmo">Upload month</label>
+        <select id="cmo" name="month" onchange="this.form.submit()"><option value="">Any month</option>{% for i, n in months %}<option value="{{ i }}" {% if f.month == i|stringformat:"d" %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+        {% if kind == "track" %}<label class="sr-only" for="cgn">Genre</label>
+        <select id="cgn" name="genre" onchange="this.form.submit()"><option value="">Any genre</option>{% for g in genre_list %}<option value="{{ g }}" {% if f.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}</select>{% endif %}
+        <label class="sr-only" for="csort">Sort</label>
+        <select id="csort" name="sort" onchange="this.form.submit()">
+            <option value="new">Newest upload</option>
+            <option value="old" {% if f.sort == "old" %}selected{% endif %}>Oldest upload</option>
+            <option value="title_az" {% if f.sort == "title_az" %}selected{% endif %}>Title A–Z</option>
+            <option value="title_za" {% if f.sort == "title_za" %}selected{% endif %}>Title Z–A</option>
+            <option value="price_high" {% if f.sort == "price_high" %}selected{% endif %}>Price high–low</option>
+            <option value="price_low" {% if f.sort == "price_low" %}selected{% endif %}>Price low–high</option>
+            {% if kind == "track" %}<option value="downloads" {% if f.sort == "downloads" %}selected{% endif %}>Most downloaded</option>
+            <option value="bpm_high" {% if f.sort == "bpm_high" %}selected{% endif %}>BPM high–low</option>
+            <option value="bpm_low" {% if f.sort == "bpm_low" %}selected{% endif %}>BPM low–high</option>{% endif %}
+        </select>
         <button class="cx-btn primary">Search</button>
     </form>
     {% if page.object_list %}
