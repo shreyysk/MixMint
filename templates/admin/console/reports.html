@@ -1,0 +1,42 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Reports — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head"><div><h1>Reports</h1><p>What buyers and rights holders flagged: spam, bad audio, copyright. Dismiss it, mark it handled, or hide the release from the shop in one step (the DJ is told why).</p></div></div>
+    <nav class="cx-chips" style="margin-bottom:16px" aria-label="Show">
+        <a href="?show=open" {% if show == "open" %}aria-current="true"{% endif %}>Open</a>
+        <a href="?show=all" {% if show == "all" %}aria-current="true"{% endif %}>All</a>
+    </nav>
+    <div style="display:grid;gap:14px">
+    {% for row in rows %}
+        <article class="cx-card">
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px">
+                <div style="min-width:0;flex:1 1 320px">
+                    <p style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px"><span class="cx-pill {% if row.src == 'copyright' %}bad{% else %}warn{% endif %}">{{ row.label }}</span>
+                    {% if row.r.status == "pending" %}<span class="cx-pill">Open</span>{% else %}<span class="cx-pill ok">{{ row.r.status|title }}</span>{% endif %}
+                    <span class="cx-muted">{{ row.r.created_at|date:"d M Y, H:i" }} · from {{ row.who }}</span></p>
+                    <h2 style="margin-bottom:4px">{% if row.item %}<a class="underline" href="{% url 'admin_catalog_edit' row.kind row.item.pk %}">{{ row.item.title }}</a> <span class="cx-muted" style="font-size:14px;font-weight:400">by {{ row.item.dj.dj_name }}{% if not row.item.is_active %} · hidden{% endif %}</span>{% else %}(release removed){% endif %}</h2>
+                    <p style="font-size:14px;white-space:pre-line">{{ row.r.reason|default:"No details given." }}</p>
+                    {% if row.evidence %}<p class="cx-muted" style="margin-top:6px;overflow-wrap:anywhere">Evidence: <a class="underline" href="{{ row.evidence }}" target="_blank" rel="noopener nofollow">{{ row.evidence|truncatechars:80 }}</a></p>{% endif %}
+                    {% if row.r.admin_notes %}<p class="cx-muted" style="margin-top:6px">Note: {{ row.r.admin_notes }}</p>{% endif %}
+                </div>
+                {% if row.r.status == "pending" %}
+                <form method="post" style="flex:0 1 300px;display:grid;gap:8px">{% csrf_token %}
+                    <input type="hidden" name="src" value="{{ row.src }}"><input type="hidden" name="id" value="{{ row.r.pk }}">
+                    <label class="sr-only" for="n{{ row.src }}{{ row.r.pk }}">Note</label>
+                    <input id="n{{ row.src }}{{ row.r.pk }}" class="cx-input" name="note" placeholder="Note (sent to the DJ if you hide it)">
+                    <div class="cx-actions">
+                        {% if row.item and row.item.is_active %}<button class="cx-btn danger" name="action" value="takedown">Hide release</button>{% endif %}
+                        <button class="cx-btn" name="action" value="resolve">Handled</button>
+                        <button class="cx-btn" name="action" value="dismiss">Dismiss</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+    {% empty %}
+        <div class="cx-empty">{% if show == "open" %}No open reports.{% else %}No reports yet.{% endif %}</div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}

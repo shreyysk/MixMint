@@ -107,6 +107,18 @@
                 <p class="text-[12px] text-[var(--text-muted)] mt-6 leading-relaxed">Switch on when annual turnover exceeds ₹10L. Calculated at 18% inclusive.</p>
             </div>
 
+            <!-- Cart discounts -->
+            <div class="glow-card p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest">Buy more, save more</h3>
+                    <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-cart" aria-label="Cart discounts" x-model="settings.cart_discounts" @change="confirmToggle('cart_discounts')" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 appearance-none cursor-pointer border-[var(--bg-elevated)] top-0 z-10" />
+                        <label for="toggle-cart" class="toggle-label block overflow-hidden h-6 rounded-full bg-[var(--bg-elevated)] cursor-pointer"></label>
+                    </div>
+                </div>
+                <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">When on, carts get 5% off for 3+ items, 10% for 5+, 20% for 10+ and 30% for 15+, and the cart shows the next discount. When off, nothing about cart discounts appears anywhere.</p>
+            </div>
+
             <!-- DJ Application Fee -->
             <div class="glow-card p-8">
                 <div class="flex justify-between items-center mb-6">
@@ -153,7 +165,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div>
                     <label class="block text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-3">Primary Heading</label>
-                    <input type="text" x-model="offer.title" placeholder="Launch Offer 🚀" class="admin-input">
+                    <input type="text" x-model="offer.title" placeholder="Launch offer" class="admin-input">
                 </div>
                 <div>
                     <label class="block text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-3">Highlight Tagline</label>
@@ -214,7 +226,7 @@
 
             <div class="flex flex-col md:flex-row gap-4 border-t border-[var(--border)] pt-8">
                 <div class="text-[11px] text-[var(--text-muted)] font-body max-w-sm">
-                    ⚠️ Publishing will deactivate any other active promotional offers immediately.
+                    {% icon "triangle-alert" %} Publishing will deactivate any other active promotional offers immediately.
                 </div>
                 <button @click="saveOffer()" class="btn-mm btn-mint px-12 md:ml-auto">Publish Campaign Updates</button>
             </div>
@@ -246,12 +258,13 @@
                 buyer_fee: "{{ settings.buyer_platform_fee|default:'5.00' }}",
                 gst_enabled: {{ settings.gst_charging_enabled|yesno:"true,false" }},
                 dj_fee_enabled: {{ settings.dj_application_fee_enabled|yesno:"true,false" }},
-                dj_fee: "{{ settings.dj_application_fee|default:'99.00' }}"
+                dj_fee: "{{ settings.dj_application_fee|default:'99.00' }}",
+                cart_discounts: {{ settings.cart_discounts_enabled|yesno:"true,false" }}
             },
             offer: {
                 id: "{{ active_offer.id|default:'' }}",
                 is_active: {{ active_offer.is_active|yesno:"true,false,false" }},
-                title: "{{ active_offer.title|escapejs|default:'Launch Offer 🚀' }}",
+                title: "{{ active_offer.title|escapejs|default:'Launch offer' }}",
                 tagline: "{{ active_offer.tagline|escapejs|default:'Zero platform fees. 10% comm' }}",
                 sub_text: "{{ active_offer.sub_text|escapejs|default:'Introductory launch pricing' }}",
                 badge_label: "{{ active_offer.badge_label|escapejs|default:'LIMITED TIME' }}",
@@ -289,15 +302,16 @@
                             buyer_platform_fee: this.settings.buyer_fee,
                             gst_charging_enabled: this.settings.gst_enabled,
                             dj_application_fee_enabled: this.settings.dj_fee_enabled,
-                            dj_application_fee: this.settings.dj_fee
+                            dj_application_fee: this.settings.dj_fee,
+                            cart_discounts_enabled: this.settings.cart_discounts
                         })
                     });
 
-                    if (res.ok) alert("Pricing configuration synchronized.");
-                    else alert("Critical: Failed to sync pricing settings.");
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) MM.toast("success", data.message || "Saved.");
+                    else MM.toast("error", data.error || "Couldn't save. Check the numbers and try again.");
                 } catch (e) {
-                    console.error(e);
-                    alert("Network error: Could not reach admin API.");
+                    MM.toast("error", "Couldn't reach the server. Check your connection and try again.");
                 }
             },
             
@@ -333,14 +347,13 @@
 
                     const data = await res.json();
                     if (res.ok) {
-                        alert("Promotional campaign published successfully.");
+                        MM.toast("success", this.offer.is_active ? "Banner saved and live." : "Banner saved (switched off).");
                         if (data.offer_id) this.offer.id = data.offer_id;
                     } else {
-                        alert("Error: Validation failed on offer metadata.");
+                        MM.toast("error", data.error || "Check the banner fields and try again.");
                     }
                 } catch (e) {
-                    console.error(e);
-                    alert("Network error: Offer API timed out.");
+                    MM.toast("error", "Couldn't reach the server. Check your connection and try again.");
                 }
             }
         }

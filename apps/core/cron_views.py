@@ -29,7 +29,7 @@ from django.views.decorators.http import require_GET
 logger = logging.getLogger("mixmint")
 
 JOBS = {
-    "cleanup": ["cleanup_tokens", "telegram_vault"],
+    "cleanup": ["cleanup_tokens", "telegram_vault", "cleanup_uploads"],
     "vault": ["telegram_vault"],
     "warm-cache": ["warm_external_cache"],
     "weekly-sales": ["update_weekly_sales"],

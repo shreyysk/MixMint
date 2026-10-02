@@ -1,0 +1,69 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}{{ o.title }} — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <a class="cx-back" href="{% url 'admin_catalog' %}?type={{ kind }}">← Catalog</a>
+    <div class="cx-head">
+        <div><h1 style="overflow-wrap:anywhere">{{ o.title }}</h1>
+        <p>{{ kind|title }} #{{ o.pk }} by <a class="underline" href="{% url 'admin_user_detail' o.dj.profile.user_id %}">{{ o.dj.dj_name }}</a> · added {{ o.created_at|date:"d M Y" }}
+        {% if o.is_deleted %}<span class="cx-pill bad">Removed</span>{% elif o.is_active %}<span class="cx-pill ok">Live</span>{% else %}<span class="cx-pill warn">Hidden</span>{% endif %}</p></div>
+        <a class="cx-btn" href="{{ public_url }}" target="_blank" rel="noopener">Open in shop ↗</a>
+    </div>
+    {% if kind != "bundle" %}
+    <div class="cx-stats">
+        <div class="cx-stat"><b>{{ sales.n|default:0 }}</b><span>sales</span></div>
+        <div class="cx-stat"><b>{{ sales.gross|default:0|money }}</b><span>buyers paid</span></div>
+        {% if o.copies_limit %}<div class="cx-stat"><b>{{ sales.n|default:0 }} / {{ o.copies_limit }}</b><span>copies sold</span></div>{% endif %}
+        {% if vault %}<div class="cx-stat"><b style="font-size:16px">{{ vault.get_status_display }}</b><span>Telegram vault</span></div>{% endif %}
+    </div>
+    {% endif %}
+    <div class="cx-grid">
+        <section class="cx-card" style="grid-column:1/-1">
+            <h2>Details</h2>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save">
+                <div class="cx-grid" style="gap:0 16px">
+                    <div class="cx-field"><label class="cx-label" for="t">Title</label><input id="t" class="cx-input" name="title" value="{{ o.title }}" maxlength="255" required></div>
+                    {% if kind == "track" %}<div class="cx-field"><label class="cx-label" for="g">Genre</label><input id="g" class="cx-input" name="genre" value="{{ o.genre|default:'' }}" maxlength="100"></div>{% endif %}
+                    <div class="cx-field"><label class="cx-label" for="pr">Price (₹)</label><input id="pr" class="cx-input" type="number" step="1" min="0" max="100000" name="price" value="{{ o.price|floatformat:0 }}" required></div>
+                    {% if kind != "bundle" %}
+                    <div class="cx-field"><label class="cx-label" for="cp">Was-price (₹, shows a discount)</label><input id="cp" class="cx-input" type="number" step="1" min="0" name="compare_at_price" value="{{ o.compare_at_price|floatformat:0|default:'' }}" placeholder="None"></div>
+                    <div class="cx-field"><label class="cx-label" for="cl">Copies limit (limited drop)</label><input id="cl" class="cx-input" type="number" min="1" name="copies_limit" value="{{ o.copies_limit|default:'' }}" placeholder="Unlimited"></div>
+                    <div class="cx-field"><label class="cx-label" for="yt">YouTube preview</label><input id="yt" class="cx-input" type="url" name="youtube_url" value="{{ o.youtube_url|default:'' }}"></div>
+                    <div class="cx-field"><label class="cx-label" for="ig">Instagram Reel preview</label><input id="ig" class="cx-input" type="url" name="instagram_url" value="{{ o.instagram_url|default:'' }}"></div>
+                    {% endif %}
+                </div>
+                <div class="cx-field"><label class="cx-label" for="d">Description</label><textarea id="d" class="cx-textarea" name="description" maxlength="5000">{{ o.description|default:'' }}</textarea></div>
+                <label class="cx-check" style="margin-bottom:14px"><input type="checkbox" name="is_active" {% if o.is_active %}checked{% endif %}> Live in the shop (untick to hide it without removing)</label>
+                <button class="cx-btn primary">Save changes</button>
+            </form>
+        </section>
+        <section class="cx-card">
+            <h2>{% if o.is_deleted %}Restore{% else %}Remove{% endif %}</h2>
+            <form method="post" onsubmit="return confirm('Are you sure?')">{% csrf_token %}
+                {% if o.is_deleted %}
+                <p class="cx-muted" style="margin-bottom:12px">Removed {% if o.deleted_at %}{{ o.deleted_at|date:"d M Y" }}{% endif %}. Restoring puts it back as it was.</p>
+                <button class="cx-btn" name="action" value="restore">Restore</button>
+                {% else %}
+                <p class="cx-muted" style="margin-bottom:12px">Takes it off MixMint for good. People who bought it keep their copy. The DJ gets a notice with your reason.</p>
+                <div class="cx-field"><label class="cx-label" for="rr">Reason for the DJ</label><input id="rr" class="cx-input" name="reason" maxlength="500" placeholder="e.g. Copyright claim from the label"></div>
+                <button class="cx-btn danger" name="action" value="remove">Remove release</button>
+                {% endif %}
+            </form>
+        </section>
+        {% if recent_sales %}
+        <section class="cx-card">
+            <h2>Recent sales</h2>
+            <ul style="display:grid;gap:6px;font-size:14px">{% for s in recent_sales %}<li><a class="underline" href="{% url 'admin_order_detail' s.pk %}">#{{ s.pk }}</a> · {{ s.user.user.email }} · {{ s.price_paid|money }} {% include "admin/console/_status.html" with p=s %}</li>{% endfor %}</ul>
+        </section>
+        {% endif %}
+        {% if reports %}
+        <section class="cx-card">
+            <h2>Reports</h2>
+            <ul style="display:grid;gap:6px;font-size:14px">{% for r in reports %}<li>{{ r.created_at|date:"d M" }} · {{ r.get_report_type_display }} · <span class="cx-pill">{{ r.get_status_display }}</span><div class="cx-muted">{{ r.reason|truncatechars:120 }}</div></li>{% endfor %}</ul>
+            <a class="cx-btn" style="margin-top:10px" href="{% url 'admin_reports' %}">Open reports</a>
+        </section>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

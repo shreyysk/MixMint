@@ -63,7 +63,7 @@
                 {% if track.cover_url %}
                 <img src="{{ track.cover_url }}" alt="" class="w-full h-full object-cover opacity-50">
                 {% else %}
-                <span class="text-4xl">🎧</span>
+                <span class="text-4xl">{% icon "headphones" %}</span>
                 {% endif %}
             </div>
             {% endif %}

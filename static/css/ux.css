@@ -572,3 +572,118 @@ input[type="checkbox"], input[type="radio"] { min-width: 18px; min-height: 18px;
   .glow-card > table, .glow-card > div > table { min-width: 560px; }
   .glow-card > table th, .glow-card > table td { padding: 12px 14px; }
 }
+
+/* Inline SVG icons ({% icon %}) sit on the text baseline and take the text colour */
+.mm-icon { display: inline-block; flex-shrink: 0; vertical-align: -0.15em; }
+
+/* ── Skeleton loading with a MixMint watermark ─────────────────
+   Any image box (release cards, covers, avatars, list art) shows a soft
+   shimmer with the MixMint mark until its picture arrives, then the picture fades in. */
+.skeleton, .mm-sk, .mm-rcard-art, .mm-row__art, [data-sk] { position: relative; overflow: hidden; background-color: var(--bg-elevated); isolation: isolate; }
+.skeleton::before, .mm-sk::before, .mm-rcard-art::before, .mm-row__art::before, [data-sk]::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: url("../logo/mm-white-180.png") center / clamp(18px, 34%, 76px) no-repeat; opacity: .07; }
+[data-theme="light"] .skeleton::before, [data-theme="light"] .mm-sk::before, [data-theme="light"] .mm-rcard-art::before,
+[data-theme="light"] .mm-row__art::before, [data-theme="light"] [data-sk]::before { background-image: url("../logo/mm-black-180.png"); opacity: .06; }
+.mm-sk::after, .mm-rcard-art::after, [data-sk]::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--text-primary) 7%, transparent) 50%, transparent 75%);
+  transform: translateX(-100%); animation: ux-shimmer 1.6s ease-in-out infinite; }
+.mm-rcard-art > *, [data-sk] > *, .mm-sk > * { position: relative; z-index: 1; }
+.mm-rcard-art:has(img.is-loaded)::after, [data-sk]:has(img.is-loaded)::after, .mm-rcard-art:has(.mm-rcard-ph)::after { animation: none; display: none; }
+html.js-ready img[loading="lazy"]:not(.is-loaded) { opacity: 0; }
+html.js-ready img[loading="lazy"] { transition: opacity .35s ease; }
+html.js-ready img.is-loaded { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .mm-sk::after, .mm-rcard-art::after, [data-sk]::after, .skeleton::after { animation: none; } html.js-ready img[loading="lazy"] { transition: none; } }
+
+/* Page-change skeleton: shown only when the next page takes a moment to arrive. */
+.mm-pageload { position: fixed; inset: 0; z-index: 90; display: none; background: var(--bg-base); padding: 96px 16px 32px; overflow: hidden; }
+.mm-pageload.show { display: block; animation: mm-fade .15s ease-out; }
+.mm-pageload .pl-wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+.mm-pageload .pl-bar { height: 3px; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, transparent, var(--accent-mint), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: mm-bar 1s linear infinite; }
+.mm-pageload .pl-line { height: 14px; border-radius: 8px; }
+.mm-pageload .pl-title { height: 38px; width: min(420px, 70%); border-radius: 10px; }
+.mm-pageload .pl-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); margin-top: 8px; }
+.mm-pageload .pl-card { aspect-ratio: 1; border-radius: 14px; }
+.mm-pageload .pl-mark { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); opacity: .06; background: url("../logo/mm-white-512.png") center / contain no-repeat; }
+[data-theme="light"] .mm-pageload .pl-mark { background-image: url("../logo/mm-black-512.png"); }
+@keyframes mm-bar { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+@keyframes mm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Legal & info pages: readable on phones (no deep indents, calmer headings, tables scroll). */
+.mm-legal { overflow-wrap: anywhere; }
+.mm-legal table { min-width: 520px; }
+.mm-legal :where(table) { display: table; }
+.mm-legal div:has(> table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) {
+  .mm-legal { padding-top: 32px !important; padding-bottom: 40px !important; padding-left: 0 !important; padding-right: 0 !important; }
+  .mm-legal .ml-10, .mm-legal .ml-8, .mm-legal .ml-12 { margin-left: 0 !important; }
+  .mm-legal .p-8, .mm-legal .p-10 { padding: 18px !important; }
+  .mm-legal h1 { font-size: clamp(28px, 9vw, 40px) !important; line-height: 1.08 !important; }
+  .mm-legal h2 { font-size: 19px !important; letter-spacing: 0 !important; }
+  .mm-legal .uppercase.tracking-tight { text-transform: none; }
+  .mm-legal p, .mm-legal li { font-size: 15px; line-height: 1.6; }
+  .mm-legal .font-mono.text-\[10px\], .mm-legal .font-mono.text-\[12px\] { font-size: 12px !important; letter-spacing: .06em !important; }
+  .mm-legal .grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* Ads: quiet, labelled, space reserved so nothing jumps */
+.mm-ad { margin: 28px auto; max-width: 970px; min-height: 120px; padding: 8px; border: 1px dashed var(--border); border-radius: 12px; position: relative; contain: layout; }
+.mm-ad-label { position: absolute; top: 6px; left: 10px; font: 600 10px/1 var(--font-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+
+/* ── Sliding card rows (Netflix-style) ── */
+.mm-shelf { margin-block: 34px; }
+.mm-row-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.mm-row-title { font-family: var(--font-display); font-size: clamp(20px, 2.6vw, 28px); font-weight: 800; letter-spacing: -.02em; color: var(--text-primary); line-height: 1.1; }
+.mm-row-sub { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+.mm-row-tools { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.mm-row-more { font-size: 14px; font-weight: 600; color: var(--accent-mint); padding: 8px 6px; white-space: nowrap; }
+.mm-row-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mm-row-btn { width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s, opacity .15s; }
+.mm-row-btn:hover:not(:disabled) { border-color: var(--accent-mint); }
+.mm-row-btn:disabled { opacity: .35; cursor: default; }
+.mm-rail { display: grid; grid-auto-flow: column; grid-auto-columns: clamp(148px, 42vw, 224px); gap: 14px;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
+  padding: 4px 2px 12px; margin: -4px -2px 0; scroll-padding-inline: 2px; -webkit-overflow-scrolling: touch; }
+.mm-rail::-webkit-scrollbar { display: none; }
+.mm-rail:focus-visible { outline: 2px solid var(--accent-mint); outline-offset: 4px; border-radius: 12px; }
+.mm-rail-item { scroll-snap-align: start; min-width: 0; }
+.mm-rail-item > .mm-rcard { height: 100%; }
+.mm-rail--djs { grid-auto-columns: clamp(170px, 46vw, 240px); }
+@media (min-width: 1024px) { .mm-rail { gap: 18px; grid-auto-columns: calc((100% - 4 * 18px) / 5); } .mm-rail--djs { grid-auto-columns: calc((100% - 3 * 18px) / 4.2); } }
+@media (max-width: 640px) { .mm-row-btn { display: none; } .mm-shelf { margin-block: 26px; } }
+/* Edge fade hints that a row scrolls */
+.mm-shelf[data-fits] .mm-row-btn { visibility: hidden; }
+.mm-shelf[data-more-right] .mm-rail { mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
+
+/* Artist cards */
+.mm-djcard { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--bg-surface); transition: border-color .2s, transform .2s; }
+.mm-djcard:hover { border-color: color-mix(in srgb, var(--accent-mint) 55%, var(--border)); transform: translateY(-2px); }
+.mm-djcard-art { position: relative; height: 92px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent-mint) 22%, var(--bg-elevated)), var(--bg-elevated)); }
+.mm-djcard-art[data-sk] { overflow: visible; border-radius: 15px 15px 0 0; }
+.mm-djcard-art .mm-djcard-avatar { z-index: 3; }
+.mm-djcard-banner { border-radius: 15px 15px 0 0; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mm-djcard-avatar { position: absolute; left: 14px; bottom: -28px; width: 64px; height: 64px; border-radius: 999px; border: 3px solid var(--bg-surface); background: var(--bg-elevated);
+  display: inline-flex; align-items: center; justify-content: center; overflow: hidden; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--accent-mint); z-index: 2; }
+.mm-djcard-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mm-djcard-check { position: absolute; top: 8px; right: 8px; color: var(--accent-mint); z-index: 2; background: var(--bg-surface); border-radius: 999px; display: inline-flex; padding: 2px; }
+.mm-djcard-body { padding: 36px 14px 14px; display: grid; gap: 2px; min-width: 0; }
+.mm-djcard-name { font-weight: 700; font-size: 15px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-djcard-meta { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 1.2em; }
+.mm-djcard-count { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono, monospace); margin-top: 4px; }
+.mm-djgrid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+
+/* Release pages on phones: art not taller than the screen, so the title and price show sooner. */
+@media (max-width: 640px) { .mm-detail-media > .aspect-square:first-child, .mm-detail-media > div:first-child.aspect-square { max-width: min(78vw, 320px); margin-inline: auto; } }
+
+/* Tables that turn into stacked cards on phones: add class="mm-stack" and data-label on cells. */
+@media (max-width: 640px) {
+    table.mm-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    table.mm-stack, table.mm-stack tbody, table.mm-stack tr, table.mm-stack td { display: block; width: 100%; min-width: 0 !important; }
+    table.mm-stack tr { padding: 14px 16px; box-sizing: border-box; }
+    table.mm-stack td { white-space: normal; overflow-wrap: anywhere; box-sizing: border-box; }
+    table.mm-stack td { padding: 4px 0 !important; text-align: left !important; }
+    table.mm-stack td[data-label]::before { content: attr(data-label); display: inline-block; min-width: 72px; margin-right: 8px; font: 600 11px/1.4 var(--font-mono, monospace); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    table.mm-stack td.mm-stack-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px !important; }
+    table.mm-stack td.mm-stack-actions > * { margin: 0 !important; border: 1px solid var(--border); border-radius: 10px; }
+}

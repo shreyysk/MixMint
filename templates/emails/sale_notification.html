@@ -2,7 +2,7 @@
 {% block title %}You made a sale!{% endblock %}
 
 {% block content %}
-<h2>Cha-ching! 💰 You made a sale!</h2>
+<h2>Cha-ching! You made a sale!</h2>
 
 <p>Hey {{ dj_name }},</p>
 
@@ -27,13 +27,13 @@
 
 {% if is_first_sale %}
 <div class="highlight-box" style="background: #f0fdf4; border-color: #22c55e;">
-    🎉 <strong>First Sale Bonus!</strong> ₹25 extra credited to your wallet!
+    <strong>First Sale Bonus!</strong> ₹25 extra credited to your wallet!
 </div>
 {% endif %}
 
 {% if milestone_achieved %}
 <div class="highlight-box" style="background: #fef3c7; border-color: #f59e0b;">
-    🏆 <strong>Milestone Unlocked:</strong> {{ milestone_name }} - ₹{{ milestone_reward }} bonus!
+    <strong>Milestone Unlocked:</strong> {{ milestone_name }} - ₹{{ milestone_reward }} bonus!
 </div>
 {% endif %}
 
@@ -41,5 +41,5 @@
     <a href="{{ site_url|default:"https://mixmint.site" }}/dashboard" class="btn">View Dashboard</a>
 </p>
 
-<p>Keep uploading great music! 🎵</p>
+<p>Keep uploading great music! </p>
 {% endblock %}

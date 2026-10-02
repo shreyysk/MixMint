@@ -229,7 +229,7 @@ class TestPricing:
         from apps.commerce.models import Purchase
 
         Purchase.objects.filter(pk=purchase.pk).update(
-            download_completed=True, paid_at=timezone.now() - timedelta(days=5)
+            download_completed=True, paid_at=timezone.now() - timedelta(days=8)  # past the 7-day free window
         )
         r = _login(user).post(f"/api/v1/tracks/{track.id}/download-token/", {}, content_type="application/json")
         assert r.status_code == 402

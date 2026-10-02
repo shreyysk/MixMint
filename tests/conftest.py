@@ -204,3 +204,22 @@ def purchase(user, track, dj_user):
         status="paid",
         is_completed=True,
     )
+
+
+# Cart "buy more, save more" discounts are off unless the admin turns them on. These suites test the
+# discount maths itself, so they run with the switch on.
+_CART_DISCOUNT_MODULES = {"test_billing", "test_unit", "test_security_regression", "test_user_personas", "test_performance", "test_security_fixes"}
+
+
+@pytest.fixture(autouse=True)
+def _cart_discounts_for_discount_suites(request):
+    if request.module.__name__.rsplit(".", 1)[-1] not in _CART_DISCOUNT_MODULES:
+        yield
+        return
+    if "db" not in request.fixturenames and not request.node.get_closest_marker("django_db"):
+        yield
+        return
+    from unittest import mock
+
+    with mock.patch("apps.commerce.models.Cart.discounts_on", staticmethod(lambda: True)):
+        yield

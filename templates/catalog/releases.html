@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ heading }} — MixMint{% endblock %}
-{% block meta_description %}{% if forced == 'drops' %}Limited drops: numbered DJ releases with a fixed number of copies. Once they're gone, they're gone.{% elif forced == 'bundles' %}DJ bundles: multi-track packs built for a whole night, cheaper than buying the songs one by one.{% else %}Every release on MixMint: exclusive DJ edits, remixes, album packs and bundles from Indian DJs. Preview, pay once, download.{% endif %}{% endblock %}
+{% block meta_description %}{% if forced == 'drops' %}Limited drops: numbered DJ releases with a fixed number of copies. Once they're gone, they're gone.{% elif forced == 'bundles' %}DJ bundles: multi-track packs built for a whole night, cheaper than buying the songs one by one.{% else %}Every release on MixMint: exclusive DJ edits, remixes, album packs and bundles from Indian DJs. Preview, Pay and download.{% endif %}{% endblock %}
 {% block content %}
 <div class="max-w-[1200px] mx-auto py-8 md:py-12">
     <header class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -22,6 +22,16 @@
             </div>
         </form>
     </header>
+
+    {% if rows %}
+    <div class="mm-rows">
+        {% for r in rows %}
+        {% include "components/card_row.html" with row_id=r.id title=r.title sub=r.sub items=r.items row_kind=r.kind more_url=r.more %}
+        {% if forloop.counter == 3 %}{% include "components/ad_slot.html" %}{% endif %}
+        {% endfor %}
+    </div>
+    <h2 class="font-display text-[22px] md:text-[28px] font-[800] text-[var(--text-primary)] mt-12 mb-4" id="everything">Browse everything</h2>
+    {% endif %}
 
     {% if not forced %}
     <nav class="mm-chips mb-3" aria-label="Release type">

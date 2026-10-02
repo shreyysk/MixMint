@@ -148,9 +148,12 @@ def signup_view(request):
 
                 try:
                     ambassador = AmbassadorCode.objects.get(code=ref_code, is_active=True)
-                    profile.referred_by = ambassador.dj
-                    ambassador.referral_count += 1
-                    ambassador.save()
+                    from apps.commerce.referrals import has_room
+
+                    if has_room(ambassador.dj):
+                        profile.referred_by = ambassador.dj
+                        ambassador.referral_count += 1
+                        ambassador.save()
                     # Clear session after use
                     del request.session["ref_code"]
                 except AmbassadorCode.DoesNotExist:
@@ -288,18 +291,21 @@ class HomeView:
             # Popular tracks: Highest sales in last 7 days
             popular_tracks = Track.objects.filter(
                 is_active=True, is_deleted=False, dj__profile__store_paused=False
-            ).select_related("dj", "dj__profile").order_by("-sales_last_7_days", "-created_at")[:4]
+            ).select_related("dj", "dj__profile").order_by("-sales_last_7_days", "-created_at")[:12]
 
             # New Releases: Latest uploaded tracks
             featured_tracks = Track.objects.filter(
                 is_active=True, is_deleted=False, dj__profile__store_paused=False
-            ).select_related("dj", "dj__profile").order_by("-created_at")[:4]
+            ).select_related("dj", "dj__profile").order_by("-created_at")[:12]
 
             # Featured DJs: approved DJs sorted by popularity
+            from django.db.models import Count, Q
+
             featured_djs = (
                 DJProfile.objects.filter(status="approved", profile__store_paused=False)
                 .select_related("profile")
-                .order_by("-popularity_score")[:6]
+                .annotate(release_count=Count("tracks", filter=Q(tracks__is_active=True, tracks__is_deleted=False), distinct=True))
+                .order_by("-popularity_score")[:12]
             )
 
             from apps.albums.models import AlbumPack
@@ -307,17 +313,17 @@ class HomeView:
             new_albums = (
                 AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
                 .select_related("dj", "dj__profile")
-                .order_by("-created_at")[:4]
+                .order_by("-created_at")[:12]
             )
             from apps.commerce.models import Bundle
             from apps.core.catalog import attach_stock
 
             live = dict(is_active=True, is_deleted=False, dj__status="approved", dj__profile__store_paused=False)
-            drop_tracks = list(Track.objects.filter(copies_limit__isnull=False, **live).select_related("dj", "dj__profile").order_by("-created_at")[:4])
+            drop_tracks = list(Track.objects.filter(copies_limit__isnull=False, **live).select_related("dj", "dj__profile").order_by("-created_at")[:12])
             new_bundles = [
-                b for b in Bundle.objects.filter(**live).select_related("dj", "dj__profile").prefetch_related("bundle_tracks__track").order_by("-created_at")[:8]
+                b for b in Bundle.objects.filter(**live).select_related("dj", "dj__profile").prefetch_related("bundle_tracks__track").order_by("-created_at")[:16]
                 if b.live_tracks()
-            ][:4]
+            ][:12]
             popular_tracks = list(popular_tracks)
             featured_tracks = list(featured_tracks)
             new_albums = list(new_albums)
@@ -366,9 +372,12 @@ class ExploreView:
 
             tracks = Track.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
             albums = AlbumPack.objects.filter(is_active=True, is_deleted=False, dj__profile__store_paused=False)
-            djs = DJProfile.objects.filter(status="approved", profile__store_paused=False).select_related(
+            from django.db.models import Count
+
+            base = DJProfile.objects.filter(status="approved", profile__store_paused=False).select_related(
                 "profile", "profile__user"
-            )
+            ).annotate(release_count=Count("tracks", filter=Q(tracks__is_active=True, tracks__is_deleted=False), distinct=True))
+            djs = base
 
             # BPM Filter
             if bpm_min:
@@ -476,9 +485,14 @@ class DJDirectoryView:
             verified = request.GET.get("verified") == "true"
             sort = (request.GET.get("sort") or "popular").strip()
 
-            djs = DJProfile.objects.filter(status="approved", profile__store_paused=False).select_related(
-                "profile", "profile__user"
+            from django.db.models import Count
+
+            base = (
+                DJProfile.objects.filter(status="approved", profile__store_paused=False)
+                .select_related("profile", "profile__user")
+                .annotate(release_count=Count("tracks", filter=Q(tracks__is_active=True, tracks__is_deleted=False), distinct=True))
             )
+            djs = base
 
             if verified:
                 djs = djs.filter(is_verified=True)
@@ -506,12 +520,27 @@ class DJDirectoryView:
             else:
                 djs = djs.order_by("dj_name")
 
+            all_genres = sorted({g.strip() for gl in base.values_list("genres", flat=True) for g in (gl or []) if isinstance(g, str) and g.strip()}, key=str.lower)
+            rows = []
+            filtered = bool(q or genre or verified or sort != "popular")
+            if not filtered:
+                everyone = list(base.order_by("-popularity_score", "-total_revenue")[:60])
+                if len(everyone) > 4:
+                    rows.append({"id": "popular", "title": "Popular DJs", "djs": everyone[:12]})
+                    rows.append({"id": "new", "title": "New on MixMint", "djs": sorted(everyone, key=lambda d: d.created_at, reverse=True)[:12]})
+                    for g in all_genres[:6]:
+                        in_g = [d for d in everyone if g.lower() in [x.lower() for x in (d.genres or []) if isinstance(x, str)]]
+                        if len(in_g) >= 3:
+                            rows.append({"id": "g-" + g.lower().replace(" ", "-"), "title": g, "djs": in_g[:12], "more": f"?genre={g}"})
             ctx = {
                 "q": q,
                 "genre": genre,
                 "verified": verified,
                 "sort": sort,
                 "djs": djs[:48],
+                "rows": rows,
+                "all_genres": all_genres,
+                "filtered": filtered,
             }
             return render(request, "dj/directory.html", ctx)
 

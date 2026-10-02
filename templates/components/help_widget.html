@@ -11,7 +11,7 @@
                 <p class="font-display text-[18px] font-[700] text-[var(--text-primary)]">How can we help?</p>
                 <p class="text-[12px] text-[var(--text-muted)]">A real person replies, usually within a few hours.</p>
             </div>
-            <button type="button" class="w-9 h-9 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--border)]" @click="open = false" aria-label="Close help">✕</button>
+            <button type="button" class="w-9 h-9 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--border)]" @click="open = false" aria-label="Close help">{% icon "x" %}</button>
         </div>
         {% include "components/help_form.html" %}
     </div>

@@ -132,7 +132,7 @@
                 <a href="{% url 'cart_page_frontend' %}"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-mint)] hover:bg-[var(--border)] transition-all relative"
                     title="My Cart" aria-label="Shopping Cart">
-                    <span class="text-xl">🛒</span>
+                    <span class="text-xl">{% icon "shopping-cart" %}</span>
                     <template x-if="cartData.total_items > 0">
                         <span class="absolute -top-1 -right-1 bg-[var(--accent-mint)] text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[var(--bg-base)]"
                               x-text="cartData.total_items"></span>

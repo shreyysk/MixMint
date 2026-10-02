@@ -8,6 +8,22 @@
         <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Payouts are created every week (and when a DJ taps Withdraw). Send the money from your bank or UPI app, then mark it paid here with the reference number — the DJ sees it on their Payouts page.</p>
     </div>
 
+    {% if sendable %}
+    <section class="bg-[var(--bg-surface)] border border-[var(--accent-mint)]/40 rounded-[14px] p-5 md:p-6">
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">Pay everyone at once</h2>
+        <p class="text-[14px] text-[var(--text-muted)] mt-1 mb-4">{{ sendable }} payout{{ sendable|pluralize }} · {{ sendable_total|money }} in total. 1) Download the file and upload it to your bank's bulk transfer (or pay each UPI ID). 2) Enter the batch reference and mark them all paid.</p>
+        <div class="flex flex-col md:flex-row gap-3 md:items-end">
+            <a href="?export=csv" class="btn-mm btn-ghost h-[44px] px-5 text-[14px] inline-flex items-center gap-2">{% icon "download" %} Download payment file (CSV)</a>
+            <form method="post" class="flex flex-col sm:flex-row gap-2 sm:items-end flex-1" onsubmit="return confirm('Mark all {{ sendable }} payouts as paid?')">
+                {% csrf_token %}<input type="hidden" name="action" value="paid_all">
+                <div class="flex-1"><label for="batch-ref" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Batch / UTR reference</label>
+                    <input id="batch-ref" name="reference" required maxlength="200" class="input-mm w-full h-[44px]" placeholder="e.g. HDFC bulk 02-Oct UTR 1234"></div>
+                <button class="btn-mm btn-mint h-[44px] px-5 text-[14px]">Mark all paid</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
     <section class="space-y-4">
         <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">To send ({{ rows|length }})</h2>
         {% for r in rows %}

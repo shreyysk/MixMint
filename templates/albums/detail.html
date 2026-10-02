@@ -19,7 +19,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start mb-16">
 
         <!-- LEFT: Artwork -->
-        <div class="lg:col-span-5 relative w-full max-w-[560px] mx-auto lg:max-w-none">
+        <div class="lg:col-span-5 relative w-full max-w-[min(80vw,340px)] sm:max-w-[560px] mx-auto lg:max-w-none">
             <!-- Stack effect -->
             <div
                 class="absolute inset-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] transform translate-y-3 translate-x-3 opacity-40 -z-20">
@@ -35,7 +35,7 @@
                 {% else %}
                 <div
                     class="w-full h-full flex items-center justify-center text-8xl opacity-20 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
-                    📦</div>
+                    {% icon "package" %}</div>
                 {% endif %}
 
                 <div
@@ -131,11 +131,11 @@
                         </a>
                         {% elif can_request_download and album.is_external_link %}
                         <button id="external-download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            📦 Download ZIP pack
+                            {% icon "package" %} Download ZIP pack
                         </button>
                         {% elif can_request_download %}
                         <button id="download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                            📦 Download ZIP pack
+                            {% icon "package" %} Download ZIP pack
                         </button>
                         {% elif needs_redownload_payment %}
                         <button id="redownload-pay-btn" type="button" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
@@ -187,7 +187,7 @@
                 {% for offer in dj_offers %}
                 <div
                     class="mt-5 p-3 bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 rounded-lg flex items-start gap-3 relative z-10">
-                    <span class="mt-0.5">🎁</span>
+                    <span class="mt-0.5">{% icon "gift" %}</span>
                     <div>
                         <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if offer.badge_label %}[{{ offer.badge_label }}] {% endif %}{{ offer.title }}</p>
                         {% if offer.tagline %}
@@ -201,7 +201,7 @@
 
                 <div
                     class="mt-5 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10 w-full flex items-center justify-center gap-2">
-                    <span class="font-mono uppercase tracking-wider">🔒 Secure, one-time download</span>
+                    <span class="font-mono uppercase tracking-wider">{% icon "lock" %} Secure, one-time download</span>
                 </div>
 
                 <div class="mt-3 font-body text-[11px] text-[var(--text-muted)] text-center relative z-10">
@@ -222,12 +222,13 @@
             <!-- Security Notice -->
             <div class="mt-4 notice-info">
                 <p class="font-body text-[12px] text-[var(--text-muted)]">
-                    🔒 Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
+                    {% icon "lock" %} Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
                     <a href="/legal/transparency/"
                         class="text-[var(--accent-mint)] hover:underline underline-offset-2 ml-1">How does this work?
                         →</a>
                 </p>
             </div>
+            {% include "components/report_dialog.html" with kind="album" obj=album %}
         </div>
     </div>
 

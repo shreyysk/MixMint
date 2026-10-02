@@ -19,7 +19,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start" data-reveal>
 
         <!-- LEFT: Artwork & Preview -->
-        <div class="lg:col-span-5 space-y-8 w-full max-w-[560px] mx-auto lg:max-w-none" data-reveal="left">
+        <div class="lg:col-span-5 space-y-6 sm:space-y-8 w-full max-w-[560px] mx-auto lg:max-w-none mm-detail-media" data-reveal="left">
             <!-- Artwork -->
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group skeleton">
@@ -28,7 +28,7 @@
                     class="w-full h-full object-cover transition-opacity duration-300"
                     onload="this.parentElement.classList.remove('skeleton')">
                 {% else %}
-                <div class="w-full h-full flex items-center justify-center text-6xl opacity-20">🎧</div>
+                <div class="w-full h-full flex items-center justify-center text-6xl opacity-20">{% icon "headphones" %}</div>
                 {% endif %}
             </div>
 
@@ -61,7 +61,7 @@
                     {% else %}
                     <div class="w-full h-full flex items-center justify-center">
                         <div class="text-center">
-                            <span class="text-4xl opacity-10 mb-4 block">🔇</span>
+                            <span class="text-4xl opacity-10 mb-4 block">{% icon "volume-x" %}</span>
                             <p class="font-body text-[13px] text-[var(--text-muted)]">No preview available</p>
                         </div>
                     </div>
@@ -186,7 +186,7 @@
                             {% elif track.is_external_link or track.source_url %}
                                 {% if can_request_download %}
                                 <button id="external-download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                    ⬇ Download now
+                                    {% icon "download" %} Download now
                                 </button>
                                 {% else %}
                                 <button id="buy-now-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
@@ -195,7 +195,7 @@
                                 {% endif %}
                             {% elif can_request_download %}
                             <button id="download-btn" type="button" class="btn-mm btn-mint w-full h-[56px] text-[16px] font-[600]">
-                                ⬇ Download now
+                                {% icon "download" %} Download now
                             </button>
                             {% elif needs_redownload_payment %}
                             <button id="redownload-pay-btn" type="button" class="btn-mm btn-amber w-full h-[56px] text-[16px] font-[600]">
@@ -228,7 +228,7 @@
                         {% endif %}
                             <button type="button" @click="showShareModal = true"
                                 class="btn-mm btn-ghost w-full h-[48px] text-[15px] font-[600]">
-                                Share / Embed 🔗
+                                Share / Embed {% icon "link" %}
                             </button>
                         </div>
 
@@ -299,7 +299,7 @@
                 {% for offer in dj_offers %}
                 <div
                     class="mt-5 p-3 bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 rounded-lg flex items-start gap-3 relative z-10">
-                    <span class="mt-0.5">🎁</span>
+                    <span class="mt-0.5">{% icon "gift" %}</span>
                     <div>
                         <p class="font-bold text-[13px] text-[var(--text-primary)]">{% if offer.badge_label %}[{{ offer.badge_label }}] {% endif %}{{ offer.title }}</p>
                         {% if offer.tagline %}
@@ -313,7 +313,7 @@
 
                 <div
                     class="mt-5 flex items-center justify-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider text-center relative z-10">
-                    <span>🔒 Secure, one-time download</span>
+                    <span>{% icon "lock" %} Secure, one-time download</span>
                 </div>
             </div>
 
@@ -330,15 +330,16 @@
             <!-- Security Notice -->
             <div class="mt-4 notice-info">
                 <p class="font-body text-[12px] text-[var(--text-muted)]">
-                    🔒 Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
+                    {% icon "lock" %} Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
                     <a href="/legal/transparency/"
                         class="text-[var(--accent-mint)] hover:underline underline-offset-2 ml-1">How does this work?
                         →</a>
                 </p>
             </div>
+            {% include "components/report_dialog.html" with kind="track" obj=track %}
 
             <!-- Track Metadata Strip -->
-            <div class="mt-6 flex items-center gap-4 font-mono text-[11px] text-[var(--text-muted)]">
+            <div class="mt-6 hidden sm:flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-[var(--text-muted)]">
                 <span>Uploaded: {{ track.created_at|date:"M d, Y" }}</span>
                 <span>·</span>
                 <span>Platform: MixMint</span>
@@ -350,11 +351,10 @@
 </div>
 
 {% if more_from_dj %}
-<section class="max-w-[1200px] mx-auto px-4 mt-16" aria-labelledby="more-dj">
-    <div class="mm-section-head"><h2 id="more-dj" class="font-display text-[22px] font-[700] text-[var(--text-primary)]">More from {{ track.dj.dj_name }}</h2>
-        <a href="{% url 'dj_profile' track.dj.slug %}">View store →</a></div>
-    <div class="mm-rgrid">{% for item in more_from_dj %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
+<div class="max-w-[1200px] mx-auto px-4 mt-10">
+    {% url 'dj_profile' track.dj.slug as store_url %}
+    {% include "components/card_row.html" with row_id="more-dj" title="More from "|add:track.dj.dj_name items=more_from_dj row_kind="track" more_url=store_url more_label="View store" %}
+</div>
 {% endif %}
 {% if stock_left == 0 %}<script>document.addEventListener('DOMContentLoaded', function () { ['buy-now-btn', 'mm-buybar-btn'].forEach(function (id) { var b = document.getElementById(id); if (b) { b.disabled = true; b.textContent = 'Sold out'; } }); });</script>{% endif %}
 <!-- ── Scripts ── -->

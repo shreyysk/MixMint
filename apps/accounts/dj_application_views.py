@@ -190,6 +190,11 @@ def admin_approve_dj(request, dj_profile_id):
     # Create DJ Wallet [Spec P2 §9]
     DJWallet.objects.get_or_create(dj=dj_profile)
 
+    # Signed up through another DJ's link? Record the referral (max 50 per DJ).
+    from apps.commerce.referrals import link_on_approval
+
+    link_on_approval(dj_profile)
+
     # Send welcome email via Resend [Spec: Welcome email on DJ approval]
     try:
         from django.utils.html import escape

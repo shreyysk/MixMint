@@ -1,0 +1,8 @@
+{% comment %} One quiet ad, only when Admin → Settings → Ads is on. Space is reserved (no jumping), it loads only when
+   scrolled near, and it never shows to admins, inside checkout, the library or dashboards. {% endcomment %}
+{% if ads and not request.user.is_staff %}
+<aside class="mm-ad" aria-label="Advertisement" data-ad>
+    <span class="mm-ad-label">Ad</span>
+    <ins class="adsbygoogle" style="display:block;min-height:100px" data-ad-client="{{ ads.client }}" data-ad-slot="{{ ads.slot }}" data-ad-format="auto" data-full-width-responsive="true"></ins>
+</aside>
+{% endif %}

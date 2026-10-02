@@ -1,0 +1,57 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}Users — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head">
+        <div><h1>Users</h1><p>Every account on MixMint. Open one to freeze or ban it, send a sign-in link or password reset, log it out everywhere, give Pro, or change the name and email.</p></div>
+        <a class="cx-btn" href="{% url 'admin_export' 'users' %}{% if qs %}?{{ qs }}{% endif %}">Download CSV</a>
+    </div>
+    <div class="cx-stats">
+        <div class="cx-stat"><b>{{ counts.all }}</b><span>accounts</span></div>
+        <div class="cx-stat"><b>{{ counts.new_7d }}</b><span>joined this week</span></div>
+        <div class="cx-stat"><b>{{ counts.dj }}</b><span>DJs</span></div>
+        <div class="cx-stat"><b>{{ counts.frozen }} / {{ counts.banned }}</b><span>frozen / banned</span></div>
+    </div>
+    <form class="cx-filters" method="get">
+        <label class="sr-only" for="uq">Search</label>
+        <input id="uq" type="search" name="q" value="{{ f.q|default:'' }}" placeholder="Email, name or DJ name">
+        <label class="sr-only" for="urole">Role</label>
+        <select id="urole" name="role" onchange="this.form.submit()">
+            <option value="">All roles</option>
+            <option value="buyer" {% if f.role == "buyer" %}selected{% endif %}>Buyers</option>
+            <option value="dj" {% if f.role == "dj" %}selected{% endif %}>DJs</option>
+            <option value="admin" {% if f.role == "admin" %}selected{% endif %}>Admins</option>
+        </select>
+        <label class="sr-only" for="ust">Status</label>
+        <select id="ust" name="status" onchange="this.form.submit()">
+            <option value="">Any status</option>
+            <option value="frozen" {% if f.status == "frozen" %}selected{% endif %}>Frozen</option>
+            <option value="banned" {% if f.status == "banned" %}selected{% endif %}>Banned</option>
+            <option value="inactive" {% if f.status == "inactive" %}selected{% endif %}>Switched off</option>
+            <option value="pro" {% if f.status == "pro" %}selected{% endif %}>Pro DJs</option>
+        </select>
+        <button class="cx-btn primary">Search</button>
+    </form>
+    {% if page.object_list %}
+    <div class="cx-table-wrap">
+        <table class="cx-table">
+            <thead><tr><th>Person</th><th>Role</th><th class="cx-hide-sm">Joined</th><th class="num">Orders</th><th class="num">Spent</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for u in page %}
+            <tr class="cx-row-link" onclick="location.href='{% url 'admin_user_detail' u.pk %}'">
+                <td><a class="cx-strong" href="{% url 'admin_user_detail' u.pk %}">{{ u.profile.full_name|default:u.email }}</a><div class="muted">{{ u.email }}</div></td>
+                <td>{% if u.is_staff %}<span class="cx-pill ok">Admin</span>{% elif u.profile.role == "dj" %}<span class="cx-pill">DJ{% if u.profile.is_pro_dj %} · Pro{% endif %}</span>{% else %}<span class="cx-pill">Buyer</span>{% endif %}</td>
+                <td class="muted cx-hide-sm" style="white-space:nowrap">{{ u.date_joined|date:"d M Y" }}</td>
+                <td class="num">{{ u.n_orders }}</td>
+                <td class="num">{{ u.spent|money }}</td>
+                <td>{% if not u.is_active %}<span class="cx-pill bad">Off</span>{% elif u.profile.is_banned %}<span class="cx-pill bad">Banned</span>{% elif u.profile.is_frozen %}<span class="cx-pill warn">Frozen</span>{% else %}<span class="cx-pill ok">Active</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "admin/console/_pager.html" %}
+    {% else %}<div class="cx-empty">No accounts match.</div>{% endif %}
+</div>
+{% endblock %}

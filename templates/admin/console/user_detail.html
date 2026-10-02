@@ -1,0 +1,157 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}{{ p.full_name|default:u.email }} — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <a class="cx-back" href="{% url 'admin_users' %}">← All users</a>
+    <div class="cx-head">
+        <div style="display:flex;gap:16px;align-items:center;min-width:0">
+            <span class="cx-avatar" aria-hidden="true">{{ p.full_name|default:u.email|first|upper }}</span>
+            <div style="min-width:0">
+                <h1 style="overflow-wrap:anywhere">{{ p.full_name|default:u.email }}</h1>
+                <p style="overflow-wrap:anywhere">{{ u.email }} · joined {{ u.date_joined|date:"d M Y" }}{% if u.last_login %} · last seen {{ u.last_login|timesince }} ago{% endif %}</p>
+                <div class="cx-actions" style="margin-top:8px">
+                    {% if u.is_superuser %}<span class="cx-pill ok">Owner</span>{% elif u.is_staff %}<span class="cx-pill ok">Admin</span>{% endif %}
+                    {% if p.role == "dj" %}<span class="cx-pill">DJ</span>{% else %}<span class="cx-pill">Buyer</span>{% endif %}
+                    {% if p.is_pro_dj %}<span class="cx-pill ok">Pro{% if p.pro_expires_at %} until {{ p.pro_expires_at|date:"d M Y" }}{% endif %}</span>{% endif %}
+                    {% if u.email_verified %}<span class="cx-pill ok">Email verified</span>{% else %}<span class="cx-pill">Email not verified</span>{% endif %}
+                    {% if not u.is_active %}<span class="cx-pill bad">Switched off</span>{% endif %}
+                    {% if p.is_banned %}<span class="cx-pill bad">Banned</span>{% endif %}
+                    {% if p.is_frozen %}<span class="cx-pill warn">Frozen</span>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cx-stats">
+        <div class="cx-stat"><b>{{ agg.n|default:0 }}</b><span>paid orders</span></div>
+        <div class="cx-stat"><b>{{ agg.spent|default:0|money }}</b><span>spent</span></div>
+        {% if dj_stats %}
+        <div class="cx-stat"><b>{{ dj_stats.tracks }} / {{ dj_stats.albums }}</b><span>tracks / album packs</span></div>
+        <div class="cx-stat"><b>{{ dj_stats.sales }}</b><span>sales</span></div>
+        <div class="cx-stat"><b>{{ dj_stats.earned|money }}</b><span>DJ earnings</span></div>
+        {% endif %}
+    </div>
+
+    <div class="cx-grid">
+        <section class="cx-card">
+            <h2>Help them in</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Emails go to {{ u.email }}.</p>
+            <div class="cx-actions">
+                <form method="post">{% csrf_token %}<button class="cx-btn" name="action" value="signin_link">Email a sign-in link</button></form>
+                <form method="post">{% csrf_token %}<button class="cx-btn" name="action" value="password_reset">Email a password reset</button></form>
+                <form method="post">{% csrf_token %}<button class="cx-btn" name="action" value="revoke_devices" title="Clears their registered download devices">Reset download devices</button></form>
+                <form method="post">{% csrf_token %}<button class="cx-btn" name="action" value="verify_email">{% if u.email_verified %}Mark email unverified{% else %}Mark email verified{% endif %}</button></form>
+            </div>
+        </section>
+
+        <section class="cx-card">
+            <h2>Name &amp; email</h2>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="edit">
+                <div class="cx-field"><label class="cx-label" for="fn">Name</label><input id="fn" class="cx-input" name="full_name" value="{{ p.full_name|default:'' }}" maxlength="255"></div>
+                <div class="cx-field"><label class="cx-label" for="em">Email (they log in with this)</label><input id="em" class="cx-input" type="email" name="email" value="{{ u.email }}" required></div>
+                <button class="cx-btn primary">Save</button>
+            </form>
+        </section>
+
+        <section class="cx-card">
+            <h2>Message them</h2>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="notify">
+                <div class="cx-field"><label class="cx-label" for="nt">Title</label><input id="nt" class="cx-input" name="title" maxlength="200" required></div>
+                <div class="cx-field"><label class="cx-label" for="nm">Message</label><textarea id="nm" class="cx-textarea" name="message" required></textarea></div>
+                <label class="cx-check" style="margin-bottom:12px"><input type="checkbox" name="also_email" checked> Also send it by email</label>
+                <button class="cx-btn primary">Send</button>
+            </form>
+        </section>
+
+        <section class="cx-card">
+            <h2>Account access</h2>
+            {% if is_self %}<p class="cx-muted">This is your own account, so lock-out actions are hidden.</p>{% else %}
+            <form method="post" onsubmit="return confirm('Are you sure?')">{% csrf_token %}
+                <div class="cx-field"><label class="cx-label" for="rs">Reason (kept in the activity log)</label><input id="rs" class="cx-input" name="reason" maxlength="500" placeholder="Optional"></div>
+                <div class="cx-actions">
+                    <button class="cx-btn" name="action" value="logout_all">Log out everywhere</button>
+                    {% if p.is_frozen %}<button class="cx-btn" name="action" value="unfreeze">Unfreeze</button>{% else %}<button class="cx-btn danger" name="action" value="freeze">Freeze</button>{% endif %}
+                    {% if p.is_banned %}<button class="cx-btn" name="action" value="unban">Lift ban</button>{% else %}<button class="cx-btn danger" name="action" value="ban">Ban</button>{% endif %}
+                    {% if u.is_active %}<button class="cx-btn danger" name="action" value="deactivate">Switch account off</button>{% else %}<button class="cx-btn" name="action" value="activate">Switch account on</button>{% endif %}
+                </div>
+            </form>
+            <p class="cx-muted" style="margin-top:12px">Freeze: can't log in or buy, nothing deleted. Ban: also blocks their devices. Switch off: the login stops working.</p>
+            {% endif %}
+        </section>
+
+        {% if p.role == "dj" %}
+        <section class="cx-card">
+            <h2>DJ</h2>
+            {% if dj %}
+            <dl class="cx-dl" style="margin-bottom:14px">
+                <dt>DJ name</dt><dd>{{ dj.dj_name }}</dd>
+                <dt>Status</dt><dd>{{ dj.get_status_display }}</dd>
+                <dt>Store</dt><dd><a class="underline" href="{% url 'dj_profile' dj.slug %}" target="_blank" rel="noopener">mixmint.site/dj/{{ dj.slug }}/</a></dd>
+                <dt>Payout to</dt><dd>{% if dj.upi_id %}UPI {{ dj.upi_id }}{% elif dj.bank_account_number %}Bank ••{{ dj.bank_account_number|slice:"-4:" }}{% else %}Not set{% endif %}</dd>
+            </dl>
+            <div class="cx-actions" style="margin-bottom:14px">
+                <a class="cx-btn" href="{% url 'admin_catalog' %}?dj={{ dj.slug }}">Their releases</a>
+                <a class="cx-btn" href="{% url 'admin_orders' %}?q={{ dj.dj_name|urlencode }}">Their sales</a>
+                <a class="cx-btn" href="{% url 'admin_dj_management' %}">DJ applications</a>
+            </div>
+            {% endif %}
+            <form method="post" class="cx-actions" style="align-items:flex-end">{% csrf_token %}
+                <div><label class="cx-label" for="pd">Give Pro for (days)</label><input id="pd" class="cx-input" type="number" name="days" min="1" max="3650" value="30" style="width:120px"></div>
+                <button class="cx-btn primary" name="action" value="give_pro">{% if p.is_pro_dj %}Extend Pro{% else %}Give Pro{% endif %}</button>
+                {% if p.is_pro_dj %}<button class="cx-btn danger" name="action" value="end_pro">End Pro</button>{% endif %}
+            </form>
+            {% if dj_stats.payouts %}
+            <div class="cx-sep"></div>
+            <h3 class="cx-label">Recent payouts</h3>
+            <ul class="cx-muted" style="display:grid;gap:4px">{% for po in dj_stats.payouts %}<li>{{ po.created_at|date:"d M Y" }} · {{ po.amount|money }} · {{ po.get_status_display }}</li>{% endfor %}</ul>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if can_owner and not is_self %}
+        <section class="cx-card">
+            <h2>Admin rights</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Admins can see and change everything in this panel.</p>
+            <form method="post" onsubmit="return confirm('Change admin rights for {{ u.email|escapejs }}?')">{% csrf_token %}
+                {% if u.is_staff %}<button class="cx-btn danger" name="action" value="revoke_admin">Remove admin rights</button>{% else %}<button class="cx-btn" name="action" value="make_admin">Make admin</button>{% endif %}
+            </form>
+        </section>
+        {% endif %}
+    </div>
+
+    <section style="margin-top:24px">
+        <div class="cx-head" style="margin-bottom:12px"><h2 class="font-display text-[20px] font-[700]">Orders</h2>{% if purchases %}<a class="cx-btn" href="{% url 'admin_orders' %}?q={{ u.email|urlencode }}">All their orders</a>{% endif %}</div>
+        {% if purchases %}
+        <div class="cx-table-wrap"><table class="cx-table">
+            <thead><tr><th>#</th><th>Item</th><th>Date</th><th class="num">Paid</th><th>Status</th><th>Downloaded</th></tr></thead>
+            <tbody>{% for o in purchases %}
+            <tr class="cx-row-link" onclick="location.href='{% url 'admin_order_detail' o.pk %}'"><td><a class="cx-strong" href="{% url 'admin_order_detail' o.pk %}">{{ o.pk }}</a></td><td>{{ o.item_title }} <span class="muted">· {{ o.content_type }}</span></td><td class="muted" style="white-space:nowrap">{{ o.created_at|date:"d M Y" }}</td><td class="num">{{ o.price_paid|money }}</td><td>{% include "admin/console/_status.html" with p=o %}</td><td>{% if o.download_completed %}Yes{% else %}<span class="muted">No</span>{% endif %}</td></tr>
+            {% endfor %}</tbody>
+        </table></div>
+        {% else %}<div class="cx-empty">No orders yet.</div>{% endif %}
+    </section>
+
+    <div class="cx-grid" style="margin-top:24px">
+        <section class="cx-card">
+            <h2>Download devices</h2>
+            {% if devices %}<ul style="display:grid;gap:8px;font-size:14px">{% for d in devices %}<li><b>{{ d.label|default:"Device" }}</b> <span class="cx-pill {% if d.status == 'authorized' %}ok{% elif d.status == 'banned' %}bad{% endif %}">{{ d.get_status_display }}</span><div class="cx-muted">{{ d.last_ip|default:"" }} · {{ d.last_active_at|date:"d M Y H:i" }}</div></li>{% endfor %}</ul>
+            {% else %}<p class="cx-muted">No devices yet.</p>{% endif %}
+        </section>
+        <section class="cx-card">
+            <h2>Recent logins</h2>
+            {% if logins %}<ul style="display:grid;gap:8px;font-size:14px">{% for l in logins %}<li>{{ l.created_at|date:"d M Y H:i" }} · {{ l.ip_address|default:"?" }}{% if l.is_suspicious %} <span class="cx-pill bad">Suspicious</span>{% endif %}<div class="cx-muted" style="overflow-wrap:anywhere">{{ l.user_agent|truncatechars:80 }}</div></li>{% endfor %}</ul>
+            {% else %}<p class="cx-muted">No logins recorded.</p>{% endif %}
+        </section>
+        <section class="cx-card">
+            <h2>Support &amp; refunds</h2>
+            {% for t in tickets %}<p style="font-size:14px;margin-bottom:6px"><a class="underline" href="{% url 'admin_support_ticket' t.pk %}">#{{ t.pk }} · {{ t.subject|truncatechars:50 }}</a> <span class="cx-pill">{{ t.status }}</span></p>{% empty %}<p class="cx-muted">No support tickets.</p>{% endfor %}
+            {% if refunds %}<div class="cx-sep"></div>{% for r in refunds %}<p style="font-size:14px;margin-bottom:6px"><a class="underline" href="{% url 'admin_order_detail' r.purchase_id %}">Order #{{ r.purchase_id }}</a> · refund {{ r.get_status_display|lower }}</p>{% endfor %}{% endif %}
+        </section>
+        <section class="cx-card">
+            <h2>Admin actions on this account</h2>
+            {% for a in actions %}<p style="font-size:13px;margin-bottom:6px">{{ a.created_at|date:"d M Y H:i" }} · {{ a.action }} <span class="cx-muted">by {{ a.admin.user.email|default:"system" }}</span></p>{% empty %}<p class="cx-muted">No admin actions yet.</p>{% endfor %}
+        </section>
+    </div>
+</div>
+{% endblock %}

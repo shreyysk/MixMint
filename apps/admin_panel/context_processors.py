@@ -67,7 +67,27 @@ def global_settings(request):
         dj_share = int(dj_share) if dj_share == int(dj_share) else round(dj_share, 1)
     except (TypeError, ValueError):
         dj_share = None
-    ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share}
+    ad_share = 15
+    try:
+        from .models import SystemSetting
+
+        row = SystemSetting.objects.filter(key="ad_share_rate").first()
+        rate = float((row.value or {}).get("rate", dj_settings.DJ_AD_REVENUE_SHARE)) if row else float(dj_settings.DJ_AD_REVENUE_SHARE)
+        ad_share = round(rate * 100) if rate <= 1 else round(rate)
+    except Exception:
+        pass
+    ads = {}
+    try:
+        from .models import SystemSetting
+
+        row = SystemSetting.objects.filter(key="ads").first()
+        v = (row.value or {}) if row else {}
+        if v.get("enabled") and v.get("client") and v.get("slot"):
+            ads = {"client": v["client"], "slot": v["slot"]}
+    except Exception:
+        pass
+    ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share,
+           "dj_ad_share_percent": ad_share, "ads": ads}
     cache.set("global_settings_ctx", ctx, 30)
     return {**ctx, **test_mode}
 
@@ -82,10 +102,11 @@ def admin_nav(request):
         from apps.accounts.models import DJProfile
         from apps.commerce.models import Payout, RefundRequest
 
-        from .models import SupportTicket
+        from .models import ContentReport, CopyrightReport, SupportTicket
 
         return {
             "admin_counts": {
+                "reports": ContentReport.objects.filter(status="pending").count() + CopyrightReport.objects.filter(status="pending").count(),
                 "djs": DJProfile.objects.filter(status__in=["pending", "pending_review", "pending_payment"]).count(),
                 "payouts": Payout.objects.filter(status__in=["pending", "processing"]).count(),
                 "refunds": RefundRequest.objects.filter(status="pending").count(),

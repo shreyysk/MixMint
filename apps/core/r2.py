@@ -108,8 +108,12 @@ def presign_upload(kind, dj, filename, size):
     if kind == "cover" and not public_url("x"):
         raise UploadError("Cover uploads need R2_PUBLIC_URL to be set. You can skip the cover for now.")
 
-    key = f"{key_prefix(kind, dj.id)}{uuid.uuid4().hex[:12]}-{stem}.{ext}"
     content_type = allowed[ext]
+    if kind != "cover":
+        existing = find_unused_upload(kind, dj, stem, ext, size)
+        if existing:  # same file already sitting in storage from an earlier try: reuse it, don't upload again
+            return {"key": existing, "url": "", "headers": {}, "public_url": "", "existing": True}
+    key = f"{key_prefix(kind, dj.id)}{uuid.uuid4().hex[:12]}-{stem}.{ext}"
     url = client().generate_presigned_url(
         "put_object",
         Params={"Bucket": bucket_for(kind), "Key": key, "ContentType": content_type},
@@ -121,6 +125,70 @@ def presign_upload(kind, dj, filename, size):
         "headers": {"Content-Type": content_type},
         "public_url": public_url(key) if kind == "cover" else "",
     }
+
+
+def referenced_keys(dj):
+    """Every file key this DJ's tracks and album packs point at (deleted ones included)."""
+    from apps.albums.models import AlbumPack
+    from apps.tracks.models import Track
+
+    keys = set(Track.objects.filter(dj=dj).exclude(file_key="").values_list("file_key", flat=True))
+    for fk, ok in AlbumPack.objects.filter(dj=dj).values_list("file_key", "original_file_key"):
+        keys.update(k for k in (fk, ok) if k)
+    try:
+        from apps.albums.models import AlbumTrack
+
+        keys.update(k for k in AlbumTrack.objects.filter(album__dj=dj).values_list("original_file_key", flat=True) if k)
+    except Exception:
+        pass
+    try:  # files held in the Telegram vault keep their key too
+        from apps.admin_panel.models import VaultFile
+
+        keys.update(k for k in VaultFile.objects.exclude(file_key="").values_list("file_key", flat=True) if k.startswith(("tracks/", "albums/")))
+    except Exception:
+        pass
+    return keys
+
+
+def _list_prefix(kind, dj):
+    out, token = [], None
+    while True:
+        kw = {"Bucket": bucket_for(kind), "Prefix": key_prefix(kind, dj.id), "MaxKeys": 1000}
+        if token:
+            kw["ContinuationToken"] = token
+        page = client().list_objects_v2(**kw)
+        out.extend(page.get("Contents") or [])
+        if not page.get("IsTruncated"):
+            return out
+        token = page.get("NextContinuationToken")
+
+
+def find_unused_upload(kind, dj, stem, ext, size):
+    """An object this DJ already uploaded with the same name and size that no release uses yet."""
+    try:
+        used = referenced_keys(dj)
+        for obj in _list_prefix(kind, dj):
+            key = obj["Key"]
+            if key not in used and int(obj.get("Size") or 0) == int(size) and key.endswith(f"-{stem}.{ext}"):
+                return key
+    except Exception:
+        return None
+    return None
+
+
+def delete_orphans(kind, dj, older_than_hours=24):
+    """Remove uploads no release points at (abandoned tries). Returns how many were deleted."""
+    import datetime
+
+    used = referenced_keys(dj)
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=older_than_hours)
+    gone = 0
+    for obj in _list_prefix(kind, dj):
+        lm = obj.get("LastModified")
+        if obj["Key"] not in used and lm is not None and lm < cutoff:
+            client().delete_object(Bucket=bucket_for(kind), Key=obj["Key"])
+            gone += 1
+    return gone
 
 
 def uploaded_size(kind, dj, key):

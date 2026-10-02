@@ -78,7 +78,7 @@
     <!-- Contextual Tip -->
     {% if profile.dj_profile.tracks.count < 5 %} <div
         class="mt-8 flex gap-3 p-4 bg-[var(--accent-mint)]/5 border border-[var(--accent-mint)]/20 rounded-xl">
-        <span class="text-lg">⚡</span>
+        <span class="text-lg">{% icon "zap" %}</span>
         <p class="font-body text-[12px] text-[var(--text-muted)] leading-relaxed">
             At this pace, you'll hit <span class="text-white font-bold">₹{{ forecast.projected_total|floatformat:0 }}</span> this month.
             <span class="text-[var(--accent-mint)]">Upload 2 more tracks</span> to boost your visibility.

@@ -21,7 +21,7 @@
             <div class="relative">
                 <input type="text" x-model="searchQuery" placeholder="Search tracks or DJs..." 
                        class="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-full px-6 py-3 text-sm w-[300px] focus:outline-none focus:border-[var(--accent-mint)] transition-all">
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 opacity-40">🔍</span>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 opacity-40">{% icon "search" %}</span>
             </div>
         </div>
     </div>
@@ -38,7 +38,7 @@
 
     <!-- Content List -->
     <div class="glow-card overflow-hidden p-0 mb-12">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse mm-stack">
             <thead>
                 <tr class="bg-[var(--bg-base)]/50">
                     <th class="p-6 font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">Content</th>
@@ -54,13 +54,13 @@
                             <div class="font-medium text-[var(--text-primary)]" x-text="item.title"></div>
                             <div class="text-[11px] text-[var(--text-muted)] font-mono" x-text="'ID: ' + item.id"></div>
                         </td>
-                        <td class="p-6 text-[var(--text-muted)]" x-text="item.dj_name"></td>
-                        <td class="p-6">
+                        <td class="p-6 text-[var(--text-muted)]" data-label="Seller" x-text="item.dj_name"></td>
+                        <td class="p-6" data-label="Status">
                             <span :class="item.is_active ? 'pill-success' : 'pill-warning'" x-text="item.is_active ? 'Active' : 'Hidden'"></span>
                         </td>
-                        <td class="p-6 text-right space-x-2">
-                            <button @click="openDmcaModal(item)" class="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] hover:text-[#38bdf8] transition-colors">DMCA</button>
-                            <button @click="confirmDelete(item)" class="text-xs font-mono uppercase tracking-widest text-[#ef4444] hover:text-[#f87171] transition-colors">Soft Delete</button>
+                        <td class="p-6 text-right space-x-2 mm-stack-actions">
+                            <button @click="openDmcaModal(item)" class="min-h-[40px] px-2 text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] hover:text-[#38bdf8] transition-colors">DMCA</button>
+                            <button @click="confirmDelete(item)" class="min-h-[40px] px-2 text-xs font-mono uppercase tracking-widest text-[#ef4444] hover:text-[#f87171] transition-colors">Soft Delete</button>
                         </td>
                     </tr>
                 </template>
@@ -146,7 +146,7 @@ function moderationHub() {
                 this.dmcaTemplate = data.template;
                 this.showDmcaModal = true;
             } catch (e) {
-                alert("Failed to generate template.");
+                MM.toast("error", "Failed to generate template.");
             }
         },
 
@@ -168,17 +168,17 @@ function moderationHub() {
                     })
                 });
                 if (res.ok) {
-                    alert("Content archived and DJ notified.");
+                    MM.toast("success", "Content archived and DJ notified.");
                     item.is_active = false;
                 }
             } catch (e) {
-                alert("Action failed.");
+                MM.toast("error", "Action failed.");
             }
         },
 
         copyDmca() {
             navigator.clipboard.writeText(this.dmcaTemplate);
-            alert("DMCA Notice copied to clipboard.");
+            MM.toast("success", "DMCA Notice copied to clipboard.");
         }
     }
 }

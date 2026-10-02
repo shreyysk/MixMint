@@ -205,7 +205,7 @@ def upload_track_view(request):
     from apps.admin_panel.vault import archive_after_upload
 
     archive_after_upload(kind, item)
-    messages.success(request, f"“{item.title}” is live in your store.")
+    messages.success(request, f"“{item.title}” is live in your store. Promote it with free covers from the DJ Asset Pack (DJ dashboard → Asset pack).")
     return redirect("album_detail" if kind == "album" else "track_detail", pk=item.pk)
 
 

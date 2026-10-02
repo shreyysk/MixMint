@@ -192,6 +192,9 @@ class PlatformSettings(models.Model):
     dj_application_fee_enabled = models.BooleanField(default=False)
     dj_application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("99.00"))
 
+    # Cart "buy more, save more" discounts (5% for 3+, 10% for 5+, …). Off unless the admin turns them on.
+    cart_discounts_enabled = models.BooleanField(default=False)
+
     # Phase 3: Offload System Thresholds
     offload_zero_sales_days = models.IntegerField(default=60)
     offload_low_sales_count = models.IntegerField(default=2)
@@ -292,7 +295,10 @@ class ContentReport(models.Model):
         ("resolved", "Resolved"),
         ("dismissed", "Dismissed"),
     )
-    reporter = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="reports_sent")
+    reporter = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="reports_sent", null=True, blank=True)
+    reporter_name = models.CharField(max_length=120, blank=True, default="")  # for reporters without an account
+    reporter_email = models.EmailField(blank=True, default="")
+    evidence_url = models.URLField(max_length=500, blank=True, default="")
     content_type = models.CharField(max_length=20, choices=(("track", "Track"), ("album", "Album")))
     content_id = models.PositiveBigIntegerField()
     report_type = models.CharField(max_length=20, choices=REPORT_TYPES)
@@ -301,6 +307,20 @@ class ContentReport(models.Model):
     admin_notes = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        new = self._state.adding
+        super().save(*args, **kwargs)
+        if new:
+            from django.db import transaction
+
+            transaction.on_commit(lambda: alert_admins_new_report(self))
+
+    @property
+    def who(self):
+        if self.reporter_id:
+            return self.reporter.user.email
+        return self.reporter_email or "guest"
 
 
 class VaultFile(models.Model):
@@ -358,3 +378,36 @@ class TelegramLink(models.Model):
     chat_id = models.CharField(max_length=40)
     username = models.CharField(max_length=64, blank=True, default="")
     linked_at = models.DateTimeField(auto_now=True)
+
+
+def alert_admins_new_report(report):
+    """Telegram + email the admins about a new report. Copyright reports are marked urgent."""
+    import logging
+
+    from django.conf import settings
+
+    try:
+        from apps.albums.models import AlbumPack
+        from apps.tracks.models import Track
+
+        model = Track if report.content_type == "track" else AlbumPack
+        item = model.objects.filter(pk=report.content_id).select_related("dj").first()
+        title = f"“{item.title}” by {item.dj.dj_name}" if item else f"{report.content_type} #{report.content_id}"
+        base = (getattr(settings, "BASE_URL", "") or "https://mixmint.site").rstrip("/")
+        urgent = report.report_type == "copyright"
+        head = "URGENT — copyright (DMCA) report" if urgent else f"New report: {report.get_report_type_display()}"
+        text = (f"{head}\n{title}\nFrom: {report.who}\n\n{report.reason[:800]}"
+                + (f"\n\nEvidence: {report.evidence_url}" if report.evidence_url else "")
+                + f"\n\nReview: {base}/api/v1/admin/reports/" + ("\nAct within 24 hours." if urgent else ""))
+        from .telegram import notify_admins
+
+        notify_admins(text)
+        admin_email = getattr(settings, "ADMIN_ALERT_EMAIL", "") or (getattr(settings, "ADMINS", None) or [("", "")])[0][1]
+        if admin_email:
+            from django.utils.html import escape, linebreaks
+
+            from .email_utils import send_email
+
+            send_email(admin_email, f"[MixMint] {head}: {title}", linebreaks(escape(text)))
+    except Exception:
+        logging.getLogger("mixmint").exception("Could not alert admins about report %s", report.pk)

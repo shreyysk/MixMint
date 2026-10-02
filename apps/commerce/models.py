@@ -457,8 +457,19 @@ class Cart(models.Model):
     def subtotal(self):
         return sum(item.price for item in self.items.all())
 
+    @staticmethod
+    def discounts_on():
+        try:
+            from apps.admin_panel.models import PlatformSettings
+
+            return bool(PlatformSettings.load().cart_discounts_enabled)
+        except Exception:
+            return False
+
     @property
     def discount_percentage(self):
+        if not self.discounts_on():
+            return 0
         count = self.total_items
         if count >= 15:
             return 30
@@ -485,6 +496,8 @@ class Cart(models.Model):
     @property
     def next_tier_info(self):
         """Returns info about the next discount tier for UI guidance."""
+        if not self.discounts_on():
+            return None
         count = self.total_items
         if count < 3:
             return {"needed": 3 - count, "discount": 5}

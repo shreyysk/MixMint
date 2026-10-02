@@ -48,7 +48,7 @@
 
     {% if expiry_warning %}
     <div class="mb-6 px-5 py-3 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
-        <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--accent-amber)]">⏳ Link expiring soon — start your download now</p>
+        <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--accent-amber)]">{% icon "hourglass" %} Link expiring soon — start your download now</p>
     </div>
     {% endif %}
 
@@ -68,7 +68,7 @@
     <!-- Final Attempt Warning -->
     <template x-if="attemptCount >= maxAttempts - 1 && downloadState === 'ready'">
         <div class="notice-danger mb-6 flex items-start gap-3">
-            <span class="text-lg mt-0.5">🚨</span>
+            <span class="text-lg mt-0.5">{% icon "siren" %}</span>
             <div>
                 <p class="font-body text-[13px] font-[600] text-[var(--accent-red)]">Final attempt.</p>
                 <p class="font-body text-[12px] text-[var(--text-muted)] mt-1">Ensure a stable connection before proceeding.</p>
@@ -80,7 +80,7 @@
     <template x-if="downloadState === 'ready'">
         <button @click="startDownload()"
             class="btn-mm btn-mint w-full h-[60px] text-[17px] font-[600] shadow-[0_4px_14px_0_rgba(0,255,179,0.2)] hover:shadow-[0_6px_20px_rgba(0,255,179,0.3)]">
-            ⬇ Start Secure Download
+            {% icon "download" %} Start Secure Download
         </button>
     </template>
 
@@ -126,7 +126,7 @@
     <template x-if="downloadState === 'expired'">
         <div class="text-center py-8">
             <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/20 flex items-center justify-center">
-                <span class="text-4xl">⏱</span>
+                <span class="text-4xl">{% icon "timer" %}</span>
             </div>
             <h2 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-2">Token Expired</h2>
             <p class="font-body text-[14px] text-[var(--text-muted)]">Your download token has expired. You can request a new one from the track page.</p>
@@ -135,7 +135,7 @@
 
     <!-- Warning Notice -->
     <div class="notice-warning mt-8 flex items-start gap-3" x-show="downloadState === 'ready' || downloadState === 'downloading'">
-        <span class="mt-0.5 text-[var(--accent-amber)]">⚠</span>
+        <span class="mt-0.5 text-[var(--accent-amber)]">{% icon "triangle-alert" %}</span>
         <p class="font-body text-[12px] text-[var(--text-muted)]">
             Do not close or refresh this tab. Incomplete downloads are not marked successful and will not consume your attempts.
         </p>
@@ -144,7 +144,7 @@
     <!-- Security Footer -->
     <div class="mt-8 text-center">
         <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60">
-            🔒 Protected by MixMint Secure Vault — Token-locked · Device-bound · Byte-verified
+            {% icon "lock" %} Protected by MixMint Secure Vault — Token-locked · Device-bound · Byte-verified
         </p>
     </div>
 </div>

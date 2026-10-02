@@ -107,6 +107,7 @@ urlpatterns = [
     path("drops/", catalog_views.drops_view, name="drops"),
     path("sell/", catalog_views.sell_view, name="sell"),
     path("recover/", catalog_views.recover_view, name="recover"),
+    path("report/", catalog_views.report_view, name="report_content"),
     path("recover/<str:token>/", catalog_views.recover_link_view, name="recover_link"),
     path("checkout/guest/", catalog_views.guest_checkout_start, name="guest_checkout"),
     # API Schema & Documentation

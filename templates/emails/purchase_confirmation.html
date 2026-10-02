@@ -2,7 +2,7 @@
 {% block title %}Purchase Confirmation{% endblock %}
 
 {% block content %}
-<h2>Thanks for your purchase! 🎵</h2>
+<h2>Thanks for your purchase! </h2>
 
 <p>Hey {{ buyer_name }},</p>
 
@@ -11,7 +11,7 @@
 <div class="highlight-box">
     <strong>{{ content_title }}</strong><br>
     by {{ dj_name }}<br>
-    <span style="color: #6366f1; font-weight: 600;">₹{{ amount_paid }}</span>
+    <span style="color: #006B4A; font-weight: 600;">₹{{ amount_paid }}</span>
 </div>
 
 <p style="text-align: center;">
@@ -34,7 +34,7 @@
 </table>
 
 <div class="highlight-box" style="background: #fef3c7; border-color: #f59e0b;">
-    <strong>💡 Tip:</strong> Add Download Insurance (₹{{ insurance_price|default:"49" }}) from your library for free re-downloads.
+    <strong>Tip:</strong> Add Download Insurance (₹{{ insurance_price|default:"49" }}) from your library for free re-downloads.
 </div>
 
 <p><strong>Important:</strong></p>
@@ -43,5 +43,5 @@
     <li>Your purchase is tied to your MixMint account</li>
 </ul>
 
-<p>Enjoy your music! 🎧</p>
+<p>Enjoy your music! </p>
 {% endblock %}

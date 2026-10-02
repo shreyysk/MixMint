@@ -87,10 +87,35 @@ def releases_view(request, forced_type=None):
 
     genres = sorted({g.strip() for g in _live(Track.objects).exclude(genre__isnull=True).exclude(genre="").values_list("genre", flat=True)}, key=str.lower)
     total = page.paginator.count
+
+    # Browsing everything (no search/filter): open with Netflix-style rows, the full grid follows.
+    rows = []
+    if not forced_type and kind == "all" and not q and not genre and sort == "new" and page.number == 1 and total > 8:
+        from collections import Counter
+
+        all_tracks = [o for k, o in items if k == "track"]
+        all_albums = [o for k, o in items if k == "album"]
+        all_bundles = [o for k, o in items if k == "bundle"]
+
+        def row(rid, title, objs, kind_, more="", sub=""):
+            objs = list(objs)[:12]
+            if objs:
+                attach_stock(objs, kind_) if kind_ in ("track", "album") else None
+                rows.append({"id": rid, "title": title, "items": objs, "kind": kind_, "more": more, "sub": sub})
+
+        row("new", "New singles", all_tracks, "track", "?type=singles")
+        row("popular", "Popular this week", sorted(all_tracks, key=lambda t: t.sales_last_7_days or 0, reverse=True), "track", "?sort=popular")
+        row("albums", "Album packs", all_albums, "album", "?type=albums")
+        row("drops", "Limited drops", [t for t in all_tracks if t.copies_limit], "track", "/drops/", "Numbered copies. Once they're gone, they're gone.")
+        row("bundles", "Bundles", all_bundles, "bundle", "/bundles/")
+        for g, n in Counter((t.genre or "").strip() for t in all_tracks if t.genre).most_common(4):
+            if n >= 3:
+                row("g-" + g.lower().replace(" ", "-"), g, [t for t in all_tracks if (t.genre or "").strip() == g], "track", f"?genre={g}")
     ctx = {
         "page": page, "total": total, "kind": kind, "types": TYPES, "q": q, "genre": genre, "genres": genres,
         "sort": sort, "sorts": SORTS, "forced": forced_type,
         "heading": {"drops": "Limited drops", "bundles": "Bundles"}.get(forced_type or "", "All releases"),
+        "rows": rows,
     }
     return render(request, "catalog/releases.html", ctx)
 
@@ -334,3 +359,75 @@ def explore_redirect(request):
     if s:
         params["sort"] = s
     return redirect("/releases/" + ("?" + urlencode(params) if params else ""), permanent=True)
+
+
+# ───────────────────────────── Reports & copyright notices ─────────────────────────────
+@require_POST
+def report_view(request):
+    """Anyone can flag a release (spam, bad audio, copyright). Copyright notices alert the admins at once.
+    Accepts JSON (the Report dialog) or a normal form post (the copyright page)."""
+    from apps.admin_panel.models import ContentReport
+    from apps.albums.models import AlbumPack
+    from apps.tracks.models import Track
+
+    is_json = (request.content_type or "").startswith("application/json")
+    try:
+        data = json.loads(request.body or b"{}") if is_json else request.POST
+    except ValueError:
+        return JsonResponse({"error": "Invalid request."}, status=400)
+
+    def fail(msg, code=400):
+        if is_json:
+            return JsonResponse({"error": msg}, status=code)
+        messages.error(request, msg)
+        return redirect(request.META.get("HTTP_REFERER") or "dmca")
+
+    if _limited(f"report_{get_client_ip(request)}", 10):
+        return fail("Too many reports from this network. Please try again in an hour.", 429)
+
+    kind = str(data.get("content_type") or "")
+    report_type = str(data.get("report_type") or "")
+    reason = str(data.get("reason") or "").strip()[:4000]
+    item = None
+    if kind in ("track", "album") and str(data.get("content_id") or "").isdigit():
+        model = Track if kind == "track" else AlbumPack
+        item = model.objects.filter(pk=int(data["content_id"]), is_deleted=False).first()
+    link = str(data.get("release_url") or "").strip()
+    if item is None and link:  # copyright form: find the release from its MixMint link
+        import re
+
+        m = re.search(r"/(tracks|albums)/(\d+)", link)
+        if m:
+            kind = "track" if m.group(1) == "tracks" else "album"
+            item = (Track if kind == "track" else AlbumPack).objects.filter(pk=int(m.group(2))).first()
+    if item is None:
+        return fail("We couldn't find that release. Paste the link to the track or album page on MixMint.")
+    if report_type not in dict(ContentReport.REPORT_TYPES):
+        return fail("Choose what's wrong.")
+    if len(reason) < 10:
+        return fail("Tell us a little more (at least a sentence).")
+
+    email = str(data.get("email") or "").strip().lower()[:254]
+    if not request.user.is_authenticated:
+        try:
+            validate_email(email)
+        except Exception:
+            return fail("Add your email so we can reply.")
+    if report_type == "copyright" and not data.get("sworn"):
+        return fail("Please confirm the statement about the copyright notice.")
+    evidence = str(data.get("evidence_url") or "").strip()[:500]
+    if evidence and not evidence.startswith(("http://", "https://")):
+        evidence = ""
+
+    ContentReport.objects.create(
+        reporter=request.user.profile if request.user.is_authenticated else None,
+        reporter_name=str(data.get("name") or "").strip()[:120],
+        reporter_email=email or (request.user.email if request.user.is_authenticated else ""),
+        evidence_url=evidence, content_type=kind, content_id=item.pk, report_type=report_type, reason=reason,
+    )
+    done = ("Thanks. We review copyright notices within 24 hours and email you the outcome."
+            if report_type == "copyright" else "Thanks for the report. An admin will review it.")
+    if is_json:
+        return JsonResponse({"ok": True, "message": done})
+    messages.success(request, done)
+    return redirect("dmca")

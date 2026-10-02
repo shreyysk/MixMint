@@ -1,0 +1,1 @@
+{# The DJ earnings promise, one place. Needs dj_share_percent / dj_ad_share_percent (global context). #}{% if dj_share_percent is not None %}<strong class="text-[var(--text-primary)]">100% earning opportunity:</strong> {{ dj_share_percent }}% of every sale, plus {{ dj_ad_share_percent|default:15 }}% of the ad income from your pages.{% endif %}

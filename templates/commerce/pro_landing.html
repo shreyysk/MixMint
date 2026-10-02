@@ -16,7 +16,7 @@
             <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">platform commission<br>3 GB storage</p>
         </div>
         <div class="lift border border-[var(--accent-mint)]/50 bg-[var(--bg-surface)] rounded-[16px] p-8 text-center relative" data-reveal-child>
-            <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-2">★ Most popular</p>
+            <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-2">{% icon "star" %} Most popular</p>
             <p class="font-display text-[36px] font-bold text-[var(--accent-mint)]">8%</p>
             <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">Pro commission<br>20 GB · custom domain · priority support</p>
         </div>
@@ -58,7 +58,7 @@
             });
         </script>
         {% elif user.is_authenticated and user.profile.is_pro_dj %}
-        <p class="font-body text-[15px] text-[var(--accent-mint)] font-[600]">✓ You're Pro — 8% commission active.</p>
+        <p class="font-body text-[15px] text-[var(--accent-mint)] font-[600]">{% icon "check" %} You're Pro — 8% commission active.</p>
         {% else %}
         <a href="{% url 'signup' %}?next={% url 'pro_landing' %}" class="btn-mm btn-mint h-[56px] px-10 text-[16px] font-[600] inline-flex items-center justify-center">Join as DJ to go Pro</a>
         {% endif %}

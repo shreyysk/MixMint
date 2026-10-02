@@ -128,14 +128,14 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <a href="{% url 'admin_maintenance' %}" class="glow-card group flex flex-col items-center justify-center p-12 h-auto gap-6 hover:border-[var(--accent-amber)]/50">
-                    <span class="text-4xl grayscale group-hover:grayscale-0 transition-all group-hover:scale-110">🛠️</span>
+                    <span class="text-4xl text-[var(--accent-mint)] group-hover:scale-110">{% icon "wrench" %}</span>
                     <div class="text-center">
                         <span class="font-display font-bold block text-lg mb-1 group-hover:text-[var(--accent-amber)] transition-colors">Maintenance</span>
                         <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Graceful Shutdown</span>
                     </div>
                 </a>
                 <a href="{% url 'admin_kill_switch' %}" class="glow-card group flex flex-col items-center justify-center p-12 h-auto gap-6 border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/50 active:bg-[var(--accent-red)]/5">
-                    <span class="text-4xl grayscale group-hover:grayscale-0 transition-all group-hover:scale-110">🚨</span>
+                    <span class="text-4xl text-[var(--accent-mint)] group-hover:scale-110">{% icon "siren" %}</span>
                     <div class="text-center">
                         <span class="font-display font-bold block text-lg mb-1 text-[var(--accent-red)]">Kill Switch</span>
                         <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Instant Freeze</span>

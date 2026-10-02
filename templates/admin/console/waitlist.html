@@ -1,0 +1,31 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Waitlist — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head">
+        <div><h1>Waitlist</h1><p>{{ counts.all }} sign-up{{ counts.all|pluralize }}, {{ counts.dj }} of them DJs. Email them all from <a class="underline" href="{% url 'admin_messages' %}">Messages</a>.</p></div>
+        <a class="cx-btn" href="?{% if qs %}{{ qs }}&{% endif %}format=csv">Download CSV</a>
+    </div>
+    <form class="cx-filters" method="get">
+        <label class="sr-only" for="wq">Search</label>
+        <input id="wq" type="search" name="q" value="{{ f.q|default:'' }}" placeholder="Email or name">
+        <label class="sr-only" for="ww">Who</label>
+        <select id="ww" name="who" onchange="this.form.submit()"><option value="">Everyone</option><option value="dj" {% if f.who == "dj" %}selected{% endif %}>DJs</option><option value="buyer" {% if f.who == "buyer" %}selected{% endif %}>Not DJs</option></select>
+        <button class="cx-btn primary">Search</button>
+    </form>
+    {% if page.object_list %}
+    <form method="post" onsubmit="return confirm('Delete the selected sign-ups?')">{% csrf_token %}
+    <div class="cx-table-wrap"><table class="cx-table">
+        <thead><tr><th><span class="sr-only">Select</span></th><th>Email</th><th>Name</th><th>DJ</th><th>From</th><th>Joined</th></tr></thead>
+        <tbody>{% for w in page %}<tr>
+            <td><input type="checkbox" name="ids" value="{{ w.pk }}" aria-label="Select {{ w.email }}" style="width:18px;height:18px"></td>
+            <td style="overflow-wrap:anywhere">{{ w.email }}</td><td class="muted">{{ w.full_name|default:"—" }}</td>
+            <td>{% if w.is_dj %}<span class="cx-pill ok">DJ</span>{% endif %}</td><td class="muted">{{ w.source|default:"—" }}</td>
+            <td class="muted" style="white-space:nowrap">{{ w.created_at|date:"d M Y" }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="cx-pager"><button class="cx-btn danger" name="action" value="delete">Delete selected</button></div>
+    </form>
+    {% include "admin/console/_pager.html" %}
+    {% else %}<div class="cx-empty">No sign-ups match.</div>{% endif %}
+</div>
+{% endblock %}

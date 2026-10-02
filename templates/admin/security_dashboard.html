@@ -34,7 +34,7 @@
         <!-- Account Freeze Section -->
         <div class="glow-card p-10 border-[var(--accent-amber)]/20">
             <h2 class="font-display text-xl font-bold uppercase mb-6 flex items-center gap-3">
-                <span class="text-2xl">❄️</span> Account Freeze
+                <span class="text-2xl">{% icon "snowflake" %}</span> Account Freeze
             </h2>
             <div class="space-y-6">
                 <div class="flex flex-col sm:flex-row gap-3">
@@ -50,7 +50,7 @@
         <!-- IP Ban Section -->
         <div class="glow-card p-10 border-[var(--accent-red)]/20">
             <h2 class="font-display text-xl font-bold uppercase mb-6 flex items-center gap-3">
-                <span class="text-2xl">🚫</span> IP / Device Ban
+                <span class="text-2xl">{% icon "ban" %}</span> IP / Device Ban
             </h2>
             <div class="space-y-6">
                 <div class="flex flex-wrap gap-3">
@@ -130,14 +130,14 @@ function securityDashboard() {
                     body: JSON.stringify({ email: this.freezeUserEmail, reason: reason })
                 });
                 if (res.ok) {
-                    alert("Account frozen successfully.");
+                    MM.toast("success", "Account frozen successfully.");
                     this.freezeUserEmail = '';
                 } else {
                     const data = await res.json();
-                    alert(data.error || "Freeze failed.");
+                    MM.toast("error", data.error || "Freeze failed.");
                 }
             } catch (e) {
-                alert("Network error.");
+                MM.toast("error", "Network error.");
             }
         },
 
@@ -153,11 +153,11 @@ function securityDashboard() {
                     body: JSON.stringify({ action: 'add', ban_type: this.banType, value: this.banValue, reason: reason })
                 });
                 if (res.ok) {
-                    alert(`${this.banType.toUpperCase()} banned successfully.`);
+                    MM.toast("success", `${this.banType.toUpperCase()} banned successfully.`);
                     location.reload();
                 }
             } catch (e) {
-                alert("Action failed.");
+                MM.toast("error", "Action failed.");
             }
         },
 
@@ -171,11 +171,11 @@ function securityDashboard() {
                     body: JSON.stringify({ action: 'remove', ban_type: ban.type, value: ban.value })
                 });
                 if (res.ok) {
-                    alert("Ban revoked.");
+                    MM.toast("success", "Ban revoked.");
                     location.reload();
                 }
             } catch (e) {
-                alert("Action failed.");
+                MM.toast("error", "Action failed.");
             }
         }
     }

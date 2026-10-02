@@ -1,0 +1,42 @@
+{# "Report this release" link + dialog. Needs kind ("track"|"album") and obj. #}
+<div x-data="{ open: false, type: 'other', reason: '', email: '', sworn: false, busy: false, done: '', err: '',
+     async send() {
+        this.err = ''; this.busy = true;
+        try {
+            const r = await fetch('{% url 'report_content' %}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ content_type: '{{ kind }}', content_id: {{ obj.pk }}, report_type: this.type, reason: this.reason, email: this.email, sworn: this.sworn }) });
+            const d = await r.json().catch(() => ({}));
+            if (r.ok) { this.done = d.message; } else { this.err = d.error || 'Could not send. Try again.'; }
+        } catch (e) { this.err = 'Could not send. Check your connection and try again.'; }
+        this.busy = false;
+     } }" class="mt-4">
+    <button type="button" @click="open = true" class="inline-flex items-center gap-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-red)] min-h-[32px]">{% icon "flag" %} Report this release</button>
+    <template x-if="open">
+        <div role="dialog" aria-modal="true" aria-label="Report this release" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" @click.self="open = false" @keydown.escape.window="open = false">
+            <div class="w-full max-w-[460px] rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 sm:p-6 shadow-2xl">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">Report “{{ obj.title }}”</h2>
+                    <button type="button" @click="open = false" aria-label="Close" class="w-10 h-10 -mr-2 -mt-1 inline-flex items-center justify-center rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)]">{% icon "x" 20 %}</button>
+                </div>
+                <template x-if="done"><div><p class="text-[15px] text-[var(--text-primary)] mb-4" x-text="done"></p><button type="button" class="btn-mm btn-ghost h-11 px-5" @click="open = false">Close</button></div></template>
+                <form x-show="!done" @submit.prevent="send()" class="space-y-4" data-no-memory>
+                    <fieldset><legend class="text-[13px] font-[600] text-[var(--text-primary)] mb-2">What's wrong?</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[14px]">
+                            <label class="flex items-center gap-2 min-h-[32px]"><input type="radio" value="copyright" x-model="type"> It's my music (copyright)</label>
+                            <label class="flex items-center gap-2 min-h-[32px]"><input type="radio" value="audio" x-model="type"> Bad audio / wrong file</label>
+                            <label class="flex items-center gap-2 min-h-[32px]"><input type="radio" value="spam" x-model="type"> Spam or misleading</label>
+                            <label class="flex items-center gap-2 min-h-[32px]"><input type="radio" value="other" x-model="type"> Something else</label>
+                        </div>
+                    </fieldset>
+                    <div><label for="rep-reason-{{ obj.pk }}" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Details</label>
+                        <textarea id="rep-reason-{{ obj.pk }}" x-model="reason" rows="4" required minlength="10" class="input-mm w-full" style="height:auto;min-height:100px" placeholder="What did you notice?"></textarea></div>
+                    {% if not user.is_authenticated %}<div><label for="rep-email-{{ obj.pk }}" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Your email (so we can reply)</label>
+                        <input id="rep-email-{{ obj.pk }}" type="email" x-model="email" required class="input-mm w-full"></div>{% endif %}
+                    <label x-show="type === 'copyright'" class="flex items-start gap-2 text-[13px] text-[var(--text-muted)]"><input type="checkbox" x-model="sworn" class="mt-0.5"> I own the rights to this music (or act for the owner), and this notice is accurate. For a full notice use the <a class="underline" href="{% url 'dmca' %}">copyright page</a>.</label>
+                    <p x-show="err" x-text="err" class="text-[13px] text-[var(--accent-red)]" role="alert"></p>
+                    <button type="submit" class="btn-mm btn-mint h-11 px-6 w-full sm:w-auto" :disabled="busy" x-text="busy ? 'Sending…' : 'Send report'">Send report</button>
+                </form>
+            </div>
+        </div>
+    </template>
+</div>

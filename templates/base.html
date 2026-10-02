@@ -4,10 +4,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <script>document.documentElement.classList.add('js-ready');</script>
+    <script>document.documentElement.classList.add('js-ready');
+        // Pictures fade in over their MixMint skeleton once they arrive (or if they fail, so nothing stays hidden).
+        (function(){function d(e){var t=e.target;if(t&&t.tagName==='IMG')t.classList.add('is-loaded');}
+        document.addEventListener('load',d,true);document.addEventListener('error',d,true);
+        document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('img').forEach(function(i){if(i.complete)i.classList.add('is-loaded');});});})();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="description" content="{% block meta_description %}MixMint — buy exclusive DJ edits, tool kits and album packs directly from the DJs who made them. Secure downloads, instant GST invoices.{% endblock %}">
+    <meta name="description" content="{% block meta_description %}MixMint — buy exclusive DJ edits, tool kits and album packs directly from the DJs who made them. Secure, instant downloads.{% endblock %}">
 
     <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
     <meta name="twitter:card" content="{% if og_tags and og_tags|length %}summary_large_image{% else %}summary{% endif %}">
@@ -175,8 +180,12 @@
                 x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-4">
-                <span class="font-mono flex-shrink-0 mt-0.5"
-                    x-text="toast.type === 'error' ? '✗' : (toast.type === 'warning' ? '⚠' : (toast.type === 'info' ? 'ℹ' : '✓'))"></span>
+                <span class="flex-shrink-0 mt-0.5 inline-flex">
+                    <template x-if="toast.type === 'error'">{% icon "circle-x" %}</template>
+                    <template x-if="toast.type === 'warning'">{% icon "triangle-alert" %}</template>
+                    <template x-if="toast.type === 'info'">{% icon "info" %}</template>
+                    <template x-if="!['error','warning','info'].includes(toast.type)">{% icon "circle-check" %}</template>
+                </span>
                 <span class="flex-1 pr-6" x-text="toast.text"></span>
                 <button class="toast-close" @click="toasts = toasts.filter(t => t.id !== toast.id)"
                     aria-label="Dismiss notification">×</button>
@@ -426,6 +435,20 @@
             <path d="M12 19V5m-7 7 7-7 7 7" />
         </svg>
     </button>
+    <!-- Shown only if the next page takes more than a moment: skeleton with the MixMint mark -->
+    <div class="mm-pageload" id="mm-pageload" aria-hidden="true">
+        <div class="pl-bar"></div><div class="pl-mark"></div>
+        <div class="pl-wrap">
+            <div class="skeleton pl-title"></div>
+            <div class="skeleton pl-line" style="width:min(560px,90%)"></div>
+            <div class="skeleton pl-line" style="width:min(380px,70%)"></div>
+            <div class="pl-grid">{% for i in "123456" %}<div class="mm-sk pl-card"></div>{% endfor %}</div>
+        </div>
+    </div>
+    <!-- Start loading the next page as soon as someone hovers or presses a link (Chrome/Edge) -->
+    <script type="speculationrules">
+    {"prefetch": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/logout/*"}}, {"not": {"href_matches": "/api/*"}}, {"not": {"href_matches": "/*download*"}}, {"not": {"selector_matches": "[data-no-prefetch], [download], [target=_blank]"}}]}, "eagerness": "moderate"}]}
+    </script>
     <script defer src="{% static 'js/ux.js' %}"></script>
 </body>
 

@@ -8,7 +8,17 @@ from django.shortcuts import render
 
 
 def asset_pack_view(request):
-    return render(request, "dj/asset_pack.html")
+    return render(request, "dj/asset_pack.html", {
+        "logos": [("mixmint-logo-white.png", "Logo for dark backgrounds", "#0B0D0B"),
+                  ("mixmint-logo-black.png", "Logo for light backgrounds", "#F1EEE8")],
+        "templates_list": [
+            ("reel-story-cover-1080x1920.png", "Reel / Story / Short cover", "1080 × 1920", "Instagram Reels and Stories, YouTube Shorts."),
+            ("instagram-post-1080x1080.png", "Feed post", "1080 × 1080", "Instagram and Facebook posts."),
+            ("youtube-thumbnail-1280x720.png", "YouTube thumbnail", "1280 × 720", "Thumbnail for your preview video."),
+            ("youtube-banner-2560x1440.png", "YouTube banner & store cover", "2560 × 1440", "Channel banner and your MixMint store cover. Keep text in the middle 1546 × 423."),
+            ("x-header-1500x500.png", "X (Twitter) header", "1500 × 500", "Profile header."),
+        ],
+    })
 
 
 @login_required
@@ -29,30 +39,29 @@ def asset_handbook_pdf(request):
     sections = [
         ("MixMint DJ Operations Handbook", None),
         (
-            "1. Uploads & backend links",
-            "Upload WAV/MP3/AIFF, or paste any Google Drive, MediaFire or direct download link. "
-            "Drive files: Share → 'Anyone with the link (Viewer)'. Use 'Verify link' before publishing — "
-            "we check the file downloads. Your original link is never shown to buyers.",
+            "1. Uploads",
+            "Upload MP3, WAV, FLAC or AIFF (or one ZIP for an album pack) straight from the upload page. "
+            "Files go into MixMint's private storage; buyers only ever get signed, expiring download links.",
         ),
         (
             "2. Previews",
-            "Add your YouTube video and/or Instagram Reel. Both can be attached; buyers toggle "
-            "Preview 1 / Preview 2. Playback is always from your embeds — MixMint never hosts previews.",
+            "Add a YouTube video, an Instagram Reel, or both (at least one). Buyers watch the preview from "
+            "your own post, so every preview is a view on your channel. MixMint never hosts previews.",
         ),
         (
             "3. Pricing",
-            "Buyer sees one all-inclusive price. Paid tracks minimum ₹29. Re-downloads open at 50% after 3 days; "
-            "Download Insurance gives unlimited free re-downloads.",
+            "Buyers see one all-inclusive price. Paid tracks start at ₹29. Each purchase includes 3 downloads within "
+            "7 days on the buyer's first device; after that re-downloads cost 50%. Download Insurance makes them free.",
         ),
         (
             "4. Money & payouts",
-            "15% commission (8% Pro). Payouts to UPI or bank only, above ₹500, confirmed by OTP. "
-            "Pro upgrades are billed via PhonePe.",
+            "You keep 85% of every sale (92% on Pro), plus 15% of the ad income from your pages. "
+            "Withdraw once a week, any day, from ₹500 to UPI or bank, confirmed with a code we email you.",
         ),
         (
             "5. Delivery",
-            "Buyers download via signed MixMint links. First download caches your file privately for 2 days so "
-            "repeat buyers are instant. Links expire and are single-use by default.",
+            "Buyers download from their MixMint library with signed, single-use links. If a file needs a few "
+            "minutes to get ready, the buyer gets the link by email (and Telegram) as soon as it is.",
         ),
         (
             "6. Support",
