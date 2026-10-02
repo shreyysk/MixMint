@@ -1,0 +1,19 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}Search — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head"><div><h1>{% if q %}Results for “{{ q }}”{% else %}Search{% endif %}</h1><p>Users by email, name or DJ name · orders by number, gateway ID or buyer email · releases by title or DJ.</p></div></div>
+    <form class="cx-filters" method="get"><label class="sr-only" for="sq">Search</label><input id="sq" type="search" name="q" value="{{ q }}" placeholder="Type at least 2 characters" autofocus><button class="cx-btn primary">Search</button></form>
+    {% if nothing %}<div class="cx-empty">Nothing found.</div>{% endif %}
+    <div class="cx-grid">
+        {% if users %}<section class="cx-card"><h2>Users</h2><ul style="display:grid;gap:8px">{% for u in users %}<li><a class="underline" href="{% url 'admin_user_detail' u.pk %}">{{ u.profile.full_name|default:u.email }}</a><div class="cx-muted">{{ u.email }}</div></li>{% endfor %}</ul></section>{% endif %}
+        {% if orders %}<section class="cx-card"><h2>Orders</h2><ul style="display:grid;gap:8px">{% for o in orders %}<li><a class="underline" href="{% url 'admin_order_detail' o.pk %}">#{{ o.pk }} · {{ o.item_title|truncatechars:36 }}</a> {% include "admin/console/_status.html" with p=o %}<div class="cx-muted">{{ o.user.user.email }} · {{ o.price_paid|money }} · {{ o.created_at|date:"d M Y" }}</div></li>{% endfor %}</ul></section>{% endif %}
+        {% if tracks or albums or bundles %}<section class="cx-card"><h2>Releases</h2><ul style="display:grid;gap:8px">
+            {% for t in tracks %}<li><a class="underline" href="{% url 'admin_catalog_edit' 'track' t.pk %}">{{ t.title }}</a><div class="cx-muted">Track · {{ t.dj.dj_name }}</div></li>{% endfor %}
+            {% for t in albums %}<li><a class="underline" href="{% url 'admin_catalog_edit' 'album' t.pk %}">{{ t.title }}</a><div class="cx-muted">Album pack · {{ t.dj.dj_name }}</div></li>{% endfor %}
+            {% for t in bundles %}<li><a class="underline" href="{% url 'admin_catalog_edit' 'bundle' t.pk %}">{{ t.title }}</a><div class="cx-muted">Bundle · {{ t.dj.dj_name }}</div></li>{% endfor %}
+        </ul></section>{% endif %}
+    </div>
+</div>
+{% endblock %}

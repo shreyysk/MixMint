@@ -1,0 +1,71 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}Order #{{ p.pk }} — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <a class="cx-back" href="{% url 'admin_orders' %}">← All orders</a>
+    <div class="cx-head">
+        <div><h1>Order #{{ p.pk }} {% include "admin/console/_status.html" %}</h1>
+        <p>{{ p.created_at|date:"d M Y, H:i" }} · {{ p.price_paid|money }} via {{ p.payment_gateway|default:"—"|title }}</p></div>
+    </div>
+    <div class="cx-grid">
+        <section class="cx-card">
+            <h2>What and who</h2>
+            <dl class="cx-dl">
+                <dt>Item</dt><dd>{% if item %}<a class="underline" href="{% url 'admin_catalog_edit' p.content_type item.pk %}">{{ item.title }}</a> <span class="cx-muted">({{ p.content_type }})</span>{% else %}(removed {{ p.content_type }} #{{ p.content_id }}){% endif %}</dd>
+                <dt>Buyer</dt><dd><a class="underline" href="{% url 'admin_user_detail' p.user.user.pk %}">{{ p.user.user.email }}</a></dd>
+                <dt>DJ</dt><dd>{% if p.seller %}{{ p.seller.dj_name }}{% else %}—{% endif %}</dd>
+                <dt>Downloaded</dt><dd>{% if p.download_completed %}Yes{% else %}Not yet{% endif %}{% if p.has_download_insurance %} · has download insurance{% endif %}</dd>
+                <dt>Access</dt><dd>{% if p.is_revoked %}<span class="cx-pill bad">Removed</span>{% else %}Normal{% endif %}</dd>
+                {% if p.paid_at %}<dt>Paid at</dt><dd>{{ p.paid_at|date:"d M Y, H:i" }}</dd>{% endif %}
+                {% if p.refunded_at %}<dt>Refunded at</dt><dd>{{ p.refunded_at|date:"d M Y, H:i" }}</dd>{% endif %}
+            </dl>
+        </section>
+        <section class="cx-card">
+            <h2>Money</h2>
+            <dl class="cx-dl">
+                <dt>Buyer paid</dt><dd class="font-mono">{{ p.price_paid|money }}</dd>
+                <dt>List price</dt><dd class="font-mono">{{ p.original_price|money }}</dd>
+                <dt>DJ gets</dt><dd class="font-mono">{{ p.dj_earnings|money }}</dd>
+                <dt>Commission</dt><dd class="font-mono">{{ p.commission|money }}</dd>
+                <dt>Buyer fee</dt><dd class="font-mono">{{ p.platform_fee|money }}</dd>
+                {% if invoice %}<dt>Invoice</dt><dd>{{ invoice.invoice_number }} · {{ invoice.total_amount|money }} (GST {{ invoice.tax_amount|money }})</dd>{% endif %}
+            </dl>
+        </section>
+        <section class="cx-card">
+            <h2>Gateway</h2>
+            <dl class="cx-dl">
+                <dt>Gateway</dt><dd>{{ p.payment_gateway|default:"—"|title }}</dd>
+                <dt>Order ID</dt><dd class="font-mono" style="font-size:13px">{{ p.gateway_order_id|default:"—" }}</dd>
+                <dt>Payment ID</dt><dd class="font-mono" style="font-size:13px">{{ p.gateway_payment_id|default:"—" }}</dd>
+                {% if p.gateway_refund_id %}<dt>Refund ID</dt><dd class="font-mono" style="font-size:13px">{{ p.gateway_refund_id }}</dd>{% endif %}
+            </dl>
+            {% if hooks %}<div class="cx-sep"></div><h3 class="cx-label">Webhooks received</h3>
+            <ul class="cx-muted" style="display:grid;gap:4px">{% for h in hooks %}<li>{{ h.received_at|date:"d M H:i" }} · {{ h.status }}{% if h.error %} · <span style="color:var(--accent-red)">{{ h.error|truncatechars:80 }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+        </section>
+        <section class="cx-card">
+            <h2>Actions</h2>
+            <form method="post">{% csrf_token %}
+                <div class="cx-field"><label class="cx-label" for="note">Note (kept in the log; shown to the buyer on refunds)</label><input id="note" class="cx-input" name="note" maxlength="1000" placeholder="Optional"></div>
+                <div class="cx-actions">
+                    {% if p.status == "pending" %}<button class="cx-btn primary" name="action" value="recheck">Recheck payment</button>{% endif %}
+                    {% if p.status == "paid" %}
+                        <button class="cx-btn" name="action" value="resend">Email library link</button>
+                        {% if p.download_completed %}<button class="cx-btn" name="action" value="redownload">Allow free re-download</button>{% endif %}
+                        {% if p.is_revoked %}<button class="cx-btn" name="action" value="restore">Restore access</button>{% else %}<button class="cx-btn danger" name="action" value="revoke" onclick="return confirm('Remove the buyer\'s access to this item?')">Remove access</button>{% endif %}
+                        <button class="cx-btn danger" name="action" value="refund" onclick="return confirm('Refund {{ p.price_paid|money }} to {{ p.user.user.email|escapejs }}? This sends the money back and takes the DJ\'s share back.')">Refund {{ p.price_paid|money }}</button>
+                    {% endif %}
+                </div>
+            </form>
+            {% if refund %}<p class="cx-muted" style="margin-top:12px">Refund request: {{ refund.get_status_display }}{% if refund.reason %} — “{{ refund.reason|truncatechars:120 }}”{% endif %}</p>{% endif %}
+        </section>
+    </div>
+    {% if downloads %}
+    <section style="margin-top:24px">
+        <h2 class="font-display text-[20px] font-[700] mb-3">Downloads</h2>
+        <div class="cx-table-wrap"><table class="cx-table"><thead><tr><th>When</th><th>IP</th><th>Complete</th><th>Checked</th></tr></thead>
+        <tbody>{% for d in downloads %}<tr><td>{{ d.created_at|date:"d M Y, H:i" }}</td><td class="muted">{{ d.ip_address|default:"—" }}</td><td>{% if d.completed %}Yes{% else %}No{% endif %}</td><td>{% if d.checksum_verified %}Yes{% else %}No{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

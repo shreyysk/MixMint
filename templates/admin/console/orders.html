@@ -1,0 +1,65 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}Orders — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head">
+        <div><h1>Orders</h1><p>Every purchase. Open one to recheck a stuck payment, refund it, allow a free re-download, remove or restore access, or email the buyer their library link.</p></div>
+        <a class="cx-btn" href="{% url 'admin_export' 'orders' %}{% if qs %}?{{ qs }}{% endif %}">Download CSV</a>
+    </div>
+    <div class="cx-stats">
+        <div class="cx-stat"><b>{{ paid.n|default:0 }}</b><span>paid orders (this filter)</span></div>
+        <div class="cx-stat"><b>{{ paid.gross|default:0|money }}</b><span>buyers paid</span></div>
+        <div class="cx-stat"><b>{{ paid.dj|default:0|money }}</b><span>to DJs</span></div>
+        <div class="cx-stat"><b>{{ platform|money }}</b><span>MixMint kept</span></div>
+    </div>
+    {% if pending_count %}<p class="cx-card" style="margin-bottom:16px;font-size:14px"><span class="cx-pill warn">{{ pending_count }}</span> payment{{ pending_count|pluralize }} still pending from the last 2 days. <a class="underline" href="?status=pending&days=2">Show them</a> — open one and press “Recheck payment” if the buyer says they paid.</p>{% endif %}
+    <form class="cx-filters" method="get">
+        <label class="sr-only" for="oq">Search</label>
+        <input id="oq" type="search" name="q" value="{{ f.q|default:'' }}" placeholder="Order #, gateway ID, buyer email or DJ">
+        <label class="sr-only" for="ost">Status</label>
+        <select id="ost" name="status" onchange="this.form.submit()">
+            <option value="">Any status</option>
+            <option value="paid" {% if f.status == "paid" %}selected{% endif %}>Paid</option>
+            <option value="pending" {% if f.status == "pending" %}selected{% endif %}>Pending</option>
+            <option value="failed" {% if f.status == "failed" %}selected{% endif %}>Failed</option>
+            <option value="refunded" {% if f.status == "refunded" %}selected{% endif %}>Refunded</option>
+            <option value="disputed" {% if f.status == "disputed" %}selected{% endif %}>Disputed</option>
+        </select>
+        <label class="sr-only" for="otype">Type</label>
+        <select id="otype" name="type" onchange="this.form.submit()">
+            <option value="">All items</option>
+            <option value="track" {% if f.type == "track" %}selected{% endif %}>Tracks</option>
+            <option value="album" {% if f.type == "album" %}selected{% endif %}>Album packs</option>
+            <option value="bundle" {% if f.type == "bundle" %}selected{% endif %}>Bundles</option>
+        </select>
+        <label class="sr-only" for="odays">When</label>
+        <select id="odays" name="days" onchange="this.form.submit()">
+            <option value="">All time</option>
+            <option value="1" {% if f.days == "1" %}selected{% endif %}>Today</option>
+            <option value="7" {% if f.days == "7" %}selected{% endif %}>Last 7 days</option>
+            <option value="30" {% if f.days == "30" %}selected{% endif %}>Last 30 days</option>
+            <option value="90" {% if f.days == "90" %}selected{% endif %}>Last 90 days</option>
+        </select>
+        {% if gateways|length > 1 %}<label class="sr-only" for="ogw">Gateway</label>
+        <select id="ogw" name="gateway" onchange="this.form.submit()"><option value="">Any gateway</option>{% for g in gateways %}<option value="{{ g }}" {% if f.gateway == g %}selected{% endif %}>{{ g|title }}</option>{% endfor %}</select>{% endif %}
+        <button class="cx-btn primary">Search</button>
+    </form>
+    {% if page.object_list %}
+    <div class="cx-table-wrap"><table class="cx-table">
+        <thead><tr><th>#</th><th>Item</th><th>Buyer</th><th class="cx-hide-sm">DJ</th><th class="cx-hide-sm">Date</th><th class="num">Paid</th><th>Status</th></tr></thead>
+        <tbody>{% for o in page %}
+        <tr class="cx-row-link" onclick="location.href='{% url 'admin_order_detail' o.pk %}'">
+            <td><a class="cx-strong" href="{% url 'admin_order_detail' o.pk %}">{{ o.pk }}</a></td>
+            <td>{{ o.item_title|truncatechars:40 }} <div class="muted">{{ o.content_type }} · {{ o.created_at|date:"d M" }}</div></td>
+            <td class="muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ o.user.user.email }}">{{ o.user.user.email }}</td>
+            <td class="muted cx-hide-sm">{{ o.seller.dj_name|default:"—" }}</td>
+            <td class="muted cx-hide-sm" style="white-space:nowrap">{{ o.created_at|date:"d M Y, H:i" }}</td>
+            <td class="num">{{ o.price_paid|money }}</td>
+            <td>{% include "admin/console/_status.html" with p=o %}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% include "admin/console/_pager.html" %}
+    {% else %}<div class="cx-empty">No orders match.</div>{% endif %}
+</div>
+{% endblock %}

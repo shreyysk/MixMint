@@ -1,5 +1,7 @@
 from django.urls import path
 
+from . import console_views as cv
+
 from .views import (
     toggle_application_fee,
     list_pending_djs,
@@ -78,4 +80,18 @@ urlpatterns = [
     path("api/offers/save/", save_promotional_offer, name="api_save_offer"),
     # Platform Health [Imp 09]
     path("health/", health_dashboard, name="admin_health"),
+    # Console: everything manageable from the website itself
+    path("search/", cv.search_view, name="admin_search"),
+    path("users/", cv.users_view, name="admin_users"),
+    path("users/<uuid:user_id>/", cv.user_detail_view, name="admin_user_detail"),
+    path("orders/", cv.orders_view, name="admin_orders"),
+    path("orders/<int:order_id>/", cv.order_detail_view, name="admin_order_detail"),
+    path("catalog/", cv.catalog_view, name="admin_catalog"),
+    path("catalog/<str:kind>/<int:pk>/", cv.catalog_edit_view, name="admin_catalog_edit"),
+    path("reports/", cv.reports_view, name="admin_reports"),
+    path("waitlist/", cv.waitlist_view, name="admin_waitlist"),
+    path("messages/", cv.messages_view, name="admin_messages"),
+    path("activity/", cv.activity_view, name="admin_activity"),
+    path("settings/", cv.settings_view, name="admin_settings"),
+    path("export/<str:what>.csv", cv.export_view, name="admin_export"),
 ]

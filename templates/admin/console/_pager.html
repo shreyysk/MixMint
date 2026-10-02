@@ -1,0 +1,12 @@
+{% if page.paginator.num_pages > 1 or page.paginator.count %}
+<nav class="cx-pager" aria-label="Pages">
+    <span>{{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}</span>
+    {% if page.paginator.num_pages > 1 %}
+    <span class="cx-actions">
+        {% if page.has_previous %}<a class="cx-btn" href="?{% if qs %}{{ qs }}&{% endif %}page={{ page.previous_page_number }}">← Previous</a>{% endif %}
+        <span class="cx-btn" aria-current="page" style="pointer-events:none">Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a class="cx-btn" href="?{% if qs %}{{ qs }}&{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
+    </span>
+    {% endif %}
+</nav>
+{% endif %}

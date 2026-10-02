@@ -82,10 +82,11 @@ def admin_nav(request):
         from apps.accounts.models import DJProfile
         from apps.commerce.models import Payout, RefundRequest
 
-        from .models import SupportTicket
+        from .models import ContentReport, CopyrightReport, SupportTicket
 
         return {
             "admin_counts": {
+                "reports": ContentReport.objects.filter(status="pending").count() + CopyrightReport.objects.filter(status="pending").count(),
                 "djs": DJProfile.objects.filter(status__in=["pending", "pending_review", "pending_payment"]).count(),
                 "payouts": Payout.objects.filter(status__in=["pending", "processing"]).count(),
                 "refunds": RefundRequest.objects.filter(status="pending").count(),

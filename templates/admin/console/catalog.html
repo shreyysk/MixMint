@@ -1,0 +1,51 @@
+{% extends "admin/base_admin.html" %}
+{% load tracks_filters %}
+{% block title %}Catalog — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head">
+        <div><h1>Catalog</h1><p>Every release on MixMint. Hide one from the shop in a click, or open it to change the title, price, previews or copy limit, or to remove it.</p></div>
+    </div>
+    <nav class="cx-chips" aria-label="Type" style="margin-bottom:12px">
+        <a href="?type=track" {% if kind == "track" %}aria-current="true"{% endif %}>Tracks <small>{{ counts.track }}</small></a>
+        <a href="?type=album" {% if kind == "album" %}aria-current="true"{% endif %}>Album packs <small>{{ counts.album }}</small></a>
+        <a href="?type=bundle" {% if kind == "bundle" %}aria-current="true"{% endif %}>Bundles <small>{{ counts.bundle }}</small></a>
+    </nav>
+    <form class="cx-filters" method="get">
+        <input type="hidden" name="type" value="{{ kind }}">
+        <label class="sr-only" for="cq">Search</label>
+        <input id="cq" type="search" name="q" value="{{ f.q|default:'' }}" placeholder="Title, DJ or ID">
+        <label class="sr-only" for="cst">Status</label>
+        <select id="cst" name="status" onchange="this.form.submit()">
+            <option value="">Any status</option>
+            <option value="live" {% if f.status == "live" %}selected{% endif %}>Live</option>
+            <option value="hidden" {% if f.status == "hidden" %}selected{% endif %}>Hidden</option>
+            <option value="removed" {% if f.status == "removed" %}selected{% endif %}>Removed</option>
+        </select>
+        <label class="sr-only" for="cdj">DJ</label>
+        <select id="cdj" name="dj" onchange="this.form.submit()"><option value="">All DJs</option>{% for d in djs %}<option value="{{ d.slug }}" {% if f.dj == d.slug %}selected{% endif %}>{{ d.dj_name }}</option>{% endfor %}</select>
+        <button class="cx-btn primary">Search</button>
+    </form>
+    {% if page.object_list %}
+    <div class="cx-table-wrap"><table class="cx-table">
+        <thead><tr><th>Release</th><th class="cx-hide-sm">DJ</th><th class="num">Price</th>{% if kind != "bundle" %}<th class="num">Sales</th>{% endif %}<th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>{% for o in page %}
+        <tr>
+            <td><div style="display:flex;gap:10px;align-items:center;min-width:0">
+                {% if o.thumb %}<img class="cx-thumb" src="{{ o.thumb }}" alt="" loading="lazy">{% else %}<span class="cx-thumb" aria-hidden="true"></span>{% endif %}
+                <div style="min-width:0"><a class="cx-strong" href="{% url 'admin_catalog_edit' kind o.pk %}">{{ o.title|truncatechars:48 }}</a><div class="muted">#{{ o.pk }} · {{ o.dj.dj_name|truncatechars:22 }}</div></div></div></td>
+            <td class="muted cx-hide-sm">{{ o.dj.dj_name|truncatechars:28 }}</td>
+            <td class="num">{{ o.price|money }}</td>
+            {% if kind != "bundle" %}<td class="num">{{ o.n_sales }}{% if o.gross %}<div class="muted">{{ o.gross|money }}</div>{% endif %}</td>{% endif %}
+            <td>{% if o.is_deleted %}<span class="cx-pill bad">Removed</span>{% elif o.is_active %}<span class="cx-pill ok">Live</span>{% else %}<span class="cx-pill warn">Hidden</span>{% endif %}</td>
+            <td><div class="cx-actions" style="justify-content:flex-end;flex-wrap:nowrap">
+                {% if not o.is_deleted %}<form method="post">{% csrf_token %}<input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="pk" value="{{ o.pk }}"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% if o.is_active %}<button class="cx-btn" name="action" value="hide">Hide</button>{% else %}<button class="cx-btn" name="action" value="show">Show</button>{% endif %}</form>{% endif %}
+                <a class="cx-btn" href="{% url 'admin_catalog_edit' kind o.pk %}">Edit</a>
+            </div></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% include "admin/console/_pager.html" %}
+    {% else %}<div class="cx-empty">Nothing here.</div>{% endif %}
+</div>
+{% endblock %}

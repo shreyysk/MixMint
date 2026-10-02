@@ -1,0 +1,32 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Activity log — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx">
+    <div class="cx-head"><div><h1>Activity log</h1><p>Who changed what in this panel, what the payment gateways told us, and fraud alerts.</p></div></div>
+    <nav class="cx-chips" style="margin-bottom:12px" aria-label="Log">
+        <a href="?tab=admin" {% if tab == "admin" %}aria-current="true"{% endif %}>Admin actions</a>
+        <a href="?tab=payments" {% if tab == "payments" %}aria-current="true"{% endif %}>Payment webhooks</a>
+        <a href="?tab=fraud" {% if tab == "fraud" %}aria-current="true"{% endif %}>Fraud alerts</a>
+    </nav>
+    <form class="cx-filters" method="get"><input type="hidden" name="tab" value="{{ tab }}">
+        <label class="sr-only" for="aq">Search</label><input id="aq" type="search" name="q" value="{{ q }}" placeholder="Search">
+        {% if tab == "payments" %}<label class="cx-check"><input type="checkbox" name="errors" value="1" {% if request.GET.errors %}checked{% endif %} onchange="this.form.submit()"> Errors only</label>{% endif %}
+        <button class="cx-btn primary">Search</button>
+    </form>
+    {% if page.object_list %}
+    <div class="cx-table-wrap"><table class="cx-table">
+    {% if tab == "payments" %}
+        <thead><tr><th>When</th><th>Gateway</th><th>Event</th><th>Status</th><th>Result</th></tr></thead>
+        <tbody>{% for h in page %}<tr><td class="muted" style="white-space:nowrap">{{ h.received_at|date:"d M Y, H:i:s" }}</td><td>{{ h.gateway|title }}</td><td class="font-mono" style="font-size:12px;overflow-wrap:anywhere">{{ h.transaction_id }}</td><td>{{ h.status|default:"—" }}</td><td>{% if h.error %}<span class="cx-pill bad">Error</span> <span class="muted">{{ h.error|truncatechars:100 }}</span>{% elif h.processed %}<span class="cx-pill ok">Done</span>{% else %}<span class="cx-pill warn">Not processed</span>{% endif %}</td></tr>{% endfor %}</tbody>
+    {% elif tab == "fraud" %}
+        <thead><tr><th>When</th><th>Account</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>{% for a in page %}<tr><td class="muted" style="white-space:nowrap">{{ a.created_at|date:"d M Y, H:i" }}</td><td>{% if a.user %}<a class="underline" href="{% url 'admin_user_detail' a.user.user_id %}">{{ a.user.user.email }}</a>{% else %}—{% endif %}</td><td>{{ a.get_alert_type_display }}</td><td><span class="cx-pill {% if a.severity == 'critical' or a.severity == 'high' %}bad{% elif a.severity == 'medium' %}warn{% endif %}">{{ a.get_severity_display }}</span></td><td class="muted">{{ a.status }}</td></tr>{% endfor %}</tbody>
+    {% else %}
+        <thead><tr><th>When</th><th>Admin</th><th>What</th></tr></thead>
+        <tbody>{% for a in page %}<tr><td class="muted" style="white-space:nowrap">{{ a.created_at|date:"d M Y, H:i" }}</td><td class="muted">{{ a.admin.user.email|default:"system" }}</td><td>{{ a.action }}{% if a.metadata.reason or a.metadata.note %}<div class="muted">{{ a.metadata.reason|default:a.metadata.note }}</div>{% endif %}</td></tr>{% endfor %}</tbody>
+    {% endif %}
+    </table></div>
+    {% include "admin/console/_pager.html" %}
+    {% else %}<div class="cx-empty">Nothing logged yet.</div>{% endif %}
+</div>
+{% endblock %}

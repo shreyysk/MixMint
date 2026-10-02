@@ -9,6 +9,11 @@
   .mm-adm-pill { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
       background: color-mix(in srgb, var(--accent-mint) 16%, transparent); color: var(--accent-mint); }
   .mm-adm-top .spacer { flex: 1; }
+  .mm-adm-search { flex: 1 1 360px; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; margin-left: 12px;
+      border: 1px solid var(--border); border-radius: 10px; background: var(--bg-surface); color: var(--text-muted); }
+  .mm-adm-search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font-size: 14px; color: var(--text-primary); }
+  .mm-adm-search:focus-within { border-color: var(--accent-mint); }
+  @media (max-width: 640px) { .mm-adm-top .brand .mm-adm-pill { display: none; } .mm-adm-search { margin-left: 4px; } .mm-adm-top .spacer { display: none; } }
   .mm-adm-top .icon-btn { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); }
   .mm-adm-top .icon-btn:hover { background: var(--border); color: var(--text-primary); }
   .mm-adm-side { position: sticky; top: 64px; align-self: start; height: calc(100vh - 64px); overflow-y: auto; padding: 20px 12px;
@@ -35,6 +40,73 @@
     .mm-adm.open .mm-adm-side { transform: none; }
     .mm-adm.open .mm-adm-scrim { display: block; position: fixed; inset: 64px 0 0 0; z-index: 44; background: rgba(0,0,0,.4); }
   }
+
+  /* ── Console building blocks (users, orders, catalog, …) ── */
+  .cx { max-width: 1180px; padding: 32px 16px; font-family: var(--font-body); }
+  .cx-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .cx-head h1 { font-family: var(--font-display); font-size: clamp(28px, 5vw, 38px); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; color: var(--text-primary); }
+  .cx-head p { color: var(--text-muted); font-size: 14px; margin-top: 6px; max-width: 640px; }
+  .cx-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; min-height: 32px; }
+  .cx-back:hover { color: var(--text-primary); }
+  .cx-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .cx-card h2 { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+  .cx-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .cx-stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px; }
+  .cx-stat { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .cx-stat b { display: block; font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+  .cx-stat span { font-size: 12px; color: var(--text-muted); }
+  .cx-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .cx-filters input[type=search], .cx-filters select, .cx-input, .cx-select, .cx-textarea {
+      height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; min-width: 0; }
+  .cx-textarea { height: auto; min-height: 110px; padding: 10px 12px; width: 100%; line-height: 1.5; }
+  .cx-input:focus, .cx-select:focus, .cx-textarea:focus, .cx-filters input:focus, .cx-filters select:focus { outline: 2px solid color-mix(in srgb, var(--accent-mint) 45%, transparent); border-color: var(--accent-mint); }
+  .cx-filters input[type=search] { flex: 1 1 240px; }
+  .cx-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .cx-chips a { flex: 0 0 auto; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: var(--text-muted); background: var(--bg-surface); white-space: nowrap; }
+  .cx-chips a[aria-current="true"] { background: var(--text-primary); color: var(--bg-base); border-color: var(--text-primary); }
+  .cx-chips a small { font-weight: 500; opacity: .7; }
+  .cx-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); }
+  .cx-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .cx-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 10px 14px; background: var(--bg-elevated); white-space: nowrap; }
+  .cx-table td { padding: 12px 14px; border-top: 1px solid var(--border); vertical-align: middle; color: var(--text-primary); }
+  .cx-table tr.cx-row-link { cursor: pointer; }
+  .cx-table tr.cx-row-link:hover td { background: color-mix(in srgb, var(--accent-mint) 5%, transparent); }
+  .cx-table .num { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+  .cx-table .muted, .cx-muted { color: var(--text-muted); font-size: 13px; }
+  .cx-table a.cx-strong { font-weight: 600; color: var(--text-primary); }
+  .cx-table a.cx-strong:hover { color: var(--accent-mint); text-decoration: underline; }
+  .cx-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+      background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+  .cx-pill.ok { background: color-mix(in srgb, var(--accent-mint) 15%, transparent); color: var(--accent-mint); border-color: transparent; }
+  .cx-pill.warn { background: color-mix(in srgb, var(--accent-amber) 18%, transparent); color: var(--accent-amber); border-color: transparent; }
+  .cx-pill.bad { background: color-mix(in srgb, var(--accent-red) 14%, transparent); color: var(--accent-red); border-color: transparent; }
+  .cx-dl { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 8px 14px; font-size: 14px; }
+  .cx-dl dt { color: var(--text-muted); }
+  .cx-dl dd { color: var(--text-primary); min-width: 0; overflow-wrap: anywhere; }
+  .cx-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); cursor: pointer; text-align: center; line-height: 1.2; }
+  .cx-btn:hover { border-color: var(--accent-mint); }
+  .cx-btn.primary { background: var(--accent-mint); border-color: var(--accent-mint); color: var(--text-inverse, #fff); }
+  .cx-btn.danger { color: var(--accent-red); border-color: color-mix(in srgb, var(--accent-red) 45%, var(--border)); }
+  .cx-btn.danger:hover { background: color-mix(in srgb, var(--accent-red) 10%, transparent); }
+  .cx-btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .cx-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cx-actions form { display: contents; }
+  .cx-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 13px; color: var(--text-muted); }
+  .cx-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 14px; }
+  .cx-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .cx-field { margin-bottom: 14px; }
+  .cx-field .cx-input, .cx-field .cx-select { width: 100%; }
+  .cx-check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-primary); min-height: 32px; }
+  .cx-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent-mint); flex-shrink: 0; }
+  .cx-sep { height: 1px; background: var(--border); margin: 16px 0; }
+  .cx-avatar { width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+      background: color-mix(in srgb, var(--accent-mint) 16%, transparent); color: var(--accent-mint); font-family: var(--font-display); font-weight: 700; font-size: 22px; }
+  .cx-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--bg-elevated); flex-shrink: 0; }
+  details.cx-more > summary { cursor: pointer; list-style: none; }
+  details.cx-more > summary::-webkit-details-marker { display: none; }
+  @media (max-width: 640px) { .cx-hide-sm { display: none; } .cx-table { min-width: 480px; } .cx { padding: 20px 12px; } .cx-card { padding: 16px; } .cx-table td, .cx-table th { padding: 10px; } .cx-dl { grid-template-columns: 1fr; gap: 2px 0; } .cx-dl dd { margin-bottom: 8px; } }
 </style>
 {% block admin_head %}{% endblock %}
 {% endblock %}
@@ -46,6 +118,11 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <a href="{% url 'admin_dashboard' %}" class="brand">MixMint <span class="mm-adm-pill">Admin</span></a>
+    <form action="{% url 'admin_search' %}" method="get" class="mm-adm-search" role="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <label for="adm-q" class="sr-only">Search users, orders and releases</label>
+        <input id="adm-q" name="q" type="search" value="{{ request.GET.q|default:'' }}" placeholder="Search users, orders, releases…" autocomplete="off">
+    </form>
     <div class="spacer"></div>
     <a href="/" class="icon-btn" title="View the shop" aria-label="View the shop" target="_blank" rel="noopener">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>
@@ -67,20 +144,31 @@
 {% block content %}
 <div class="mm-adm" id="mm-adm">
     <nav class="mm-adm-side" id="mm-adm-side" aria-label="Admin">
-        <div class="group">Manage</div>
-            <a href="{% url 'admin_dashboard' %}" {% if request.path == "/api/v1/admin/dashboard/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg><span>Overview</span></a>
-            <a href="{% url 'admin_dj_management' %}" {% if request.path|slice:":17" == "/api/v1/admin/dj/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>DJs</span>{% if admin_counts.djs %}<span class="mm-adm-badge">{{ admin_counts.djs }}</span>{% endif %}</a>
-            <a href="{% url 'admin_payouts' %}" {% if request.path|slice:":22" == "/api/v1/admin/payouts/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3zM7 12h.01M17 12h.01M12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><span>Payouts</span>{% if admin_counts.payouts %}<span class="mm-adm-badge">{{ admin_counts.payouts }}</span>{% endif %}</a>
-            <a href="{% url 'admin_refunds' %}" {% if request.path|slice:":22" == "/api/v1/admin/refunds/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3"/></svg><span>Refunds</span>{% if admin_counts.refunds %}<span class="mm-adm-badge">{{ admin_counts.refunds }}</span>{% endif %}</a>
+        <div class="group">Today</div>
+        <a href="{% url 'admin_dashboard' %}" {% if request.path == "/api/v1/admin/dashboard/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg><span>Overview</span></a>
         <a href="{% url 'admin_support' %}" {% if request.path|slice:":22" == "/api/v1/admin/support/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>Support</span>{% if admin_counts.tickets %}<span class="mm-adm-badge">{{ admin_counts.tickets }}</span>{% endif %}</a>
-            <a href="{% url 'admin_moderation_hub' %}" {% if request.path|slice:":22" == "/api/v1/admin/content/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Moderation</span></a>
-            <a href="{% url 'admin_revenue_dashboard' %}" {% if request.path|slice:":24" == "/api/v1/admin/analytics/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Revenue</span></a>
-            <a href="{% url 'admin_offers_pricing' %}" {% if request.path|slice:":29" == "/api/v1/admin/offers-pricing/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01"/></svg><span>Offers & pricing</span></a>
-            <a href="{% url 'admin_security_dashboard' %}" {% if request.path|slice:":23" == "/api/v1/admin/security/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 100-4 2 2 0 000 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M5 11V7a7 7 0 0114 0v4"/></svg><span>Security</span></a>
-            <a href="{% url 'admin_health' %}" {% if request.path|slice:":21" == "/api/v1/admin/health/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Health</span></a>
+        <a href="{% url 'admin_refunds' %}" {% if request.path|slice:":22" == "/api/v1/admin/refunds/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3"/></svg><span>Refunds</span>{% if admin_counts.refunds %}<span class="mm-adm-badge">{{ admin_counts.refunds }}</span>{% endif %}</a>
+        <a href="{% url 'admin_reports' %}" {% if request.path|slice:":22" == "/api/v1/admin/reports/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V4h11l1 3h4v9h-8l-1-3H4"/></svg><span>Reports</span>{% if admin_counts.reports %}<span class="mm-adm-badge">{{ admin_counts.reports }}</span>{% endif %}</a>
+        <div class="group">People &amp; sales</div>
+        <a href="{% url 'admin_users' %}" {% if request.path|slice:":20" == "/api/v1/admin/users/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg><span>Users</span></a>
+        <a href="{% url 'admin_dj_management' %}" {% if request.path|slice:":17" == "/api/v1/admin/dj/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>DJs</span>{% if admin_counts.djs %}<span class="mm-adm-badge">{{ admin_counts.djs }}</span>{% endif %}</a>
+        <a href="{% url 'admin_orders' %}" {% if request.path|slice:":21" == "/api/v1/admin/orders/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2l-3 4v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg><span>Orders</span></a>
+        <a href="{% url 'admin_payouts' %}" {% if request.path|slice:":22" == "/api/v1/admin/payouts/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3zM7 12h.01M17 12h.01M12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><span>Payouts</span>{% if admin_counts.payouts %}<span class="mm-adm-badge">{{ admin_counts.payouts }}</span>{% endif %}</a>
+        <a href="{% url 'admin_waitlist' %}" {% if request.path|slice:":23" == "/api/v1/admin/waitlist/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Waitlist</span></a>
+        <a href="{% url 'admin_messages' %}" {% if request.path|slice:":23" == "/api/v1/admin/messages/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM4 7l8 6 8-6"/></svg><span>Messages</span></a>
+        <div class="group">Shop</div>
+        <a href="{% url 'admin_catalog' %}" {% if request.path|slice:":22" == "/api/v1/admin/catalog/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>Catalog</span></a>
+        <a href="{% url 'admin_moderation_hub' %}" {% if request.path|slice:":22" == "/api/v1/admin/content/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Moderation</span></a>
+        <a href="{% url 'admin_offers_pricing' %}" {% if request.path|slice:":29" == "/api/v1/admin/offers-pricing/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01"/></svg><span>Offers & pricing</span></a>
+        <a href="{% url 'admin_revenue_dashboard' %}" {% if request.path|slice:":24" == "/api/v1/admin/analytics/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Revenue</span></a>
+        <div class="group">System</div>
+        <a href="{% url 'admin_settings' %}" {% if request.path|slice:":23" == "/api/v1/admin/settings/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Settings</span></a>
+        <a href="{% url 'admin_security_dashboard' %}" {% if request.path|slice:":23" == "/api/v1/admin/security/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 100-4 2 2 0 000 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M5 11V7a7 7 0 0114 0v4"/></svg><span>Security</span></a>
+        <a href="{% url 'admin_activity' %}" {% if request.path|slice:":23" == "/api/v1/admin/activity/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v4l3 3M3 12a9 9 0 1018 0 9 9 0 00-18 0"/></svg><span>Activity log</span></a>
+        <a href="{% url 'admin_health' %}" {% if request.path|slice:":21" == "/api/v1/admin/health/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Health</span></a>
         <div class="group">More</div>
-        <a href="{% url 'admin:index' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>All data (raw)</span></a>
         <a href="/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg><span>View shop</span></a>
+        <a href="{% url 'admin:index' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>Raw database</span></a>
     </nav>
     <div class="mm-adm-scrim" onclick="document.getElementById('mm-adm').classList.remove('open')"></div>
     <div class="mm-adm-main">

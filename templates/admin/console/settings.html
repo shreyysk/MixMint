@@ -1,0 +1,54 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Settings — MixMint Admin{% endblock %}
+{% block admin_content %}
+<div class="cx" style="max-width:960px">
+    <div class="cx-head"><div><h1>Settings</h1><p>Site-wide switches. Every change is written to the activity log.</p></div></div>
+    <div class="cx-grid">
+        <section class="cx-card" style="grid-column:1/-1">
+            <h2>Shop open or closed</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Now: {% if mode and mode.mode == "maintenance" %}<span class="cx-pill warn">Closed for maintenance</span> since {{ mode.created_at|date:"d M, H:i" }}{% elif mode and mode.mode == "kill_switch" %}<span class="cx-pill bad">Emergency stop</span> (turn it off on Security){% else %}<span class="cx-pill ok">Open</span>{% endif %}. Admins can always use the site.</p>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="mode">
+                <div class="cx-field"><label class="cx-label" for="mm">Message for visitors while closed</label><textarea id="mm" class="cx-textarea" name="message" style="min-height:80px" placeholder="We're upgrading MixMint. Back in about an hour.">{% if mode.mode == "maintenance" %}{{ mode.message }}{% endif %}</textarea></div>
+                <div class="cx-field" style="max-width:280px"><label class="cx-label" for="eta">Back at (optional)</label><input id="eta" class="cx-input" type="datetime-local" name="eta"></div>
+                <div class="cx-actions">
+                    <button class="cx-btn danger" name="mode" value="maintenance" onclick="return confirm('Close the shop for visitors?')">Close for maintenance</button>
+                    <button class="cx-btn primary" name="mode" value="normal">Open the shop</button>
+                </div>
+            </form>
+        </section>
+        <section class="cx-card">
+            <h2>GST invoices</h2>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="invoices">
+                <label class="cx-check" style="margin-bottom:12px"><input type="checkbox" name="enabled" {% if invoices_on %}checked{% endif %}> Create a GST invoice for every sale</label>
+                <button class="cx-btn primary">Save</button>
+            </form>
+        </section>
+        <section class="cx-card">
+            <h2>Cache</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Changes not showing up on the shop? Clear the cache.</p>
+            <form method="post">{% csrf_token %}<button class="cx-btn" name="action" value="clear_cache">Clear cache</button></form>
+        </section>
+        <section class="cx-card" style="grid-column:1/-1">
+            <h2>Other switches</h2>
+            <div class="cx-grid" style="gap:10px">
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_support' %}#payments">Payment gateway (Razorpay / PhonePe) →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_offers_pricing' %}">Commission, buyer fee, GST, DJ fee, banners →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_support' %}">Telegram bot &amp; file vault →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_security_dashboard' %}">Freeze accounts, IP bans, emergency stop →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_health' %}">System health →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_activity' %}">Activity log →</a>
+            </div>
+        </section>
+        <section class="cx-card" style="grid-column:1/-1">
+            <h2>Downloads (CSV)</h2>
+            <div class="cx-actions">
+                <a class="cx-btn" href="{% url 'admin_export' 'orders' %}">All orders</a>
+                <a class="cx-btn" href="{% url 'admin_export' 'users' %}">All users</a>
+                <a class="cx-btn" href="{% url 'admin_export' 'djs' %}">All DJs</a>
+                <a class="cx-btn" href="{% url 'admin_export' 'payouts' %}">All payouts</a>
+                <a class="cx-btn" href="{% url 'admin_export' 'waitlist' %}">Waitlist</a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
