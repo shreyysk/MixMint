@@ -129,9 +129,9 @@
     <a href="/" class="icon-btn" title="View the shop" aria-label="View the shop" target="_blank" rel="noopener">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>
     </a>
-    <button type="button" onclick="toggleTheme()" data-theme-toggle class="icon-btn" aria-label="Switch theme">
+    {% if dark_mode_enabled %}<button type="button" onclick="toggleTheme()" data-theme-toggle class="icon-btn" aria-label="Switch theme">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
-    </button>
+    </button>{% endif %}
     <span class="hidden sm:inline font-body text-[13px] text-[var(--text-muted)] max-w-[220px] truncate">{{ user.email }}</span>
     <form action="{% url 'logout' %}" method="post">{% csrf_token %}
         <button type="submit" class="icon-btn" title="Log out" aria-label="Log out">

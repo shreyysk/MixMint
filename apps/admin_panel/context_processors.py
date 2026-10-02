@@ -86,8 +86,16 @@ def global_settings(request):
             ads = {"client": v["client"], "slot": v["slot"]}
     except Exception:
         pass
+    dark_mode = False  # Light only unless the admin switches dark mode on (Admin -> Settings -> Appearance).
+    try:
+        from .models import SystemSetting
+
+        row = SystemSetting.objects.filter(key="dark_mode").first()
+        dark_mode = bool((row.value or {}).get("enabled")) if row and isinstance(row.value, dict) else bool(row and row.value)
+    except Exception:
+        pass
     ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share,
-           "dj_ad_share_percent": ad_share, "ads": ads}
+           "dj_ad_share_percent": ad_share, "ads": ads, "dark_mode_enabled": dark_mode}
     cache.set("global_settings_ctx", ctx, 30)
     return {**ctx, **test_mode}
 

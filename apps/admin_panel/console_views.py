@@ -852,6 +852,13 @@ def settings_view(request):
             SystemSetting.objects.update_or_create(key="invoice_generation_enabled", defaults={"value": on})
             _log(request, f"Invoice generation {'on' if on else 'off'}")
             messages.success(request, f"GST invoices are {'on' if on else 'off'}.")
+        elif action == "appearance":
+            on = bool(request.POST.get("dark_mode"))
+            SystemSetting.objects.update_or_create(key="dark_mode", defaults={"value": {"enabled": on}})
+            cache.delete("global_settings_ctx")
+            _log(request, f"Dark mode {'on' if on else 'off'}")
+            messages.success(request, "Dark mode is on. Visitors get a light/dark switch; it follows their device until they choose."
+                             if on else "Dark mode is off. Everyone sees the light theme and the theme switch is hidden.")
         elif action == "ads":
             client = (request.POST.get("client") or "").strip()[:60]
             slot = (request.POST.get("slot") or "").strip()[:40]
@@ -897,10 +904,12 @@ def settings_view(request):
     mode = MaintenanceMode.objects.order_by("-created_at").first()
     inv = SystemSetting.objects.filter(key="invoice_generation_enabled").first()
     ads = SystemSetting.objects.filter(key="ads").first()
+    dm = SystemSetting.objects.filter(key="dark_mode").first()
     periods = SystemSetting.objects.filter(key="ad_income_periods").first()
     return render(request, "admin/console/settings.html", {
         "mode": mode, "invoices_on": bool(inv.value) if inv else True,
         "ads": (ads.value or {}) if ads else {},
+        "dark_mode_on": bool((dm.value or {}).get("enabled")) if dm and isinstance(dm.value, dict) else False,
         "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
     })
 
