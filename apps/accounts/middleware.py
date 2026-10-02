@@ -177,6 +177,8 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
             "/social-auth/",  # staff can still sign in with Google during maintenance
             "/csp-report/",
             "/telegram/webhook/",  # admins answer support from Telegram during maintenance too
+            "/payment/webhook/",  # gateways confirming payments made just before maintenance
+            "/payouts/webhook/",  # payout providers confirming transfers
         )
         if request.path.startswith(paths):
             return True

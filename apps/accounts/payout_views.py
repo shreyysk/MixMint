@@ -74,6 +74,12 @@ def dj_payouts_view(request):
         messages.success(request, "Payout details saved.")
         return redirect("dj_payouts")
 
+    try:  # a transfer still "on its way"? ask the payouts provider (covers a missed webhook)
+        from apps.commerce.payout_gateway import sync_processing
+
+        sync_processing(max_items=3, dj=dj)
+    except Exception:
+        pass
     return render(request, "dashboard/dj_payouts.html", _ctx(dj))
 
 

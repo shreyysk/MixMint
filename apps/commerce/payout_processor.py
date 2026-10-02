@@ -82,12 +82,23 @@ def _process_single_payout(wallet_or_dj_id):
 
 
 def _notify_payout(payout):
+    # Automatic payouts: send it straight away through the payouts provider (no-op in manual mode).
+    result = "manual"
     try:
-        from apps.admin_panel.telegram import notify_admins
+        from .payout_gateway import dispatch
 
-        notify_admins(f"💸 Payout #{payout.id}: ₹{payout.amount} to {payout.dj.dj_name}. Send it, then mark it paid in Admin → Payouts.")
+        result = dispatch(payout.id)
     except Exception:
-        pass
+        import logging
+
+        logging.getLogger("mixmint").exception("Automatic payout dispatch failed for payout %s", payout.id)
+    if result == "manual":
+        try:
+            from apps.admin_panel.telegram import notify_admins
+
+            notify_admins(f"Payout #{payout.id}: ₹{payout.amount} to {payout.dj.dj_name}. Send it, then mark it paid in Admin → Payouts.")
+        except Exception:
+            pass
     try:
         from apps.core.email_service import EmailService
 

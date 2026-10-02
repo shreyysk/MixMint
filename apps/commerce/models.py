@@ -163,6 +163,12 @@ class Payout(models.Model):
     auto_retry_count = models.IntegerField(default=0)  # Auto retry on failure [Spec P2 §9]
     created_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
+    # Automatic payouts (apps/commerce/payout_gateway.py)
+    provider = models.CharField(max_length=20, blank=True, default="")  # "cashfree" | "razorpayx" | "" (manual)
+    provider_ref = models.CharField(max_length=100, blank=True, default="")
+    utr = models.CharField(max_length=64, blank=True, default="")
+    failure_reason = models.CharField(max_length=500, null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
 
 
 class DJApplicationFee(models.Model):

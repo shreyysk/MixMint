@@ -89,7 +89,7 @@
     <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
              x-data="{ code: '', busy: false, sent: false, sending: false,
                        async sendCode() { this.sending = true; try { const r = await MM.api('{% url 'dj_payout_code' %}', { body: { purpose: 'withdraw' } }); this.sent = true; MM.toast('success', r.message); this.$nextTick(() => document.getElementById('code_withdraw')?.focus()) } catch (e) { MM.toast('error', e.message) } this.sending = false },
-                       async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast('success', r.message); setTimeout(() => location.reload(), 1200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
+                       async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast(r.status === 'failed' ? 'error' : 'success', r.message); setTimeout(() => location.reload(), 2200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
         <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">2. Withdraw</h2>
         <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Withdraw once a week, on any day you like. We email you a 6-digit code to confirm it's you.</p>
         {% if not has_method %}
@@ -120,7 +120,7 @@
                 <thead class="bg-[var(--bg-elevated)] text-[12px] text-[var(--text-muted)]"><tr><th class="p-3">Date</th><th class="p-3">Amount</th><th class="p-3">Status</th><th class="p-3">Reference</th></tr></thead>
                 <tbody class="divide-y divide-[var(--border)]">
                 {% for p in payouts %}
-                <tr><td class="p-3 whitespace-nowrap">{{ p.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ p.amount|money }}</td><td class="p-3">{{ p.get_status_display }}</td><td class="p-3 font-mono text-[12px] break-all">{{ p.payment_reference|default:"—" }}</td></tr>
+                <tr><td class="p-3 whitespace-nowrap">{{ p.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ p.amount|money }}</td><td class="p-3">{% if p.status == "processing" %}On its way{% elif p.status == "completed" %}Paid{% else %}{{ p.get_status_display }}{% endif %}</td><td class="p-3 font-mono text-[12px] break-all">{% if p.status == "failed" and p.failure_reason %}<span class="font-body text-[var(--accent-red)]">{{ p.failure_reason }}</span>{% else %}{{ p.payment_reference|default:"—" }}{% endif %}</td></tr>
                 {% endfor %}
                 </tbody>
             </table>

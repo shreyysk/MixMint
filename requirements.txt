@@ -10,6 +10,7 @@ psycopg2-binary==2.9.10
 boto3==1.36.0
 razorpay==2.0.1
 PyJWT==2.13.0
+cryptography==50.0.1
 Pillow==12.3.0
 gunicorn==23.0.0
 whitenoise==6.8.2

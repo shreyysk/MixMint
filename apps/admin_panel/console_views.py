@@ -37,6 +37,7 @@ from apps.accounts.models import DJProfile, InAppNotification, LoginHistory, Pro
 from apps.albums.models import AlbumPack
 from apps.commerce.models import Bundle, Payout, Purchase, RefundRequest, WebhookLog
 from apps.core.net import get_client_ip
+from apps.commerce import payout_gateway
 from apps.core.genres import GENRES
 from apps.tracks.models import Track
 
@@ -869,6 +870,23 @@ def settings_view(request):
             SystemSetting.objects.update_or_create(key="invoice_generation_enabled", defaults={"value": on})
             _log(request, f"Invoice generation {'on' if on else 'off'}")
             messages.success(request, f"GST invoices are {'on' if on else 'off'}.")
+        elif action == "auto_payouts":
+            from apps.commerce.payout_gateway import PROVIDERS
+
+            on = bool(request.POST.get("enabled"))
+            provider = request.POST.get("provider") if request.POST.get("provider") in PROVIDERS else "cashfree"
+            try:
+                limit = max(500, min(200000, int(float(request.POST.get("auto_limit") or 10000))))
+            except ValueError:
+                limit = 10000
+            first = bool(request.POST.get("first_needs_approval"))
+            if on and not PROVIDERS[provider].configured():
+                messages.error(request, f"Add the {PROVIDERS[provider].label} keys in Vercel first (see the list on this card), then switch automatic payouts on.")
+                return redirect("admin_settings")
+            SystemSetting.objects.update_or_create(key="auto_payouts", defaults={"value": {
+                "enabled": on, "provider": provider, "auto_limit": limit, "first_needs_approval": first}})
+            _log(request, f"Automatic payouts {'on' if on else 'off'}", provider=provider, auto_limit=limit, first_needs_approval=first)
+            messages.success(request, f"Automatic payouts are on through {PROVIDERS[provider].label}." if on else "Automatic payouts are off. Payouts wait for you in Admin → Payouts.")
         elif action == "appearance":
             on = bool(request.POST.get("dark_mode"))
             SystemSetting.objects.update_or_create(key="dark_mode", defaults={"value": {"enabled": on}})
@@ -926,6 +944,9 @@ def settings_view(request):
     return render(request, "admin/console/settings.html", {
         "mode": mode, "invoices_on": bool(inv.value) if inv else True,
         "ads": (ads.value or {}) if ads else {},
+        "payout_cfg": payout_gateway.config(),
+        "payout_providers": [(k, v.label, v.configured()) for k, v in payout_gateway.PROVIDERS.items()],
+        "site_url": request.build_absolute_uri("/").rstrip("/"),
         "dark_mode_on": bool((dm.value or {}).get("enabled")) if dm and isinstance(dm.value, dict) else False,
         "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
     })

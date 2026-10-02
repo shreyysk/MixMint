@@ -1072,7 +1072,7 @@ def payouts_admin_view(request):
             messages.error(request, "Add the bulk transfer / batch reference so DJs can match the payment.")
             return redirect("admin_payouts")
         ids = [int(x) for x in request.POST.getlist("ids") if str(x).isdigit()]
-        qs = Payout.objects.filter(status__in=["pending", "processing"])
+        qs = Payout.objects.filter(status__in=["pending", "processing"], provider="")  # never touch payouts in flight with a provider
         if ids:
             qs = qs.filter(pk__in=ids)
         now = timezone.now()
@@ -1095,7 +1095,7 @@ def payouts_admin_view(request):
         resp.write("\ufeff")
         w = csv.writer(resp)
         w.writerow(["payout_id", "dj_name", "email", "amount", "method", "upi_id", "account_name", "account_number", "ifsc", "requested"])
-        for p in Payout.objects.filter(status__in=["pending", "processing"]).select_related("dj__profile__user").order_by("created_at"):
+        for p in Payout.objects.filter(status__in=["pending", "processing"], provider="").select_related("dj__profile__user").order_by("created_at"):
             dj = p.dj
             method = (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank")
             w.writerow([p.id, dj.dj_name, dj.profile.user.email, p.amount, method, dj.upi_id or "",
@@ -1104,12 +1104,19 @@ def payouts_admin_view(request):
         _log_admin_action(request, "Downloaded payouts-to-send file")
         return resp
 
+    if request.method == "POST" and request.POST.get("action") == "check":
+        from apps.commerce.payout_gateway import sync_processing
+
+        r = sync_processing()
+        messages.success(request, f"Checked {r['checked']} payout(s) with the provider: {r['paid']} paid, {r['failed']} failed.")
+        return redirect("admin_payouts")
+
     if request.method == "POST":
         payout = Payout.objects.filter(pk=request.POST.get("payout_id")).select_related("dj").first()
         action = request.POST.get("action")
         if payout is None:
             messages.error(request, "Payout not found.")
-        elif action == "paid" and payout.status in ("pending", "processing", "failed"):
+        elif action == "paid" and payout.status in ("pending", "processing"):
             ref = (request.POST.get("reference") or "").strip()[:255]
             if not ref:
                 messages.error(request, "Add the UPI / bank reference number so the DJ can match the payment.")
@@ -1119,25 +1126,22 @@ def payouts_admin_view(request):
             _log_admin_action(request, f"Marked payout #{payout.id} paid", metadata={"reference": ref})
             messages.success(request, f"Payout #{payout.id} to {payout.dj.dj_name} marked as paid.")
         elif action == "failed" and payout.status in ("pending", "processing"):
-            from apps.commerce.models import DJWallet, LedgerEntry
-            from django.db import transaction
+            from apps.commerce.payout_gateway import reverse_payout
 
-            with transaction.atomic():
-                wallet = DJWallet.objects.select_for_update().get(dj=payout.dj)
-                wallet.available_for_payout += payout.amount
-                wallet.pending_earnings += payout.amount
-                wallet.save(update_fields=["available_for_payout", "pending_earnings", "updated_at"])
-                LedgerEntry.objects.create(
-                    wallet=wallet, amount=payout.amount, entry_type="credit",
-                    description=f"Payout #{payout.id} failed - returned to balance",
-                    metadata={"payout_id": payout.id, "type": "payout_reversal"},
-                )
-                payout.status = "failed"
-                payout.hold_reason = (request.POST.get("reason") or "").strip()[:500] or None
-                payout.auto_retry_count = 99  # money went back to the balance: never auto-retry this one
-                payout.save(update_fields=["status", "hold_reason", "auto_retry_count"])
+            reverse_payout(payout.id, (request.POST.get("reason") or "").strip()[:500] or "Marked failed by admin", by_admin=True)
             _log_admin_action(request, f"Marked payout #{payout.id} failed; money returned to DJ balance")
             messages.success(request, f"Payout #{payout.id} marked failed. The money is back in the DJ's balance.")
+        elif action == "send" and payout.status == "pending":
+            from apps.commerce.payout_gateway import active_provider, dispatch
+
+            if active_provider() is None:
+                messages.error(request, "Automatic payouts are off or the provider keys are missing (Admin → Settings → Automatic payouts).")
+                return redirect("admin_payouts")
+            out = dispatch(payout.id, approved_by=request.user.email)
+            _log_admin_action(request, f"Approved and sent payout #{payout.id} automatically", metadata={"result": out})
+            messages.success(request, {"completed": f"Payout #{payout.id} sent and confirmed.",
+                                       "processing": f"Payout #{payout.id} sent. It will be marked paid when the bank confirms.",
+                                       "failed": f"Payout #{payout.id} was declined; the money is back in the DJ's balance."}.get(out, f"Payout #{payout.id}: {out}."))
         else:
             messages.error(request, "That action isn't possible for this payout.")
         return redirect("admin_payouts")
@@ -1149,9 +1153,13 @@ def payouts_admin_view(request):
         rows.append({"p": p, "dj": dj, "method": (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank"),
                      "account_name": (dj.payout_details or {}).get("account_name", "")})
     recent = Payout.objects.exclude(status__in=["pending", "processing", "held"]).select_related("dj").order_by("-created_at")[:30]
-    sendable = [r for r in rows if r["p"].status in ("pending", "processing")]
+    sendable = [r for r in rows if r["p"].status in ("pending", "processing") and not r["p"].provider]
     total = sum((r["p"].amount for r in sendable), Decimal("0"))
-    return render(request, "admin/payouts.html", {"rows": rows, "recent": recent, "sendable": len(sendable), "sendable_total": total})
+    from apps.commerce.payout_gateway import PROVIDERS, active_provider, config as payout_config
+
+    auto = active_provider()
+    return render(request, "admin/payouts.html", {"rows": rows, "recent": recent, "sendable": len(sendable), "sendable_total": total,
+                                                  "auto": auto, "auto_cfg": payout_config(), "providers": PROVIDERS})
 
 
 @api_view(["GET", "POST"])

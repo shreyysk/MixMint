@@ -23,6 +23,27 @@
                 <button class="cx-btn primary">Save</button>
             </form>
         </section>
+        <section class="cx-card" style="grid-column:1/-1" id="auto-payouts">
+            <h2>Automatic payouts</h2>
+            <p class="cx-muted" style="margin-bottom:12px">When on, a DJ's withdrawal is sent straight to their UPI ID or bank account and marked paid when the bank confirms. PhonePe can't send money out, so this uses a payouts provider funded from your bank. A failed transfer puts the money back in the DJ's balance automatically.</p>
+            <form method="post" class="cx-grid" style="gap:0 16px;align-items:end;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">{% csrf_token %}<input type="hidden" name="action" value="auto_payouts">
+                <div class="cx-field"><label class="cx-label" for="ap-provider">Provider</label>
+                    <select id="ap-provider" class="cx-input" name="provider">{% for key, label, ready in payout_providers %}<option value="{{ key }}" {% if payout_cfg.provider == key %}selected{% endif %}>{{ label }}{% if not ready %} (keys missing){% endif %}</option>{% endfor %}</select></div>
+                <div class="cx-field"><label class="cx-label" for="ap-limit">Send automatically up to (₹)</label>
+                    <input id="ap-limit" class="cx-input" type="number" name="auto_limit" min="500" max="200000" step="100" value="{{ payout_cfg.auto_limit|floatformat:0 }}"></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="first_needs_approval" {% if payout_cfg.first_needs_approval %}checked{% endif %}> Check each DJ's first payout myself</label></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="enabled" {% if payout_cfg.enabled %}checked{% endif %}> Send payouts automatically</label></div>
+                <div class="cx-field"><button class="cx-btn primary">Save</button></div>
+            </form>
+            <div class="cx-sep"></div>
+            <details><summary class="cx-label" style="cursor:pointer">Setup: keys and webhook addresses</summary>
+                <div class="cx-muted" style="margin-top:10px;line-height:1.7">
+                    <p><b>Cashfree Payouts</b> (works on Vercel; no fixed IP needed): in Vercel add <code>CASHFREE_PAYOUT_CLIENT_ID</code>, <code>CASHFREE_PAYOUT_CLIENT_SECRET</code>, <code>CASHFREE_PAYOUT_PUBLIC_KEY</code> (the 2FA public key .pem text) and <code>CASHFREE_PAYOUT_ENV=production</code>. Webhook URL: <code>{{ site_url }}/payouts/webhook/cashfree/</code> (V2 transfer events).</p>
+                    <p><b>RazorpayX</b> (needs your server IP allowlisted with Razorpay): add <code>RAZORPAYX_KEY_ID</code>, <code>RAZORPAYX_KEY_SECRET</code>, <code>RAZORPAYX_ACCOUNT_NUMBER</code>, <code>RAZORPAYX_WEBHOOK_SECRET</code>. Webhook URL: <code>{{ site_url }}/payouts/webhook/razorpayx/</code> (payout.processed, payout.failed, payout.reversed).</p>
+                    <p>Test with sandbox keys first, then switch to production keys. Keep enough balance in the payouts account for a week of withdrawals.</p>
+                </div>
+            </details>
+        </section>
         <section class="cx-card">
             <h2>Appearance</h2>
             <p class="cx-muted" style="margin-bottom:12px">The site uses the light theme. Turn dark mode on to give visitors a light/dark switch (it follows their device setting until they pick one).</p>

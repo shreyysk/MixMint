@@ -503,6 +503,17 @@ PRO_DJ_COMMISSION_RATE = 0.08  # 8% for Pro DJs [Spec P3 §1.5]
 DJ_AD_REVENUE_SHARE = 0.15  # 15% ad revenue to DJ [Spec P3 §1.2]
 CHECKOUT_FEE = 5.00  # ₹5 service fee [Spec P3 §1.3]
 MIN_PAYOUT_THRESHOLD = 500.00  # ₹500 [Spec P2 §9]
+
+# Automatic payouts (Admin -> Settings -> Automatic payouts). PhonePe can't send money out, so payouts
+# go through Cashfree Payouts (works from Vercel with the 2FA public key) or RazorpayX (needs IP allowlist).
+CASHFREE_PAYOUT_CLIENT_ID = env("CASHFREE_PAYOUT_CLIENT_ID", default="")
+CASHFREE_PAYOUT_CLIENT_SECRET = env("CASHFREE_PAYOUT_CLIENT_SECRET", default="")
+CASHFREE_PAYOUT_PUBLIC_KEY = env("CASHFREE_PAYOUT_PUBLIC_KEY", default="")  # the .pem text from Cashfree (2FA)
+CASHFREE_PAYOUT_ENV = env("CASHFREE_PAYOUT_ENV", default="sandbox")  # "sandbox" or "production"
+RAZORPAYX_KEY_ID = env("RAZORPAYX_KEY_ID", default="")
+RAZORPAYX_KEY_SECRET = env("RAZORPAYX_KEY_SECRET", default="")
+RAZORPAYX_ACCOUNT_NUMBER = env("RAZORPAYX_ACCOUNT_NUMBER", default="")
+RAZORPAYX_WEBHOOK_SECRET = env("RAZORPAYX_WEBHOOK_SECRET", default="")
 DJ_APPLICATION_FEE = 99.00  # ₹99 [Spec §7]
 MIN_TRACK_PRICE = 29.00  # ₹29 [CP-06.02 FIX]
 MIN_ALBUM_PRICE = 49.00  # ₹49 [Spec §3.2]

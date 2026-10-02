@@ -5,8 +5,19 @@
 <div class="max-w-[1100px] mx-auto py-10 px-4 font-body space-y-10">
     <div>
         <h1 class="font-display text-[32px] md:text-[40px] font-[700] text-[var(--text-primary)] tracking-tight leading-none">Payouts</h1>
-        <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Payouts are created every week (and when a DJ taps Withdraw). Send the money from your bank or UPI app, then mark it paid here with the reference number — the DJ sees it on their Payouts page.</p>
+        {% if auto %}
+        <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Automatic payouts are on through <b>{{ auto.label }}</b>. When a DJ taps Withdraw (and in the Friday run) the money is sent straight to their UPI ID or bank, and marked paid when the bank confirms. Payouts above {{ auto_cfg.auto_limit|money }}{% if auto_cfg.first_needs_approval %} and each DJ's first payout{% endif %} wait here for your OK.</p>
+        {% else %}
+        <p class="text-[var(--text-muted)] text-[14px] mt-2 max-w-2xl">Payouts are created every week (and when a DJ taps Withdraw). Send the money from your bank or UPI app, then mark it paid here with the reference number. The DJ sees it on their Payouts page. <a class="underline" href="{% url 'admin_settings' %}#auto-payouts">Switch on automatic payouts</a> to have them sent for you.</p>
+        {% endif %}
     </div>
+
+    {% if auto %}
+    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <p class="text-[14px] text-[var(--text-muted)]">Waiting for the bank? Webhooks update payouts automatically; you can also ask {{ auto.label }} now.</p>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="check"><button class="btn-mm btn-ghost h-[44px] px-5 text-[14px] inline-flex items-center gap-2">{% icon "refresh-cw" %} Check status now</button></form>
+    </section>
+    {% endif %}
 
     {% if sendable %}
     <section class="bg-[var(--bg-surface)] border border-[var(--accent-mint)]/40 rounded-[14px] p-5 md:p-6">
@@ -39,8 +50,16 @@
                         {% if r.dj.pan_number %}<br>PAN: {{ r.dj.pan_number }}{% endif %}
                     </div>
                 </div>
-                {% if r.p.status != 'held' %}
+                {% if r.p.status == 'processing' and r.p.provider %}
+                <p class="text-[13px] text-[var(--text-muted)] md:w-[300px]">Sent through {{ r.p.provider|title }} {{ r.p.sent_at|timesince }} ago. Waiting for the bank to confirm{% if r.p.failure_reason %} ({{ r.p.failure_reason }}){% endif %}.</p>
+                {% elif r.p.status != 'held' %}
                 <div class="flex flex-col gap-2 md:w-[300px] shrink-0">
+                    {% if auto and r.p.status == 'pending' %}
+                    <form method="post" onsubmit="return confirm('Send {{ r.p.amount }} to {{ r.dj.dj_name|escapejs }} now through {{ auto.label }}?')">
+                        {% csrf_token %}<input type="hidden" name="payout_id" value="{{ r.p.id }}"><input type="hidden" name="action" value="send">
+                        <button class="btn-mm btn-mint h-[42px] px-4 text-[13px] w-full">Approve &amp; send automatically</button>
+                    </form>
+                    {% endif %}
                     <form method="post" class="flex gap-2">
                         {% csrf_token %}<input type="hidden" name="payout_id" value="{{ r.p.id }}"><input type="hidden" name="action" value="paid">
                         <label class="sr-only" for="ref-{{ r.p.id }}">Payment reference</label>

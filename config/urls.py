@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.commerce import payout_webhooks  # noqa: E402
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -93,6 +94,8 @@ urlpatterns = [
     # Payment return/notification aliases for orders created before the URL fix.
     path("payment/callback/", payment_views.payment_callback),
     path("payment/webhook/phonepe/", phonepe_webhook),
+    path("payouts/webhook/cashfree/", payout_webhooks.cashfree_payout_webhook, name="cashfree_payout_webhook"),
+    path("payouts/webhook/razorpayx/", payout_webhooks.razorpayx_payout_webhook, name="razorpayx_payout_webhook"),
     path("payment/webhook/phonepe/refund/", phonepe_webhook),
     path("checkout/", RedirectView.as_view(url="/cart/", permanent=False)),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
