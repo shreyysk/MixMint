@@ -29,7 +29,7 @@
                 <p class="text-[12px] text-[var(--text-muted)] text-center mt-2">or pick individual songs below ↓</p>
                 {% endif %}
                 <div class="mm-trust mt-4 !justify-start">
-                    <span>🔒 Payments secured by {{ payment_gateway_label }}</span><span>⚡ Instant download</span><span><a href="{% url 'recover' %}" class="underline">Recover a past download</a></span>
+                    <span>{% icon "lock" %} Payments secured by {{ payment_gateway_label }}</span><span>{% icon "zap" %} Instant download</span><span><a href="{% url 'recover' %}" class="underline">Recover a past download</a></span>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                     <a href="{% url 'track_detail' t.pk %}" class="block text-[15px] font-[600] text-[var(--text-primary)] truncate hover:text-[var(--accent-mint)]">{{ t.title }}</a>
                     <p class="text-[12px] text-[var(--text-muted)] truncate">{{ t.genre|default:"" }}{% if t.bpm %}{% if t.genre %} · {% endif %}{{ t.bpm }} BPM{% endif %}</p>
                 </div>
-                {% if t.id in owned %}<span class="text-[12px] font-[700] text-[var(--accent-mint)] shrink-0">Owned ✓</span>
+                {% if t.id in owned %}<span class="text-[12px] font-[700] text-[var(--accent-mint)] shrink-0">Owned {% icon "check" %}</span>
                 {% else %}<a href="{% url 'track_detail' t.pk %}?buy=1" class="h-[36px] px-3 rounded-[10px] border border-[var(--border)] text-[13px] font-[600] inline-flex items-center shrink-0 hover:border-[var(--accent-mint)]">{{ t.price|price_label }}</a>{% endif %}
             </li>
             {% endfor %}

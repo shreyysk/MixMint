@@ -14,6 +14,7 @@
   .mm-adm-search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font-size: 14px; color: var(--text-primary); }
   .mm-adm-search:focus-within { border-color: var(--accent-mint); }
   @media (max-width: 640px) { .mm-adm-top .brand .mm-adm-pill { display: none; } .mm-adm-search { margin-left: 4px; } .mm-adm-top .spacer { display: none; } }
+  @media (max-width: 640px) { .mm-adm-top { gap: 6px; padding: 0 10px; } .mm-adm-search { flex: 1 1 0; min-width: 0; max-width: none; } .mm-adm-top a.icon-btn[target], .mm-adm-top [data-theme-toggle] { display: none; } }
   .mm-adm-top .icon-btn { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); }
   .mm-adm-top .icon-btn:hover { background: var(--border); color: var(--text-primary); }
   .mm-adm-side { position: sticky; top: 64px; align-self: start; height: calc(100vh - 64px); overflow-y: auto; padding: 20px 12px;
@@ -21,6 +22,7 @@
   .mm-adm-side .group { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); padding: 14px 12px 6px; }
   .mm-adm-side a { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
   .mm-adm-side a svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .mm-adm-side a.mm-adm-sub { min-height: 36px; padding-left: 42px; font-size: 13px; }
   .mm-adm-side a:hover { background: var(--bg-elevated); color: var(--text-primary); }
   .mm-adm-side a[aria-current="page"] { background: color-mix(in srgb, var(--accent-mint) 14%, transparent); color: var(--text-primary); font-weight: 600; }
   .mm-adm-side a[aria-current="page"] svg { color: var(--accent-mint); }
@@ -160,7 +162,9 @@
         <a href="{% url 'admin_catalog' %}" {% if request.path|slice:":22" == "/api/v1/admin/catalog/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>Catalog</span></a>
         <a href="{% url 'admin_moderation_hub' %}" {% if request.path|slice:":22" == "/api/v1/admin/content/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Moderation</span></a>
         <a href="{% url 'admin_offers_pricing' %}" {% if request.path|slice:":29" == "/api/v1/admin/offers-pricing/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01"/></svg><span>Offers & pricing</span></a>
-        <a href="{% url 'admin_revenue_dashboard' %}" {% if request.path|slice:":24" == "/api/v1/admin/analytics/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Revenue</span></a>
+        <a href="{% url 'admin_revenue_dashboard' %}" {% if request.path == "/api/v1/admin/analytics/revenue-dashboard/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Revenue</span></a>
+        <a href="{% url 'admin_investor_report' %}" class="mm-adm-sub" {% if request.path == "/api/v1/admin/analytics/investor-report/" %}aria-current="page"{% endif %}><span>Investor report</span></a>
+        <a href="{% url 'admin_investor_report_pdf' %}" class="mm-adm-sub"><span>Investor report (PDF)</span></a>
         <div class="group">System</div>
         <a href="{% url 'admin_settings' %}" {% if request.path|slice:":23" == "/api/v1/admin/settings/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Settings</span></a>
         <a href="{% url 'admin_security_dashboard' %}" {% if request.path|slice:":23" == "/api/v1/admin/security/" %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 100-4 2 2 0 000 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M5 11V7a7 7 0 0114 0v4"/></svg><span>Security</span></a>

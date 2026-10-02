@@ -29,7 +29,7 @@
                 <dt>DJ gets</dt><dd class="font-mono">{{ p.dj_earnings|money }}</dd>
                 <dt>Commission</dt><dd class="font-mono">{{ p.commission|money }}</dd>
                 <dt>Buyer fee</dt><dd class="font-mono">{{ p.platform_fee|money }}</dd>
-                {% if invoice %}<dt>Invoice</dt><dd>{{ invoice.invoice_number }} · {{ invoice.total_amount|money }} (GST {{ invoice.tax_amount|money }})</dd>{% endif %}
+                {% if invoice %}<dt>Invoice</dt><dd>{{ invoice.invoice_number }} · {{ invoice.total_amount|money }}{% if platform_settings.gst_charging_enabled %} (GST {{ invoice.tax_amount|money }}){% endif %}</dd>{% endif %}
             </dl>
         </section>
         <section class="cx-card">

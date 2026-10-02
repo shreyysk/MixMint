@@ -674,9 +674,17 @@ def ambassador_management_view(request):
     # We use select_related('user') to get the User model data.
     referrals = dj_profile.referrals.select_related("user").order_by("-created_at")[:20]
 
+    from apps.commerce.dj_conversion import DJReferralProgram
+    from apps.commerce.referrals import MAX_REFERRALS
+
+    programs = DJReferralProgram.objects.filter(referrer=dj_profile)
     context = {
         "ambassador": ambassador,
         "referrals": referrals,
+        "max_referrals": MAX_REFERRALS,
+        "referral_used": programs.count(),
+        "referral_successful": programs.filter(first_sale_achieved=True).count(),
+        "referral_earned": sum(r.referrer_bonus for r in programs.filter(referrer_paid=True)),
         "referral_url": f"{request.build_absolute_uri('/')}?ref={ambassador.code}" if ambassador else None,
     }
     return render(request, "dashboard/ambassador.html", context)

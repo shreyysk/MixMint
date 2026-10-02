@@ -18,9 +18,9 @@
 
             <div class="relative z-10 transition-transform duration-500 group-hover:scale-110">
                 {% if mode == 'maintenance' %}
-                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,184,0,0.4)]">🛠️</span>
+                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,184,0,0.4)]">{% icon "wrench" %}</span>
                 {% else %}
-                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,51,85,0.4)]">🚨</span>
+                <span class="text-6xl drop-shadow-[0_0_15px_rgba(255,51,85,0.4)]">{% icon "siren" %}</span>
                 {% endif %}
             </div>
         </div>

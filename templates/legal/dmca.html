@@ -2,7 +2,7 @@
 {% block title %}Copyright & DMCA — MixMint{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-20 px-6 font-body">
+<div class="mm-legal max-w-4xl mx-auto py-20 px-6 font-body">
     <!-- ── Header ── -->
     <div class="mb-16 border-b border-[var(--border)] pb-12">
         <p class="font-mono text-[10px] text-[var(--accent-red)] uppercase tracking-[0.4em] mb-4">Copyright & DMCA</p>
@@ -56,11 +56,21 @@
                             <span>Your contact details: email and postal address.</span>
                         </li>
                     </ul>
-                    <div class="mt-8 pt-6 border-t border-[var(--border)]">
-                        <p class="font-mono text-[10px] uppercase text-[var(--text-muted)] mb-3">Send a takedown request:</p>
-                        <a href="mailto:dmca@mixmint.site" class="btn-mm btn-mint h-12 px-8 flex items-center justify-center gap-2 font-bold text-[13px] uppercase tracking-wider w-fit">
-                            dmca@mixmint.site
-                        </a>
+                    <div class="mt-8 pt-6 border-t border-[var(--border)]" id="notice">
+                        <h3 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-1">Send a takedown notice</h3>
+                        <p class="text-[14px] mb-5">It reaches our team straight away. We act within 24 hours and email you the outcome.</p>
+                        <form method="post" action="{% url 'report_content' %}" class="grid gap-4 max-w-[560px]">
+                            {% csrf_token %}<input type="hidden" name="report_type" value="copyright">
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div><label for="dm-name" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Your full name</label><input id="dm-name" name="name" required maxlength="120" class="input-mm w-full" value="{{ user.profile.full_name|default:'' }}"></div>
+                                <div><label for="dm-email" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Email</label><input id="dm-email" name="email" type="email" required class="input-mm w-full" value="{{ user.email|default:'' }}"></div>
+                            </div>
+                            <div><label for="dm-link" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Link to the release on MixMint</label><input id="dm-link" name="release_url" type="url" required class="input-mm w-full" placeholder="https://mixmint.site/tracks/123/"></div>
+                            <div><label for="dm-proof" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">Link to your original work <span class="font-normal text-[var(--text-muted)]">(Spotify, YouTube, label page…)</span></label><input id="dm-proof" name="evidence_url" type="url" class="input-mm w-full"></div>
+                            <div><label for="dm-reason" class="block text-[13px] font-[600] text-[var(--text-primary)] mb-1.5">What is yours, and how is it used here?</label><textarea id="dm-reason" name="reason" required minlength="10" rows="5" class="input-mm w-full" style="height:auto;min-height:120px" placeholder="Name of the work, who owns it, and your postal address."></textarea></div>
+                            <label class="flex items-start gap-2.5 text-[14px]"><input type="checkbox" name="sworn" value="1" required class="mt-1 w-[18px] h-[18px] accent-[var(--accent-mint)]"> I own the rights to this work or am authorised to act for the owner, and the information in this notice is accurate. Typing my name above counts as my signature.</label>
+                            <button type="submit" class="btn-mm btn-mint h-12 px-8 w-full sm:w-fit">Send takedown notice</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -72,7 +82,7 @@
                 <h2 class="font-display text-[22px] font-bold text-[var(--text-primary)] uppercase tracking-tight">Counter-notification</h2>
             </div>
             <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] space-y-4 ml-10">
-                <p>If a DJ believes their asset was removed by mistake or misidentification, a counter-notification can be submitted to the same address. False claims are subject to immediate vault forfeiture.</p>
+                <p>If a DJ believes their asset was removed by mistake or misidentification, a counter-notification can be sent through Help or the contact page. False claims are subject to immediate vault forfeiture.</p>
             </div>
         </section>
 

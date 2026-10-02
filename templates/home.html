@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
 {% load tracks_filters %}
-{% block title %}Dashboard — MixMint{% endblock %}
+{% block title %}MixMint — Home of DJ Releases{% endblock %}
 
 {% block extra_head %}
 <style>
+    .mm-hero-title { font-size: clamp(44px, 11vw, 104px); line-height: .95; text-wrap: balance; }
     .hero-section {
-        min-height: 100dvh;
+        min-height: min(82dvh, 760px);
+        padding-block: 56px 40px;
         position: relative;
         display: flex;
         flex-direction: column;
@@ -133,15 +135,15 @@
     <div class="ux-blob" style="width:420px;height:420px;top:-140px;left:-120px;background:var(--accent-mint);"></div>
     <div class="ux-blob" style="width:340px;height:340px;top:-80px;right:-100px;background:var(--accent-blue);animation-delay:-4s;"></div>
     <div class="relative z-10 w-full max-w-5xl px-4">
-        <p class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[12px] font-[600] text-[var(--text-muted)] mb-7">
+        <p class="inline-flex flex-wrap justify-center items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[12px] font-[600] text-[var(--text-muted)] mb-7 max-w-full">
             <span class="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse" aria-hidden="true"></span>
             Live crate · {{ crate.releases }} release{{ crate.releases|pluralize }} · {{ crate.djs }} DJ{{ crate.djs|pluralize }} · updated weekly
         </p>
-        <h1 class="font-display text-[52px] sm:text-[80px] lg:text-[96px] font-[800] leading-[0.92] tracking-[-0.035em] text-[var(--text-primary)] mb-6">
-            Unreleased.<br>Unheard.<br><span class="text-[var(--accent-mint)]">DJ-only.</span>
+        <h1 class="mm-hero-title font-display font-[800] tracking-[-0.035em] text-[var(--text-primary)] mb-6">
+            Home of<br><span class="text-[var(--accent-mint)]">DJ Releases.</span>
         </h1>
         <p class="font-body text-[17px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.55] mb-10">
-            Private edits, remixes and album packs straight from India's DJs. Preview, pay once with just your email, download instantly.
+            Private edits, remixes and album packs straight from India's DJs. Preview it, pay with just your email and download instantly.
         </p>
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
             <a href="{% url 'releases' %}" class="btn-mm btn-mint w-full sm:w-auto sm:min-w-[220px] px-7 h-[54px] text-[15px] font-[700] inline-flex items-center justify-center">Browse all releases</a>
@@ -159,127 +161,37 @@
 <div class="ticker-wrap">
     <div class="ticker">
         <!-- Sequence 1 -->
-        <div class="ticker-item">🔒 Secure Token Downloads</div>
-        <div class="ticker-item">{{ dj_share_percent|default:85 }}% to the DJ</div>
-        <div class="ticker-item">📦 ZIP Album Packs</div>
+        <div class="ticker-item">{% icon "lock" %} Secure Token Downloads</div>
+        <div class="ticker-item">100% earning opportunity for DJs</div>
+        <div class="ticker-item">{% icon "package" %} ZIP Album Packs</div>
         <div class="ticker-item">No Streaming</div>
         <div class="ticker-item">Device-Locked Files</div>
-        <div class="ticker-item">🇮🇳 India-First Platform</div>
+        <div class="ticker-item">{% icon "map-pin" %} India-First Platform</div>
         <div class="ticker-item">No Subscriptions</div>
         <!-- Sequence 2 (duplicate for seamless loop) -->
-        <div class="ticker-item">🔒 Secure Token Downloads</div>
-        <div class="ticker-item">{{ dj_share_percent|default:85 }}% to the DJ</div>
-        <div class="ticker-item">📦 ZIP Album Packs</div>
+        <div class="ticker-item">{% icon "lock" %} Secure Token Downloads</div>
+        <div class="ticker-item">100% earning opportunity for DJs</div>
+        <div class="ticker-item">{% icon "package" %} ZIP Album Packs</div>
         <div class="ticker-item">No Streaming</div>
         <div class="ticker-item">Device-Locked Files</div>
-        <div class="ticker-item">🇮🇳 India-First Platform</div>
+        <div class="ticker-item">{% icon "map-pin" %} India-First Platform</div>
         <div class="ticker-item">No Subscriptions</div>
     </div>
 </div>
 
-<!-- ── FEATURED DJS ── -->
-<section class="py-24">
-    <div class="mm-section-head">
-        <h2 class="font-display text-[24px] md:text-[28px] font-[700] text-[var(--text-primary)]">DJs on MixMint</h2>
-        <a href="{% url 'dj_directory' %}">All DJs →</a>
-    </div>
-
-    <div class="flex overflow-x-auto hide-scroll gap-6 pb-4 cursor-grab active:cursor-grabbing snap-x">
-        {% for dj in featured_djs %}
-        <a href="{% url 'dj_profile' dj.slug %}" class="dj-card snap-center group">
-            <div class="relative h-[60%] w-full overflow-hidden border-b border-[var(--border)]">
-                <div class="w-full h-full bg-[var(--bg-elevated)] flex items-center justify-center dj-photo">
-                    {% if dj.profile.avatar_url %}
-                    <img loading="lazy" decoding="async" src="{{ dj.profile.avatar_url }}" alt="{{ dj.dj_name }}" class="w-full h-full object-cover">
-                    {% else %}
-                    <span class="mm-avatar w-20 h-20 text-[26px]" aria-hidden="true">{{ dj.dj_name|initials }}</span>
-                    {% endif %}
-                </div>
-                <!-- Verified Badge -->
-                {% if dj.is_verified %}
-                <div class="absolute top-2 right-2 text-[var(--accent-mint)]" title="Verified DJ">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path
-                            d="M12 2L15.09 5.09L19.5 4.5L20.09 8.91L23.18 12L20.09 15.09L19.5 19.5L15.09 18.91L12 22L8.91 18.91L4.5 19.5L3.91 15.09L0.82 12L3.91 8.91L4.5 4.5L8.91 5.09L12 2ZM10.96 15.48L17.32 9.12L15.91 7.71L10.96 12.66L8.14 9.84L6.73 11.25L10.96 15.48Z" />
-                    </svg>
-                </div>
-                {% endif %}
-            </div>
-            <div class="h-[40%] p-3 flex flex-col justify-between" style="background: var(--bg-surface);">
-                <div>
-                    <h3 class="font-body text-[15px] font-[600] text-[var(--text-primary)] truncate">{{ dj.dj_name }}</h3>
-                    <div class="flex flex-wrap gap-1 mt-1">
-                        {% for genre in dj.genres|slice:":2" %}
-                        <span class="px-1.5 py-0.5 rounded-sm bg-[var(--bg-elevated)] text-[var(--text-muted)] font-mono text-[9px] uppercase">{{ genre }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="font-mono text-[11px] text-[var(--text-muted)]">
-                    {% with n=dj.tracks.count %}{{ n }} track{{ n|pluralize }}{% endwith %}
-                </div>
-            </div>
-        </a>
-        {% endfor %}
-    </div>
-</section>
-
-<!-- ── NEW RELEASES ── -->
-{% if featured_tracks %}
-<section class="py-14" aria-labelledby="h-new">
-    <div class="mm-section-head">
-        <div><h2 id="h-new" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">New releases</h2></div>
-        <a href="{% url 'releases' %}">All releases →</a>
-    </div>
-    <div class="mm-rgrid" data-reveal>{% for item in featured_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
-{% endif %}
-
-<!-- ── LIMITED DROPS ── -->
-{% if drop_tracks %}
-<section class="py-14" aria-labelledby="h-drops">
-    <div class="mm-section-head">
-        <div><h2 id="h-drops" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Limited drops</h2><p class="text-[14px] text-[var(--text-muted)] mt-1">Numbered copies. Once they're gone, they're gone.</p></div>
-        <a href="{% url 'drops' %}">All drops →</a>
-    </div>
-    <div class="mm-rgrid" data-reveal>{% for item in drop_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
-{% endif %}
-
-<!-- ── BUNDLES ── -->
-{% if new_bundles %}
-<section class="py-14" aria-labelledby="h-bundles">
-    <div class="mm-section-head">
-        <div><h2 id="h-bundles" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Bundles</h2><p class="text-[14px] text-[var(--text-muted)] mt-1">Built for a night, not a moment.</p></div>
-        <a href="{% url 'bundles' %}">All bundles →</a>
-    </div>
-    <div class="mm-rgrid" data-reveal>{% for item in new_bundles %}{% with kind="bundle" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
-{% endif %}
-
-<!-- ── POPULAR THIS WEEK ── -->
-{% if popular_tracks %}
-<section class="py-14" aria-labelledby="h-popular">
-    <div class="mm-section-head">
-        <div><h2 id="h-popular" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Popular this week</h2></div>
-        <a href="{% url 'releases' %}?sort=popular">See more →</a>
-    </div>
-    <div class="mm-rgrid" data-reveal>{% for item in popular_tracks %}{% with kind="track" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
-{% endif %}
-
-<!-- ── ALBUM PACKS ── -->
-{% if new_albums %}
-<section class="py-14" aria-labelledby="h-albums">
-    <div class="mm-section-head">
-        <div><h2 id="h-albums" class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)]">Album packs</h2></div>
-        <a href="{% url 'releases' %}?type=albums">All album packs →</a>
-    </div>
-    <div class="mm-rgrid" data-reveal>{% for item in new_albums %}{% with kind="album" %}{% include "components/release_card.html" %}{% endwith %}{% endfor %}</div>
-</section>
-{% endif %}
+<!-- ── SLIDING ROWS ── -->
+<div class="mm-rows">
+    {% include "components/card_row.html" with row_id="new" title="New releases" items=featured_tracks row_kind="track" more_url="/releases/" more_label="All releases" %}
+    {% include "components/dj_row.html" with row_id="djs" title="DJs on MixMint" djs=featured_djs more_url="/djs/" more_label="All DJs" %}
+    {% include "components/card_row.html" with row_id="popular" title="Popular this week" items=popular_tracks row_kind="track" more_url="/releases/?sort=popular" %}
+    {% include "components/ad_slot.html" %}
+    {% include "components/card_row.html" with row_id="drops" title="Limited drops" sub="Numbered copies. Once they're gone, they're gone." items=drop_tracks row_kind="track" more_url="/drops/" more_label="All drops" %}
+    {% include "components/card_row.html" with row_id="albums" title="Album packs" items=new_albums row_kind="album" more_url="/releases/?type=albums" %}
+    {% include "components/card_row.html" with row_id="bundles" title="Bundles" sub="Built for a night, not a moment." items=new_bundles row_kind="bundle" more_url="/bundles/" more_label="All bundles" %}
+</div>
 
 <!-- ── HOW IT WORKS ── -->
-<section class="py-24 mb-10">
+<section class="py-16 md:py-24 mb-10">
     <!-- Desktop Dashed Line connection -->
     <div
         class="hidden lg:block relative top-[96px] left-[16%] right-[16%] h-px border-t border-dashed border-[var(--border)] z-0 w-[68%]">
@@ -300,10 +212,9 @@
             class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
             <span
                 class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">02</span>
-            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay Once, Keep
-                Forever</h3>
+            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay and download</h3>
             <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
-                Instant checkout. One-time payment for permanent access. No subscriptions or recurring fees.
+                Pay once with just your email. No subscriptions or recurring fees. Your downloads stay in your library.
             </p>
         </div>
         <div

@@ -2,14 +2,14 @@
 {% block title %}Milestone Achieved!{% endblock %}
 
 {% block content %}
-<h2>🏆 Milestone Unlocked!</h2>
+<h2>Milestone Unlocked!</h2>
 
 <p>Congratulations {{ dj_name }}!</p>
 
 <p>You've reached a new milestone on MixMint:</p>
 
 <div class="highlight-box" style="text-align: center; background: #fef3c7; border-color: #f59e0b;">
-    <div style="font-size: 48px; margin-bottom: 10px;">🏆</div>
+    <div style="font-size: 48px; margin-bottom: 10px;"></div>
     <strong style="font-size: 20px;">{{ milestone_name }}</strong>
     <br><br>
     <span style="font-size: 28px; font-weight: 700; color: #22c55e;">+₹{{ reward_amount }}</span>
@@ -40,5 +40,5 @@
     <a href="{{ site_url|default:"https://mixmint.site" }}/dashboard/milestones" class="btn">View All Milestones</a>
 </p>
 
-<p>Keep up the amazing work! 🚀</p>
+<p>Keep up the amazing work! </p>
 {% endblock %}

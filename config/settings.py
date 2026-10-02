@@ -113,6 +113,7 @@ TEMPLATES = [
                 "social_django.context_processors.backends",
                 "social_django.context_processors.login_redirect",
             ],
+            "builtins": ["apps.core.templatetags.mm_icons"],
         },
     },
 ]
@@ -511,8 +512,10 @@ DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5  # [Spec §4.5]
 DOWNLOAD_DELIVERY = env("DOWNLOAD_DELIVERY", default="auto" if os.getenv("VERCEL") else "proxy")
 DOWNLOAD_PROXY_MAX_MB = env.int("DOWNLOAD_PROXY_MAX_MB", default=40)
 DOWNLOAD_PRESIGN_SECONDS = env.int("DOWNLOAD_PRESIGN_SECONDS", default=120)
-IP_LOCK_DAYS = 3  # [Spec §4.3] re-download at 50% after 3-day lock
-MAX_DOWNLOAD_ATTEMPTS = 3  # [Spec §4.2]
+ADMIN_ALERT_EMAIL = env("ADMIN_EMAIL", default="")  # reports, DMCA notices and other alerts
+IP_LOCK_DAYS = 7  # free downloads stay on the first device/network for 7 days after purchase
+FREE_DOWNLOADS = 3  # complete downloads included with each purchase (within IP_LOCK_DAYS); then 50% re-download
+MAX_DOWNLOAD_ATTEMPTS = 6  # tries (incl. failed ones) per network per item, on top of the 3 complete downloads
 INACTIVE_ACCOUNT_THRESHOLD_MONTHS = 12  # [Spec §10]
 
 # External-source downloads (DJ Drive/MediaFire link -> MixMint signed endpoint)
@@ -734,6 +737,12 @@ CSP_FRAME_SRC = (
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
 )
+# Google AdSense (only loads when Admin → Settings → Ads is switched on)
+_ADS = ("https://pagead2.googlesyndication.com", "https://googleads.g.doubleclick.net", "https://tpc.googlesyndication.com",
+        "https://www.googletagservices.com", "https://adservice.google.com", "https://ep1.adtrafficquality.google", "https://ep2.adtrafficquality.google")
+CSP_SCRIPT_SRC += _ADS
+CSP_CONNECT_SRC += _ADS
+CSP_FRAME_SRC += _ADS + ("https://www.google.com",)
 CSP_BASE_URI = ("'self'",)
 CSP_FORM_ACTION = (
     "'self'",

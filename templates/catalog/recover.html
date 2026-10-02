@@ -7,7 +7,7 @@
     <p class="text-[15px] text-[var(--text-muted)] mb-8">Enter the email you used at checkout. We'll send a one-time link that opens your library — no password, no stress.</p>
     {% if sent %}
     <div class="mm-card-section" role="status">
-        <p class="text-[16px] font-[600] text-[var(--text-primary)] mb-1">Check your inbox ✉️</p>
+        <p class="text-[16px] font-[600] text-[var(--text-primary)] mb-1">Check your inbox {% icon "mail" %}</p>
         <p class="text-[14px] text-[var(--text-muted)]">If that email bought anything on MixMint, a sign-in link is on its way. It works once, for 30 minutes. Look in Promotions/Spam too.</p>
         <a href="{% url 'recover' %}" class="inline-block mt-4 text-[13px] underline text-[var(--text-muted)]">Use a different email</a>
     </div>

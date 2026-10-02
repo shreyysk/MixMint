@@ -161,6 +161,9 @@ class MonetizationService:
 
             MonetizationService.generate_invoice(locked)
 
+        from .referrals import on_sale
+
+        on_sale(locked.seller)
         try:
             from apps.accounts.utils import check_verification_eligibility
 

@@ -9,7 +9,7 @@
         </h1>
         <p class="font-body text-[15px] text-[var(--text-muted)] leading-relaxed max-w-xl">
             Open your own store, upload tracks and albums, and get paid for every download.
-            {% if dj_share_percent is not None %}You keep {{ dj_share_percent }}% of every sale.{% endif %}
+            {% include "components/earn_line.html" %}
             We review every application, usually within 24–48 hours.
         </p>
     </div>

@@ -663,7 +663,7 @@ def reports_view(request):
     rows = []
     for r in cr[:200]:
         item = KINDS[r.content_type].objects.filter(pk=r.content_id).select_related("dj").first()
-        rows.append({"src": "content", "r": r, "item": item, "kind": r.content_type, "label": r.get_report_type_display(), "who": r.reporter.user.email if r.reporter_id else "guest"})
+        rows.append({"src": "content", "r": r, "item": item, "kind": r.content_type, "label": r.get_report_type_display(), "who": r.who, "evidence": r.evidence_url})
     for r in dr[:200]:
         item = r.track or r.album
         rows.append({"src": "copyright", "r": r, "item": item, "kind": "track" if r.track_id else "album", "label": "Copyright (DMCA)", "who": r.reporter.user.email if r.reporter_id else "guest", "evidence": r.evidence_url})
@@ -852,6 +852,39 @@ def settings_view(request):
             SystemSetting.objects.update_or_create(key="invoice_generation_enabled", defaults={"value": on})
             _log(request, f"Invoice generation {'on' if on else 'off'}")
             messages.success(request, f"GST invoices are {'on' if on else 'off'}.")
+        elif action == "ads":
+            client = (request.POST.get("client") or "").strip()[:60]
+            slot = (request.POST.get("slot") or "").strip()[:40]
+            on = bool(request.POST.get("enabled"))
+            import re as _re
+
+            if on and not (_re.fullmatch(r"ca-pub-\d{10,20}", client) and slot.isdigit()):
+                messages.error(request, "Enter your AdSense publisher ID (ca-pub-…) and a numeric ad unit ID before switching ads on.")
+                return redirect("admin_settings")
+            SystemSetting.objects.update_or_create(key="ads", defaults={"value": {"enabled": on, "client": client, "slot": slot}})
+            cache.delete("global_settings_ctx")
+            _log(request, f"Ads {'on' if on else 'off'}", client=client, slot=slot)
+            messages.success(request, "Ads are on. They show on shop pages only, never in checkout, library or dashboards." if on else "Ads are off.")
+        elif action == "ad_income":
+            from django.utils.dateparse import parse_date
+
+            from apps.commerce.ad_revenue_service import distribute_ad_income
+
+            start, end = parse_date(request.POST.get("start") or ""), parse_date(request.POST.get("end") or "")
+            if not start or not end or end < start:
+                messages.error(request, "Pick the start and end dates of the ad payment period.")
+                return redirect("admin_settings")
+            try:
+                res = distribute_ad_income(request.POST.get("amount") or "0", start, end, request.user.email)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+                return redirect("admin_settings")
+            except Exception:
+                logger.exception("Ad income share failed")
+                messages.error(request, "Couldn't share the ad income. Nothing was paid; try again.")
+                return redirect("admin_settings")
+            _log(request, f"Shared ad income {start}–{end}", amount=request.POST.get("amount"), djs=res["djs"], credited=str(res["credited"]))
+            messages.success(request, f"₹{res['credited']} added to {res['djs']} DJ wallet(s) from {res['views']} page views.")
         elif action == "clear_cache":
             try:
                 cache.clear()
@@ -863,8 +896,12 @@ def settings_view(request):
         return redirect("admin_settings")
     mode = MaintenanceMode.objects.order_by("-created_at").first()
     inv = SystemSetting.objects.filter(key="invoice_generation_enabled").first()
+    ads = SystemSetting.objects.filter(key="ads").first()
+    periods = SystemSetting.objects.filter(key="ad_income_periods").first()
     return render(request, "admin/console/settings.html", {
         "mode": mode, "invoices_on": bool(inv.value) if inv else True,
+        "ads": (ads.value or {}) if ads else {},
+        "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
     })
 
 

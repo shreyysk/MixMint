@@ -35,9 +35,14 @@ def process_weekly_payouts():
         dj__profile__is_banned=False,
     ).values_list("dj_id", flat=True)
 
+    from datetime import timedelta
+
+    week_ago = timezone.now() - timedelta(days=7)
     for dj_id in eligible_wallets:
         if Payout.objects.filter(dj_id=dj_id, status="held").exists():
             continue
+        if Payout.objects.filter(dj_id=dj_id, created_at__gt=week_ago).exclude(status="failed").exists():
+            continue  # already withdrew this week
         try:
             if _process_single_payout(dj_id):
                 processed += 1

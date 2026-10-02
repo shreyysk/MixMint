@@ -14,17 +14,17 @@
     <!-- Payment landing banners (payment_callback redirects here with ?payment=) -->
     {% if request.GET.payment == 'success' %}
     <div data-payment-banner role="status" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-center">
-        <p class="font-bold text-[14px] text-[var(--text-primary)]">✅ Payment successful — your music is below.</p>
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">{% icon "circle-check" %} Payment successful — your music is below.</p>
         <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Pick any item to get your secure download link</p>
     </div>
     {% elif request.GET.payment == 'failed' %}
     <div data-payment-banner role="alert" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30 text-center">
-        <p class="font-bold text-[14px] text-[var(--text-primary)]">❌ Payment didn't go through — nothing was charged.</p>
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">{% icon "circle-x" %} Payment didn't go through — nothing was charged.</p>
         <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">Try again or use a different method · <a href="/contact/" class="underline">contact support</a></p>
     </div>
     {% elif request.GET.payment == 'pending' %}
     <div data-payment-banner role="status" class="mb-8 px-5 py-4 rounded-[12px] bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
-        <p class="font-bold text-[14px] text-[var(--text-primary)]">⏳ We're confirming your payment with the gateway…</p>
+        <p class="font-bold text-[14px] text-[var(--text-primary)]">{% icon "hourglass" %} We're confirming your payment with the gateway…</p>
         <p class="font-mono text-[11px] text-[var(--text-muted)] mt-1 uppercase tracking-widest">This page checks again automatically — your music appears here once confirmed</p>
     </div>
     {% endif %}
@@ -55,7 +55,7 @@
 
     <!-- Empty State -->
     <div x-show="!loading && !error && filteredItems.length === 0" class="mm-empty" x-cloak>
-        <div class="text-5xl opacity-40" aria-hidden="true">📀</div>
+        <div class="text-5xl opacity-40" aria-hidden="true">{% icon "disc-3" %}</div>
         <h3 class="font-display" x-text="query ? 'No matches' : 'Nothing here yet'"></h3>
         <p class="font-body text-[14px] mb-6" x-text="query ? 'Try a different search.' : 'Tracks and albums you buy show up here, ready to download.'"></p>
         <a href="/explore/" class="btn-mm btn-mint" x-show="!query">Explore music</a>
@@ -67,8 +67,7 @@
             <article class="mm-row" :aria-label="item.content_title">
                 <a :href="detailUrl(item)" class="block" :aria-label="'Open ' + (item.content_title || 'item')" tabindex="-1">
                     <img x-show="item.cover_url" :src="item.cover_url || false" :alt="''" class="mm-row__art" loading="lazy">
-                    <div x-show="!item.cover_url" class="mm-row__art flex items-center justify-center text-2xl opacity-40" aria-hidden="true"
-                        x-text="item.content_type === 'track' ? '🎵' : '💿'"></div>
+                    <div x-show="!item.cover_url" class="mm-row__art flex items-center justify-center text-2xl opacity-40" aria-hidden="true"><span x-show="item.content_type === 'track'">{% icon "music" 24 %}</span><span x-show="item.content_type !== 'track'">{% icon "disc" 24 %}</span></div>
                 </a>
                 <div class="mm-row__meta">
                     <a :href="detailUrl(item)" class="mm-row__title block hover:text-[var(--accent-mint)]" x-text="item.content_title"></a>
@@ -78,9 +77,8 @@
                         <span class="font-mono text-[11px]" x-text="'₹' + Number(item.price_paid).toFixed(2)"></span>
                     </p>
                     <div class="flex flex-wrap gap-2 mt-2">
-                        <span class="mm-badge" :class="item.download_completed ? 'mm-badge--ok' : 'mm-badge--warn'"
-                            x-text="item.download_completed ? '✓ Downloaded' : '⬇ Ready to download'"></span>
-                        <span class="mm-badge mm-badge--ok" x-show="item.has_download_insurance">🛡 Insured</span>
+                        <span class="mm-badge" :class="item.download_completed ? 'mm-badge--ok' : 'mm-badge--warn'"><span x-show="item.download_completed" class="inline-flex items-center gap-1">{% icon "check" 13 %} Downloaded</span><span x-show="!item.download_completed" class="inline-flex items-center gap-1">{% icon "download" 13 %} Ready to download</span></span>
+                        <span class="mm-badge mm-badge--ok" x-show="item.has_download_insurance">{% icon "shield-check" %} Insured</span>
                         <span class="mm-badge" x-show="item.is_redownload">Re-download</span>
                     </div>
                 </div>
@@ -91,7 +89,7 @@
                     </template>
                     <template x-if="!item.redownload_price">
                         <button type="button" class="btn-mm btn-mint h-[44px]" @click="download(item, $el)"
-                            :aria-label="'Download ' + item.content_title">⬇ Download</button>
+                            :aria-label="'Download ' + item.content_title">{% icon "download" %} Download</button>
                     </template>
                     <a x-show="item.invoice_id" :href="'/api/v1/commerce/invoice/' + item.invoice_id + '/pdf/'"
                         class="btn-mm btn-ghost h-[44px] px-4" :aria-label="'Invoice for ' + item.content_title">Invoice</a>
@@ -105,9 +103,9 @@
     <!-- Re-download Info -->
     <div class="mt-10 notice-info">
         <p class="font-body text-[12px] text-[var(--text-muted)]">
-            🔁 Each purchase includes a verified download. Re-downloads open 3 days after purchase at 50% of the price;
-            Download Insurance (₹49, available 24h after purchase) makes them free.
-            Invoices include the full GST breakdown.
+            {% icon "repeat" %} Each purchase includes 3 downloads within 7 days, on the device you first download on. After that, re-downloads cost 50% of the price;
+            Download Insurance (₹49, available 24h after purchase) makes them free.{% if platform_settings.gst_charging_enabled %}
+            Invoices include the full GST breakdown.{% endif %}
         </p>
     </div>
 </div>

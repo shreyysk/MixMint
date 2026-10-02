@@ -1,31 +1,51 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}DJ Asset Pack — MixMint{% endblock %}
+{% block meta_description %}Free MixMint logos and ready-made Reel, Story, post, YouTube thumbnail and banner templates for DJs. Drop your cover art in the middle and post.{% endblock %}
 {% block content %}
-<div class="max-w-[860px] mx-auto py-20 px-6 font-body" data-reveal>
-    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">DJ resources</p>
-    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-6">DJ Asset Pack</h1>
-    <p class="text-[15px] text-[var(--text-muted)] leading-relaxed mb-10">Everything you need to look official on and off
-        MixMint: brand logo, flyer/thumbnail guidance, and the operations handbook (how uploads, previews, payouts and
-        support work).</p>
-
-    <div class="grid sm:grid-cols-2 gap-4 mb-10">
-        <a href="/static/logo/mm-white-512.png" download
-            class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-6 hover:border-[var(--accent-mint)] transition-colors">
-            <p class="font-bold text-[var(--text-primary)] mb-1">MixMint logo (PNG 512)</p>
-            <p class="text-[12px] text-[var(--text-muted)]">For flyers, thumbnails and social posts. Keep clear space around it.</p>
-        </a>
-        <a href="{% url 'dj_asset_handbook' %}"
-            class="border border-[var(--border)] bg-[var(--bg-surface)] rounded-[12px] p-6 hover:border-[var(--accent-mint)] transition-colors">
-            <p class="font-bold text-[var(--text-primary)] mb-1">Operations handbook (PDF)</p>
-            <p class="text-[12px] text-[var(--text-muted)]">Uploads, Drive links, previews, pricing, payouts, support — one page per topic.</p>
-        </a>
+<div class="max-w-[1100px] mx-auto py-10 md:py-16">
+    <div class="max-w-[720px]">
+        <p class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.2em] mb-3">Free for MixMint DJs</p>
+        <h1 class="font-display text-[34px] md:text-[52px] font-[800] text-[var(--text-primary)] tracking-tight leading-[1.02] mb-4">DJ Asset Pack</h1>
+        <p class="text-[16px] text-[var(--text-muted)] leading-relaxed mb-6">Our logo and ready-made covers for every platform. The square in the middle is see-through: put your album or track cover under it in Canva, CapCut or Photoshop, change the title, and post.</p>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% static 'asset-pack/mixmint-dj-asset-pack.zip' %}" download class="btn-mm btn-mint h-[50px] px-6 text-[15px] inline-flex items-center gap-2">{% icon "download" %} Download everything (ZIP)</a>
+            <a href="{% url 'dj_asset_handbook' %}" class="btn-mm btn-ghost h-[50px] px-6 text-[15px] inline-flex items-center gap-2">{% icon "file-text" %} DJ handbook (PDF)</a>
+        </div>
     </div>
 
-    <h2 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-4">Flyer / thumbnail recipe</h2>
-    <ul class="space-y-3 text-[14px] text-[var(--text-muted)] leading-relaxed list-disc list-inside">
-        <li>1080×1080 for feed posts, 1920×1080 for YouTube/Reel covers. Title top-third, DJ name + MixMint logo bottom strip.</li>
-        <li>Preview: upload the same artwork frame as your Reel cover so fans recognize the drop instantly.</li>
-        <li>Caption kit: track title · BPM/key · "Out now on MixMint — link in bio". Tag @mixmint + your storefront URL.</li>
-    </ul>
+    <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mt-14 mb-5">Logos</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% for f, label, bg in logos %}
+        <a href="{% static 'asset-pack/'|add:f %}" download class="group rounded-[14px] border border-[var(--border)] overflow-hidden bg-[var(--bg-surface)] hover:border-[var(--accent-mint)] transition-colors">
+            <div class="aspect-[16/9] flex items-center justify-center" style="background: {{ bg }}"><img src="{% static 'asset-pack/'|add:f %}" alt="{{ label }}" class="h-[60%] w-auto" loading="lazy"></div>
+            <div class="p-4 flex items-center justify-between gap-3"><span class="font-[600] text-[var(--text-primary)]">{{ label }}</span><span class="inline-flex items-center gap-1.5 text-[13px] text-[var(--accent-mint)]">{% icon "download" %} PNG</span></div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mt-14 mb-2">Cover templates</h2>
+    <p class="text-[14px] text-[var(--text-muted)] mb-5">Sizes are exact for each platform. Your MixMint store cover uses the YouTube banner size, so one image works for both.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for f, label, size, use in templates_list %}
+        <a href="{% static 'asset-pack/'|add:f %}" download class="group rounded-[14px] border border-[var(--border)] overflow-hidden bg-[var(--bg-surface)] hover:border-[var(--accent-mint)] transition-colors flex flex-col">
+            <div class="aspect-[4/3] bg-[repeating-conic-gradient(var(--bg-elevated)_0%_25%,var(--bg-base)_0%_50%)] [background-size:20px_20px] flex items-center justify-center p-4"><img src="{% static 'asset-pack/'|add:f %}" alt="{{ label }} template" class="max-h-full max-w-full object-contain shadow-lg rounded" loading="lazy"></div>
+            <div class="p-4 flex-1"><p class="font-[700] text-[var(--text-primary)]">{{ label }}</p><p class="font-mono text-[12px] text-[var(--text-muted)] mt-0.5">{{ size }}</p><p class="text-[13px] text-[var(--text-muted)] mt-2">{{ use }}</p></div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <section class="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">How to use a template</h2>
+            <ol class="list-decimal list-inside space-y-1.5 text-[14px] text-[var(--text-muted)]">
+                <li>Open the template in Canva, CapCut, Photoshop or any editor.</li>
+                <li>Put your cover art on a layer <em>under</em> the template so it shows through the square.</li>
+                <li>Change "Your track title", your DJ name and the store link.</li>
+                <li>Export and post. Use the same art as your preview Reel so fans recognise the drop.</li>
+            </ol></div>
+        <div class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">Caption kit</h2>
+            <p class="text-[14px] text-[var(--text-muted)]">Track title · BPM / key · "Out now on MixMint — link in bio". Add your store link: <span class="font-mono text-[var(--text-primary)]">mixmint.site/dj/your-name</span></p>
+            <p class="text-[13px] text-[var(--text-muted)] mt-3">Keep clear space around the MixMint logo. Don't stretch, recolour or rotate it.</p></div>
+    </section>
 </div>
 {% endblock %}

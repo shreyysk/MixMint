@@ -23,6 +23,26 @@
                 <button class="cx-btn primary">Save</button>
             </form>
         </section>
+        <section class="cx-card" style="grid-column:1/-1">
+            <h2>Ads</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Google AdSense ads, at most one per screen, on shop pages only (home, releases, DJ stores, release pages). Never in checkout, the library, dashboards or admin. Each ad loads only when scrolled near, so pages stay fast.</p>
+            <form method="post" class="cx-grid" style="gap:0 16px;align-items:end">{% csrf_token %}<input type="hidden" name="action" value="ads">
+                <div class="cx-field"><label class="cx-label" for="ad-client">AdSense publisher ID</label><input id="ad-client" class="cx-input" name="client" value="{{ ads.client|default:'' }}" placeholder="ca-pub-1234567890123456"></div>
+                <div class="cx-field"><label class="cx-label" for="ad-slot">Ad unit ID</label><input id="ad-slot" class="cx-input" name="slot" value="{{ ads.slot|default:'' }}" placeholder="1234567890" inputmode="numeric"></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="enabled" {% if ads.enabled %}checked{% endif %}> Show ads</label></div>
+                <div class="cx-field"><button class="cx-btn primary">Save</button></div>
+            </form>
+            <div class="cx-sep"></div>
+            <h3 class="cx-label">Share ad income with DJs ({{ dj_ad_share_percent|default:15 }}%)</h3>
+            <p class="cx-muted" style="margin-bottom:12px">When AdSense pays you, enter the amount and the dates it covers. Each DJ gets {{ dj_ad_share_percent|default:15 }}% of the part earned on their pages (split by page views), added to their balance. A period can only be paid once.</p>
+            <form method="post" class="cx-grid" style="gap:0 16px;align-items:end;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))" onsubmit="return confirm('Add the DJ share of this ad income to DJ balances?')">{% csrf_token %}<input type="hidden" name="action" value="ad_income">
+                <div class="cx-field"><label class="cx-label" for="ai-amt">Ad income (₹)</label><input id="ai-amt" class="cx-input" type="number" step="0.01" min="1" name="amount" required></div>
+                <div class="cx-field"><label class="cx-label" for="ai-s">From</label><input id="ai-s" class="cx-input" type="date" name="start" required></div>
+                <div class="cx-field"><label class="cx-label" for="ai-e">To</label><input id="ai-e" class="cx-input" type="date" name="end" required></div>
+                <div class="cx-field"><button class="cx-btn primary">Share with DJs</button></div>
+            </form>
+            {% if ad_periods %}<ul class="cx-muted" style="display:grid;gap:4px;margin-top:8px">{% for p in ad_periods %}<li>{{ p.period }} · ₹{{ p.amount }} income · ₹{{ p.credited }} to {{ p.djs }} DJ{{ p.djs|pluralize }}</li>{% endfor %}</ul>{% endif %}
+        </section>
         <section class="cx-card">
             <h2>Cache</h2>
             <p class="cx-muted" style="margin-bottom:12px">Changes not showing up on the shop? Clear the cache.</p>

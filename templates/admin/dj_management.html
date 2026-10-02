@@ -40,7 +40,7 @@
                     </div>
                     <p class="text-[13px] text-[var(--text-muted)] mt-1 break-all">{{ row.email }} · mixmint.site/dj/{{ dj.slug }}/ · applied {{ dj.created_at|date:"d M Y" }}</p>
                     {% if dj.genres %}<p class="text-[13px] text-[var(--text-muted)] mt-1">{{ dj.genres|join:", " }}</p>{% endif %}
-                    {% if dj.location %}<p class="text-[13px] text-[var(--text-muted)] mt-1">📍 {{ dj.location }}</p>{% endif %}
+                    {% if dj.location %}<p class="text-[13px] text-[var(--text-muted)] mt-1">{% icon "map-pin" %} {{ dj.location }}</p>{% endif %}
                     {% if dj.application_links or dj.social_links %}
                     <div class="flex flex-wrap gap-2 mt-2">
                         {% for l in dj.application_links %}<a href="{{ l }}" target="_blank" rel="noopener noreferrer" class="px-3 h-[32px] inline-flex items-center rounded-full border border-[var(--border)] text-[12px] font-[600] text-[var(--text-primary)] hover:border-[var(--accent-mint)] max-w-[260px] truncate">▶ Listen {{ forloop.counter }}</a>{% endfor %}
@@ -71,7 +71,7 @@
                         @click="busy = true; MM.api('{% url 'dj_approve' dj.id %}', {method: 'POST', body: {}}).then(d => { done = 'Approved'; MM.toast('success', d.message) }).catch(e => MM.toast('error', e.message)).finally(() => busy = false)">Approve anyway</button>
                     {% endif %}
                 </div>
-                <p x-show="done" x-cloak class="text-[14px] font-[600] text-[var(--accent-mint)]" x-text="'✓ ' + done"></p>
+                <p x-show="done" x-cloak class="text-[14px] font-[600] text-[var(--accent-mint)] inline-flex items-center gap-1.5">{% icon "check" 16 %}<span x-text="done"></span></p>
             </div>
         </article>
         {% endwith %}

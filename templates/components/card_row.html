@@ -1,0 +1,22 @@
+{% comment %} Netflix-style sliding row of release cards.
+   Needs: row_id, title, items (list of (kind, obj) pairs OR objects with kind=row_kind). Optional: sub, more_url, more_label. {% endcomment %}
+{% if items %}
+<section class="mm-shelf" aria-labelledby="row-{{ row_id }}" data-row>
+    <div class="mm-row-head">
+        <div class="min-w-0">
+            <h2 id="row-{{ row_id }}" class="mm-row-title">{{ title }}</h2>
+            {% if sub %}<p class="mm-row-sub">{{ sub }}</p>{% endif %}
+        </div>
+        <div class="mm-row-tools">
+            {% if more_url %}<a class="mm-row-more" href="{{ more_url }}">{{ more_label|default:"See all" }}<span class="sr-only"> — {{ title }}</span></a>{% endif %}
+            <button type="button" class="mm-row-btn" data-row-prev aria-label="Scroll {{ title }} left" disabled>{% icon "chevron-left" 18 %}</button>
+            <button type="button" class="mm-row-btn" data-row-next aria-label="Scroll {{ title }} right">{% icon "chevron-right" 18 %}</button>
+        </div>
+    </div>
+    <div class="mm-rail" data-rail tabindex="0" aria-label="{{ title }}">
+        {% for entry in items %}
+        <div class="mm-rail-item">{% if row_kind %}{% with kind=row_kind item=entry %}{% include "components/release_card.html" %}{% endwith %}{% else %}{% with kind=entry.0 item=entry.1 %}{% include "components/release_card.html" %}{% endwith %}{% endif %}</div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

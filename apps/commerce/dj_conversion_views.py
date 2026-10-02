@@ -115,6 +115,10 @@ def apply_referral_code(request):
     # Can't refer yourself
     if referrer_code.dj == dj_profile:
         return Response({"error": "You cannot use your own referral code."}, status=400)
+    from .referrals import MAX_REFERRALS, has_room
+
+    if not has_room(referrer_code.dj):
+        return Response({"error": f"This code has reached its limit of {MAX_REFERRALS} referrals."}, status=400)
 
     # Create referral relationship
     DJReferralProgram.objects.create(referrer=referrer_code.dj, referred=dj_profile, referral_code=code)

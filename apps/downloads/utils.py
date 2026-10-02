@@ -94,8 +94,8 @@ class DownloadManager:
             if cls.has_active_insurance(purchase):
                 access_source = "insurance"
             else:
-                eligible, msg = cls.check_redownload_eligibility(profile, content.id, content_type)
-                if eligible:
+                state, msg = cls.free_download_state(profile, content.id, content_type, client_ip, device_hash)
+                if state == "pay":
                     return Response(
                         {
                             "error": "Re-download requires payment.",
@@ -105,7 +105,8 @@ class DownloadManager:
                         },
                         status=402,
                     )
-                return Response({"error": msg}, status=403)
+                if state == "locked":
+                    return Response({"error": msg}, status=403)
 
         if access_source != "insurance":
             allowed, msg, remaining = cls.check_ip_attempts(client_ip, content.id, content_type, user=profile)
@@ -247,25 +248,67 @@ class DownloadManager:
 
     # -------------------------------------------------------------- re-download
     @staticmethod
-    def check_redownload_eligibility(profile, content_id, content_type):
+    def _window(profile, content_id, content_type):
+        """The latest paid purchase (original or paid re-download) and when its free-download window started."""
+        from apps.commerce.models import Purchase
+
+        p = (
+            Purchase.objects.filter(user=profile, content_id=content_id, content_type=content_type, status="paid", is_revoked=False)
+            .order_by("-paid_at", "-created_at")
+            .first()
+        )
+        return p, ((p.paid_at or p.created_at) if p else None)
+
+    @classmethod
+    def free_download_state(cls, profile, content_id, content_type, client_ip=None, device_hash=None):
         """
-        [Spec §4.3] After a completed download: 3-day lock, then re-download at 50%.
-        Insurance = free unlimited re-downloads.
+        Download rules [updated policy]:
+          * Each purchase includes FREE_DOWNLOADS (3) complete downloads within IP_LOCK_DAYS (7) of payment.
+          * During those 7 days, downloads work only on the device / network of the first download.
+          * After 3 downloads, or once the 7 days are over, a re-download costs 50% of the price
+            (and the device lock no longer applies). Download Insurance makes re-downloads free.
+        Returns ("free", None) | ("locked", message) | ("pay", message).
         """
-        purchase = DownloadManager.owned_purchase(profile, content_id, content_type)
+        free = getattr(settings, "FREE_DOWNLOADS", 3)
+        days = getattr(settings, "IP_LOCK_DAYS", 7)
+        purchase, start = cls._window(profile, content_id, content_type)
+        if purchase is None:
+            return "pay", "No purchase found."
+        done = list(
+            DownloadLog.objects.filter(
+                user=profile, content_id=content_id, content_type=content_type, completed=True, created_at__gte=start
+            ).order_by("created_at").values("ip_address", "device_hash")[:free]
+        )
+        if len(done) >= free:
+            return "pay", f"You've used all {free} downloads for this purchase. Re-download at 50% of the price."
+        if timezone.now() >= start + timedelta(days=days):
+            return "pay", f"The {days}-day download window has ended. Re-download at 50% of the price."
+        if done and client_ip is not None:
+            first = done[0]
+            same_net = bool(first["ip_address"] and client_ip and first["ip_address"] == client_ip)
+            same_dev = bool(first["device_hash"] and device_hash and first["device_hash"] == device_hash)
+            if not (same_net or same_dev):
+                return "locked", (
+                    f"For {days} days after purchase, downloads work only on the device and network you first "
+                    "downloaded on. Use that device, or buy Download Insurance."
+                )
+        return "free", None
+
+    @classmethod
+    def check_redownload_eligibility(cls, profile, content_id, content_type):
+        """May the buyer pay 50% for another download right now?"""
+        purchase = cls.owned_purchase(profile, content_id, content_type)
         if not purchase:
             return False, "No completed purchase found."
-        if DownloadManager.has_active_insurance(purchase):
+        if cls.has_active_insurance(purchase):
             return True, "Download Insurance active. Unlimited free re-downloads available."
         if not purchase.download_completed:
             return True, "Previous download failed or not completed. Free retry available."
-        lock_expiry = (purchase.paid_at or purchase.created_at) + timedelta(days=getattr(settings, "IP_LOCK_DAYS", 3))
-        if timezone.now() < lock_expiry:
-            return (
-                False,
-                "Re-download lock active. Try again 3 days after purchase (or buy Download Insurance).",
-            )
-        return True, "Re-download available at 50% price."
+        state, msg = cls.free_download_state(profile, content_id, content_type)
+        if state == "pay":
+            return True, msg
+        days = getattr(settings, "IP_LOCK_DAYS", 7)
+        return False, f"You still have free downloads for this purchase (within {days} days, on your first device)."
 
     @staticmethod
     def mark_download_complete(token, bytes_delivered, checksum_hex=None, checksum_ok=True):

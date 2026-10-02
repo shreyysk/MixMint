@@ -62,8 +62,11 @@ def track_detail_view(request, pk):
             elif purchase and DownloadManager.has_active_insurance(purchase):
                 can_request_download = True
             elif purchase:
-                eligible, msg = DownloadManager.check_redownload_eligibility(profile, track.id, "track")
-                needs_redownload_payment = bool(eligible)
+                state, msg = DownloadManager.free_download_state(profile, track.id, "track")
+                if state == "pay":
+                    needs_redownload_payment = True
+                else:  # still within the free downloads (device check happens when the link is made)
+                    can_request_download = True
                 redownload_message = msg
 
     from apps.core.seo_utils import get_track_og_tags

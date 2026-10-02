@@ -9,8 +9,12 @@
         <h1 class="font-display text-[36px] md:text-[48px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">Upload music</h1>
         <p class="font-body text-[14px] text-[var(--text-muted)]">
             Add the file, a preview link and your price. It goes live in your store straight away.
-            {% if dj_share_percent is not None %}You keep {{ dj_share_percent }}% of every sale.{% endif %}
+            {% include "components/earn_line.html" %}
         </p>
+        <a href="{% url 'dj_asset_pack' %}" class="mt-5 flex items-center gap-3 rounded-[12px] border border-[var(--accent-mint)]/40 bg-[var(--accent-mint)]/10 p-4 hover:border-[var(--accent-mint)] transition-colors">
+            <span class="w-10 h-10 rounded-full bg-[var(--accent-mint)] text-white inline-flex items-center justify-center shrink-0">{% icon "palette" 20 %}</span>
+            <span class="min-w-0"><strong class="block text-[14px] text-[var(--text-primary)]">Free covers for your release</strong><span class="text-[13px] text-[var(--text-muted)]">Reel, Story, YouTube thumbnail and post templates with the MixMint logo. Open the DJ Asset Pack →</span></span>
+        </a>
     </div>
 
     {% if not approved %}
@@ -41,10 +45,10 @@
                  :class="file ? 'border-[var(--accent-mint)]' : 'border-[var(--border)] hover:border-[var(--accent-mint)]'">
                 <input type="file" id="main_file" x-ref="file" :accept="kind === 'album' ? '.zip' : '.mp3,.wav,.flac,.aiff,.aif'"
                        aria-describedby="file-help" @change="pick($event, 'file')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <div class="text-4xl opacity-40 mb-3" aria-hidden="true" x-text="kind === 'album' ? '🗂️' : '🎵'">🎵</div>
+                <div class="opacity-40 mb-3 flex justify-center" aria-hidden="true"><span x-show="kind === 'album'">{% icon "folder" 36 %}</span><span x-show="kind !== 'album'">{% icon "music" 36 %}</span></div>
                 <label for="main_file" class="block font-body text-[15px] font-[600] text-[var(--text-primary)] mb-1">
                     <span x-show="!file">Choose a file or drop it here</span>
-                    <span x-show="file" x-cloak class="text-[var(--accent-mint)] break-all">✓ <span x-text="file && file.name"></span> · <span x-text="file && mb(file.size)"></span></span>
+                    <span x-show="file" x-cloak class="text-[var(--accent-mint)] break-all">{% icon "check" %} <span x-text="file && file.name"></span> · <span x-text="file && mb(file.size)"></span></span>
                 </label>
                 <p id="file-help" class="font-body text-[12px] text-[var(--text-muted)]" x-text="kind === 'album' ? 'One .zip with all the tracks · max 1 GB' : 'MP3, WAV, FLAC or AIFF · max 200 MB'"></p>
                 <div x-show="progress.file > 0" x-cloak class="mt-4 h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden" role="progressbar" :aria-valuenow="progress.file" aria-valuemin="0" aria-valuemax="100">
@@ -62,7 +66,7 @@
             <div class="relative border-2 border-dashed border-[var(--border)] rounded-[12px] bg-[var(--bg-surface)] p-6 text-center hover:border-[var(--accent-mint)] transition-colors max-w-[300px]">
                 <input type="file" id="cover_file" accept="image/jpeg,image/png,image/webp" @change="pick($event, 'cover')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
                 <img x-show="coverPreview || coverUrl" x-cloak :src="coverPreview || coverUrl || false" alt="Cover art preview" class="w-32 h-32 object-cover rounded-[8px] mx-auto mb-3">
-                <div x-show="!(coverPreview || coverUrl)" class="text-3xl opacity-40 mb-2" aria-hidden="true">🖼️</div>
+                <div x-show="!(coverPreview || coverUrl)" class="text-3xl opacity-40 mb-2" aria-hidden="true">{% icon "image" %}</div>
                 <label for="cover_file" class="block font-body text-[14px] font-[500] text-[var(--text-primary)]" x-text="cover ? cover.name : 'Choose an image'">Choose an image</label>
                 <p class="font-body text-[12px] text-[var(--text-muted)]">Square JPG or PNG, at least 1000×1000</p>
             </div>
@@ -196,6 +200,7 @@ function mmUpload(initialKind) {
         },
         async send(kind, f, key) {
             const target = await MM.api('{% url "upload_url" %}', { body: { kind: kind, filename: f.name, size: f.size } });
+            if (target.existing) { this.progress[key] = 100; return target; }  // already uploaded on an earlier try
             await this.put(target, f, key);
             return target;
         },

@@ -72,6 +72,16 @@ def request_manual_payout(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # One withdrawal a week, on any day the DJ likes (automatic weekly payouts count too).
+    from datetime import timedelta
+
+    from .models import Payout as _Payout
+
+    last = _Payout.objects.filter(dj=dj_profile).exclude(status="failed").order_by("-created_at").first()
+    if last and last.created_at > timezone.now() - timedelta(days=7):
+        nxt = timezone.localtime(last.created_at + timedelta(days=7))
+        return Response({"error": f"You can withdraw once a week. Your next withdrawal opens on {nxt:%d %b at %I:%M %p}."},
+                        status=status.HTTP_400_BAD_REQUEST)
     # Verify OTP [Spec P2 §11]
     from apps.accounts.payout_auth import verify_payout_otp
 
@@ -170,11 +180,17 @@ def activate_pro_trial(request):
     if dj_profile is None or dj_profile.status != "approved":
         return Response({"error": "Your DJ profile must be approved first."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check if they've used a trial before
-    if ProSubscriptionEvent.objects.filter(dj=profile.dj_profile, event_type="trial_start").exists():
+    # One free trial per DJ, ever (checked again inside the lock so a double click can't start two).
+    def used_trial(p):
+        return p.pro_trial_ends_at is not None or ProSubscriptionEvent.objects.filter(dj=p.dj_profile, event_type="trial_start").exists()
+
+    if used_trial(profile):
         return Response({"error": "You have already used your free trial."}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
+        profile = type(profile).objects.select_for_update().get(pk=profile.pk)
+        if used_trial(profile) or profile.is_pro_dj:
+            return Response({"error": "You have already used your free trial."}, status=status.HTTP_400_BAD_REQUEST)
         # Update Profile
         profile.is_pro_dj = True
         profile.pro_started_at = timezone.now()

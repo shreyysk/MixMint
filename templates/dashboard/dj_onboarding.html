@@ -47,48 +47,13 @@
             </div>
 
             {% elif step == 'payout_setup' %}
-            <div id="step-payout" x-data="{ open: false, verified: false, showQR: false, secret: '', qr: '' }" class="space-y-8 animate-in slide-in-from-right duration-700">
+            <div id="step-payout" class="space-y-8 animate-in slide-in-from-right duration-700">
                 <div>
                     <h4 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-2">Step 2: Get paid</h4>
-                    <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI or bank details on the <a href="{% url 'dj_payouts' %}" class="underline text-[var(--accent-mint)]">Payouts page</a>, and turn on the authenticator app below to protect withdrawals.</p>
+                    <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI ID or bank account on the <a href="{% url 'dj_payouts' %}" class="underline text-[var(--accent-mint)]">Payouts page</a>. Withdraw once a week on any day; each withdrawal is confirmed with a code we email you, so nobody else can move your money.</p>
                 </div>
-
-                <div class="p-6 bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20 rounded-[12px]">
-                    <p class="font-body text-[13px] text-[var(--accent-blue)] leading-relaxed">
-                        <strong class="font-display">Why:</strong> every withdrawal needs a code from Google Authenticator, so nobody else can move your money.
-                    </p>
-                </div>
-
                 <div class="space-y-4">
-                    <button type="button" class="btn-mm border border-[var(--border)] hover:border-[var(--accent-mint)] w-full py-4 text-[14px] font-[600] transition-all rounded-lg flex items-center justify-center gap-3" 
-                            @click="showQR = true; load2FAInAlpine($data)" x-show="!verified">
-                        <span x-show="!showQR">Link Google Authenticator</span>
-                        <span x-show="showQR">Synchronizing...</span>
-                    </button>
-                    
-                    <div x-show="showQR && !verified" class="p-8 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] space-y-6 text-center">
-                        <p class="font-body text-[13px] text-[var(--text-primary)]">Scan this QR code with Google Authenticator:</p>
-                        <div id="qrcode-container" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg flex items-center justify-center">
-                            <img x-show="qr" :src="qr || false" alt="QR code for your authenticator app" class="w-full h-full">
-                            <span x-show="!qr" class="text-black text-[10px] font-mono">Loading…</span>
-                        </div>
-                        <div class="text-left">
-                            <label class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Manual Secret Key</label>
-                            <code class="block bg-[var(--bg-base)] p-3 rounded border border-[var(--border)] text-[var(--accent-mint)] text-center tracking-widest" x-text="secret"></code>
-                        </div>
-                        <div class="text-left">
-                            <label class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Verification Token</label>
-                            <input type="text" id="2fa-code-input" class="input-mm text-center tracking-[0.5em]" placeholder="000000">
-                        </div>
-                        <button type="button" class="btn-mm btn-mint w-full py-3 text-[13px] font-[600]" @click="verify2FAInAlpine($data)">
-                            Verify & Link Account
-                        </button>
-                    </div>
-
-                    <div x-show="verified" class="p-6 bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 rounded-[12px] text-center">
-                        <p class="text-[var(--accent-mint)] font-display font-[600]">Authenticator app linked ✓</p>
-                    </div>
-
+                    <a href="{% url 'dj_payouts' %}" class="btn-mm btn-ghost w-full py-4 text-[14px] font-[600] rounded-lg flex items-center justify-center gap-2">{% icon "wallet" %} Add payout details</a>
                     <button type="button" class="btn-mm btn-mint w-full py-4 text-[14px] font-[600] rounded-lg" onclick="nextStep('first_track')">
                         Next: upload your first track
                     </button>
@@ -99,7 +64,7 @@
             {% elif step == 'first_track' %}
             <div id="step-track" class="space-y-8 animate-in scale-in duration-700 text-center">
                 <div class="py-6">
-                    <div class="text-6xl mb-8 animate-bounce">🎵</div>
+                    <div class="text-6xl mb-8 animate-bounce">{% icon "music" %}</div>
                     <h4 class="font-display text-[24px] font-[700] text-[var(--text-primary)] mb-3">You're all set</h4>
                     <p class="font-body text-[15px] text-[var(--text-muted)] mb-12 max-w-[400px] mx-auto">Your DJ profile is ready. Upload your first track to open your store.</p>
                     
@@ -165,7 +130,7 @@
                 data.verified = true;
                 data.showQR = false;
             } else {
-                alert(res.error || 'Verification failed. Please try again.');
+                MM.toast("error", res.error || 'Verification failed. Please try again.');
             }
         });
     }

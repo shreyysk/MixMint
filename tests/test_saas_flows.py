@@ -168,10 +168,17 @@ class TestPayouts:
         c.post("/dashboard/dj/payouts/", {"method": "upi", "upi_id": "dj@okhdfcbank"})
         dj.refresh_from_db()
         assert dj.upi_id == "dj@okhdfcbank"
-        c.post(
-            "/dashboard/dj/payouts/",
-            {"method": "bank", "bank_account_number": "1234 5678 9012", "bank_ifsc_code": "hdfc0001234", "account_name": "Test DJ"},
-        )
+        # Changing existing details needs the emailed code.
+        bank = {"method": "bank", "bank_account_number": "1234 5678 9012", "bank_ifsc_code": "hdfc0001234", "account_name": "Test DJ"}
+        c.post("/dashboard/dj/payouts/", bank)
+        dj.refresh_from_db()
+        assert not dj.bank_account_number
+        from unittest import mock
+
+        with mock.patch("apps.admin_panel.email_utils.send_email") as send:
+            assert c.post("/dashboard/dj/payouts/code/", '{"purpose": "details"}', content_type="application/json").status_code == 200
+        code = send.call_args[0][1].split(": ")[1]
+        c.post("/dashboard/dj/payouts/", {**bank, "code": code})
         dj.refresh_from_db()
         assert dj.bank_account_number == "123456789012" and dj.bank_ifsc_code == "HDFC0001234"
         assert dj.payout_details["method"] == "bank"

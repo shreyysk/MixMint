@@ -32,11 +32,20 @@
   ],
   "headers": [
     {
-      "source": "/static/(.*)",
+      "source": "/static/(.*)\\.([0-9a-f]{12})\\.(css|js|png|jpg|jpeg|webp|svg|ico|woff|woff2|gif)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=604800, stale-while-revalidate=2592000"
+          "value": "public, max-age=31536000, s-maxage=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/static/((?!.*\\.[0-9a-f]{12}\\.).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
         }
       ]
     }

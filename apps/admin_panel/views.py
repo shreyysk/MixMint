@@ -879,23 +879,43 @@ def offers_pricing_dashboard(request):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def update_platform_settings(request):
-    """Update global platform pricing settings."""
-    settings = PlatformSettings.load()
+    """Save the pricing switches from Admin → Offers & pricing. Every switch here changes what the shop shows."""
+    from django.core.cache import cache
 
-    if "platform_commission_rate" in request.data:
-        settings.platform_commission_rate = Decimal(request.data["platform_commission_rate"])
-    if "buyer_fee_amount" in request.data:
-        settings.buyer_fee_amount = Decimal(request.data["buyer_fee_amount"])
-    if "gst_rate" in request.data:
-        settings.gst_rate = Decimal(request.data["gst_rate"])
-    if "dj_application_fee" in request.data:
-        settings.dj_application_fee = Decimal(request.data["dj_application_fee"])
-    if "dj_application_fee_enabled" in request.data:
-        settings.dj_application_fee_enabled = request.data["dj_application_fee_enabled"]
+    ps = PlatformSettings.load()
+    data = request.data
 
-    settings.save()
-    _log_admin_action(request, "Updated Platform Settings (Pricing)")
-    return Response({"status": "success", "message": "Settings updated successfully"})
+    def flag(v):
+        return v if isinstance(v, bool) else str(v).strip().lower() in ("1", "true", "yes", "on")
+
+    def money(key, lo, hi):
+        try:
+            v = Decimal(str(data[key])).quantize(Decimal("0.01"))
+        except Exception:
+            raise ValueError(key)
+        if not (lo <= v <= hi):
+            raise ValueError(key)
+        return v
+
+    labels = {"platform_commission_rate": "Commission must be between 0 and 50%.",
+              "buyer_platform_fee": "Buyer fee must be between ₹0 and ₹500.",
+              "dj_application_fee": "DJ fee must be between ₹0 and ₹10,000."}
+    try:
+        if "platform_commission_rate" in data:
+            ps.platform_commission_rate = money("platform_commission_rate", 0, 50)
+        if "buyer_platform_fee" in data:
+            ps.buyer_platform_fee = money("buyer_platform_fee", 0, 500)
+        if "dj_application_fee" in data:
+            ps.dj_application_fee = money("dj_application_fee", 0, 10000)
+    except ValueError as exc:
+        return Response({"error": labels.get(str(exc), "Check the numbers and try again.")}, status=400)
+    for f in ("buyer_platform_fee_enabled", "gst_charging_enabled", "dj_application_fee_enabled", "cart_discounts_enabled"):
+        if f in data:
+            setattr(ps, f, flag(data[f]))
+    ps.save()
+    cache.delete("global_settings_ctx")
+    _log_admin_action(request, "Updated pricing settings", metadata={k: str(v) for k, v in data.items()})
+    return Response({"status": "success", "message": "Saved. The shop shows the new settings now."})
 
 
 @api_view(["POST"])
@@ -1046,6 +1066,44 @@ def payouts_admin_view(request):
     from django.contrib import messages
     from django.shortcuts import redirect
 
+    if request.method == "POST" and request.POST.get("action") == "paid_all":
+        ref = (request.POST.get("reference") or "").strip()[:200]
+        if not ref:
+            messages.error(request, "Add the bulk transfer / batch reference so DJs can match the payment.")
+            return redirect("admin_payouts")
+        ids = [int(x) for x in request.POST.getlist("ids") if str(x).isdigit()]
+        qs = Payout.objects.filter(status__in=["pending", "processing"])
+        if ids:
+            qs = qs.filter(pk__in=ids)
+        now = timezone.now()
+        done = 0
+        for p in qs.select_related("dj"):
+            p.status, p.payment_reference, p.processed_at = "completed", f"{ref} · #{p.id}", now
+            p.save(update_fields=["status", "payment_reference", "processed_at"])
+            done += 1
+        _log_admin_action(request, f"Marked {done} payout(s) paid in one go", metadata={"reference": ref})
+        messages.success(request, f"{done} payout{'s' if done != 1 else ''} marked as paid. DJs see it on their Payouts page.")
+        return redirect("admin_payouts")
+
+    if request.method == "GET" and request.GET.get("export") == "csv":
+        import csv
+
+        from django.http import HttpResponse
+
+        resp = HttpResponse(content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="mixmint-payouts-to-send-{timezone.now():%Y%m%d}.csv"'
+        resp.write("\ufeff")
+        w = csv.writer(resp)
+        w.writerow(["payout_id", "dj_name", "email", "amount", "method", "upi_id", "account_name", "account_number", "ifsc", "requested"])
+        for p in Payout.objects.filter(status__in=["pending", "processing"]).select_related("dj__profile__user").order_by("created_at"):
+            dj = p.dj
+            method = (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank")
+            w.writerow([p.id, dj.dj_name, dj.profile.user.email, p.amount, method, dj.upi_id or "",
+                        (dj.payout_details or {}).get("account_name", ""), dj.bank_account_number or "", dj.bank_ifsc_code or "",
+                        p.created_at.strftime("%Y-%m-%d")])
+        _log_admin_action(request, "Downloaded payouts-to-send file")
+        return resp
+
     if request.method == "POST":
         payout = Payout.objects.filter(pk=request.POST.get("payout_id")).select_related("dj").first()
         action = request.POST.get("action")
@@ -1091,7 +1149,9 @@ def payouts_admin_view(request):
         rows.append({"p": p, "dj": dj, "method": (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank"),
                      "account_name": (dj.payout_details or {}).get("account_name", "")})
     recent = Payout.objects.exclude(status__in=["pending", "processing", "held"]).select_related("dj").order_by("-created_at")[:30]
-    return render(request, "admin/payouts.html", {"rows": rows, "recent": recent})
+    sendable = [r for r in rows if r["p"].status in ("pending", "processing")]
+    total = sum((r["p"].amount for r in sendable), Decimal("0"))
+    return render(request, "admin/payouts.html", {"rows": rows, "recent": recent, "sendable": len(sendable), "sendable_total": total})
 
 
 @api_view(["GET", "POST"])

@@ -1,0 +1,13 @@
+{% load tracks_filters %}{# Artist card for rows and grids. Needs: dj #}
+<a href="{% url 'dj_profile' dj.slug %}" class="mm-djcard group">
+    <div class="mm-djcard-art" data-sk>
+        {% if dj.banner_url %}<img class="mm-djcard-banner" src="{{ dj.banner_url }}" alt="" loading="lazy" decoding="async">{% endif %}
+        <span class="mm-djcard-avatar">{% if dj.profile.avatar_url %}<img src="{{ dj.profile.avatar_url }}" alt="" loading="lazy" decoding="async">{% else %}{{ dj.dj_name|initials }}{% endif %}</span>
+        {% if dj.is_verified %}<span class="mm-djcard-check" title="Verified DJ">{% icon "badge-check" 18 label="Verified DJ" %}</span>{% endif %}
+    </div>
+    <div class="mm-djcard-body">
+        <h3 class="mm-djcard-name">{{ dj.dj_name }}</h3>
+        <p class="mm-djcard-meta">{% if dj.location %}{{ dj.location }}{% endif %}{% if dj.location and dj.genres %} · {% endif %}{{ dj.genres|slice:":2"|join:", " }}</p>
+        <p class="mm-djcard-count">{% with n=dj.release_count|default:0 %}{{ n }} release{{ n|pluralize }}{% endwith %}</p>
+    </div>
+</a>

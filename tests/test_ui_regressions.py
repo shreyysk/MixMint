@@ -96,7 +96,7 @@ class TestContent:
         c = Client()
         c.force_login(dj_user[0])
         html = c.get("/upload/").content.decode()
-        assert re.search(r"You keep \d+(\.\d)?% of every sale", html)
+        assert re.search(r"\d+(\.\d)?% of every sale", html)
 
     def test_dj_dashboard_shows_wallet_earnings_and_sales(self, dj_user, track, user):
         from apps.commerce.models import Purchase

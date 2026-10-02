@@ -31,8 +31,11 @@ def album_detail_view(request, pk):
         if purchase and (not purchase.download_completed or DownloadManager.has_active_insurance(purchase)):
             can_request_download = True
         elif purchase:
-            eligible, msg = DownloadManager.check_redownload_eligibility(profile, album.id, "album")
-            needs_redownload_payment = bool(eligible)
+            state, msg = DownloadManager.free_download_state(profile, album.id, "album")
+            if state == "pay":
+                needs_redownload_payment = True
+            else:  # still within the free downloads (device check happens when the link is made)
+                can_request_download = True
             redownload_message = msg
 
     context = {

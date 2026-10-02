@@ -136,7 +136,7 @@
         <section class="cx-card">
             <h2>Download devices</h2>
             {% if devices %}<ul style="display:grid;gap:8px;font-size:14px">{% for d in devices %}<li><b>{{ d.label|default:"Device" }}</b> <span class="cx-pill {% if d.status == 'authorized' %}ok{% elif d.status == 'banned' %}bad{% endif %}">{{ d.get_status_display }}</span><div class="cx-muted">{{ d.last_ip|default:"" }} · {{ d.last_active_at|date:"d M Y H:i" }}</div></li>{% endfor %}</ul>
-            {% else %}<p class="cx-muted">None registered.</p>{% endif %}
+            {% else %}<p class="cx-muted">No devices yet.</p>{% endif %}
         </section>
         <section class="cx-card">
             <h2>Recent logins</h2>
@@ -150,7 +150,7 @@
         </section>
         <section class="cx-card">
             <h2>Admin actions on this account</h2>
-            {% for a in actions %}<p style="font-size:13px;margin-bottom:6px">{{ a.created_at|date:"d M Y H:i" }} · {{ a.action }} <span class="cx-muted">by {{ a.admin.user.email|default:"system" }}</span></p>{% empty %}<p class="cx-muted">None.</p>{% endfor %}
+            {% for a in actions %}<p style="font-size:13px;margin-bottom:6px">{{ a.created_at|date:"d M Y H:i" }} · {{ a.action }} <span class="cx-muted">by {{ a.admin.user.email|default:"system" }}</span></p>{% empty %}<p class="cx-muted">No admin actions yet.</p>{% endfor %}
         </section>
     </div>
 </div>

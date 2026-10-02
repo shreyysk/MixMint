@@ -63,7 +63,7 @@
         <!-- Revenue Analytics (Investor Intelligence) -->
         <a href="{% url 'admin_revenue_dashboard' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">📊</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "chart-column" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Revenue Analytics</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Growth metrics, platform GMV, commission breakdown, and trend analysis.
@@ -78,7 +78,7 @@
         <!-- Offers & Pricing -->
         <a href="{% url 'admin_offers_pricing' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎁</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "gift" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Offers & Pricing</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Manage commission rates, platform fees, GST status, and promotional homepage banners.
@@ -93,7 +93,7 @@
         <!-- Platform Health -->
         <a href="{% url 'admin_health' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">⚡</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "zap" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Platform Health</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Monitor active traffic, security audit logs, content integrity, and server status.
@@ -108,7 +108,7 @@
         <!-- DJ Management -->
         <a href="{% url 'admin_dj_management' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎧</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "headphones" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">DJs</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Approve or reject DJ applications, give verified badges and hold payouts.
@@ -122,7 +122,7 @@
 
         <a href="{% url 'admin_payouts' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all" aria-hidden="true">💸</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]" aria-hidden="true">{% icon "banknote" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Payouts</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Send DJ earnings by UPI or bank and mark them paid.</p>
             </div>
@@ -134,7 +134,7 @@
 
         <a href="{% url 'admin_refunds' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all" aria-hidden="true">↩️</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]" aria-hidden="true">{% icon "undo-2" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Refunds</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Approve or reject buyers’ refund requests.</p>
             </div>
@@ -147,7 +147,7 @@
         <!-- Content Moderation -->
         <a href="{% url 'admin_moderation_hub' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🛡️</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "shield-check" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Moderation Hub</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Soft-delete violations, archive content, and manage DMCA takedown requests.
@@ -161,7 +161,7 @@
 
         <a href="{% url 'admin_users' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">👥</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "users" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Users</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Find any account: freeze, ban, sign-in links, password resets, Pro, admin rights.</p>
             </div>
@@ -172,7 +172,7 @@
         </a>
         <a href="{% url 'admin_orders' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🧾</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "receipt" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Orders</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Every purchase with totals. Recheck stuck payments, refund, allow re-downloads.</p>
             </div>
@@ -183,7 +183,7 @@
         </a>
         <a href="{% url 'admin_catalog' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🎛️</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "sliders-horizontal" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Catalog</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">All tracks, album packs and bundles. Hide, edit price and previews, remove.</p>
             </div>
@@ -194,7 +194,7 @@
         </a>
         <a href="{% url 'admin_reports' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🚩</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "flag" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Reports</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Spam, bad audio and copyright reports, with one-click takedown.</p>
             </div>
@@ -205,7 +205,7 @@
         </a>
         <a href="{% url 'admin_messages' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">📣</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "megaphone" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Messages</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Send an in-app notice or email to buyers, DJs, the waitlist or one person.</p>
             </div>
@@ -216,7 +216,7 @@
         </a>
         <a href="{% url 'admin_settings' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">⚙️</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "settings" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-mint)] transition-colors">Settings</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">Open or close the shop, GST invoices, cache, CSV downloads.</p>
             </div>
@@ -228,7 +228,7 @@
         <!-- Security Controls -->
         <a href="{% url 'admin_security_dashboard' %}" class="glow-card group p-8 flex flex-col justify-between min-h-[240px]">
             <div>
-                <div class="text-3xl mb-6 grayscale group-hover:grayscale-0 transition-all">🚨</div>
+                <div class="text-3xl mb-6 text-[var(--accent-mint)]">{% icon "siren" %}</div>
                 <h3 class="text-2xl font-display font-bold mb-2 group-hover:text-[var(--accent-red)] transition-colors">Security Ops</h3>
                 <p class="text-[var(--text-muted)] text-sm leading-relaxed">
                     Manage IP bans, account freezes, and platform-wide security protocols.

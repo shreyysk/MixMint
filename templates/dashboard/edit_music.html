@@ -16,7 +16,7 @@
         <section class="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-6 items-start" x-data="mmImage('cover_url', '{{ cover|escapejs }}')">
             <div class="relative w-[180px] aspect-square rounded-[12px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
                 <img x-show="url" x-cloak :src="url || false" alt="Cover art" class="w-full h-full object-cover">
-                <div x-show="!url" class="w-full h-full flex items-center justify-center text-4xl opacity-30" aria-hidden="true">{% if kind == 'album' %}📦{% else %}🎵{% endif %}</div>
+                <div x-show="!url" class="w-full h-full flex items-center justify-center text-4xl opacity-30" aria-hidden="true">{% if kind == 'album' %}{% icon "package" %}{% else %}{% icon "music" %}{% endif %}</div>
                 <div x-show="busy" x-cloak class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-mono text-[13px]" x-text="pct + '%'"></div>
             </div>
             <div class="space-y-3">

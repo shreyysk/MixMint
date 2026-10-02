@@ -1,0 +1,16 @@
+{# Sliding row of artist cards. Needs: row_id, title, djs. Optional: sub, more_url, more_label #}
+{% if djs %}
+<section class="mm-shelf" aria-labelledby="row-{{ row_id }}" data-row>
+    <div class="mm-row-head">
+        <div class="min-w-0"><h2 id="row-{{ row_id }}" class="mm-row-title">{{ title }}</h2>{% if sub %}<p class="mm-row-sub">{{ sub }}</p>{% endif %}</div>
+        <div class="mm-row-tools">
+            {% if more_url %}<a class="mm-row-more" href="{{ more_url }}">{{ more_label|default:"See all" }}</a>{% endif %}
+            <button type="button" class="mm-row-btn" data-row-prev aria-label="Scroll {{ title }} left" disabled>{% icon "chevron-left" 18 %}</button>
+            <button type="button" class="mm-row-btn" data-row-next aria-label="Scroll {{ title }} right">{% icon "chevron-right" 18 %}</button>
+        </div>
+    </div>
+    <div class="mm-rail mm-rail--djs" data-rail tabindex="0" aria-label="{{ title }}">
+        {% for dj in djs %}<div class="mm-rail-item">{% include "components/dj_card.html" %}</div>{% endfor %}
+    </div>
+</section>
+{% endif %}

@@ -42,7 +42,7 @@
             <button type="submit" :disabled="loading"
                 class="btn-mm btn-mint w-full h-[48px] font-bold flex items-center justify-center gap-2">
                 <template x-if="loading">
-                    <span class="animate-spin text-[18px]">⌛</span>
+                    <span class="animate-spin text-[18px]">{% icon "hourglass" %}</span>
                 </template>
                 <span x-text="loading ? 'Joining...' : 'Join Waitlist'"></span>
             </button>
@@ -56,7 +56,7 @@
         class="bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/20 rounded-2xl p-8 text-center">
         <div
             class="w-16 h-16 bg-[var(--accent-mint)] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-            ✨
+            {% icon "sparkles" %}
         </div>
         <h3 class="font-display text-2xl font-bold text-white mb-2">You're in!</h3>
         <p class="font-body text-[14px] text-[var(--text-muted)]" x-text="msg"></p>

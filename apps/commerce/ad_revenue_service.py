@@ -135,3 +135,63 @@ def credit_ad_revenue_to_djs():
             continue
 
     return {"djs_credited": credited}
+
+
+def distribute_ad_income(amount, start, end, admin_email=""):
+    """
+    Share one period's ad income with DJs. The admin enters what the ad network paid for the period
+    (e.g. the AdSense monthly report). Each DJ's slice is proportional to the views their store and release
+    pages got in that period; the DJ receives DJ_AD_REVENUE_SHARE (15%) of their slice.
+    The same period can't be paid twice. Returns {"djs": n, "credited": Decimal, "views": total_views}.
+    """
+    from django.db import transaction
+    from django.db.models import Count
+
+    from apps.accounts.models import DJPageView
+    from apps.admin_panel.models import SystemSetting
+
+    amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+    if amount <= 0:
+        raise ValueError("Enter the ad income for the period.")
+    key = f"{start:%Y-%m-%d}..{end:%Y-%m-%d}"
+    row, _ = SystemSetting.objects.get_or_create(key="ad_income_periods", defaults={"value": {"paid": []}})
+    paid = list((row.value or {}).get("paid", []))
+    if any(p.get("period") == key for p in paid):
+        raise ValueError("That period was already shared with DJs.")
+    try:
+        rate = Decimal(str(SystemSetting.objects.get(key="ad_share_rate").value.get("rate", settings.DJ_AD_REVENUE_SHARE)))
+    except SystemSetting.DoesNotExist:
+        rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))
+    if rate > 1:
+        rate = rate / 100
+
+    views = list(DJPageView.objects.filter(created_at__date__gte=start, created_at__date__lte=end)
+                 .values("dj_id").annotate(n=Count("id")).order_by())
+    total_views = sum(v["n"] for v in views)
+    if not total_views:
+        raise ValueError("No DJ page views in that period, so there is nothing to share.")
+
+    credited, n = Decimal("0"), 0
+    with transaction.atomic():
+        for v in views:
+            slice_ = (amount * v["n"] / total_views)
+            share = (slice_ * rate).quantize(Decimal("0.01"))
+            if share <= 0:
+                continue
+            wallet, _ = DJWallet.objects.select_for_update().get_or_create(dj_id=v["dj_id"])
+            wallet.pending_earnings += share
+            wallet.total_earnings += share
+            wallet.available_for_payout += share
+            wallet.save()
+            AdRevenueLog.objects.create(dj_id=v["dj_id"], content_id=0, ad_impression_value=slice_.quantize(Decimal("0.0001")))
+            LedgerEntry.objects.create(
+                wallet=wallet, amount=share, entry_type="credit",
+                description=f"Ad income {start:%d %b}–{end:%d %b %Y} ({int(rate * 100)}% of ₹{slice_:.2f} from your pages)",
+                metadata={"source": "ad_revenue", "period": key, "views": v["n"], "share_rate": str(rate)},
+            )
+            credited += share
+            n += 1
+        paid.append({"period": key, "amount": str(amount), "credited": str(credited), "djs": n, "by": admin_email})
+        row.value = {"paid": paid}
+        row.save(update_fields=["value", "updated_at"])
+    return {"djs": n, "credited": credited, "views": total_views}

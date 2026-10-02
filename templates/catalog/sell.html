@@ -7,7 +7,7 @@
     <section class="text-center max-w-[760px] mx-auto">
         <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--accent-mint)] mb-4">For DJs &amp; producers</p>
         <h1 class="font-display text-[40px] md:text-[64px] font-[800] text-[var(--text-primary)] tracking-tight leading-[0.98]">Your edits.<br>Your store.<br>Your money.</h1>
-        <p class="text-[16px] md:text-[18px] text-[var(--text-muted)] mt-5">Sell private edits, remixes and album packs straight to the DJs who play them.{% if dj_share_percent is not None %} You keep {{ dj_share_percent }}% of every sale.{% endif %}</p>
+        <p class="text-[16px] md:text-[18px] text-[var(--text-muted)] mt-5">Sell private edits, remixes and album packs straight to the DJs who play them. {% include "components/earn_line.html" %}</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <a href="{% url 'apply_as_dj' %}" class="btn-mm btn-mint h-[54px] px-8 text-[16px] font-[700] inline-flex items-center justify-center">Apply now — takes 2 minutes</a>
             {% if help_telegram_url %}<a href="{{ help_telegram_url }}" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[54px] px-6 text-[15px] font-[600] inline-flex items-center justify-center">Questions? Message us on Telegram</a>{% endif %}
@@ -29,7 +29,28 @@
             <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">Live earnings dashboard</h3><p class="text-[14px] text-[var(--text-muted)]">See every sale as it happens. Withdraw from ₹500, or get paid automatically every week.</p></div>
             <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">Bundles, offers &amp; limited drops</h3><p class="text-[14px] text-[var(--text-muted)]">Sell packs at a discount, run flash offers, or release numbered copies that sell out.</p></div>
             <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">Previews from your socials</h3><p class="text-[14px] text-[var(--text-muted)]">Buyers preview from your YouTube or Instagram Reel — more views for your channel, no leaks.</p></div>
+            <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">{% if fee_enabled %}One-time listing fee: {{ fee|money }}{% else %}<s class="text-[var(--text-muted)] font-[500] mr-1">{{ fee|money }} listing fee</s> No listing fee{% endif %}</h3><p class="text-[14px] text-[var(--text-muted)]">{% if fee_enabled %}Paid once when you apply. No monthly charges.{% else %}Joining is free right now. No monthly charges either.{% endif %}</p></div>
+            <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">Ad income on top</h3><p class="text-[14px] text-[var(--text-muted)]">Earn {{ dj_ad_share_percent|default:15 }}% of the ad income from your own pages, on top of your sales.</p></div>
             <div class="mm-card-section"><h3 class="font-[700] text-[var(--text-primary)] mb-1">Curated catalogue</h3><p class="text-[14px] text-[var(--text-muted)]">Every DJ is reviewed before going live — which is why buyers trust what they find here.</p></div>
+        </div>
+    </section>
+
+    <section class="mt-14" aria-labelledby="plans">
+        <h2 id="plans" class="font-display text-[26px] md:text-[32px] font-[800] text-[var(--text-primary)] mb-2">Free or Pro</h2>
+        <p class="text-[14px] text-[var(--text-muted)] mb-5">Start free. Switch to Pro when you sell more — try it free for 7 days, once.</p>
+        <div class="mm-compare overflow-x-auto rounded-[14px] border border-[var(--border)] bg-[var(--bg-surface)]">
+            <table class="w-full text-left text-[14px]">
+                <thead><tr class="bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[12px]"><th class="p-3 sm:p-4 font-[600]" scope="col"><span class="sr-only">Feature</span></th><th class="p-3 sm:p-4 font-[700] text-[var(--text-primary)]" scope="col">Free</th><th class="p-3 sm:p-4 font-[700] text-[var(--accent-mint)]" scope="col">Pro · ₹999/year</th></tr></thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">You keep per sale</th><td class="p-3 sm:p-4 font-[700]">{{ dj_share_percent|default:85 }}%</td><td class="p-3 sm:p-4 font-[700] text-[var(--accent-mint)]">92%</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">Ad income from your pages</th><td class="p-3 sm:p-4">{{ dj_ad_share_percent|default:15 }}%</td><td class="p-3 sm:p-4">{{ dj_ad_share_percent|default:15 }}%</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">Storage</th><td class="p-3 sm:p-4">3 GB</td><td class="p-3 sm:p-4">20 GB</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">Your own domain</th><td class="p-3 sm:p-4 text-[var(--text-muted)]">—</td><td class="p-3 sm:p-4 inline-flex items-center gap-1">{% icon "check" %} Yes</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">"Pro drop" badge on releases</th><td class="p-3 sm:p-4 text-[var(--text-muted)]">—</td><td class="p-3 sm:p-4">{% icon "check" %} Yes</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">Support</th><td class="p-3 sm:p-4">Help desk</td><td class="p-3 sm:p-4">Priority</td></tr>
+                    <tr><th scope="row" class="p-3 sm:p-4 font-[500] text-[var(--text-muted)]">Weekly payouts to UPI / bank</th><td class="p-3 sm:p-4">{% icon "check" %} Yes</td><td class="p-3 sm:p-4">{% icon "check" %} Yes</td></tr>
+                </tbody>
+            </table>
         </div>
     </section>
 
@@ -37,10 +58,11 @@
         <div class="mm-card-section">
             <h2 id="money" class="font-display text-[22px] font-[800] text-[var(--text-primary)] mb-3">The money</h2>
             <ul class="space-y-2 text-[14px] text-[var(--text-muted)]">
-                <li>• MixMint keeps a {{ commission|floatformat:0 }}% platform fee per sale. The rest is yours.</li>
-                <li>• {% if fee_enabled %}One-time listing fee of {{ fee|money }}.{% else %}No listing fee right now — joining is free.{% endif %}</li>
+                <li>• MixMint keeps a {{ commission|floatformat:0 }}% platform fee per sale to run the platform. The rest is yours.</li>
+                <li>• Plus {{ dj_ad_share_percent|default:15 }}% of the ad income from your pages.</li>
+                <li>• {% if fee_enabled %}One-time listing fee of {{ fee|money }}.{% else %}<s>{{ fee|money }}</s> No listing fee right now — joining is free.{% endif %}</li>
                 <li>• Payouts to UPI or bank account, weekly from ₹500.</li>
-                <li>• GST invoices for every sale are generated for you.</li>
+                {% if platform_settings.gst_charging_enabled %}<li>• GST invoices for every sale are generated for you.</li>{% endif %}
             </ul>
         </div>
         <div class="mm-card-section">

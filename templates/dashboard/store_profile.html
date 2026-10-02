@@ -15,9 +15,10 @@
         {% csrf_token %}
         <section class="space-y-4" x-data="mmImage('banner_url', '{{ dj.banner_url|default_if_none:''|escapejs }}')">
             <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Cover image</h2>
-            <div class="relative w-full aspect-[4/1] min-h-[110px] rounded-[14px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
+            <p class="text-[13px] text-[var(--text-muted)] -mt-2">Same size as a YouTube channel banner: <strong class="text-[var(--text-primary)]">2560 × 1440</strong>. Keep text and logos in the middle 1546 × 423, the part shown on every screen. <a class="underline" href="{% url 'dj_asset_pack' %}">Get a banner template</a></p>
+            <div class="relative w-full aspect-[1546/423] min-h-[96px] rounded-[14px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)]">
                 <img x-show="url" x-cloak :src="url || false" alt="Store cover image" class="w-full h-full object-cover">
-                <div x-show="!url" class="w-full h-full flex items-center justify-center text-[13px] text-[var(--text-muted)]">Wide image, e.g. 1600×400</div>
+                <div x-show="!url" class="w-full h-full flex items-center justify-center text-[13px] text-[var(--text-muted)]">YouTube banner size, 2560 × 1440</div>
                 <div x-show="busy" x-cloak class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-mono text-[13px]" x-text="pct + '%'"></div>
             </div>
             <input type="hidden" name="banner_url" :value="url">

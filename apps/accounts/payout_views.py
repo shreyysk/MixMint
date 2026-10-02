@@ -5,7 +5,9 @@ import re
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 UPI_RE = re.compile(r"^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9]{1,64}$")
 IFSC_RE = re.compile(r"^[A-Z]{4}0[A-Z0-9]{6}$")
@@ -46,10 +48,17 @@ def dj_payouts_view(request):
                 errors.append("Enter the name on the bank account.")
         else:
             errors.append("Choose UPI or bank transfer.")
+        has_method = bool((dj.upi_id or "").strip() or (dj.bank_account_number or "").strip())
+        if has_method and not errors:  # changing where money goes needs the emailed code
+            from .payout_auth import verify_email_code
+
+            ok, msg = verify_email_code(dj, request.POST.get("code"), "details")
+            if not ok:
+                errors.append(msg)
         if errors:
             for e in errors:
                 messages.error(request, e)
-            return redirect("dj_payouts")
+            return render(request, "dashboard/dj_payouts.html", {**_ctx(dj), "keep_editing": True}, status=400)
 
         details = dict(dj.payout_details or {})
         if method == "upi":
@@ -65,10 +74,20 @@ def dj_payouts_view(request):
         messages.success(request, "Payout details saved.")
         return redirect("dj_payouts")
 
+    return render(request, "dashboard/dj_payouts.html", _ctx(dj))
+
+
+def _ctx(dj):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
     from apps.commerce.models import DJWallet, Payout
 
     wallet, _ = DJWallet.objects.get_or_create(dj=dj)
     method = (dj.payout_details or {}).get("method") or ("upi" if dj.upi_id else "bank" if dj.bank_account_number else "")
+    last = Payout.objects.filter(dj=dj).exclude(status="failed").order_by("-created_at").first()
+    next_at = (last.created_at + timedelta(days=7)) if last else None
     ctx = {
         "dj_profile": dj,
         "wallet": wallet,
@@ -76,8 +95,30 @@ def dj_payouts_view(request):
         "has_method": bool((dj.upi_id or "").strip() or ((dj.bank_account_number or "").strip() and dj.bank_ifsc_code)),
         "masked_account": _mask(dj.bank_account_number),
         "account_name": (dj.payout_details or {}).get("account_name", ""),
-        "has_2fa": bool(dj.payout_otp_secret),
         "threshold": settings.MIN_PAYOUT_THRESHOLD,
         "payouts": Payout.objects.filter(dj=dj).order_by("-created_at")[:20],
+        "next_withdraw_at": next_at if next_at and next_at > timezone.now() else None,
     }
-    return render(request, "dashboard/dj_payouts.html", ctx)
+    return ctx
+
+
+@login_required
+@require_POST
+def payout_code_view(request):
+    """Email the DJ a 6-digit code for a withdrawal or for changing payout details."""
+    profile = request.user.profile
+    dj = getattr(profile, "dj_profile", None)
+    if profile.role != "dj" or dj is None:
+        return JsonResponse({"error": "Only DJs can do this."}, status=403)
+    import json
+
+    try:
+        purpose = (json.loads(request.body or b"{}").get("purpose") or "withdraw")
+    except ValueError:
+        purpose = "withdraw"
+    if purpose not in ("withdraw", "details"):
+        purpose = "withdraw"
+    from .payout_auth import send_payout_code
+
+    ok, msg = send_payout_code(dj, purpose)
+    return JsonResponse({"ok": ok, "message": msg} if ok else {"error": msg}, status=200 if ok else 429)

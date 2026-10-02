@@ -1,6 +1,6 @@
 {% load tracks_filters %}<li class="flex items-center gap-4 px-5 md:px-6 py-4" x-show="!q || $el.dataset.s.includes(q.toLowerCase())" data-s="{{ item.title|lower }}">
     <div class="w-12 h-12 rounded-[8px] overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)] shrink-0 flex items-center justify-center">
-        {% if cover %}<img src="{{ cover }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">{% else %}<span aria-hidden="true">{% if kind == 'album' %}📦{% else %}🎵{% endif %}</span>{% endif %}
+        {% if cover %}<img src="{{ cover }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">{% else %}<span aria-hidden="true">{% if kind == 'album' %}{% icon "package" %}{% else %}{% icon "music" %}{% endif %}</span>{% endif %}
     </div>
     <div class="min-w-0 flex-1">
         <a href="{% if kind == 'album' %}{% url 'album_detail' item.pk %}{% else %}{% url 'track_detail' item.pk %}{% endif %}" class="block text-[15px] font-[600] text-[var(--text-primary)] truncate hover:text-[var(--accent-mint)]">{{ item.title }}</a>

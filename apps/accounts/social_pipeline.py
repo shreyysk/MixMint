@@ -89,7 +89,9 @@ def finish_mixmint_login(strategy, backend, user=None, is_new=False, details=Non
             from .models import AmbassadorCode
 
             ambassador = AmbassadorCode.objects.filter(code=ref_code, is_active=True).first()
-            if ambassador:
+            from apps.commerce.referrals import has_room
+
+            if ambassador and has_room(ambassador.dj):
                 profile.referred_by = ambassador.dj
                 changed.append("referred_by")
                 AmbassadorCode.objects.filter(pk=ambassador.pk).update(referral_count=ambassador.referral_count + 1)

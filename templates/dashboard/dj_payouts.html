@@ -6,7 +6,7 @@
     <div>
         <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
         <h1 class="font-display text-[34px] md:text-[44px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">Payouts</h1>
-        <p class="font-body text-[14px] text-[var(--text-muted)]">Money from each sale is held for 24–48 hours (in case of refunds), then becomes ready to withdraw. You can withdraw once you have {{ threshold|money }} or more; we also pay out automatically every week.</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Money from each sale is held for 24–48 hours (in case of refunds), then becomes ready to withdraw. You can withdraw once a week, any day, when you have {{ threshold|money }} or more. If you don't, we pay you automatically every Friday.</p>
     </div>
 
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -25,13 +25,14 @@
     </section>
 
     <!-- 1. Where to send the money -->
-    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8" x-data="{ method: '{{ method|default:'upi' }}', edit: {{ has_method|yesno:'false,true' }} }">
+    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8" x-data="{ method: '{{ method|default:'upi' }}', edit: {{ has_method|yesno:'false,true' }}{% if keep_editing %} || true{% endif %}, sent: false, sending: false,
+                 async sendCode() { this.sending = true; try { const r = await MM.api('{% url 'dj_payout_code' %}', { body: { purpose: 'details' } }); this.sent = true; MM.toast('success', r.message) } catch (e) { MM.toast('error', e.message) } this.sending = false } }">
         <div class="flex items-start justify-between gap-4 mb-5">
             <div>
                 <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">1. Where should we send your money?</h2>
                 <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">UPI or Indian bank account.</p>
             </div>
-            {% if has_method %}<span class="px-3 py-1 rounded-full text-[12px] font-[600] bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] shrink-0">✓ Saved</span>{% endif %}
+            {% if has_method %}<span class="px-3 py-1 rounded-full text-[12px] font-[600] bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] shrink-0">{% icon "check" %} Saved</span>{% endif %}
         </div>
         {% if has_method %}
         <div x-show="!edit" class="font-body text-[14px] text-[var(--text-primary)] space-y-1">
@@ -70,60 +71,46 @@
                 <label for="pan_number" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">PAN <span class="font-normal text-[var(--text-muted)]">(needed for tax once you earn more; optional for now)</span></label>
                 <input id="pan_number" name="pan_number" class="input-mm font-mono uppercase max-w-[260px]" placeholder="ABCDE1234F" maxlength="10" autocomplete="off">
             </div>
+            {% if has_method %}
+            <div class="rounded-[10px] border border-[var(--border)] bg-[var(--bg-elevated)] p-4 space-y-3">
+                <p class="font-body text-[13px] text-[var(--text-muted)]">To keep your money safe, changing these details needs a code we email to {{ request.user.email }}.</p>
+                <div class="flex flex-wrap gap-2 items-end">
+                    <button type="button" class="btn-mm btn-ghost h-[44px] px-4 text-[13px]" @click="sendCode()" :disabled="sending" x-text="sent ? 'Send a new code' : 'Email me a code'">Email me a code</button>
+                    <div><label for="details_code" class="block font-body text-[12px] font-[600] text-[var(--text-primary)] mb-1">Code from the email</label>
+                        <input id="details_code" name="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code"></div>
+                </div>
+            </div>
+            {% endif %}
             <button type="submit" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]">Save payout details</button>
         </form>
     </section>
 
-    <!-- 2. 2FA -->
+    <!-- 2. Withdraw -->
     <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
-             x-data="{ on: {{ has_2fa|yesno:'true,false' }}, secret: '', qr: '', code: '', busy: false,
-                       async start() { this.busy = true; try { const r = await MM.api('{% url 'enable_2fa' %}'); if (r.status === 'enabled') this.on = true; else { this.secret = r.secret; this.qr = r.qr_data_uri; } } catch (e) { MM.toast('error', e.message) } this.busy = false },
-                       async confirm() { this.busy = true; try { await MM.api('{% url 'verify_2fa' %}', { body: { code: this.code } }); this.on = true; MM.toast('success', 'Two-step verification is on.') } catch (e) { MM.toast('error', e.message) } this.busy = false } }">
-        <div class="flex items-start justify-between gap-4 mb-3">
-            <div>
-                <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)]">2. Protect withdrawals</h2>
-                <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">Withdrawals need a 6-digit code from Google Authenticator (or Authy), so nobody else can move your money.</p>
-            </div>
-            <span x-show="on" class="px-3 py-1 rounded-full text-[12px] font-[600] bg-[var(--accent-mint)]/15 text-[var(--accent-mint)] shrink-0">✓ On</span>
-        </div>
-        <div x-show="!on" x-cloak>
-            <button type="button" class="btn-mm btn-ghost h-[44px] px-5 text-[14px]" x-show="!secret" @click="start()" :disabled="busy">Set up authenticator app</button>
-            <div x-show="secret" class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start mt-2">
-                <div class="w-[180px] h-[180px] bg-white rounded-[10px] p-2"><img x-show="qr" :src="qr || false" alt="QR code to scan with your authenticator app" class="w-full h-full"></div>
-                <div class="space-y-3">
-                    <p class="font-body text-[13px] text-[var(--text-muted)]">Scan the QR code in your authenticator app, or type this key:</p>
-                    <code class="block font-mono text-[13px] text-[var(--accent-mint)] break-all" x-text="secret"></code>
-                    <label for="totp_setup" class="block font-body text-[13px] font-[600] text-[var(--text-primary)]">Code from the app</label>
-                    <div class="flex gap-2">
-                        <input id="totp_setup" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
-                        <button type="button" class="btn-mm btn-mint h-[48px] px-5 text-[14px]" @click="confirm()" :disabled="busy || code.length !== 6">Turn on</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. Withdraw -->
-    <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
-             x-data="{ code: '', busy: false, async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast('success', r.message); setTimeout(() => location.reload(), 1200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
-        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">3. Withdraw</h2>
+             x-data="{ code: '', busy: false, sent: false, sending: false,
+                       async sendCode() { this.sending = true; try { const r = await MM.api('{% url 'dj_payout_code' %}', { body: { purpose: 'withdraw' } }); this.sent = true; MM.toast('success', r.message); this.$nextTick(() => document.getElementById('code_withdraw')?.focus()) } catch (e) { MM.toast('error', e.message) } this.sending = false },
+                       async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast('success', r.message); setTimeout(() => location.reload(), 1200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">2. Withdraw</h2>
+        <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Withdraw once a week, on any day you like. We email you a 6-digit code to confirm it's you.</p>
         {% if not has_method %}
         <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI or bank details above first.</p>
-        {% elif not has_2fa %}
-        <p class="font-body text-[14px] text-[var(--text-muted)]">Turn on step 2 first.</p>
+        {% elif next_withdraw_at %}
+        <p class="font-body text-[14px] text-[var(--text-primary)] inline-flex items-center gap-2">{% icon "clock" %} Your next withdrawal opens on {{ next_withdraw_at|date:"D, d M" }} at {{ next_withdraw_at|time:"g:i A" }}.</p>
         {% elif wallet.available_for_payout < threshold %}
         <p class="font-body text-[14px] text-[var(--text-muted)]">You can withdraw once {{ threshold|money }} is ready. You have {{ wallet.available_for_payout|money }} so far.</p>
         {% else %}
-        <p class="font-body text-[14px] text-[var(--text-muted)] mb-4">Withdraw {{ wallet.available_for_payout|money }} to {% if method == 'upi' %}{{ dj_profile.upi_id }}{% else %}your bank account {{ masked_account }}{% endif %}. It usually arrives within 3 working days.</p>
-        <div class="flex flex-wrap gap-2 items-end">
+        <p class="font-body text-[14px] text-[var(--text-primary)] mb-4">Withdraw <strong>{{ wallet.available_for_payout|money }}</strong> to {% if method == 'upi' %}{{ dj_profile.upi_id }}{% else %}your bank account {{ masked_account }}{% endif %}. It usually arrives within 3 working days.</p>
+        <div class="flex flex-wrap gap-3 items-end">
+            <button type="button" class="btn-mm btn-ghost h-[48px] px-5 text-[14px]" @click="sendCode()" :disabled="sending" x-text="sent ? 'Send a new code' : '1. Email me a code'">1. Email me a code</button>
             <div>
-                <label for="totp_withdraw" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Authenticator code</label>
-                <input id="totp_withdraw" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
+                <label for="code_withdraw" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Code from the email</label>
+                <input id="code_withdraw" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
             </div>
-            <button type="button" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]" @click="withdraw()" :disabled="busy || code.length !== 6">Withdraw now</button>
+            <button type="button" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]" @click="withdraw()" :disabled="busy || code.length !== 6">2. Withdraw now</button>
         </div>
         {% endif %}
     </section>
+
 
     <section>
         <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-4">Payout history</h2>

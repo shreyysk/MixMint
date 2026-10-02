@@ -55,13 +55,7 @@
         {% endif %}
     </section>
 
-    <section class="mm-card-section">
-        <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Your data</h2>
-        <p class="text-[13px] text-[var(--text-muted)] mb-4">Download everything MixMint keeps about you: profile, purchases, downloads.</p>
-        <a href="{% url 'export_data' %}" class="btn-mm btn-ghost h-[44px] px-5 text-[14px] inline-flex items-center">Download my data</a>
-    </section>
-
-    <section class="mm-card-section border-[var(--accent-red)]/40" x-data="{ open: false }">
+        <section class="mm-card-section border-[var(--accent-red)]/40" x-data="{ open: false }">
         <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Close my account</h2>
         <p class="text-[13px] text-[var(--text-muted)] mb-4">You'll be logged out and can't log back in. {% if profile.role == 'dj' %}Your store goes offline. Unpaid earnings are paid out first. {% endif %}Your data is removed within 30 days; invoices are kept as the law requires.</p>
         <button type="button" class="btn-mm h-[44px] px-5 text-[14px] border border-[var(--accent-red)] text-[var(--accent-red)]" x-show="!open" @click="open = true">Close my account…</button>
