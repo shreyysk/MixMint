@@ -4,18 +4,22 @@
 
     // 1. Reveal on scroll (+ stagger children carrying data-reveal-child)
     const revealEls = document.querySelectorAll('[data-reveal]');
+    // Anything already on screen stays visible with no animation; only later sections fade in.
+    const fold = window.innerHeight * 0.9;
+    revealEls.forEach((el) => { if (el.getBoundingClientRect().top < fold) el.classList.add('in'); });
     if ('IntersectionObserver' in window && !reduceMotion) {
+        document.documentElement.classList.add('reveal-on');
         const io = new IntersectionObserver((entries) => {
             entries.forEach((en) => {
                 if (en.isIntersecting) {
                     const kids = en.target.querySelectorAll('[data-reveal-child]');
-                    kids.forEach((k, i) => k.style.setProperty('--reveal-delay', (i * 70) + 'ms'));
+                    kids.forEach((k, i) => k.style.setProperty('--reveal-delay', Math.min(i * 40, 200) + 'ms'));
                     en.target.classList.add('in');
                     io.unobserve(en.target);
                 }
             });
         }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
-        revealEls.forEach((el) => io.observe(el));
+        revealEls.forEach((el) => { if (!el.classList.contains('in')) io.observe(el); });
     } else {
         revealEls.forEach((el) => el.classList.add('in'));
     }
@@ -70,7 +74,7 @@
     const pl = document.getElementById('mm-pageload');
     if (!pl) return;
     let timer = null;
-    const show = () => { clearTimeout(timer); timer = setTimeout(() => pl.classList.add('show'), 220); };
+    const show = () => { clearTimeout(timer); timer = setTimeout(() => pl.classList.add('show'), 400); };
     const hide = () => { clearTimeout(timer); pl.classList.remove('show'); };
     document.addEventListener('click', (e) => {
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;

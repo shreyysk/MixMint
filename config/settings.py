@@ -479,6 +479,9 @@ elif DEBUG:
 # Cache: set CACHE_URL=redis://... in production so rate limits, fraud counters and
 # download slots are shared across gunicorn workers. Falls back to per-process memory.
 CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://mixmint")}
+if CACHES["default"]["BACKEND"] == "django.core.cache.backends.redis.RedisCache":
+    # Site-wide settings are kept in-process for a few seconds to save Redis round trips per page.
+    CACHES["default"]["BACKEND"] = "apps.core.cache_backend.LayeredRedisCache"
 
 # Shared secret for worker-free cron endpoints (/cron/<job>/) + one-off guards.
 CRON_SECRET = env("CRON_SECRET", default="")

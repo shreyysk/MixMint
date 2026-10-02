@@ -19,23 +19,14 @@
 }
 
 /* ── Scroll-triggered reveal (JS adds .in on intersect) ─────── */
-[data-reveal] {
-    opacity: 0;
-    transform: translateY(26px) scale(0.99);
-    transition:
-        opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+/* Content is visible by default. Once ux.js has marked what is already on screen, only sections
+   further down are hidden, then fade in quickly as they scroll into view. */
+html.reveal-on [data-reveal]:not(.in) { opacity: 0; transform: translateY(14px); }
+html.reveal-on [data-reveal] {
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out;
     transition-delay: var(--reveal-delay, 0ms);
-    will-change: opacity, transform;
 }
-[data-reveal].in {
-    opacity: 1;
-    transform: none;
-}
-[data-reveal="left"] { transform: translateX(-30px); }
-[data-reveal="right"] { transform: translateX(30px); }
-[data-reveal="zoom"] { transform: scale(0.94); }
-[data-reveal].in { transform: none; }
+html.reveal-on [data-reveal].in, [data-reveal].in { opacity: 1; transform: none; }
 
 /* ── Card lift (grids of tracks/albums/DJs) ─────────────────── */
 .lift {
@@ -147,7 +138,6 @@ textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
     filter: blur(90px);
     opacity: 0.16;
     pointer-events: none;
-    animation: ux-float 11s ease-in-out infinite alternate;
 }
 @keyframes ux-float {
     from { transform: translate(0, 0) scale(1); }
@@ -347,7 +337,7 @@ html.theme-switching *, html.theme-switching *::before, html.theme-switching *::
         display: grid; grid-template-columns: repeat(4, 1fr);
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
         padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-        background: color-mix(in srgb, var(--bg-base) 92%, transparent); backdrop-filter: blur(14px);
+        background: var(--bg-base);
         border-top: 1px solid var(--border);
     }
     .mm-tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
@@ -380,7 +370,7 @@ html.theme-switching *, html.theme-switching *::before, html.theme-switching *::
     bottom: calc(12px + env(safe-area-inset-bottom));
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     padding: 10px 10px 10px 16px; border-radius: 16px;
-    background: color-mix(in srgb, var(--bg-surface) 94%, transparent); backdrop-filter: blur(14px);
+    background: var(--bg-surface);
     border: 1px solid var(--border); box-shadow: var(--shadow-card); }
 .mm-buybar[hidden] { display: none; }
 body.has-tabbar .mm-buybar { bottom: calc(80px + env(safe-area-inset-bottom)); }
@@ -499,7 +489,7 @@ html:not(.js-ready) [data-reveal] { opacity: 1; transform: none; }
     background: linear-gradient(135deg, color-mix(in srgb, var(--accent-mint) 22%, var(--bg-elevated)), var(--bg-elevated)); }
 .mm-rcard-ph span { font-family: var(--font-display); font-size: 44px; font-weight: 700; color: var(--text-muted); }
 .mm-badge { position: absolute; top: 8px; left: 8px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
-    background: color-mix(in srgb, var(--bg-base) 82%, transparent); color: var(--text-primary); backdrop-filter: blur(6px); }
+    background: color-mix(in srgb, var(--bg-base) 90%, transparent); color: var(--text-primary); }
 .mm-badge + .mm-badge { left: auto; right: 8px; }
 .mm-badge-hot { background: var(--accent-amber); color: #000; }
 .mm-badge-pro { background: var(--accent-mint); color: var(--bg-base); }
@@ -587,9 +577,10 @@ input[type="checkbox"], input[type="radio"] { min-width: 18px; min-height: 18px;
 [data-theme="light"] .mm-row__art::before, [data-theme="light"] [data-sk]::before { background-image: url("../logo/mm-black-180.png"); opacity: .06; }
 .mm-sk::after, .mm-rcard-art::after, [data-sk]::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--text-primary) 7%, transparent) 50%, transparent 75%);
-  transform: translateX(-100%); animation: ux-shimmer 1.6s ease-in-out infinite; }
+  transform: translateX(-100%); animation: ux-shimmer 1.6s ease-in-out 5; }
 .mm-rcard-art > *, [data-sk] > *, .mm-sk > * { position: relative; z-index: 1; }
-.mm-rcard-art:has(img.is-loaded)::after, [data-sk]:has(img.is-loaded)::after, .mm-rcard-art:has(.mm-rcard-ph)::after { animation: none; display: none; }
+.mm-rcard-art:has(img.is-loaded)::after, [data-sk]:has(img.is-loaded)::after, .mm-rcard-art:has(.mm-rcard-ph)::after,
+.mm-rcard-art:not(:has(img))::after, [data-sk]:not(:has(img))::after { animation: none; display: none; }
 html.js-ready img[loading="lazy"]:not(.is-loaded) { opacity: 0; }
 html.js-ready img[loading="lazy"] { transition: opacity .35s ease; }
 html.js-ready img.is-loaded { opacity: 1; }
@@ -687,3 +678,6 @@ html.js-ready img.is-loaded { opacity: 1; }
     table.mm-stack td.mm-stack-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px !important; }
     table.mm-stack td.mm-stack-actions > * { margin: 0 !important; border: 1px solid var(--border); border-radius: 10px; }
 }
+
+/* Performance: off-screen sections skip layout and paint until scrolled near. */
+footer { content-visibility: auto; contain-intrinsic-size: auto 640px; }

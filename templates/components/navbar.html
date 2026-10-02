@@ -31,8 +31,9 @@
 {% endif %}
 
 <nav class="sticky top-0 z-50 border-b transition-colors duration-300"
-    style="background-color: color-mix(in srgb, var(--bg-base) 90%, transparent); backdrop-filter: blur(12px); border-bottom-color: var(--border);"
-    x-data="{ open: false, showMenu: false }">
+    style="background-color: var(--bg-base); border-bottom-color: var(--border);"
+    x-data="{ open: false, showMenu: false, navBottom: 81 }"
+    x-effect="document.documentElement.style.overflow = open ? 'hidden' : ''; if (open) navBottom = Math.round($root.getBoundingClientRect().bottom)">
     <div class="container mx-auto px-6 max-w-[1280px]">
         <div class="flex items-center justify-between h-20">
             <!-- Left: Logo / Branding -->
@@ -206,7 +207,8 @@
         <div x-show="open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-            class="lg:hidden fixed inset-0 top-[81px] z-40 flex flex-col bg-[var(--bg-base)] px-6 pt-12 pb-8"
+            class="lg:hidden fixed inset-x-0 bottom-0 z-40 flex flex-col bg-[var(--bg-base)] px-6 pt-10 pb-8 overflow-y-auto overscroll-contain"
+            :style="`top:${navBottom}px`" style="top:81px"
             @keyup.escape.window="open = false" x-cloak>
 
             <nav class="flex flex-col gap-6 font-body text-[18px] font-medium">

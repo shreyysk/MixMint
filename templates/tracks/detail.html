@@ -22,7 +22,7 @@
         <div class="lg:col-span-5 space-y-6 sm:space-y-8 w-full max-w-[560px] mx-auto lg:max-w-none mm-detail-media" data-reveal="left">
             <!-- Artwork -->
             <div
-                class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group skeleton">
+                class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group{% if track.cover_url %} skeleton{% endif %}">
                 {% if track.cover_url %}
                 <img fetchpriority="high" decoding="async" src="{{ track.cover_url }}" alt="{{ track.title }}"
                     class="w-full h-full object-cover transition-opacity duration-300"
