@@ -18,7 +18,21 @@ def asset_pack_view(request):
             ("youtube-banner-2560x1440.png", "YouTube banner & store cover", "2560 × 1440", "Channel banner and your MixMint store cover. Keep text in the middle 1546 × 423."),
             ("x-header-1500x500.png", "X (Twitter) header", "1500 × 500", "Profile header."),
         ],
+        "brand_kit": BRAND_KIT,
     })
+
+
+# MixMint brand posts (static/brand, made by tools/brand/gen.js). Also listed for admins on the brand kit page.
+BRAND_KIT = [
+    ("post-launch.jpg", "Launch post", "1080 × 1350"),
+    ("post-djs.jpg", "Sell your edits", "1080 × 1350"),
+    ("post-samples.jpg", "Sample packs", "1080 × 1350"),
+    ("post-how.jpg", "How it works", "1080 × 1350"),
+    ("story-launch.jpg", "Launch story", "1080 × 1920"),
+    ("story-djs.jpg", "DJ story", "1080 × 1920"),
+    ("reel-cover.jpg", "Reel cover", "1080 × 1920"),
+    ("flyer-a4.jpg", "Print flyer (A4)", "1240 × 1754"),
+]
 
 
 @login_required
