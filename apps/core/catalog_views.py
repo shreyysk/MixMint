@@ -217,7 +217,7 @@ def releases_view(request, forced_type=None, forced_genre=None):
     ctx = {
         "page": page, "total": total, "kind": kind, "types": TYPES, "q": q, "genre": genre, "genres": genres,
         "genre_groups": genre_groups, "sort": sort, "sorts": SORTS, "forced": forced_type,
-        "heading": (f"{forced_genre} DJ songs, edits & remixes" if forced_genre else
+        "heading": (f"{forced_genre} DJ songs & remixes" if forced_genre else
                     {"drops": "Limited drops", "bundles": "Bundles", "samples": "Sample packs & DJ tool kits"}.get(forced_type or "", "All releases")),
         "forced_genre": forced_genre,
         "rows": rows, "groups": groups, "qs": qs, "filtered": filtered, "active": active,

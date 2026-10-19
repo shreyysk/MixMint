@@ -14,7 +14,10 @@ def seo_context(request):
         tags["og:url"] = request.build_absolute_uri(request.path)
     except Exception:
         pass
-    ctx = {"og_tags": tags, "footer_genres": FOOTER_GENRES}
+    from django.conf import settings
+
+    ctx = {"og_tags": tags, "footer_genres": FOOTER_GENRES,
+           "google_verify": getattr(settings, "GOOGLE_SITE_VERIFICATION", ""), "bing_verify": getattr(settings, "BING_SITE_VERIFICATION", "")}
     if request.path == "/":
         from apps.core.seo_utils import site_ld
 

@@ -76,6 +76,8 @@
         [x-cloak] { display: none !important; }
     </style>
 
+    {% if google_verify %}<meta name="google-site-verification" content="{{ google_verify }}">{% endif %}
+    {% if bing_verify %}<meta name="msvalidate.01" content="{{ bing_verify }}">{% endif %}
     {% if ld_json %}<script type="application/ld+json">{{ ld_json|safe }}</script>{% endif %}
     {% if site_ld_json %}<script type="application/ld+json">{{ site_ld_json|safe }}</script>{% endif %}
     {% block extra_head %}{% endblock %}

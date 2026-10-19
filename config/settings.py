@@ -552,6 +552,10 @@ DOWNLOAD_EXPIRY_WARNING_HOURS = 10  # "expiring soon" banner threshold on downlo
 GOOGLE_DRIVE_API_KEY = env("GOOGLE_DRIVE_API_KEY", default="")
 
 # Telegram support bridge (SupportTicket alerts + contact deep link)
+# Search Console / Bing: paste only the content="..." value of the verification meta tag.
+GOOGLE_SITE_VERIFICATION = env("GOOGLE_SITE_VERIFICATION", default="")
+BING_SITE_VERIFICATION = env("BING_SITE_VERIFICATION", default="")
+
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_ADMIN_CHAT_ID = env("TELEGRAM_ADMIN_CHAT_ID", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")

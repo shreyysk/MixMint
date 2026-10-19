@@ -43,7 +43,7 @@ def test_genre_landing_and_sitemap(track):
     c = Client()
     r = c.get("/genre/tulu/")
     page = r.content.decode()
-    assert r.status_code == 200 and "Tulu DJ songs, edits &amp; remixes" in page and track.title in page
+    assert r.status_code == 200 and "Tulu DJ songs &amp; remixes" in page and track.title in page
     assert c.get("/genre/not-a-genre/").status_code == 404
     assert c.get("/sample-packs/").status_code == 200
     sm = c.get("/sitemap.xml").content.decode()
@@ -55,3 +55,12 @@ def test_ld_json_cannot_break_out_of_script():
     from apps.core.seo_utils import ld_json
 
     assert "</script>" not in ld_json({"name": "</script><b>x"})
+
+
+@pytest.mark.django_db
+def test_search_console_tag_and_robots(settings):
+    settings.GOOGLE_SITE_VERIFICATION = "abc123"
+    c = Client()
+    assert '<meta name="google-site-verification" content="abc123">' in c.get("/").content.decode()
+    robots = c.get("/robots.txt").content.decode()
+    assert "Disallow: /account/" in robots and "Sitemap:" in robots
