@@ -198,8 +198,9 @@ def login_view(request):
         password = request.POST.get("password", "")
         ip = _get_client_ip(request)
 
-        # Brute-force protection: per IP and per account.
-        if _rate_limited(f"login_ip_{ip}", limit=20, window=900) or _rate_limited(
+        # Brute-force protection: per account (8 tries / 15 min) is the real guard. The per-network cap is
+        # generous because a whole college or office can share one IP address.
+        if _rate_limited(f"login_ip_{ip}", limit=150, window=900) or _rate_limited(
             f"login_email_{email}", limit=8, window=900
         ):
             messages.error(request, "Too many login attempts. Please wait 15 minutes and try again.")
