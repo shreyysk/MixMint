@@ -142,6 +142,48 @@
     }
 
     /*
+     * PhonePe popup (iframe) checkout. Resolves true once handled (paid, cancelled or failed),
+     * false when the popup isn't available so the caller can redirect instead.
+     */
+    function phonepePopup(data, restore) {
+        return new Promise(function (resolve) {
+            var finished = false;
+            var timer = setTimeout(function () { if (!finished) { finished = true; resolve(false); } }, 6000);
+            loadScript("https://mercury.phonepe.com/web/bundle/checkout.js").then(function () {
+                if (finished) return;
+                var pp = window.PhonePeCheckout;
+                if (!pp || typeof pp.transact !== "function") { finished = true; clearTimeout(timer); return resolve(false); }
+                finished = true;
+                clearTimeout(timer);
+                hideOverlay();
+                var back = "/api/v1/payments/callback/?order_id=" + encodeURIComponent(data.order_id || "");
+                try {
+                    pp.transact({
+                        tokenUrl: data.redirect_url,
+                        type: "IFRAME",
+                        callback: function (response) {
+                            if (response === "USER_CANCEL") {
+                                try { pp.closePage && pp.closePage(); } catch (e) { /* already closed */ }
+                                if (restore) restore();
+                                toast("info", "Payment cancelled. Nothing was charged.");
+                                return;
+                            }
+                            // CONCLUDED (paid or failed): MixMint checks the result with PhonePe and shows it.
+                            showOverlay("pending", "Confirming payment…", "This takes a few seconds.");
+                            window.location.href = back;
+                        },
+                    });
+                    resolve(true);
+                } catch (e) {
+                    resolve(false);
+                }
+            }).catch(function () {
+                if (!finished) { finished = true; clearTimeout(timer); resolve(false); }
+            });
+        });
+    }
+
+    /*
      * Start a payment. `url` is any MixMint endpoint that returns the checkout
      * payload from apps.payments.views._gateway_payload.
      */
@@ -161,6 +203,9 @@
                 data = await api(url, { body: body || {} });
             }
             if (data.checkout === "redirect" && data.redirect_url) {
+                // PhonePe: open its pay page as a popup over MixMint. If the popup script can't load,
+                // fall back to the full-page redirect (same payment, same result).
+                if (await phonepePopup(data, restore)) return;
                 showOverlay("pending", "Redirecting to PhonePe…", "Don't close this tab.");
                 window.location.href = data.redirect_url;
                 return;

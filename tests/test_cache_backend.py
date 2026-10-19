@@ -44,3 +44,14 @@ def test_local_copy_expires(monkeypatch):
         c.get("ip_blacklist")
         c.get("ip_blacklist")
     assert g.call_count == 2
+
+
+def test_redis_down_never_breaks_requests():
+    c = LayeredRedisCache("redis://127.0.0.1:1/0", {"OPTIONS": {"socket_connect_timeout": 0.2, "socket_timeout": 0.2}})
+    assert c.get("anything", "fallback") == "fallback"
+    assert c.get("global_settings_ctx") is None
+    c.set("x", 1)
+    c.delete("x")
+    assert c.add("lock", 1) is True
+    assert c.get_many(["a", "b"]) == {}
+

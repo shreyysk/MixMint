@@ -7,10 +7,22 @@ its own copy for a few seconds. Writes and deletes made by this instance clear t
 once; other instances pick up a change within LOCAL_TTL seconds.
 """
 
+import logging
 import threading
 import time
 
 from django.core.cache.backends.redis import RedisCache
+
+logger = logging.getLogger("mixmint")
+_last_warn = [0.0]
+
+
+def _warn(op, exc):
+    # Redis down or over its quota: log at most once a minute, never break the page.
+    now = time.monotonic()
+    if now - _last_warn[0] > 60:
+        _last_warn[0] = now
+        logger.error("Cache %s failed (%s); serving without the cache", op, exc.__class__.__name__)
 
 HOT_KEYS = frozenset({
     "platform_mode",
@@ -23,6 +35,9 @@ LOCAL_TTL = 10  # seconds
 
 
 class LayeredRedisCache(RedisCache):
+    """Also fail-safe: if Redis is unreachable or over quota, reads miss and writes are skipped
+    instead of raising, so pages keep working (just without caching) under heavy load."""
+
     def __init__(self, server, params):
         super().__init__(server, params)
         self._local = {}
@@ -50,14 +65,45 @@ class LayeredRedisCache(RedisCache):
             found, value = self._local_get(key)
             if found:
                 return value
-            value = super().get(key, default, version)
+            value = self._safe("get", default, super().get, key, default, version)
             if value is not default and value is not None:
                 self._local_put(key, value)
             return value
-        return super().get(key, default, version)
+        return self._safe("get", default, super().get, key, default, version)
+
+    def _safe(self, op, fallback, fn, *args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:  # redis.ConnectionError, TimeoutError, quota errors, ...
+            _warn(op, exc)
+            return fallback
+
+    def add(self, key, value, timeout=300, version=None):
+        return self._safe("add", True, super().add, key, value, timeout, version)
+
+    def incr(self, key, delta=1, version=None):
+        try:
+            return super().incr(key, delta, version)
+        except ValueError:
+            raise  # missing key: Django's normal contract
+        except Exception as exc:
+            _warn("incr", exc)
+            return delta
+
+    def get_many(self, keys, version=None):
+        return self._safe("get_many", {}, super().get_many, keys, version)
+
+    def set_many(self, data, timeout=300, version=None):
+        return self._safe("set_many", [], super().set_many, data, timeout, version)
+
+    def touch(self, key, timeout=300, version=None):
+        return self._safe("touch", False, super().touch, key, timeout, version)
+
+    def has_key(self, key, version=None):
+        return self._safe("has_key", False, super().has_key, key, version)
 
     def set(self, key, value, timeout=300, version=None):
-        result = super().set(key, value, timeout, version)
+        result = self._safe("set", None, super().set, key, value, timeout, version)
         if key in HOT_KEYS:
             self._local_put(key, value, timeout if isinstance(timeout, (int, float)) else None)
         return result
@@ -65,13 +111,13 @@ class LayeredRedisCache(RedisCache):
     def delete(self, key, version=None):
         if key in HOT_KEYS:
             self._local_drop(key)
-        return super().delete(key, version)
+        return self._safe("delete", False, super().delete, key, version)
 
     def delete_many(self, keys, version=None):
         self._local_drop(*[k for k in keys if k in HOT_KEYS])
-        return super().delete_many(keys, version)
+        return self._safe("delete_many", None, super().delete_many, keys, version)
 
     def clear(self):
         with self._lock:
             self._local.clear()
-        return super().clear()
+        return self._safe("clear", None, super().clear)

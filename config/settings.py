@@ -482,6 +482,10 @@ CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://mixmint")}
 if CACHES["default"]["BACKEND"] == "django.core.cache.backends.redis.RedisCache":
     # Site-wide settings are kept in-process for a few seconds to save Redis round trips per page.
     CACHES["default"]["BACKEND"] = "apps.core.cache_backend.LayeredRedisCache"
+    # Logged-in sessions are read on every page: keep them in Redis with the database as the backup copy,
+    # so a crowd of logged-in users doesn't mean one database query per page view just for the session.
+    CACHES["default"].setdefault("OPTIONS", {}).update({"socket_connect_timeout": 2, "socket_timeout": 2})
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 # Shared secret for worker-free cron endpoints (/cron/<job>/) + one-off guards.
 CRON_SECRET = env("CRON_SECRET", default="")
@@ -697,6 +701,7 @@ CSP_SCRIPT_SRC = (
     "'unsafe-inline'",
     "'unsafe-eval'",
     "https://checkout.razorpay.com",
+    "https://mercury.phonepe.com",  # PhonePe popup checkout script
     "https://cdn.jsdelivr.net",
     "https://unpkg.com",
 )
@@ -724,6 +729,7 @@ CSP_CONNECT_SRC = (
     "https://lumberjack.razorpay.com",
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
+    "https://*.phonepe.com",
     "https://*.r2.cloudflarestorage.com",  # DJ uploads go straight to R2 (signed PUT)
     "https://api.fontshare.com",
     "https://fonts.googleapis.com",
@@ -750,6 +756,7 @@ CSP_FRAME_SRC = (
     "https://checkout.razorpay.com",
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
+    "https://*.phonepe.com",  # PhonePe pay page shown as a popup (iframe) over MixMint
 )
 # Google AdSense (only loads when Admin → Settings → Ads is switched on)
 _ADS = ("https://pagead2.googlesyndication.com", "https://googleads.g.doubleclick.net", "https://tpc.googlesyndication.com",
