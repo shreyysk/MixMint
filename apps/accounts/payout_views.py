@@ -105,6 +105,15 @@ def _ctx(dj):
         "payouts": Payout.objects.filter(dj=dj).order_by("-created_at")[:20],
         "next_withdraw_at": next_at if next_at and next_at > timezone.now() else None,
     }
+    try:
+        from apps.commerce.payout_gateway import active_provider
+
+        ctx["auto_payouts"] = active_provider() is not None
+    except Exception:
+        ctx["auto_payouts"] = False
+    from apps.admin_panel.bot import connect_ctx
+
+    ctx.update(connect_ctx(dj.profile))
     return ctx
 
 

@@ -60,6 +60,7 @@ urlpatterns = [
     path("dashboard/dj/payouts/code/", payout_views.payout_code_view, name="dj_payout_code"),
     path("dashboard/dj/profile/", music_views.store_profile_view, name="dj_store_profile"),
     path("account/", account_views.account_settings_view, name="account_settings"),
+    path("account/telegram/", account_views.telegram_connect_view, name="telegram_connect"),
     path("dashboard/dj/<str:kind>/<int:pk>/edit/", music_views.edit_music_view, name="edit_music"),
     path("dashboard/dj/<str:kind>/<int:pk>/delete/", music_views.delete_music_view, name="delete_music"),
     path("dashboard/bundles/", bundle_management_view, name="bundle_management"),

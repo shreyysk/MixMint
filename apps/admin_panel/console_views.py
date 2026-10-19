@@ -927,6 +927,25 @@ def settings_view(request):
                 return redirect("admin_settings")
             _log(request, f"Shared ad income {start}–{end}", amount=request.POST.get("amount"), djs=res["djs"], credited=str(res["credited"]))
             messages.success(request, f"₹{res['credited']} added to {res['djs']} DJ wallet(s) from {res['views']} page views.")
+        elif action in ("launch_reset_sales", "launch_delete_accounts"):
+            from . import launch_reset
+
+            if (request.POST.get("confirm") or "").strip() != "RESET":
+                messages.error(request, "Nothing deleted: type RESET (capital letters) to confirm.")
+                return redirect("/api/v1/admin/settings/#launch")
+            if action == "launch_reset_sales":
+                n = launch_reset.reset_sales()
+                _log(request, "Launch reset: cleared test sales and money", rows=n)
+                messages.success(request, f"Done: {n} test records removed and every wallet is at ₹0.")
+            else:
+                ids = [i for i in request.POST.getlist("ids") if i]
+                if not ids:
+                    messages.error(request, "Tick at least one account.")
+                    return redirect("/api/v1/admin/settings/#launch")
+                n = launch_reset.delete_accounts(ids)
+                _log(request, "Launch reset: deleted test accounts", count=n)
+                messages.success(request, f"Deleted {n} account{'s' if n != 1 else ''}.")
+            return redirect("/api/v1/admin/settings/#launch")
         elif action == "clear_cache":
             try:
                 cache.clear()
@@ -949,7 +968,29 @@ def settings_view(request):
         "site_url": request.build_absolute_uri("/").rstrip("/"),
         "dark_mode_on": bool((dm.value or {}).get("enabled")) if dm and isinstance(dm.value, dict) else False,
         "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
+        "launch": _launch_preview(),
+        "plans": _plans(),
     })
+
+
+def _plans():
+    try:
+        from .plan_watch import status
+
+        return status()
+    except Exception:
+        logger.exception("Plan check failed")
+        return []
+
+
+def _launch_preview():
+    try:
+        from . import launch_reset
+
+        return launch_reset.preview()
+    except Exception:
+        logger.exception("Launch preview failed")
+        return {"orders": 0, "paid_orders": 0, "records": 0, "wallets": 0, "accounts": 0, "suspects": []}
 
 
 # ─────────────────────────────── exports ───────────────────────────────

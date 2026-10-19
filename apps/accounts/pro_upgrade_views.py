@@ -66,7 +66,11 @@ def upgrade_to_pro(request):
         result = gateway.create_subscription_order(
             dj_id=str(dj_profile.id), plan_type=plan_type, amount_paise=amount_paise
         )
-    except Exception:
+    except Exception as exc:
+        from apps.payments.cashfree_pg import NeedPhone
+
+        if isinstance(exc, NeedPhone):
+            return Response({"need_phone": True, "error": "Add your mobile number to pay."}, status=428)
         import logging
 
         logging.getLogger("mixmint").exception("Pro upgrade order failed for DJ %s", dj_profile.id)

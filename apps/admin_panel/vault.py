@@ -385,10 +385,10 @@ def _item_url(kind, cid):
 
 
 def telegram_link_payload(profile):
-    """/start payload that links a buyer's Telegram chat to their account (fits Telegram's 64 chars)."""
-    pid = str(profile.pk).replace("-", "")
-    sig = hmac.new(f"tg-link:{settings.SECRET_KEY}".encode(), pid.encode(), hashlib.sha256).hexdigest()[:16]
-    return f"dl_{pid}_{sig}"
+    """/start payload that links a buyer's Telegram chat to their account (expires after 2 hours)."""
+    from .bot import link_payload
+
+    return link_payload(profile)
 
 
 def profile_from_link_payload(payload):

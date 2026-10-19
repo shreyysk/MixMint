@@ -144,6 +144,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile", primary_key=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
     full_name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=15, blank=True, default="")  # mobile, needed by Cashfree checkout
     avatar_url = models.URLField(max_length=500, null=True, blank=True)
 
     # DJ flags stored on profile (canonical) [Spec P2 profiles]

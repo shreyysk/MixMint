@@ -46,6 +46,8 @@
         </form>
     </section>
 
+    {% include "partials/telegram_connect.html" with tg_for=profile.role %}
+
     <section class="mm-card-section">
         <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Devices</h2>
         <p class="text-[13px] text-[var(--text-muted)] mb-4">{% if other_sessions %}You're also logged in on {{ other_sessions }} other device{{ other_sessions|pluralize }}.{% else %}You're only logged in here.{% endif %}</p>

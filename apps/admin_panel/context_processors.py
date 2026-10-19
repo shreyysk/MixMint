@@ -15,7 +15,9 @@ def payments_test_mode():
         name = active_gateway_name()
     except Exception:
         name = getattr(dj_settings, "DEFAULT_PAYMENT_GATEWAY", "razorpay")
-    if name == "phonepe":
+    if name == "cashfree":
+        test = (getattr(dj_settings, "CASHFREE_PG_ENV", "sandbox") or "sandbox").lower() != "production"
+    elif name == "phonepe":
         if getattr(dj_settings, "PHONEPE_CLIENT_ID", ""):
             test = (getattr(dj_settings, "PHONEPE_ENV", "sandbox") or "sandbox").lower() != "production"
         else:
@@ -34,7 +36,9 @@ def _gateway_label():
         try:
             from apps.payments.utils import active_gateway_name
 
-            label = "PhonePe" if active_gateway_name() == "phonepe" else "Razorpay"
+            from apps.payments.utils import LABELS
+
+            label = LABELS.get(active_gateway_name(), "Razorpay")
         except Exception:
             label = "Razorpay"
         cache.set("payment_gateway_label", label, 30)

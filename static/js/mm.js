@@ -142,6 +142,66 @@
     }
 
     /*
+     * Cashfree popup checkout (JS SDK v3, redirectTarget "_modal"). When the popup finishes, MixMint checks
+     * the order with Cashfree (return_url) and shows the result; closing the popup cancels nothing paid.
+     */
+    async function cashfreePopup(data, restore) {
+        await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
+        if (typeof window.Cashfree !== "function") throw new Error("Could not load the payment window. Disable ad-blockers and retry.");
+        var cf = window.Cashfree({ mode: data.mode === "production" ? "production" : "sandbox" });
+        hideOverlay();
+        var result = await cf.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_modal" });
+        result = result || {};
+        if (result.paymentDetails) {
+            showOverlay("pending", "Confirming payment…", "This takes a few seconds.");
+            window.location.href = data.return_url;
+            return;
+        }
+        if (result.redirect) {
+            showOverlay("pending", "Opening the payment page…", "Don't close this tab.");
+            return;  // Cashfree redirects to the return URL itself (in-app browsers)
+        }
+        if (restore) restore();
+        var msg = (result.error && result.error.message) || "";
+        toast("info", /clos|cancel|dropped/i.test(msg) || !msg ? "Payment cancelled. Nothing was charged." : msg);
+    }
+
+    // Cashfree needs a mobile number on each order. Ask once; it is saved on the account.
+    function askPhone() {
+        return new Promise(function (resolve) {
+            var dlg = document.createElement("dialog");
+            dlg.className = "mm-dialog";
+            dlg.setAttribute("aria-labelledby", "mm-phone-title");
+            dlg.innerHTML = '<form method="dialog" class="mm-phone-form">' +
+                '<h2 id="mm-phone-title">Your mobile number</h2>' +
+                '<p>The payment gateway needs it for your receipt and UPI. We only ask once.</p>' +
+                '<label for="mm-phone">Mobile number</label>' +
+                '<input id="mm-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="14" placeholder="98765 43210" required class="input-mm">' +
+                '<p class="mm-phone-err" role="alert" aria-live="polite"></p>' +
+                '<div class="mm-phone-actions"><button type="button" class="btn-mm btn-ghost" data-cancel>Cancel</button>' +
+                '<button type="submit" class="btn-mm btn-mint">Continue to pay</button></div></form>';
+            document.body.appendChild(dlg);
+            var form = dlg.querySelector("form"), input = dlg.querySelector("input"), err = dlg.querySelector(".mm-phone-err");
+            var done = function (ok) { try { dlg.close(); } catch (e) { /* closed */ } dlg.remove(); resolve(ok); };
+            dlg.querySelector("[data-cancel]").addEventListener("click", function () { done(false); });
+            dlg.addEventListener("cancel", function (e) { e.preventDefault(); done(false); });
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                err.textContent = "";
+                try {
+                    await api("/api/v1/payments/phone/", { body: { phone: input.value } });
+                    done(true);
+                } catch (x) {
+                    err.textContent = x.message || "Enter a 10-digit Indian mobile number.";
+                    input.focus();
+                }
+            });
+            dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+            setTimeout(function () { input.focus(); }, 30);
+        });
+    }
+
+    /*
      * PhonePe popup (iframe) checkout. Resolves true once handled (paid, cancelled or failed),
      * false when the popup isn't available so the caller can redirect instead.
      */
@@ -196,11 +256,30 @@
             try {
                 data = await api(url, { body: body || {}, redirectOnAuth: !canGuest });
             } catch (authErr) {
-                if (authErr.status !== 401 || !canGuest) throw authErr;
-                restore();
-                if (!(await guest())) return;
-                restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
-                data = await api(url, { body: body || {} });
+                if (authErr.status === 428 && authErr.data && authErr.data.need_phone) {
+                    restore();
+                    if (!(await askPhone())) return;
+                    restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+                    data = await api(url, { body: body || {} });
+                } else {
+                    if (authErr.status !== 401 || !canGuest) throw authErr;
+                    restore();
+                    if (!(await guest())) return;
+                    restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+                    try {
+                        data = await api(url, { body: body || {} });
+                    } catch (e2) {
+                        if (!(e2.status === 428 && e2.data && e2.data.need_phone)) throw e2;
+                        restore();
+                        if (!(await askPhone())) return;
+                        restore = busy(opts.button, opts.busyLabel || "Starting secure payment…");
+                        data = await api(url, { body: body || {} });
+                    }
+                }
+            }
+            if (data.checkout === "cashfree" && data.payment_session_id) {
+                await cashfreePopup(data, restore);
+                return;
             }
             if (data.checkout === "redirect" && data.redirect_url) {
                 // PhonePe: open its pay page as a popup over MixMint. If the popup script can't load,

@@ -675,8 +675,8 @@ def toggle_payment_gateway(request):
     """Admin switch between Razorpay and PhonePe [Spec §10]."""
     gateway = request.data.get("gateway", "razorpay")
 
-    if gateway not in ("razorpay", "phonepe"):
-        return Response({"error": "Invalid gateway. Choose razorpay or phonepe."}, status=status.HTTP_400_BAD_REQUEST)
+    if gateway not in ("razorpay", "phonepe", "cashfree"):
+        return Response({"error": "Invalid gateway. Choose cashfree, phonepe or razorpay."}, status=status.HTTP_400_BAD_REQUEST)
 
     setting, _ = SystemSetting.objects.update_or_create(
         key="active_payment_gateway",
@@ -1203,7 +1203,7 @@ def refunds_admin_view(request):
 def _payments_ctx():
     from django.conf import settings as s
 
-    from apps.payments.utils import active_gateway_name
+    from apps.payments.utils import LABELS, active_gateway_name
 
     from .context_processors import payments_test_mode
 
@@ -1215,6 +1215,10 @@ def _payments_ctx():
         "webhook_ready": bool(s.PHONEPE_WEBHOOK_USERNAME and s.PHONEPE_WEBHOOK_PASSWORD),
         "webhook_url": f"{base}/api/v1/payments/webhook/phonepe/",
         "razorpay_ready": bool(s.RAZORPAY_KEY_ID and s.RAZORPAY_KEY_SECRET),
+        "cashfree_ready": bool(s.CASHFREE_PG_APP_ID and s.CASHFREE_PG_SECRET),
+        "cashfree_env": (s.CASHFREE_PG_ENV or "sandbox").lower(),
+        "cashfree_webhook_url": f"{base}/payment/webhook/cashfree/",
+        "labels": LABELS,
         "test_mode": payments_test_mode(),
     }}
 
@@ -1242,7 +1246,9 @@ def support_admin_view(request):
         base = (getattr(dj, "BASE_URL", "") or request.build_absolute_uri("/")).rstrip("/")
         if base.startswith("http://") and "localhost" not in base:
             base = "https://" + base[len("http://"):]
-        ok, url = support.set_webhook(base)
+        from . import bot
+
+        ok, url = bot.setup(base)
         if ok:
             messages.success(request, f"Telegram bot connected. It now delivers messages to {url}.")
         else:
@@ -1257,16 +1263,31 @@ def support_admin_view(request):
     if request.method == "POST" and request.POST.get("action") == "gateway_switch":
         from django.core.cache import cache
 
+        from apps.payments.utils import LABELS
+
         gw = request.POST.get("gateway")
-        if gw in ("phonepe", "razorpay"):
+        if gw in LABELS:
             SystemSetting.objects.update_or_create(
                 key="active_payment_gateway",
                 defaults={"value": {"gateway": gw}, "description": "Active payment gateway for the platform"},
             )
             cache.delete_many(["payments_test_mode", "payment_gateway_label"])
             _log_admin_action(request, f"Switched payment gateway to {gw}")
-            messages.success(request, f"New payments now go through {'PhonePe' if gw == 'phonepe' else 'Razorpay'}. "
+            messages.success(request, f"New payments now go through {LABELS[gw]}. "
                              "Orders already started finish on the gateway they began on.")
+        return redirect("/api/v1/admin/support/#payments")
+    if request.method == "POST" and request.POST.get("action") == "gateway_test_cashfree":
+        try:
+            from apps.payments.cashfree_pg import CashfreeGateway
+
+            gw = CashfreeGateway()
+            code, data = gw._call("GET", "/orders/MM_CONNECTION_TEST")
+            if code in (401, 403):
+                messages.error(request, f"Cashfree rejected the keys ({data.get('message') or code}). Check CASHFREE_PG_APP_ID / CASHFREE_PG_SECRET.")
+            else:
+                messages.success(request, f"Cashfree connection OK ({gw.env} keys).")
+        except Exception as exc:
+            messages.error(request, f"Cashfree connection failed: {str(exc)[:200]}")
         return redirect("/api/v1/admin/support/#payments")
     if request.method == "POST" and request.POST.get("action") == "gateway_test":
         try:

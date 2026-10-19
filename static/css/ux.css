@@ -708,3 +708,13 @@ footer { content-visibility: auto; contain-intrinsic-size: auto 640px; }
     .mm-filters-bar #rsort.input-mm { width: 210px; flex: 0 0 210px; }
     .mm-filters-bar .mm-filters-toggle { flex: 0 0 auto; }
 }
+
+/* One-time mobile number prompt (Cashfree checkout) */
+.mm-phone-form { display: grid; gap: 10px; }
+.mm-phone-form h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); }
+.mm-phone-form p { font-size: 13px; color: var(--text-muted); }
+.mm-phone-form label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.mm-phone-err:empty { display: none; }
+.mm-phone-err { color: var(--accent-red) !important; }
+.mm-phone-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+.mm-phone-actions .btn-mm { height: 44px; padding: 0 18px; font-size: 13px; }

@@ -42,7 +42,7 @@
             <p class="font-body text-[12px] text-[var(--text-muted)] mt-3">Your share after commission</p>
         </div>
         <div class="glow-card p-6 flex flex-col justify-between min-h-[150px]">
-            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Ready to withdraw</p>
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.16em] mb-3">Ready to receive</p>
             <p class="mm-stat-value font-display text-[30px] md:text-[40px] font-[700] text-[var(--text-primary)] leading-none">{{ available_balance|money }}</p>
             <p class="font-body text-[12px] text-[var(--text-muted)] mt-3">{% if escrow_balance %}{{ escrow_balance|money }} on hold (released after 24–48h){% else %}Paid out weekly from ₹500{% endif %}</p>
         </div>

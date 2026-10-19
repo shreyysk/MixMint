@@ -1,0 +1,25 @@
+{% comment %}Connect Telegram card. Needs tg_ready, tg_linked, tg_username, tg_bot (apps.admin_panel.bot.connect_ctx) and `tg_for` ("dj" or "buyer").{% endcomment %}
+{% if tg_ready %}
+<section class="mm-card-section" id="telegram">
+    <div class="flex items-start gap-4">
+        <span class="shrink-0 w-11 h-11 rounded-full grid place-items-center bg-[#229ED9]/10 text-[#229ED9]" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9.2-8.3c.4-.4-.1-.6-.6-.2L6.1 13 1.2 11.5c-1-.3-1.1-1 .2-1.5l19-7.3c.9-.3 1.7.2 1.5 1.6z"/></svg>
+        </span>
+        <div class="flex-1 min-w-0">
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-1">Telegram</h2>
+            {% if tg_linked %}
+            <p class="text-[13px] text-[var(--text-muted)] mb-3">Connected{% if tg_username %} as @{{ tg_username }}{% endif %}. {% if tg_for == "dj" %}You get a message for every sale and payout, and can check sales with /sales and /balance.{% else %}Download links and order updates come to your Telegram.{% endif %}</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="https://t.me/{{ tg_bot }}" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[42px] px-5 text-[14px]">Open @{{ tg_bot }}</a>
+                <form method="post" action="{% url 'account_settings' %}">{% csrf_token %}<input type="hidden" name="action" value="telegram_unlink">
+                    <button class="btn-mm btn-ghost h-[42px] px-5 text-[14px]">Disconnect</button></form>
+            </div>
+            {% else %}
+            <p class="text-[13px] text-[var(--text-muted)] mb-3">{% if tg_for == "dj" %}Get a Telegram message the moment you make a sale or a payout lands, and check your sales and balance from the chat.{% else %}Get your download links and order updates on Telegram.{% endif %}</p>
+            <a href="{% url 'telegram_connect' %}" target="_blank" rel="noopener" class="btn-mm btn-mint h-[44px] px-5 text-[14px] inline-flex items-center">Connect Telegram</a>
+            <p class="text-[12px] text-[var(--text-muted)] mt-2">Opens Telegram. Tap <b>Start</b> and you're connected.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}

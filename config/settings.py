@@ -430,6 +430,11 @@ RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 # env change: swap in rzp_live_ keys + the live webhook secret and redeploy.
 PAYMENTS_TEST_MODE = RAZORPAY_KEY_ID.startswith("rzp_test_")
 
+# Cashfree Payment Gateway (collect payments; popup checkout). Merchant dashboard → Developers → Payment Gateway → API Keys
+CASHFREE_PG_APP_ID = env("CASHFREE_PG_APP_ID", default="")
+CASHFREE_PG_SECRET = env("CASHFREE_PG_SECRET", default="")
+CASHFREE_PG_ENV = env("CASHFREE_PG_ENV", default="sandbox")  # "sandbox" or "production"
+
 # PhonePe Standard Checkout v2 (PhonePe Business dashboard → Developer Settings / API keys)
 PHONEPE_CLIENT_ID = env("PHONEPE_CLIENT_ID", default="")
 PHONEPE_CLIENT_SECRET = env("PHONEPE_CLIENT_SECRET", default="")
@@ -550,6 +555,7 @@ GOOGLE_DRIVE_API_KEY = env("GOOGLE_DRIVE_API_KEY", default="")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_ADMIN_CHAT_ID = env("TELEGRAM_ADMIN_CHAT_ID", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")
+TELEGRAM_CHANNEL_ID = env("TELEGRAM_CHANNEL_ID", default="")  # public channel for new-release posts, e.g. @mixmint_releases
 # Vault channels are normally linked from Telegram (/link singles <code>); these override that.
 TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")
 TELEGRAM_ZIPS_CHANNEL_ID = env("TELEGRAM_ZIPS_CHANNEL_ID", default="")
@@ -569,7 +575,7 @@ LOGOUT_REDIRECT_URL = "home"
 
 # Active payment gateway: DEFAULT_PAYMENT_GATEWAY env var, overridable by the admin
 # toggle (SystemSetting "active_payment_gateway"). See apps.payments.utils.get_gateway.
-DEFAULT_PAYMENT_GATEWAY = env("DEFAULT_PAYMENT_GATEWAY", default="razorpay")  # 'phonepe' or 'razorpay'
+DEFAULT_PAYMENT_GATEWAY = env("DEFAULT_PAYMENT_GATEWAY", default="razorpay")  # 'cashfree', 'phonepe' or 'razorpay'
 
 
 def get_payment_gateway(gateway_name=None):
@@ -598,7 +604,12 @@ _active_gateway = LazyGateway()
 # Production Safety Guards (only run in production)
 if ENVIRONMENT == "production":
     # Allow either gateway in production, but verify configuration
-    if DEFAULT_PAYMENT_GATEWAY == "phonepe":
+    if DEFAULT_PAYMENT_GATEWAY == "cashfree":
+        if not (CASHFREE_PG_APP_ID and CASHFREE_PG_SECRET):
+            logging.getLogger("mixmint").warning("Cashfree is the default gateway but its keys are not set.")
+        elif CASHFREE_PG_ENV != "production":
+            logging.getLogger("mixmint").warning("Cashfree SANDBOX keys in production: payments are simulated (test-mode banner shown).")
+    elif DEFAULT_PAYMENT_GATEWAY == "phonepe":
         if PHONEPE_CLIENT_ID and PHONEPE_ENV != "production":
             logging.getLogger("mixmint").warning("PhonePe SANDBOX keys in production: payments are simulated (test-mode banner shown).")
         elif not PHONEPE_CLIENT_ID:
@@ -702,6 +713,7 @@ CSP_SCRIPT_SRC = (
     "'unsafe-eval'",
     "https://checkout.razorpay.com",
     "https://mercury.phonepe.com",  # PhonePe popup checkout script
+    "https://sdk.cashfree.com",  # Cashfree popup checkout (JS SDK v3)
     "https://cdn.jsdelivr.net",
     "https://unpkg.com",
 )
@@ -730,6 +742,7 @@ CSP_CONNECT_SRC = (
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
     "https://*.phonepe.com",
+    "https://*.cashfree.com",
     "https://*.r2.cloudflarestorage.com",  # DJ uploads go straight to R2 (signed PUT)
     "https://api.fontshare.com",
     "https://fonts.googleapis.com",
@@ -757,6 +770,7 @@ CSP_FRAME_SRC = (
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
     "https://*.phonepe.com",  # PhonePe pay page shown as a popup (iframe) over MixMint
+    "https://*.cashfree.com",  # Cashfree popup checkout
 )
 # Google AdSense (only loads when Admin → Settings → Ads is switched on)
 _ADS = ("https://pagead2.googlesyndication.com", "https://googleads.g.doubleclick.net", "https://tpc.googlesyndication.com",
@@ -770,6 +784,7 @@ CSP_FORM_ACTION = (
     "https://accounts.google.com",
     "https://api.phonepe.com",
     "https://api-preprod.phonepe.com",
+    "https://*.cashfree.com",
 )
 CSP_FRAME_ANCESTORS = ("'none'",)
 CSP_OBJECT_SRC = ("'none'",)

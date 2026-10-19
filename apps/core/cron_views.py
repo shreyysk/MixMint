@@ -32,7 +32,7 @@ JOBS = {
     "cleanup": ["cleanup_tokens", "telegram_vault", "cleanup_uploads"],
     "vault": ["telegram_vault"],
     "warm-cache": ["warm_external_cache"],
-    "weekly-sales": ["update_weekly_sales"],
+    "weekly-sales": ["update_weekly_sales", "telegram_daily"],
     "payout-cron": ["payout_cron", "payout_sync"],
     "payout-sync": ["payout_sync"],
     "ad-floor": ["update_ad_floor_pricing"],

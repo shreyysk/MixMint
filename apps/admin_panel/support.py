@@ -58,8 +58,12 @@ def tg_send(chat_id, text):
 
 def set_webhook(base_url):
     url = base_url.rstrip("/") + "/telegram/webhook/"
-    ok = tg("setWebhook", {"url": url, "secret_token": webhook_secret(), "allowed_updates": ["message", "channel_post", "my_chat_member"]})
-    tg("setMyCommands", {"commands": [{"command": "start", "description": "Talk to the MixMint team"}]})
+    ok = tg("setWebhook", {"url": url, "secret_token": webhook_secret(),
+                           "allowed_updates": ["message", "callback_query", "channel_post", "my_chat_member"]})
+    if ok is not None:
+        from . import bot
+
+        bot.register_commands()
     return ok is not None, url
 
 
@@ -155,13 +159,23 @@ def handle_update(update):
     from . import vault
     from .models import SupportTicket
 
+    from . import bot
+
     if vault.handle_channel_update(update):
+        return
+    if update.get("callback_query"):
+        bot.handle_callback(update["callback_query"])
         return
     msg = update.get("message") or {}
     chat = msg.get("chat") or {}
     chat_id = str(chat.get("id") or "")
     text = (msg.get("text") or msg.get("caption") or "").strip()
     if not chat_id:
+        return
+
+    if chat.get("type", "private") not in ("private", "group", "supergroup"):
+        return
+    if text.startswith("/") and not msg.get("reply_to_message") and bot.handle_command(chat_id, chat, text):
         return
 
     # ── Admin chat: replies and commands ──
@@ -195,17 +209,6 @@ def handle_update(update):
         return
 
     # ── Anyone else talking to the bot ──
-    if text.startswith("/start dl_"):
-        from . import vault
-        from .models import TelegramLink
-
-        profile = vault.profile_from_link_payload(text.split(" ", 1)[1].strip())
-        if profile is None:
-            tg_send(chat_id, "That link didn't work. Open it again from the download page on mixmint.site.")
-            return
-        TelegramLink.objects.update_or_create(profile=profile, defaults={"chat_id": chat_id, "username": (chat.get("username") or "")[:64]})
-        tg_send(chat_id, "✓ Linked to your MixMint account. I'll send your download links here as soon as they're ready.")
-        return
     if text.startswith("/start"):
         tg_send(chat_id, WELCOME)
         return

@@ -348,7 +348,7 @@ def dispatch(payout_id, approved_by=None):
                 if payout.hold_reason != f"Waiting for admin approval: {why}":
                     payout.hold_reason = f"Waiting for admin approval: {why}"
                     payout.save(update_fields=["hold_reason"])
-                    transaction.on_commit(lambda: _admin_alert(f"Payout #{payout.id} (₹{payout.amount}, {payout.dj.dj_name}) needs your OK: {why}. Admin → Payouts."))
+                    transaction.on_commit(lambda: _approval_alert(payout, why))
                 return "approval"
         payout.status, payout.provider, payout.sent_at, payout.hold_reason = "processing", provider.name, timezone.now(), None
         payout.save(update_fields=["status", "provider", "sent_at", "hold_reason"])
@@ -476,7 +476,29 @@ def _admin_alert(text):
         pass
 
 
+def _approval_alert(payout, why):
+    try:
+        from apps.admin_panel import bot
+        from apps.admin_panel.support import admin_chat_id
+
+        if admin_chat_id():
+            bot.send(admin_chat_id(), f"Payout #{payout.id} ({bot.money(payout.amount)}, {payout.dj.dj_name}) needs your OK: {why}.",
+                     [[(f"Send {bot.money(payout.amount)}", f"cb:pay:{payout.id}"), ("Open payouts", f"{bot.site()}/api/v1/admin/payouts/")]])
+    except Exception:
+        logger.exception("Approval alert failed for payout %s", payout.id)
+
+
+def _dj_telegram(payout, ok):
+    try:
+        from apps.admin_panel import bot
+
+        bot.notify_payout(payout, ok)
+    except Exception:
+        logger.exception("Payout Telegram notice failed for payout %s", payout.id)
+
+
 def _paid_notice(payout):
+    _dj_telegram(payout, True)
     _admin_alert(f"Paid automatically: payout #{payout.id}, ₹{payout.amount} to {payout.dj.dj_name} ({payout.payment_reference}).")
     try:
         from django.utils.html import escape
@@ -496,6 +518,7 @@ def _paid_notice(payout):
 
 
 def _failed_notice(payout):
+    _dj_telegram(payout, False)
     _admin_alert(f"Payout #{payout.id} to {payout.dj.dj_name} failed: {payout.failure_reason}. The ₹{payout.amount} is back in their balance.")
     try:
         from django.utils.html import escape
