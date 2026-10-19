@@ -47,7 +47,7 @@ def _live(qs):
     return qs.filter(is_active=True, is_deleted=False, dj__status="approved", dj__profile__store_paused=False)
 
 
-def releases_view(request, forced_type=None):
+def releases_view(request, forced_type=None, forced_genre=None):
     from collections import Counter
 
     from django.utils import timezone as tz
@@ -62,7 +62,7 @@ def releases_view(request, forced_type=None):
     if kind not in dict(TYPES):
         kind = "all"
     q = (g.get("q") or "").strip()[:80]
-    genre = (g.get("genre") or "").strip()[:60]
+    genre = forced_genre or (g.get("genre") or "").strip()[:60]
     sort = g.get("sort") if g.get("sort") in dict(SORTS) else "new"
     year = int(g["year"]) if (g.get("year") or "").isdigit() and 2000 < int(g["year"]) < 2200 else None
     month = int(g["month"]) if (g.get("month") or "").isdigit() and 1 <= int(g["month"]) <= 12 else None
@@ -217,7 +217,9 @@ def releases_view(request, forced_type=None):
     ctx = {
         "page": page, "total": total, "kind": kind, "types": TYPES, "q": q, "genre": genre, "genres": genres,
         "genre_groups": genre_groups, "sort": sort, "sorts": SORTS, "forced": forced_type,
-        "heading": {"drops": "Limited drops", "bundles": "Bundles"}.get(forced_type or "", "All releases"),
+        "heading": (f"{forced_genre} DJ songs, edits & remixes" if forced_genre else
+                    {"drops": "Limited drops", "bundles": "Bundles", "samples": "Sample packs & DJ tool kits"}.get(forced_type or "", "All releases")),
+        "forced_genre": forced_genre,
         "rows": rows, "groups": groups, "qs": qs, "filtered": filtered, "active": active,
         "year": year, "month": month, "price": price, "bpm": bpm, "dj": dj_slug, "verified": verified,
         "years": sorted(year_counts.items(), reverse=True),
@@ -226,6 +228,28 @@ def releases_view(request, forced_type=None):
         "n_filters": sum(bool(x) for x in (genre, year, month, price, bpm, dj_slug, verified)) + (kind != "all" and not forced_type),
     }
     return render(request, "catalog/releases.html", ctx)
+
+
+def genre_slug(name):
+    from django.utils.text import slugify
+
+    return slugify(name.replace("&", "and"))
+
+
+def genre_view(request, slug):
+    """SEO landing page per genre: /genre/tulu/ -> every live Tulu release, with its own title and description."""
+    from django.http import Http404
+
+    from apps.core.genres import GENRES
+
+    name = next((g for g in GENRES if genre_slug(g) == slug), None)
+    if name is None or name == "Other":
+        raise Http404
+    return releases_view(request, forced_genre=name)
+
+
+def samples_view(request):
+    return releases_view(request, forced_type="samples")
 
 
 def bundles_view(request):

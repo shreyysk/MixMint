@@ -58,5 +58,6 @@ def dj_storefront_view(request, slug):
         "announcements": announcements,
         "dj_offers": dj_offers,
         "og_tags": get_dj_storefront_og_tags(dj),
+        "ld_json": __import__("apps.core.seo_utils", fromlist=["dj_ld"]).dj_ld(dj),
     }
     return render(request, "dj/profile.html", context)

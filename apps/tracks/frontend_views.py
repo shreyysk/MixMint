@@ -96,6 +96,7 @@ def track_detail_view(request, pk):
         "redownload_price": _redownload_price(track),
         "dj_offers": dj_offers,
         "og_tags": get_track_og_tags(track),
+        "ld_json": __import__("apps.core.seo_utils", fromlist=["track_ld"]).track_ld(track),
     }
     from apps.core.catalog import copies_left, savings_percent
 

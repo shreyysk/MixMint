@@ -57,6 +57,10 @@ def album_detail_view(request, pk):
         context["dj_offers"] = []
     from apps.core.catalog import copies_left, savings_percent
 
+    from apps.core.seo_utils import album_ld, get_album_og_tags
+
+    context["og_tags"] = get_album_og_tags(album)
+    context["ld_json"] = album_ld(album)
     context["stock_left"] = copies_left(album, "album")
     context["savings"] = savings_percent(album.price, album.compare_at_price)
     return render(request, "albums/detail.html", context)
