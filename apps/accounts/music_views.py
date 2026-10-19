@@ -81,7 +81,11 @@ def edit_music_view(request, kind, pk):
                 item.bpm = _int_or_none(post.get("bpm"), 40, 250)
                 item.year = _int_or_none(post.get("year"), 1950, 2100)
             else:
-                item.track_count = _int_or_none(post.get("track_count"), 1, 500) or item.track_count
+                item.track_count = _int_or_none(post.get("track_count"), 1, 5000) or item.track_count
+                if post.get("pack_type") in dict(item.PACK_TYPES):
+                    item.pack_type = post["pack_type"]
+                item.formats = (post.get("formats") or "").strip()[:60]
+                item.bpm_range = (post.get("bpm_range") or "").strip()[:30]
             item.full_clean()
             item.save()
         except r2.UploadError as exc:

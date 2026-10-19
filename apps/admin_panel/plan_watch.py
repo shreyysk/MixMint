@@ -10,14 +10,17 @@ from django.core.cache import cache
 from django.utils import timezone
 
 PLANS = {
-    "vercel": {"name": "Vercel Pro", "cost": "$20/month (about ₹1,700)", "url": "https://vercel.com/pricing",
+    "vercel": {"name": "Vercel Pro", "cost": "$20/month (about ₹1,700)", "url": "https://vercel.com/pricing", "billing": "https://vercel.com/account/billing",
                "why": "Hobby is for personal, non-commercial sites only. A shop taking real payments needs Pro."},
-    "supabase": {"name": "Supabase Pro", "cost": "$25/month (about ₹2,100)", "url": "https://supabase.com/pricing",
+    "supabase": {"name": "Supabase Pro", "cost": "$25/month (about ₹2,100)", "url": "https://supabase.com/pricing", "billing": "https://supabase.com/dashboard/org/_/billing",
                  "why": "Free: 500 MB database, 5 GB egress, paused after 7 days without visits, no daily backups."},
-    "resend": {"name": "Resend Pro", "cost": "$20/month (about ₹1,700)", "url": "https://resend.com/pricing",
+    "resend": {"name": "Resend Pro", "cost": "$20/month (about ₹1,700)", "url": "https://resend.com/pricing", "billing": "https://resend.com/settings/billing",
                "why": "Free: 100 emails a day, 3,000 a month. Past that, receipts and download emails stop for the day."},
+    "r2": {"name": "Cloudflare R2 storage", "cost": "$0.015 per GB a month after the free 10 GB (100 GB ≈ $1.35, about ₹115); downloads are free",
+           "url": "https://developers.cloudflare.com/r2/pricing/", "billing": "https://dash.cloudflare.com/?to=/:account/billing",
+           "why": "Music files live here. Old files move to the Telegram vault automatically, so R2 stays small."},
     "upstash": {"name": "Upstash pay-as-you-go", "cost": "$0.20 per 100,000 commands after the free 500,000 a month",
-                "url": "https://upstash.com/pricing/redis",
+                "url": "https://upstash.com/pricing/redis", "billing": "https://console.upstash.com/account/billing",
                 "why": "Free: 500K commands a month. If it runs out the site keeps working, just slower (cache off)."},
 }
 EMAIL_DAY, EMAIL_MONTH, DB_MB = 100, 3000, 500
@@ -54,6 +57,21 @@ def db_mb():
             return round(c.fetchone()[0] / 1024 / 1024)
     except Exception:
         return None
+
+
+def storage_gb():
+    from django.db.models import Sum
+
+    from apps.albums.models import AlbumPack
+    from apps.tracks.models import Track
+
+    total = 0
+    for m in (Track, AlbumPack):
+        try:
+            total += m.objects.filter(is_deleted=False).aggregate(s=Sum("file_size"))["s"] or 0
+        except Exception:
+            pass
+    return total / 1024 ** 3
 
 
 def live_payments():
@@ -94,6 +112,14 @@ def status():
         add("resend", "soon", f"{day} emails today, {month} this month.")
     else:
         add("resend", "ok", f"{day} emails today, {month} this month.")
+
+    gb = storage_gb()
+    if gb >= 9:
+        add("r2", "now", f"{gb:.1f} GB of music stored (free up to 10 GB). Add a card in Cloudflare → R2 so uploads never stop.")
+    elif gb >= 6:
+        add("r2", "soon", f"{gb:.1f} GB of 10 GB free.")
+    else:
+        add("r2", "ok", f"{gb:.1f} GB of 10 GB free.")
 
     add("upstash", "ok", "Check usage at console.upstash.com once a month; add a card for pay-as-you-go when you're near 500K.")
     return out

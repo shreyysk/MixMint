@@ -10,7 +10,7 @@
         aria-label="Breadcrumb">
         <a href="{% url 'releases' %}" class="hover:text-[var(--text-primary)] transition-colors">Explore</a>
         <span>/</span>
-        <a href="{% url 'releases' %}?type=albums" class="hover:text-[var(--text-primary)] transition-colors">Albums</a>
+        <a href="{% url 'releases' %}?type={% if album.is_samples %}samples{% else %}albums{% endif %}" class="hover:text-[var(--text-primary)] transition-colors">{% if album.is_samples %}Sample packs{% else %}Albums{% endif %}</a>
         <span>/</span>
         <span class="text-[var(--text-primary)] truncate max-w-[200px]">{{ album.title }}</span>
     </nav>
@@ -52,12 +52,14 @@
                 <div class="flex items-center gap-3 mb-6">
                     <span
                         class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-amber)] font-bold uppercase tracking-wider">
-                        Album Pack
+                        {{ album.get_pack_type_display }}
                     </span>
+                    {% if album.formats %}<span class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">{{ album.formats }}</span>{% endif %}
+                    {% if album.bpm_range %}<span class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">{{ album.bpm_range }} BPM</span>{% endif %}
                     {% if tracks %}
                     <span
                         class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                        {{ tracks|length }} track{{ tracks|length|pluralize }}
+                        {{ tracks|length }} {% if album.is_samples %}file{{ tracks|length|pluralize }}{% else %}track{{ tracks|length|pluralize }}{% endif %}
                     </span>
                     {% endif %}
                 </div>
@@ -238,7 +240,7 @@
         <div
             class="px-6 py-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
             <h3 class="font-display text-[18px] font-[600] text-[var(--text-primary)]">Tracklist</h3>
-            {% if tracks %}<span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">{{ tracks|length }} track{{ tracks|length|pluralize }}</span>{% endif %}
+            {% if tracks %}<span class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">{{ tracks|length }} {% if album.is_samples %}file{{ tracks|length|pluralize }}{% else %}track{{ tracks|length|pluralize }}{% endif %}</span>{% endif %}
         </div>
 
         <div class="overflow-x-auto">

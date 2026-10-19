@@ -24,6 +24,7 @@
             </div>
             <nav class="grid grid-cols-2 sm:flex sm:flex-wrap gap-3" aria-label="DJ tools">
                 <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600] col-span-2">+ Upload music</a>
+                <a href="{% url 'upload_track' %}?kind=samples" class="btn-mm btn-ghost h-11 px-5 font-[600]">+ Sample pack</a>
                 <a href="{% url 'bundle_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Bundles</a>
                 <a href="{% url 'announcement_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Posts</a>
                 <a href="{% url 'ambassador_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Referrals</a>

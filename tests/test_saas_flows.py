@@ -133,6 +133,24 @@ class TestUpload:
         )
         assert r.status_code == 302 and "/albums/" in r["Location"]
 
+        # Sample pack: same ZIP flow, own type, shows up under Sample packs
+        r2_buckets.put_object(Bucket="raw", Key=f"albums/{dj.id}/s-pack.zip", Body=b"s" * 10)
+        r = c.post("/upload/", {
+            "kind": "album", "pack_type": "samples", "title": "Tulu Drum Kit", "price": "149", "file_key": f"albums/{dj.id}/s-pack.zip",
+            "track_count": "120", "formats": "WAV 24-bit", "bpm_range": "120-128",
+            "instagram_url": "https://www.instagram.com/reel/C0abcdEFGhi/", "content_responsibility_accepted": "on",
+        })
+        assert r.status_code == 302
+        from apps.albums.models import AlbumPack
+
+        sp = AlbumPack.objects.get(title="Tulu Drum Kit")
+        assert sp.pack_type == "samples" and sp.formats == "WAV 24-bit" and sp.track_count == 120
+        page = c.get(f"/albums/{sp.pk}/").content.decode()
+        assert "Sample pack" in page and "120-128 BPM" in page
+        assert "Tulu Drum Kit" in c.get("/releases/?type=samples").content.decode()
+        assert "Tulu Drum Kit" not in c.get("/releases/?type=albums").content.decode()
+        assert "Sample pack" in c.get("/upload/?kind=samples").content.decode()
+
     def test_rejects_someone_elses_file_and_missing_upload(self, dj_user, r2_buckets):
         u, dj = dj_user
         c = _login(u)

@@ -128,9 +128,11 @@ def upload_track_view(request):
         "genre_choices": GENRES, "genre_groups": GENRE_GROUPS,
         "min_track_price": int(settings.MIN_TRACK_PRICE),
         "min_album_price": int(settings.MIN_ALBUM_PRICE),
-        "kind": "album" if request.GET.get("kind") == "album" else "track",
+        "kind": "album" if request.GET.get("kind") in ("album", "samples") else "track",
     }
     if request.method != "POST":
+        if request.GET.get("kind") == "samples":
+            ctx["form"] = {"pack_type": "samples"}
         return render(request, "dashboard/upload.html", ctx)
     if dj is None:
         messages.error(request, "Your DJ account isn't approved yet, so you can't upload.")
@@ -171,7 +173,10 @@ def upload_track_view(request):
             item = AlbumPack(
                 **common,
                 cover_image=cover_url or None,
-                track_count=_int_or_none(post.get("track_count"), 1, 500) or 0,
+                track_count=_int_or_none(post.get("track_count"), 1, 5000) or 0,
+                pack_type=post.get("pack_type") if post.get("pack_type") in ("album", "samples", "toolkit") else "album",
+                formats=(post.get("formats") or "").strip()[:60],
+                bpm_range=(post.get("bpm_range") or "").strip()[:30],
                 upload_method="direct_zip",
                 processing_status="completed",
             )

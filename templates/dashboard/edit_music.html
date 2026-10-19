@@ -58,8 +58,20 @@
             </div>
             {% else %}
             <div>
-                <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Tracks in the ZIP</label>
-                <input id="track_count" name="track_count" type="number" min="1" max="500" class="input-mm" value="{{ item.track_count|default:'' }}">
+                <label for="pack_type" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">What's in the ZIP</label>
+                <select id="pack_type" name="pack_type" class="input-mm">{% for k, label in item.PACK_TYPES %}<option value="{{ k }}" {% if item.pack_type == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            </div>
+            <div>
+                <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Tracks or sounds in the ZIP</label>
+                <input id="track_count" name="track_count" type="number" min="1" max="5000" class="input-mm" value="{{ item.track_count|default:'' }}">
+            </div>
+            <div>
+                <label for="formats" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">File formats <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                <input id="formats" name="formats" maxlength="60" class="input-mm" placeholder="WAV 24-bit, MP3" value="{{ item.formats }}">
+            </div>
+            <div>
+                <label for="bpm_range" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">BPM <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                <input id="bpm_range" name="bpm_range" maxlength="30" class="input-mm" placeholder="120–128" value="{{ item.bpm_range }}">
             </div>
             {% endif %}
             <div class="md:col-span-2">

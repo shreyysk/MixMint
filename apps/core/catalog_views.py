@@ -30,7 +30,7 @@ from apps.core.catalog import attach_stock
 from apps.core.net import get_client_ip
 
 PAGE = 24
-TYPES = [("all", "All"), ("singles", "Singles"), ("albums", "Album packs"), ("bundles", "Bundles"), ("drops", "Limited drops")]
+TYPES = [("all", "All"), ("singles", "Singles"), ("albums", "Album packs"), ("samples", "Sample packs"), ("bundles", "Bundles"), ("drops", "Limited drops")]
 SORTS = [
     ("new", "Newest upload"), ("old", "Oldest upload"), ("popular", "Popular this week"), ("downloads", "Most downloaded"),
     ("price_low", "Price: low to high"), ("price_high", "Price: high to low"), ("title_az", "Title: A to Z"),
@@ -76,7 +76,7 @@ def releases_view(request, forced_type=None):
     bundles = _live(Bundle.objects.select_related("dj", "dj__profile")).prefetch_related("bundle_tracks__track")
     if q:
         tracks = tracks.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q) | Q(genre__icontains=q))
-        albums = albums.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q))
+        albums = albums.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q) | Q(description__icontains=q))
         bundles = bundles.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q))
     if genre:
         tracks = tracks.filter(genre__iexact=genre)
@@ -100,8 +100,12 @@ def releases_view(request, forced_type=None):
     pool = []
     if kind in ("all", "singles", "drops"):
         pool += [("track", t) for t in tracks]
-    if kind in ("all", "albums", "drops"):
+    if kind in ("all", "drops"):
         pool += [("album", a) for a in albums]
+    elif kind == "albums":
+        pool += [("album", a) for a in albums.filter(pack_type="album")]
+    elif kind == "samples":
+        pool += [("album", a) for a in albums.exclude(pack_type="album")]
     if kind in ("all", "bundles"):
         pool += [("bundle", b) for b in bundles if b.live_tracks()]
 
@@ -202,7 +206,9 @@ def releases_view(request, forced_type=None):
 
         row("new", "New singles", all_tracks, "track", "?type=singles")
         row("popular", "Popular this week", sorted(all_tracks, key=lambda t: t.sales_last_7_days or 0, reverse=True), "track", "?sort=popular")
-        row("albums", "Album packs", all_albums, "album", "?type=albums")
+        row("albums", "Album packs", [a for a in all_albums if a.pack_type == "album"], "album", "?type=albums")
+        row("samples", "Sample packs and DJ tool kits", [a for a in all_albums if a.pack_type != "album"], "album", "?type=samples",
+            "Loops, one-shots, acapellas, FX and intros for producers and DJs.")
         row("drops", "Limited drops", [t for t in all_tracks if t.copies_limit], "track", "/drops/", "Numbered copies. Once they're gone, they're gone.")
         row("bundles", "Bundles", all_bundles, "bundle", "/bundles/")
         for gname, n in Counter((t.genre or "").strip() for t in all_tracks if t.genre).most_common(4):
