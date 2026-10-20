@@ -420,11 +420,7 @@ def guest_checkout_start(request):
         profile.full_name = email.split("@")[0][:120]
         profile.save(update_fields=["full_name"])
     _login(request, user)
-    try:
-        _send_signin_link(request, user, "Your MixMint account", "We made you a MixMint account so your downloads stay safe. "
-                          "Use this link any time to get back to your library, and set a password in Account settings.")
-    except Exception:
-        pass
+    # No email here: the receipt after payment carries the sign-in link (abandoned checkouts cost nothing).
     return JsonResponse({"ok": True, "created": True})
 
 
@@ -563,3 +559,35 @@ def report_view(request):
         return JsonResponse({"ok": True, "message": done})
     messages.success(request, done)
     return redirect("dmca")
+
+
+# ───────────────────────────── Quick search (Ctrl/⌘+K palette) ─────────────────────────────
+def quick_search(request):
+    """Small, fast JSON for the command palette: a few tracks, packs and DJs matching ?q=."""
+    from django.db.models import Q
+
+    from apps.accounts.models import DJProfile
+    from apps.albums.models import AlbumPack
+    from apps.tracks.models import Track
+
+    q = (request.GET.get("q") or "").strip()[:60]
+    if len(q) < 2:
+        return JsonResponse({"results": []})
+    key = "qs:" + q.lower()
+    hit = cache.get(key)
+    if hit is not None:
+        return JsonResponse({"results": hit})
+    out = []
+    live = dict(is_deleted=False, dj__status="approved", dj__profile__store_paused=False)
+    for t in Track.objects.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q) | Q(genre__icontains=q), is_active=True, **live) \
+            .select_related("dj").order_by("-download_count", "-created_at")[:6]:
+        out.append({"type": "Track", "title": t.title, "sub": f"{t.dj.dj_name} · ₹{t.price:.0f}", "url": f"/tracks/{t.pk}/",
+                    "img": t.cover_url or ""})
+    for a in AlbumPack.objects.filter(Q(title__icontains=q) | Q(dj__dj_name__icontains=q), is_active=True, **live) \
+            .select_related("dj").order_by("-created_at")[:4]:
+        out.append({"type": "Sample pack" if a.pack_type == "samples" else "Pack", "title": a.title,
+                    "sub": f"{a.dj.dj_name} · ₹{a.price:.0f}", "url": f"/albums/{a.pk}/", "img": a.cover_image or ""})
+    for d in DJProfile.objects.filter(dj_name__icontains=q, status="approved", profile__store_paused=False)[:4]:
+        out.append({"type": "DJ", "title": d.dj_name, "sub": ", ".join((d.genres or [])[:3]) or "DJ store", "url": f"/{d.slug}/", "img": ""})
+    cache.set(key, out, 60)
+    return JsonResponse({"results": out})

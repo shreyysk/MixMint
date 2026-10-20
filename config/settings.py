@@ -559,6 +559,17 @@ BING_SITE_VERIFICATION = env("BING_SITE_VERIFICATION", default="")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_ADMIN_CHAT_ID = env("TELEGRAM_ADMIN_CHAT_ID", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="")
+# Promo videos (apps/admin_panel/promo.py): renderer on GitHub Actions, posting to Instagram + YouTube.
+PROMO_GITHUB_REPO = env("PROMO_GITHUB_REPO", default="")  # e.g. shreyysk/MixMint
+PROMO_GITHUB_TOKEN = env("PROMO_GITHUB_TOKEN", default="")  # fine-grained token: this repo, Contents read+write
+MAX_PROMO_SIZE_MB = env.int("MAX_PROMO_SIZE_MB", default=300)
+INSTAGRAM_USER_ID = env("INSTAGRAM_USER_ID", default="")  # Instagram professional account id (Graph API)
+INSTAGRAM_ACCESS_TOKEN = env("INSTAGRAM_ACCESS_TOKEN", default="")  # long-lived Page token with instagram_content_publish
+INSTAGRAM_GRAPH_BASE = env("INSTAGRAM_GRAPH_BASE", default="https://graph.facebook.com/v23.0")
+YOUTUBE_CLIENT_ID = env("YOUTUBE_CLIENT_ID", default="")
+YOUTUBE_CLIENT_SECRET = env("YOUTUBE_CLIENT_SECRET", default="")
+YOUTUBE_REFRESH_TOKEN = env("YOUTUBE_REFRESH_TOKEN", default="")
+TELEGRAM_ASSETS_CHANNEL_ID = env("TELEGRAM_ASSETS_CHANNEL_ID", default="")  # private (admins only): finished promo videos; empty = vault singles channel
 TELEGRAM_CHANNEL_ID = env("TELEGRAM_CHANNEL_ID", default="")  # public channel for new-release posts, e.g. @mixmint_releases
 # Vault channels are normally linked from Telegram (/link singles <code>); these override that.
 TELEGRAM_SINGLES_CHANNEL_ID = env("TELEGRAM_SINGLES_CHANNEL_ID", default="")

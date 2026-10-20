@@ -202,6 +202,48 @@ class EmailService:
     # ============================================
 
     @classmethod
+    def library_link(cls, user):
+        """Library link for the receipt. Guest buyers (no password yet) get a one-time sign-in link instead,
+        so checkout doesn't need a separate "your account" email."""
+        base = getattr(settings, "BASE_URL", "https://mixmint.site").rstrip("/")
+        try:
+            if not user.has_usable_password():
+                from django.core import signing
+
+                from apps.core.catalog_views import LINK_SALT
+
+                token = signing.dumps({"u": str(user.pk), "l": user.last_login.isoformat() if user.last_login else ""}, salt=LINK_SALT)
+                return f"{base}/recover/{token}/"
+        except Exception:
+            pass
+        return f"{base}/library/"
+
+    @classmethod
+    def send_order_receipt(cls, purchases):
+        """One receipt per checkout, however many items were in the cart."""
+        purchases = [p for p in purchases if p is not None]
+        if not purchases:
+            return False
+        if len(purchases) == 1:
+            return cls.send_purchase_confirmation(purchases[0])
+        from apps.albums.models import AlbumPack
+        from apps.tracks.models import Track
+
+        lines, total = [], 0
+        for p in purchases:
+            model = Track if p.content_type == "track" else AlbumPack
+            item = model.objects.filter(id=p.content_id).select_related("dj").first()
+            lines.append(f"{item.title if item else p.content_type} by {item.dj.dj_name if item else 'MixMint'}: ₹{p.price_paid}")
+            total += p.price_paid or 0
+        user = purchases[0].user.user
+        link = cls.library_link(user)
+        return cls.send_notice(
+            user.email, f"Your purchase: {len(purchases)} items (₹{total})", "Thanks for your order",
+            lines + [f"Total paid: ₹{total}. Everything is ready in your library."],
+            cta_label="Download now", cta_path=link.replace(getattr(settings, "BASE_URL", "https://mixmint.site").rstrip("/"), "") or "/library/",
+        )
+
+    @classmethod
     def send_purchase_confirmation(cls, purchase):
         """Send purchase confirmation to buyer."""
         from apps.tracks.models import Track
@@ -226,7 +268,7 @@ class EmailService:
                 "amount_paid": str(purchase.price_paid),
                 "order_id": str(purchase.id)[:8],
                 "purchase_date": purchase.created_at.strftime("%b %d, %Y %H:%M"),
-                "download_url": f"{getattr(settings, 'BASE_URL', 'https://mixmint.site').rstrip('/')}/library/",
+                "download_url": cls.library_link(purchase.user.user),
                 "payment_method": {"razorpay": "Razorpay", "phonepe": "PhonePe"}.get(purchase.payment_gateway or "", "Online payment"),
                 "insurance_price": "49",
             },

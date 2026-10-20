@@ -177,6 +177,11 @@ def handle_update(update):
         return
     if text.startswith("/") and not msg.get("reply_to_message") and bot.handle_command(chat_id, chat, text):
         return
+    if chat.get("type", "private") == "private" and (msg.get("video") or msg.get("document") or msg.get("animation")):
+        from . import promo
+
+        if promo.on_telegram_video(chat_id, msg):
+            return
 
     # ── Admin chat: replies and commands ──
     if chat_id == admin_chat_id():

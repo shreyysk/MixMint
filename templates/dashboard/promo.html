@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Promo video — MixMint{% endblock %}
+
+{% block content %}
+<div class="max-w-[640px] mx-auto py-10 px-4" x-data="mmPromo()" x-init="poll()">
+    <a href="{{ release_url }}" class="font-body text-[13px] text-[var(--text-muted)]">← {{ pv.title }}</a>
+    <h1 class="font-display text-[26px] sm:text-[32px] font-[700] text-[var(--text-primary)] mt-2 mb-2">Your promo video</h1>
+    <p class="font-body text-[14px] text-[var(--text-muted)] mb-6">
+        We frame it with the MixMint template and post it as an Instagram Reel and a YouTube Short.
+    </p>
+
+    <div class="rounded-[12px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 mb-6">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+            <span class="font-body text-[13px] text-[var(--text-muted)]">Status</span>
+            <span class="font-body text-[14px] font-[600] text-[var(--text-primary)]" x-text="label">{{ pv.get_status_display }}</span>
+        </div>
+        <p x-show="err" x-cloak class="notice-danger font-body text-[13px] mt-3" x-text="err"></p>
+        <div class="flex flex-wrap gap-2 mt-4" x-show="video || ig || yt" x-cloak>
+            <a x-show="video" :href="video" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[40px] px-4 text-[13px]">Watch</a>
+            <a x-show="ig" :href="ig" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[40px] px-4 text-[13px]">Instagram</a>
+            <a x-show="yt" :href="yt" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[40px] px-4 text-[13px]">YouTube</a>
+        </div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 font-body text-[13px]">
+            <div><dt class="text-[var(--text-muted)]">Instagram collab invites</dt><dd class="text-[var(--text-primary)] break-words">{% for h in pv.ig_collabs %}@{{ h }}{% if not forloop.last %}, {% endif %}{% empty %}None{% endfor %}</dd></div>
+            <div><dt class="text-[var(--text-muted)]">YouTube channels</dt><dd class="text-[var(--text-primary)] break-words">{% for h in pv.yt_collabs %}@{{ h }}{% if not forloop.last %}, {% endif %}{% empty %}None{% endfor %}</dd></div>
+        </dl>
+    </div>
+
+    <template x-if="canSend">
+        <div class="space-y-4">
+            <a href="{{ tg_link }}" target="_blank" rel="noopener"
+               class="btn-mm btn-mint w-full h-[56px] text-[15px] font-[700] rounded-[10px] flex items-center justify-center gap-2">
+                Send in Telegram
+            </a>
+            <p class="font-body text-[12px] text-[var(--text-muted)] text-center">Opens the MixMint bot. Send the clip as a video (Telegram bots can fetch up to 20 MB).</p>
+
+            <div class="flex items-center gap-3 my-2"><span class="flex-1 h-px bg-[var(--border)]"></span><span class="font-body text-[12px] text-[var(--text-muted)]">or upload here</span><span class="flex-1 h-px bg-[var(--border)]"></span></div>
+
+            <label class="block rounded-[12px] border border-dashed border-[var(--border)] p-6 text-center cursor-pointer">
+                <input type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v,.mp4,.mov,.m4v,.webm" class="sr-only" @change="pick($event)" :disabled="busy">
+                <span class="block font-body text-[14px] font-[600] text-[var(--text-primary)]" x-text="file ? file.name : 'Choose a video'"></span>
+                <span class="block font-body text-[12px] text-[var(--text-muted)] mt-1">MP4 or MOV, up to {{ max_mb|default:300 }} MB. Vertical, 15–60 seconds works best.</span>
+            </label>
+            <div x-show="busy" x-cloak class="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden"><div class="h-full bg-[var(--accent-mint)]" :style="'width:' + pct + '%'"></div></div>
+            <button type="button" class="btn-mm btn-ghost w-full h-[48px]" :disabled="!file || busy" @click="upload()" x-text="busy ? 'Uploading ' + pct + '%' : 'Upload video'"></button>
+        </div>
+    </template>
+
+    <ul class="mt-8 space-y-2 font-body text-[13px] text-[var(--text-muted)] list-disc pl-5">
+        <li>Use your own video, or one you have permission for. Clips with music you don't have rights to may be muted by Instagram or blocked by YouTube.</li>
+        <li>Instagram collab: accept the invite (notification, or Profile → ☰ → Collab requests) and the Reel shows on your profile too.</li>
+        <li>Longer than 60 seconds? We use the first 59 seconds.</li>
+    </ul>
+</div>
+
+<script>
+function mmPromo() {
+    return {
+        label: '{{ pv.get_status_display|escapejs }}', status: '{{ pv.status }}', video: '{{ video_url|escapejs }}',
+        ig: '{{ pv.ig_url|escapejs }}', yt: '', err: '{% if pv.status == "failed" %}{{ pv.error|escapejs }}{% endif %}',
+        file: null, busy: false, pct: 0,
+        get canSend() { return ['waiting', 'failed', 'rejected'].includes(this.status); },
+        pick(e) { this.file = e.target.files[0] || null; this.err = ''; },
+        async upload() {
+            if (!this.file) return;
+            this.busy = true; this.err = ''; this.pct = 1;
+            try {
+                const t = await MM.api('{% url "promo_upload_url" pv.pk %}', { body: { filename: this.file.name, size: this.file.size } });
+                await new Promise((ok, bad) => {
+                    const x = new XMLHttpRequest();
+                    x.open('PUT', t.url);
+                    Object.entries(t.headers || {}).forEach(([k, v]) => x.setRequestHeader(k, v));
+                    x.upload.onprogress = (ev) => { if (ev.lengthComputable) this.pct = Math.max(2, Math.round(ev.loaded / ev.total * 100)); };
+                    x.onload = () => (x.status >= 200 && x.status < 300) ? ok() : bad(new Error('Upload failed (' + x.status + ').'));
+                    x.onerror = () => bad(new Error('The connection dropped. Please try again.'));
+                    x.send(this.file);
+                });
+                await MM.api('{% url "promo_uploaded" pv.pk %}', { body: { key: t.key } });
+                this.status = 'received'; this.label = 'Video received';
+            } catch (e) { this.err = e.message || 'Upload failed.'; }
+            this.busy = false;
+        },
+        poll() {
+            const tick = async () => {
+                if (['posted', 'rejected'].includes(this.status)) return;
+                try {
+                    const r = await fetch('{% url "promo_status" pv.pk %}', { headers: { 'Accept': 'application/json' } });
+                    if (r.ok) { const d = await r.json(); Object.assign(this, { status: d.status, label: d.label, video: d.video, ig: d.ig, yt: d.yt }); if (!this.busy) this.err = d.error; }
+                } catch (e) {}
+                setTimeout(tick, document.hidden ? 30000 : 8000);
+            };
+            setTimeout(tick, 4000);
+        },
+    };
+}
+</script>
+{% endblock %}

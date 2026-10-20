@@ -411,3 +411,63 @@ def alert_admins_new_report(report):
             send_email(admin_email, f"[MixMint] {head}: {title}", linebreaks(escape(text)))
     except Exception:
         logging.getLogger("mixmint").exception("Could not alert admins about report %s", report.pk)
+
+
+class PromoVideo(models.Model):
+    """A DJ's promo clip for one release: sent in Telegram (or uploaded on the site), framed with a
+    MixMint template by the renderer (GitHub Actions + ffmpeg), then posted to MixMint's Instagram
+    (with a collab invite to the DJ) and YouTube Shorts. See apps/admin_panel/promo.py."""
+
+    STATUS = (
+        ("waiting", "Waiting for the DJ's video"),
+        ("received", "Video received"),
+        ("rendering", "Applying the template"),
+        ("review", "Ready: waiting for admin approval"),
+        ("queued", "Approved: waiting for today's posting slot"),
+        ("posting", "Posting"),
+        ("posted", "Posted"),
+        ("rejected", "Not posted"),
+        ("failed", "Failed"),
+    )
+    TEMPLATES = (("mint", "Mint frame"), ("bold", "Bold square"), ("clean", "Clean"))
+    IG_COLLAB_MAX = 3  # Instagram Graph API limit for `collaborators` on a Reel
+    YT_COLLAB_MAX = 10  # YouTube Collaborations limit per video (invites are sent in YouTube Studio)
+
+    dj = models.ForeignKey(DJProfile, on_delete=models.CASCADE, related_name="promo_videos")
+    content_type = models.CharField(max_length=10, choices=(("track", "Track"), ("album", "Album")))
+    content_id = models.PositiveBigIntegerField()
+    title = models.CharField(max_length=255)
+    status = models.CharField(max_length=12, choices=STATUS, default="waiting", db_index=True)
+    template = models.CharField(max_length=10, choices=TEMPLATES, default="mint")
+    # Chosen by the DJ at upload. Instagram: the API sends a collab invite to each (max IG_COLLAB_MAX).
+    # YouTube: no API for collab invites, so each channel is credited in the description and the admin
+    # gets a reminder with the channels to invite in YouTube Studio (max YT_COLLAB_MAX).
+    ig_collabs = models.JSONField(default=list, blank=True)
+    yt_collabs = models.JSONField(default=list, blank=True)
+    rights_confirmed = models.BooleanField(default=False)
+    tg_chat_id = models.CharField(max_length=40, blank=True, default="", db_index=True)
+    source = models.CharField(max_length=10, blank=True, default="")  # telegram / web
+    raw_key = models.CharField(max_length=500, blank=True, default="")  # private bucket
+    output_key = models.CharField(max_length=500, blank=True, default="")  # public bucket (mp4)
+    thumb_key = models.CharField(max_length=500, blank=True, default="")
+    duration = models.FloatField(null=True, blank=True)
+    ig_media_id = models.CharField(max_length=64, blank=True, default="")
+    ig_url = models.URLField(max_length=300, blank=True, default="")
+    yt_video_id = models.CharField(max_length=32, blank=True, default="")
+    # The finished video is kept in the private Telegram asset channel, not in R2 (R2 only holds it
+    # while rendering and posting).
+    asset_message_id = models.BigIntegerField(null=True, blank=True)
+    asset_file_id = models.CharField(max_length=255, blank=True, default="")
+    channel_message_id = models.BigIntegerField(null=True, blank=True)  # public channel post
+    error = models.CharField(max_length=500, blank=True, default="")
+    approved_by = models.CharField(max_length=120, blank=True, default="")
+    posted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("content_type", "content_id")
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"Promo {self.pk} {self.title} ({self.status})"

@@ -129,6 +129,11 @@ def upload_track_view(request):
         "min_track_price": int(settings.MIN_TRACK_PRICE),
         "min_album_price": int(settings.MIN_ALBUM_PRICE),
         "kind": "album" if request.GET.get("kind") in ("album", "samples") else "track",
+        "promo_ig_max": 3, "promo_yt_max": 10,
+        "promo_templates": [("mint", "Mint frame", "Full screen, title at the bottom"),
+                            ("bold", "Bold", "Square video, big title"), ("clean", "Clean", "Just a small logo")],
+        "promo_on": _promo_on(),
+        "dj_handles": _dj_handles(dj),
     }
     if request.method != "POST":
         if request.GET.get("kind") == "samples":
@@ -148,6 +153,7 @@ def upload_track_view(request):
             raise ValidationError("Give it a title.")
         price = _price(post.get("price"), kind)
         yt, ig, preview_type = _previews(post)
+        promo_req = _promo_request(post)
         file_key = post.get("file_key", "")
         size = r2.uploaded_size("album" if kind == "album" else "audio", dj, file_key)
         cover_url = (post.get("cover_url") or "").strip()
@@ -208,9 +214,55 @@ def upload_track_view(request):
     archive_after_upload(kind, item)
     from apps.admin_panel.bot import post_release
 
-    post_release(item, kind)
+    post_release(item, kind, channel_post=not promo_req)
+    if promo_req:
+        from apps.admin_panel import promo
+
+        pv = promo.create(item, kind, **promo_req)
+        messages.success(request, f"“{item.title}” is live in your store. Now send your promo video.")
+        return redirect("promo_page", pk=pv.pk)
     messages.success(request, f"“{item.title}” is live in your store. Promote it with free covers from the DJ Asset Pack (DJ dashboard → Asset pack).")
     return redirect("album_detail" if kind == "album" else "track_detail", pk=item.pk)
+
+
+def _promo_on():
+    try:
+        from apps.admin_panel import promo
+
+        return bool(promo.cfg().get("enabled"))
+    except Exception:
+        return False
+
+
+def _dj_handles(dj):
+    """Prefill the collab boxes with the DJ's own Instagram / YouTube from their profile links."""
+    from apps.admin_panel.promo import _handle
+
+    links = (getattr(dj, "social_links", None) or {}) if dj else {}
+    out = {"ig": "", "yt": ""}
+    for k, v in links.items() if isinstance(links, dict) else []:
+        v = str(v or "")
+        if "instagram" in (k + v).lower() and not out["ig"]:
+            out["ig"] = "@" + _handle(v) if _handle(v) else ""
+        elif ("youtube" in (k + v).lower() or "youtu.be" in v) and "/@" in v and not out["yt"]:
+            out["yt"] = "@" + _handle(v)
+    return out
+
+
+def _promo_request(post):
+    """The "Free promo" box on the upload form: None when not ticked, else the validated choice."""
+    if post.get("promo_wanted") not in ("on", "true", "1") or not _promo_on():
+        return None
+    from apps.admin_panel import promo
+
+    if post.get("promo_rights") not in ("on", "true", "1"):
+        raise ValidationError("For the free promo, confirm MixMint may post your video.")
+    for raw, platform in ((post.get("promo_ig", ""), "ig"), (post.get("promo_yt", ""), "yt")):
+        err = promo.handle_errors(raw, platform)
+        if err:
+            raise ValidationError(err)
+    return {"ig": post.get("promo_ig", ""), "yt": post.get("promo_yt", ""),
+            "template": post.get("promo_template", "mint"), "rights": True}
 
 
 def _tag_track(track):

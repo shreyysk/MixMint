@@ -113,7 +113,18 @@ def _complete_purchases(order_id, gateway_payment_id, gateway_response, paid_amo
 
     for p in newly_paid:
         transaction.on_commit(lambda p=p: _notify_sale(p))
+    if newly_paid:
+        transaction.on_commit(lambda ps=list(newly_paid): _send_receipt(ps))
     return OK if newly_paid else ALREADY
+
+
+def _send_receipt(purchases):
+    try:
+        from apps.core.email_service import EmailService
+
+        EmailService.send_order_receipt(purchases)
+    except Exception:
+        logger.debug("Receipt email skipped", exc_info=True)
 
 
 def _notify_sale(purchase):
@@ -125,12 +136,6 @@ def _notify_sale(purchase):
         PushNotificationService.notify_sale(dj_profile=purchase.seller, track_title=title, amount=purchase.dj_revenue)
     except Exception:
         logger.exception("Sale notification failed for purchase %s", purchase.id)
-    try:
-        from apps.core.email_service import EmailService
-
-        EmailService.send_purchase_confirmation(purchase)
-    except Exception:
-        logger.debug("Purchase confirmation email skipped for %s", purchase.id, exc_info=True)
 
 
 def _complete_insurance(order_id, gateway_payment_id, gateway_response, paid_amount_paise):

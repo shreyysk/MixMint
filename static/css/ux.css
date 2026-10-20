@@ -718,3 +718,89 @@ footer { content-visibility: auto; contain-intrinsic-size: auto 640px; }
 .mm-phone-err { color: var(--accent-red) !important; }
 .mm-phone-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
 .mm-phone-actions .btn-mm { height: 44px; padding: 0 18px; font-size: 13px; }
+
+/* ══════════ UX extras (static/js/ux-plus.js) ══════════ */
+/* Phones: 16px fields never trigger iOS zoom-on-focus (beats text-[14px] utilities) */
+@media (max-width: 767px), (pointer: coarse) {
+    input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px !important; }
+}
+/* Comfortable tap targets for small text links on touch screens */
+@media (pointer: coarse) {
+    main a:not(.btn-mm):not([class*="h-["]) , summary, .cx-btn { min-height: 32px; }
+    summary { display: flex; align-items: center; }
+}
+/* Hide the bottom tab bar while the phone keyboard is open */
+body.kb-open .mm-tabbar, body.kb-open #ux-to-top, body.kb-open .mm-help { transform: translateY(140%); opacity: 0; pointer-events: none; }
+.mm-tabbar { transition: transform .2s ease, opacity .2s ease; }
+
+/* Search pill in the header */
+.mm-search-pill { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px 0 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-muted); font-size: 13px; cursor: pointer;
+    transition: border-color .15s ease, color .15s ease; }
+.mm-search-pill:hover { border-color: var(--accent-mint); color: var(--text-primary); }
+.mm-search-pill kbd, #mm-palette kbd, #mm-keys kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 6px;
+    border-radius: 6px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-muted); }
+
+/* Command palette */
+#mm-palette, #mm-keys { position: fixed; inset: 0; z-index: 9990; display: none; background: rgba(10, 10, 15, .45);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 10vh 16px 16px; }
+#mm-palette.open, #mm-keys.open { display: block; animation: mmpIn .14s ease-out; }
+@keyframes mmpIn { from { opacity: 0 } to { opacity: 1 } }
+body.mmp-lock { overflow: hidden; }
+.mmp-box, .mmk-box { max-width: 620px; margin: 0 auto; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: 0 24px 80px rgba(0, 0, 0, .25); overflow: hidden; }
+.mmp-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.mmp-head svg { width: 20px; height: 20px; fill: none; stroke: var(--text-muted); stroke-width: 2; flex-shrink: 0; }
+.mmp-head input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font-size: 17px; height: 40px; }
+#mmp-list { max-height: min(60vh, 440px); overflow-y: auto; padding: 6px; margin: 0; list-style: none; overscroll-behavior: contain; }
+#mmp-list li[data-i] { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px; cursor: pointer; min-height: 48px; }
+#mmp-list li[aria-selected=true] { background: color-mix(in srgb, var(--accent-mint) 12%, transparent); }
+.mmp-ic { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; overflow: hidden;
+    background: var(--bg-elevated); color: var(--accent-mint); font-weight: 700; font-size: 14px; }
+.mmp-ic img { width: 100%; height: 100%; object-fit: cover; }
+.mmp-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mmp-t b { font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mmp-t small { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mmp-type { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; }
+.mmp-empty { padding: 18px 12px; color: var(--text-muted); font-size: 14px; }
+.mmp-foot { display: flex; gap: 16px; padding: 8px 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); }
+@media (max-width: 640px) { #mm-palette { padding: 8px; } .mmp-foot { display: none; } #mmp-list { max-height: 70vh; } }
+.mmk-box { padding: 20px 22px; max-width: 460px; }
+.mmk-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
+.mmk-box dl { display: grid; gap: 8px; margin-bottom: 16px; }
+.mmk-box dl > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--text-primary); }
+.mmk-box dt { color: var(--text-muted); font-size: 12px; }
+
+/* Cursor: soft ring that follows the mouse; the normal arrow stays */
+#mm-cursor-ring, #mm-cursor-dot { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 9999; border-radius: 50%; will-change: transform; }
+#mm-cursor-ring { width: 34px; height: 34px; border: 1.5px solid color-mix(in srgb, var(--accent-mint) 70%, transparent);
+    transition: width .18s ease, height .18s ease, background-color .18s ease, border-color .18s ease, opacity .2s ease; }
+#mm-cursor-ring.hover { width: 54px; height: 54px; background: color-mix(in srgb, var(--accent-mint) 10%, transparent); border-color: var(--accent-mint); }
+#mm-cursor-ring.text { width: 6px; height: 28px; border-radius: 3px; opacity: .5; }
+#mm-cursor-ring.down { width: 26px; height: 26px; background: color-mix(in srgb, var(--accent-mint) 22%, transparent); }
+#mm-cursor-dot { width: 5px; height: 5px; background: var(--accent-mint); }
+html.mm-cursor-out #mm-cursor-ring, html.mm-cursor-out #mm-cursor-dot { opacity: 0; }
+@media (hover: none), (pointer: coarse) { #mm-cursor-ring, #mm-cursor-dot { display: none; } }
+
+/* Button ripple + magnetic buttons */
+.btn-mm { position: relative; overflow: hidden; }
+.btn-mint { transition: transform .2s cubic-bezier(.2, .8, .2, 1), background-color .2s ease, box-shadow .2s ease; }
+.mm-ripple { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none;
+    background: currentColor; opacity: .25; transform: scale(0); animation: mmRipple .6s ease-out forwards; }
+@keyframes mmRipple { to { transform: scale(40); opacity: 0; } }
+#mm-mini-toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px); opacity: 0; z-index: 9995; padding: 10px 16px;
+    border-radius: 999px; background: var(--text-primary); color: var(--bg-base); font-size: 13px; transition: all .2s ease; pointer-events: none; }
+#mm-mini-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Visible keyboard focus everywhere (mouse clicks stay clean) */
+:focus-visible { outline: 2px solid var(--accent-mint); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--accent-mint) 30%, transparent); }
+html { scroll-padding-top: 88px; -webkit-tap-highlight-color: transparent; }
+@media (prefers-reduced-motion: reduce) { .mm-ripple { display: none; } .btn-mint { transition: none; } }
+/* Phones: less empty space above page content */
+@media (max-width: 767px) {
+    main#main.py-10 { padding-top: 16px; }
+    main#main > .py-12:first-child, main#main > .py-10:first-child { padding-top: 8px; }
+}
+.mmp-head input, .mmp-head input:focus, .mmp-head input:focus-visible { border: 0 !important; box-shadow: none !important; outline: none !important; padding: 0 !important; background: transparent !important; }
+.mmp-head input::-webkit-search-cancel-button { display: none; }

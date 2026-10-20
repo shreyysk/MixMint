@@ -88,6 +88,34 @@
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_activity' %}">Activity log →</a>
             </div>
         </section>
+        <section class="cx-card" style="grid-column:1/-1" id="promo">
+            <h2>Promo videos (Instagram, YouTube, Telegram)</h2>
+            <p class="cx-muted" style="margin-bottom:12px">DJs tick “Free promo” when uploading and send a clip in Telegram or on the site. It's put into the MixMint template on GitHub Actions, then posted as an Instagram Reel (collab invites to the DJ's accounts, max 3), a YouTube Short (channels credited, max 10) and in the public Telegram channel with the MixMint, YouTube and Instagram links. The finished video is kept in the private asset channel and removed from R2.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+                {% for label, ok in promo.status %}<span style="padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;{% if ok %}background:#dcfce7;color:#166534{% else %}background:#fee2e2;color:#991b1b{% endif %}">{{ label }}: {% if ok %}connected{% else %}not set{% endif %}</span>{% endfor %}
+            </div>
+            <form method="post" class="cx-grid" style="gap:0 16px;align-items:end;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">{% csrf_token %}<input type="hidden" name="action" value="promo">
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="enabled" {% if promo.cfg.enabled %}checked{% endif %}> Offer “Free promo” on upload</label></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="auto_approve" {% if promo.cfg.auto_approve %}checked{% endif %}> Post without my approval</label></div>
+                <div class="cx-field"><label class="cx-label" for="pcap">Posts per day (today: {{ promo.posted_today|default:0 }})</label><input id="pcap" class="cx-input" type="number" min="1" max="25" name="daily_cap" value="{{ promo.cfg.daily_cap|default:5 }}"></div>
+                <div class="cx-field"><button class="cx-btn primary">Save</button></div>
+            </form>
+            <p class="cx-muted" style="margin:6px 0 12px">Keep approval on: a video with music the DJ doesn't own can get MixMint's YouTube channel a copyright strike. YouTube's default API quota allows about 6 uploads a day.</p>
+            {% if promo.rows %}
+            <div style="display:grid;gap:8px">
+                {% for p in promo.rows %}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--cx-border,#e5e7eb);padding-top:8px;min-width:0">
+                    <div style="min-width:0;flex:1 1 240px"><b>{{ p.title }}</b> · {{ p.dj.dj_name }}<br><span class="cx-muted">{{ p.get_status_display }}{% if p.error %} · {{ p.error|truncatechars:120 }}{% endif %}{% if p.ig_url %} · <a href="{{ p.ig_url }}" target="_blank" rel="noopener">Instagram</a>{% endif %}{% if p.yt_video_id %} · <a href="https://youtube.com/shorts/{{ p.yt_video_id }}" target="_blank" rel="noopener">YouTube</a>{% endif %}</span></div>
+                    <form method="post" style="display:flex;gap:6px;flex-wrap:wrap">{% csrf_token %}<input type="hidden" name="id" value="{{ p.pk }}">
+                        {% if p.status == "review" or p.status == "queued" or p.status == "failed" and p.output_key %}<button class="cx-btn primary" name="action" value="promo_post">Post</button>{% endif %}
+                        {% if p.status == "review" or p.status == "queued" %}<button class="cx-btn" name="action" value="promo_skip">Don't post</button>{% endif %}
+                        {% if p.status == "failed" and p.raw_key %}<button class="cx-btn" name="action" value="promo_rerender">Render again</button>{% endif %}
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}<p class="cx-muted">No promo videos yet.</p>{% endif %}
+        </section>
         <section class="cx-card" style="grid-column:1/-1" id="plans">
             <h2>Plans and costs</h2>
             <p class="cx-muted" style="margin-bottom:12px">These services bill a card in their own dashboards (Cashfree can't pay them). Add one card with auto-pay once per service and renewals happen by themselves. MixMint runs on free plans for now. This tells you when each one needs upgrading. You also get it in the daily Telegram summary.</p>

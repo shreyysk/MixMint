@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.core.sitemaps import SITEMAPS
+from apps.admin_panel import promo_views
 from apps.core import catalog_views, cron_views, support_views
 from apps.payments import views as payment_views
 from apps.payments.webhooks import phonepe_webhook
@@ -112,7 +113,15 @@ urlpatterns = [
     path("telegram/webhook/", support_views.telegram_webhook, name="telegram_webhook"),
     path("vault/callback/", support_views.vault_callback, name="vault_callback"),
     path("vault/run/", support_views.vault_run, name="vault_run"),
+    path("promo/job/<int:pk>/", promo_views.job_view, name="promo_job"),
+    path("promo/job/<int:pk>/done/", promo_views.job_done_view, name="promo_job_done"),
+    path("promo/run/", promo_views.run_view, name="promo_run"),
+    path("dashboard/promo/<int:pk>/", promo_views.promo_page, name="promo_page"),
+    path("dashboard/promo/<int:pk>/upload-url/", promo_views.promo_upload_url, name="promo_upload_url"),
+    path("dashboard/promo/<int:pk>/uploaded/", promo_views.promo_uploaded, name="promo_uploaded"),
+    path("dashboard/promo/<int:pk>/status/", promo_views.promo_status, name="promo_status"),
     # Catalogue, guest checkout, download recovery, "get listed"
+    path("search/quick/", catalog_views.quick_search, name="quick_search"),
     path("releases/", catalog_views.releases_view, name="releases"),
     path("bundles/", catalog_views.bundles_view, name="bundles"),
     path("bundles/<int:pk>/", catalog_views.bundle_detail_view, name="bundle_detail"),

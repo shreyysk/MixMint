@@ -179,6 +179,51 @@
             </div>
         </section>
 
+        {% if promo_on %}
+        <!-- Free promo video (optional) -->
+        <section x-data="{ promo: {% if form.promo_wanted %}true{% else %}false{% endif %}, tpl: '{{ form.promo_template|default:'mint' }}' }"
+                 class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-6">
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" name="promo_wanted" value="on" x-model="promo" class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-mint)]">
+                <span>
+                    <span class="block font-display text-[16px] font-[600] text-[var(--text-primary)]">Free promo on MixMint's Instagram &amp; YouTube <span class="font-body text-[12px] font-normal text-[var(--text-muted)]">(optional)</span></span>
+                    <span class="block font-body text-[13px] text-[var(--text-muted)] mt-1">After publishing, send a short video (in Telegram or here). We add a MixMint template and post it as a Reel and a YouTube Short, with a collab invite to you.</span>
+                </span>
+            </label>
+            <div x-show="promo" x-cloak class="mt-5 space-y-5">
+                <fieldset>
+                    <legend class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Template</legend>
+                    <div class="grid grid-cols-3 gap-2">
+                        {% for val, label, hint in promo_templates %}
+                        <label class="cursor-pointer rounded-[10px] border p-3 text-center font-body text-[13px]"
+                               :class="tpl === '{{ val }}' ? 'border-[var(--accent-mint)] bg-[var(--bg-elevated)]' : 'border-[var(--border)]'">
+                            <input type="radio" name="promo_template" value="{{ val }}" x-model="tpl" class="sr-only">
+                            <span class="block font-[600] text-[var(--text-primary)]">{{ label }}</span>
+                            <span class="block text-[11px] text-[var(--text-muted)] mt-1">{{ hint }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="promo_ig" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Instagram collabs <span class="font-normal text-[var(--text-muted)]">(up to {{ promo_ig_max }})</span></label>
+                        <input id="promo_ig" name="promo_ig" class="input-mm" placeholder="@you, @featured_dj" value="{{ form.promo_ig|default:dj_handles.ig }}" autocomplete="off">
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-1">Each account gets a collab invite (Instagram allows {{ promo_ig_max }} per post through its API). Accounts must be public. Leave empty for no collab.</p>
+                    </div>
+                    <div>
+                        <label for="promo_yt" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">YouTube channels <span class="font-normal text-[var(--text-muted)]">(up to {{ promo_yt_max }})</span></label>
+                        <input id="promo_yt" name="promo_yt" class="input-mm" placeholder="@yourchannel" value="{{ form.promo_yt|default:dj_handles.yt }}" autocomplete="off">
+                        <p class="font-body text-[12px] text-[var(--text-muted)] mt-1">Credited in the Short's description, and invited as collaborators by the MixMint team (YouTube allows {{ promo_yt_max }}).</p>
+                    </div>
+                </div>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="promo_rights" value="on" class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-mint)]" {% if form.promo_rights %}checked{% endif %}>
+                    <span class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">MixMint may post my video on its Instagram, YouTube and Telegram. I own it (and the audio in it) or have permission; videos with music I don't have rights to can be muted or removed.</span>
+                </label>
+            </div>
+        </section>
+        {% endif %}
+
         <label class="flex items-start gap-3 p-5 rounded-[12px] border border-[var(--border)] bg-[var(--bg-elevated)] cursor-pointer">
             <input type="checkbox" name="content_responsibility_accepted" value="on" class="mt-1 w-5 h-5 shrink-0 accent-[var(--accent-mint)]" {% if form.content_responsibility_accepted %}checked{% endif %}>
             <span class="font-body text-[13px] text-[var(--text-muted)] leading-[1.6]">
@@ -231,6 +276,12 @@ function mmUpload(initialKind) {
             if (!form.youtube_url.value.trim() && !form.instagram_url.value.trim()) { this.error = 'Add a YouTube or Instagram preview link.'; form.youtube_url.focus(); return; }
             if (form.price.value === '') { this.error = 'Set a price (0 for free).'; form.price.focus(); return; }
             if (!form.content_responsibility_accepted.checked) { this.error = 'Please confirm you have the rights to sell this.'; return; }
+            if (form.promo_wanted && form.promo_wanted.checked) {
+                if (!form.promo_rights.checked) { this.error = 'For the free promo, confirm MixMint may post your video.'; return; }
+                const cnt = v => new Set(v.split(/[\s,;]+/).map(x => x.replace(/^@/, '').toLowerCase()).filter(Boolean)).size;
+                if (cnt(form.promo_ig.value) > {{ promo_ig_max }}) { this.error = 'Instagram allows up to {{ promo_ig_max }} collaborators.'; form.promo_ig.focus(); return; }
+                if (cnt(form.promo_yt.value) > {{ promo_yt_max }}) { this.error = 'YouTube allows up to {{ promo_yt_max }} collaborators.'; form.promo_yt.focus(); return; }
+            }
             this.busy = true;
             window.onbeforeunload = () => true;
             try {

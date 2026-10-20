@@ -159,6 +159,7 @@ def connect_ctx(profile):
 PUBLIC_COMMANDS = [
     ("start", "Menu"), ("new", "Newest releases"), ("search", "Find a release or DJ: /search name"),
     ("library", "Your purchases (linked accounts)"), ("sales", "DJs: your sales"), ("balance", "DJs: your balance and payouts"),
+    ("promo", "DJs: your promo videos"),
     ("link", "Connect this chat to your MixMint account"), ("unlink", "Disconnect this chat"), ("help", "Talk to the MixMint team"),
 ]
 ADMIN_COMMANDS = [
@@ -376,6 +377,27 @@ def handle_command(chat_id, chat, text):
                  + (", sales and payouts" if getattr(profile, "role", "") == "dj" else "") + " here.")
             menu(chat_id, profile)
         return True
+    if cmd == "start" and arg.startswith("pv_"):
+        from . import promo
+
+        pv = promo.from_payload(arg.strip())
+        if pv is None:
+            send(chat_id, "That promo link has expired. Open your promo page on mixmint.site and tap “Send in Telegram” again.")
+        elif pv.status not in ("waiting", "failed", "rejected"):
+            send(chat_id, f"The promo for “{pv.title}” is already {pv.get_status_display().lower()}.")
+        else:
+            promo.attach_chat(pv, chat_id)
+            if pv.status == "rejected":
+                pv.status = "waiting"
+                pv.save(update_fields=["status", "updated_at"])
+            if profile_for_chat(chat_id) is None:
+                link_chat(pv.dj.profile, str(chat_id), chat.get("username", ""))
+            collabs = ", ".join("@" + h for h in pv.ig_collabs)
+            send(chat_id, f"Send me the promo video for “{pv.title}” 🎬\n\n"
+                          "• Vertical (9:16) works best, 15–60 seconds\n• Send it as a video (not a file) to stay under Telegram's 20 MB bot limit\n"
+                          "• I'll add the MixMint template, then it goes on MixMint's Instagram and YouTube"
+                          + (f"\n• Instagram collab invites go to: {collabs}" if collabs else ""))
+        return True
     if cmd == "start" and (arg.strip() == "help" or arg.startswith("ticket_")):
         return False  # "Talk to us" links from the help pages: the help desk greets them
     if cmd == "start" and arg.startswith("dl_"):
@@ -408,6 +430,16 @@ def handle_command(chat_id, chat, text):
         cmd_sales(chat_id, profile)
     elif cmd in ("balance", "payout", "payouts"):
         cmd_balance(chat_id, profile)
+    elif cmd == "promo":
+        dj = _dj(profile) if profile else None
+        if dj is None:
+            send(chat_id, "Promo videos are for MixMint DJs. Tick “Free promo” when you upload a release on mixmint.site.")
+        else:
+            from . import promo
+
+            lines = promo.status_lines(dj)
+            send(chat_id, ("Your promo videos:\n" + "\n".join(lines)) if lines else
+                 "No promo videos yet. Tick “Free promo” when you upload your next release.")
     elif cmd == "link":
         need_link(chat_id) if profile is None else send(chat_id, "This chat is already connected. /unlink to disconnect.")
     elif cmd == "unlink":
@@ -446,6 +478,24 @@ def handle_callback(cq):
         need_link(chat_id)
     elif data == "help":
         send(chat_id, "Type your question here and the MixMint team will reply in this chat.")
+    elif is_admin and data[:5] in ("pvok:", "pvno:"):
+        from . import promo
+        from .models import PromoVideo
+
+        pid = data[5:]
+        pv = PromoVideo.objects.filter(pk=pid if pid.isdigit() else 0).select_related("dj__profile").first()
+        if pv is None:
+            return
+        who = "telegram-admin"
+        if data.startswith("pvno:"):
+            if pv.status in ("review", "queued", "failed"):
+                promo.reject(pv, who)
+            send(chat_id, f"“{pv.title}” won't be posted.")
+        else:
+            out = promo.approve(pv, who)
+            send(chat_id, {"posting": f"Posting “{pv.title}” now. You'll get the links in a minute or two.",
+                           "queued": f"Today's posting limit is reached; “{pv.title}” goes out tomorrow morning."}.get(
+                out, f"“{pv.title}” is {pv.get_status_display().lower()}."))
     elif is_admin and data == "paysync":
         from apps.commerce.payout_gateway import sync_processing
 
@@ -472,7 +522,8 @@ def handle_callback(cq):
 
 # ─────────────────────────────── notifications ───────────────────────────────
 def notify_sale(purchase):
-    """DJ: you made a sale (Telegram + email). Called after a purchase is fulfilled."""
+    """DJ: you made a sale, in Telegram right away. DJs without Telegram get one email a day instead
+    (sales_digest), not one per sale, to save the Resend quota."""
     try:
         seller = purchase.seller
         if seller is None:
@@ -485,18 +536,6 @@ def notify_sale(purchase):
         title = item.title if item else "your release"
         notify(seller.profile, f"New sale: {title}. You earned {money(purchase.dj_earnings)}.",
                [[("My sales", "cb:sales"), ("Balance", "cb:balance")]])
-        try:
-            from apps.accounts.models import NotificationPreference
-            from apps.core.email_service import EmailService
-
-            pref = NotificationPreference.objects.filter(user=seller.profile).first()
-            if pref is None or pref.email_sales:
-                EmailService.send_notice(
-                    seller.profile.user.email, f"You made a sale: {title}", "New sale on MixMint",
-                    [f"Someone just bought {title}.", f"You earned {money(purchase.dj_earnings)}. It moves to Ready to receive after the refund window."],
-                    cta_label="See your sales", cta_path="/dashboard/dj/")
-        except Exception:
-            logger.exception("Sale email failed for purchase %s", purchase.pk)
     except Exception:
         logger.exception("Sale notification failed")
 
@@ -508,8 +547,9 @@ def notify_payout(payout, ok):
     notify(payout.dj.profile, text, [[("Payouts", f"{site()}/dashboard/dj/payouts/")]])
 
 
-def post_release(item, kind):
-    """A new release went live: tell the DJ and post it to the public channel (TELEGRAM_CHANNEL_ID)."""
+def post_release(item, kind, channel_post=True, tell_dj=True):
+    """A new release went live: tell the DJ and post it to the public channel (TELEGRAM_CHANNEL_ID).
+    With a promo video on the way, the channel post waits for it (promo.publish posts video + links)."""
     try:
         if item.dj.status != "approved" or getattr(item.dj.profile, "store_paused", False):
             return
@@ -517,16 +557,49 @@ def post_release(item, kind):
         price = money(item.price) if item.price else "Free"
         channel = getattr(settings, "TELEGRAM_CHANNEL_ID", "") or ""
         text = f"New on MixMint: {item.title} by {item.dj.dj_name} · {price}"
-        if channel:
+        if channel and channel_post:
             cover = str(getattr(item, "cover_url", "") or getattr(item, "cover_image", "") or "")
             buttons = {"inline_keyboard": [[{"text": f"Preview and buy · {price}", "url": url}]]}
             if cover.startswith("https://"):
                 send_raw({"chat_id": channel, "photo": cover, "caption": text, "reply_markup": buttons}, method="sendPhoto")
             else:
                 send_raw({"chat_id": channel, "text": text, "reply_markup": buttons})
-        notify(item.dj.profile, f"Your release is live: {item.title}. Share it!", [[("Open release", url)]])
+        if tell_dj:
+            notify(item.dj.profile, f"Your release is live: {item.title}. Share it!", [[("Open release", url)]])
     except Exception:
         logger.exception("Release post failed")
+
+
+def sales_digest(day=None):
+    """One email per DJ with yesterday's sales, only for DJs who don't get Telegram alerts. Returns emails sent."""
+    from apps.accounts.models import NotificationPreference
+    from apps.commerce.models import Purchase
+    from apps.core.email_service import EmailService
+
+    from .models import TelegramLink
+
+    day = day or (timezone.localdate() - timedelta(days=1))
+    rows = (Purchase.objects.filter(status="paid", paid_at__date=day, seller__isnull=False)
+            .values("seller_id").annotate(n=Count("id"), earned=Sum("dj_revenue")))
+    linked = set(TelegramLink.objects.values_list("profile_id", flat=True))
+    sent = 0
+    from apps.accounts.models import DJProfile
+
+    for r in rows:
+        dj = DJProfile.objects.filter(pk=r["seller_id"]).select_related("profile__user").first()
+        if dj is None or dj.profile_id in linked:
+            continue
+        pref = NotificationPreference.objects.filter(user=dj.profile).first()
+        if pref is not None and not pref.email_sales:
+            continue
+        n = r["n"]
+        if EmailService.send_notice(
+                dj.profile.user.email, f"Your sales yesterday: {n} sale{'s' if n != 1 else ''}", "Your MixMint sales",
+                [f"You made {n} sale{'s' if n != 1 else ''} on {day:%d %b}, earning {money(r['earned'] or 0)}.",
+                 "Get every sale the moment it happens, free, by connecting Telegram in Account settings."],
+                cta_label="See your sales", cta_path="/dashboard/dj/"):
+            sent += 1
+    return sent
 
 
 def daily_summary():

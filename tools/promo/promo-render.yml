@@ -1,0 +1,41 @@
+name: Promo video render
+
+# Started by mixmint.site (apps/admin_panel/promo.py) when a DJ sends a promo clip.
+# The payload carries signed, expiring links back to the site, so this workflow needs no secrets.
+on:
+  repository_dispatch:
+    types: [promo_render]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promo-${{ github.event.client_payload.id }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/promo
+            static/logo
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core > /dev/null
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pillow==11.1.0
+      - name: Render
+        env:
+          JOB_URL: ${{ github.event.client_payload.job_url }}
+          DONE_URL: ${{ github.event.client_payload.done_url }}
+        run: |
+          case "$JOB_URL" in https://mixmint.site/*|https://www.mixmint.site/*) ;; *) echo "Unexpected job URL"; exit 1;; esac
+          case "$DONE_URL" in https://mixmint.site/*|https://www.mixmint.site/*) ;; *) echo "Unexpected done URL"; exit 1;; esac
+          echo "::add-mask::$JOB_URL"
+          echo "::add-mask::$DONE_URL"
+          python tools/promo/render.py

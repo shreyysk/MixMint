@@ -946,6 +946,35 @@ def settings_view(request):
                 _log(request, "Launch reset: deleted test accounts", count=n)
                 messages.success(request, f"Deleted {n} account{'s' if n != 1 else ''}.")
             return redirect("/api/v1/admin/settings/#launch")
+        elif action == "promo":
+            from . import promo
+
+            try:
+                cap = max(1, min(25, int(request.POST.get("daily_cap") or 5)))
+            except ValueError:
+                cap = 5
+            promo.save_cfg(enabled=bool(request.POST.get("enabled")), auto_approve=bool(request.POST.get("auto_approve")), daily_cap=cap)
+            _log(request, "Promo video settings", enabled=bool(request.POST.get("enabled")), auto=bool(request.POST.get("auto_approve")), cap=cap)
+            messages.success(request, "Promo video settings saved.")
+            return redirect("/api/v1/admin/settings/#promo")
+        elif action in ("promo_post", "promo_skip", "promo_rerender"):
+            from . import promo
+            from .models import PromoVideo
+
+            pv = PromoVideo.objects.filter(pk=request.POST.get("id") or 0).select_related("dj__profile").first()
+            if pv is None:
+                messages.error(request, "Promo video not found.")
+            elif action == "promo_post":
+                out = promo.approve(pv, request.user.email)
+                messages.success(request, {"posting": "Posting now; the links arrive in Telegram.", "queued": "Today's limit is reached: it posts tomorrow."}.get(out, f"Status: {pv.get_status_display()}"))
+            elif action == "promo_skip":
+                promo.reject(pv, request.user.email)
+                messages.success(request, "Won't be posted. The DJ was told.")
+            else:
+                ok = bool(pv.raw_key) and promo.start_render(pv)
+                messages.success(request, "Rendering again.") if ok else messages.error(request, "Can't re-render: the original clip is gone or the renderer isn't connected. Ask the DJ to send it again.")
+            _log(request, f"Promo {action} #{request.POST.get('id')}")
+            return redirect("/api/v1/admin/settings/#promo")
         elif action == "clear_cache":
             try:
                 cache.clear()
@@ -970,7 +999,27 @@ def settings_view(request):
         "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
         "launch": _launch_preview(),
         "plans": _plans(),
+        "promo": _promo_ctx(),
     })
+
+
+def _promo_ctx():
+    try:
+        from django.conf import settings
+
+        from . import promo
+        from .models import PromoVideo
+
+        ready = promo.readiness()
+        chan = bool(getattr(settings, "TELEGRAM_CHANNEL_ID", ""))
+        return {"cfg": promo.cfg(), "ready": ready, "assets": bool(promo.asset_channel()),
+                "status": [("Video renderer (GitHub)", ready["renderer"]), ("Instagram", ready["instagram"]), ("YouTube", ready["youtube"]),
+                           ("Public Telegram channel", chan), ("Private asset channel", bool(promo.asset_channel()))],
+                "channel": bool(getattr(settings, "TELEGRAM_CHANNEL_ID", "")),
+                "rows": list(PromoVideo.objects.select_related("dj")[:12]), "posted_today": promo.posted_today()}
+    except Exception:
+        logger.exception("Promo settings context failed")
+        return {}
 
 
 def _plans():

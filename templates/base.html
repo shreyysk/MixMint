@@ -113,7 +113,7 @@
     </script>
 </head>
 
-<body {% if user.is_authenticated %}class="has-tabbar" {% endif %}x-data="{ toasts: [] }" @show-toast.window="
+<body {% if user.is_authenticated %}class="has-tabbar" data-role="{{ user.profile.role }}" {% endif %}x-data="{ toasts: [] }" @show-toast.window="
     if (toasts.length >= 3) toasts.shift();
     toasts.push({...$event.detail, id: Date.now()});
     let id = toasts[toasts.length - 1].id;
@@ -445,6 +445,7 @@
     {"prefetch": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/logout/*"}}, {"not": {"href_matches": "/api/*"}}, {"not": {"href_matches": "/*download*"}}, {"not": {"selector_matches": "[data-no-prefetch], [download], [target=_blank]"}}]}, "eagerness": "moderate"}]}
     </script>
     <script defer src="{% static 'js/ux.js' %}"></script>
+    <script defer src="{% static 'js/ux-plus.js' %}"></script>
 </body>
 
 </html>

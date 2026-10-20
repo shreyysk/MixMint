@@ -35,6 +35,13 @@ class ResendEmailBackend(BaseEmailBackend):
             if message.body:
                 payload["text"] = message.body
             try:
+                from apps.core.email_budget import route
+
+                if not route(payload["to"], payload["subject"], html or "", message.body or ""):
+                    continue
+            except Exception:
+                logger.exception("Email budget check failed; sending anyway")
+            try:
                 resp = requests.post(
                     self.api_url,
                     json=payload,

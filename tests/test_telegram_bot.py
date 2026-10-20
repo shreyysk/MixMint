@@ -211,18 +211,28 @@ def test_daily_summary(tg, purchase):
 
 # ─────────────────────────────── notifications ───────────────────────────────
 @pytest.mark.django_db
-def test_sale_notifies_dj_by_telegram_and_email(tg, dj_user, user, track, django_capture_on_commit_callbacks):
+def test_sale_notifies_dj_by_telegram_and_daily_email(tg, dj_user, user, track, django_capture_on_commit_callbacks):
+    from django.utils import timezone
+
     from apps.commerce.models import Purchase
     from apps.commerce.services import MonetizationService
 
     u, dj = dj_user
     TelegramLink.objects.create(profile=u.profile, chat_id="50")
     p = Purchase.objects.create(user=user.profile, content_id=track.id, content_type="track", original_price=track.price,
-                                price_paid=track.price, seller=dj, status="paid")
+                                price_paid=track.price, seller=dj, status="paid", paid_at=timezone.now())
     with mock.patch("apps.core.email_service.EmailService.send_notice") as mail, django_capture_on_commit_callbacks(execute=True):
         MonetizationService.complete_purchase(p)
     assert f"New sale: {track.title}" in texts(tg, 50)[-1]
-    assert mail.call_args.args[0] == "dj@example.com"
+    assert not mail.called  # no email per sale
+    today = timezone.localdate()
+    with mock.patch("apps.core.email_service.EmailService.send_notice", return_value=True) as mail:
+        assert bot.sales_digest(today) == 0  # linked to Telegram: no email at all
+        TelegramLink.objects.all().delete()
+        Purchase.objects.create(user=user.profile, content_id=track.id, content_type="track", original_price=track.price,
+                                price_paid=track.price, seller=dj, status="paid", paid_at=timezone.now())
+        assert bot.sales_digest(today) == 1
+    assert mail.call_count == 1 and mail.call_args.args[0] == "dj@example.com" and "2 sales" in mail.call_args.args[1]
 
 
 @pytest.mark.django_db

@@ -97,6 +97,7 @@
 
             <!-- Right: Actions (Desktop) -->
             <div class="hidden lg:flex items-center gap-6">
+                <button type="button" data-open-palette class="mm-search-pill" aria-label="Search (Ctrl+K)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search</span><kbd>Ctrl K</kbd></button>
                 <!-- Theme Toggle -->
                 {% if dark_mode_enabled %}<button onclick="toggleTheme()" data-theme-toggle
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-amber)] hover:bg-[var(--border)] transition-all"
@@ -181,7 +182,8 @@
             </div>
 
             <!-- Mobile Menu Toggle & Theme Toggle -->
-            <div class="lg:hidden flex items-center gap-4">
+            <div class="lg:hidden flex items-center gap-2">
+                <button type="button" data-open-palette class="w-11 h-11 rounded-full flex items-center justify-center text-[var(--text-primary)]" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
                 {% if dark_mode_enabled %}<button onclick="toggleTheme()" data-theme-toggle
                     class="w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-muted)]"
                     aria-label="Switch to light mode">
