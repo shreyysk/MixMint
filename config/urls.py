@@ -1,4 +1,6 @@
 from django.contrib import admin
+from apps.commerce import payout_webhooks  # noqa: E402
+from apps.payments.webhooks_cashfree import cashfree_webhook  # noqa: E402
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -23,6 +25,14 @@ def robots_txt(request):
         "Disallow: /api/",
         "Disallow: /dashboard/",
         "Disallow: /cron/",
+        "Disallow: /account/",
+        "Disallow: /library/",
+        "Disallow: /cart/",
+        "Disallow: /upload/",
+        "Disallow: /payment/",
+        "Disallow: /payouts/",
+        "Disallow: /telegram/",
+        "Disallow: /*?*sort=",
         "Allow: /",
         f"Sitemap: https://{request.get_host()}/sitemap.xml",
     ]
@@ -93,6 +103,9 @@ urlpatterns = [
     # Payment return/notification aliases for orders created before the URL fix.
     path("payment/callback/", payment_views.payment_callback),
     path("payment/webhook/phonepe/", phonepe_webhook),
+    path("payment/webhook/cashfree/", cashfree_webhook),
+    path("payouts/webhook/cashfree/", payout_webhooks.cashfree_payout_webhook, name="cashfree_payout_webhook"),
+    path("payouts/webhook/razorpayx/", payout_webhooks.razorpayx_payout_webhook, name="razorpayx_payout_webhook"),
     path("payment/webhook/phonepe/refund/", phonepe_webhook),
     path("checkout/", RedirectView.as_view(url="/cart/", permanent=False)),
     path("cron/<str:job>/", cron_views.run_cron_job, name="cron_job"),
@@ -105,6 +118,8 @@ urlpatterns = [
     path("bundles/<int:pk>/", catalog_views.bundle_detail_view, name="bundle_detail"),
     path("bundles/<int:pk>/checkout/", catalog_views.bundle_checkout, name="bundle_checkout"),
     path("drops/", catalog_views.drops_view, name="drops"),
+    path("genre/<slug:slug>/", catalog_views.genre_view, name="genre"),
+    path("sample-packs/", catalog_views.samples_view, name="sample_packs"),
     path("sell/", catalog_views.sell_view, name="sell"),
     path("recover/", catalog_views.recover_view, name="recover"),
     path("report/", catalog_views.report_view, name="report_content"),

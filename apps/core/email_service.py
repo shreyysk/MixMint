@@ -119,7 +119,7 @@ class EmailService:
 
         return cls.send_email(
             to_email=dj_profile.profile.user.email,
-            subject=f"💸 Payout of ₹{payout.amount} initiated",
+            subject=f"Payout of ₹{payout.amount} on its way",
             template_name="payout_initiated",
             context={
                 "dj_name": dj_profile.dj_name,

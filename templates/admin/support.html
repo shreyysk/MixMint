@@ -34,23 +34,29 @@
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
                 <h2 class="font-display text-[16px] font-[700] text-[var(--text-primary)]">Payments</h2>
-                <p class="text-[13px] text-[var(--text-muted)] mt-1">New orders go through <b class="text-[var(--text-primary)]">{% if pay.active == 'phonepe' %}PhonePe{% else %}Razorpay{% endif %}</b>{% if pay.test_mode %} on <b class="text-[var(--text-primary)]">test keys</b>: no real money moves, and the yellow banner shows on the site{% else %} with <b class="text-[var(--text-primary)]">live keys</b>{% endif %}.</p>
+                <p class="text-[13px] text-[var(--text-muted)] mt-1">New orders go through <b class="text-[var(--text-primary)]">{% for k, v in pay.labels.items %}{% if k == pay.active %}{{ v }}{% endif %}{% endfor %}</b>{% if pay.test_mode %} on <b class="text-[var(--text-primary)]">test keys</b>: no real money moves, and the yellow banner shows on the site{% else %} with <b class="text-[var(--text-primary)]">live keys</b>{% endif %}. Orders already started finish on the gateway they began on.</p>
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
+                {% if pay.cashfree_ready %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="gateway_test_cashfree">
+                    <button class="btn-mm btn-ghost h-[42px] px-4 text-[13px]">Test Cashfree</button></form>{% endif %}
                 {% if pay.phonepe_ready %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="gateway_test">
-                    <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]">Test PhonePe</button></form>{% endif %}
-                <form method="post">{% csrf_token %}<input type="hidden" name="action" value="gateway_switch">
-                    {% if pay.active == 'phonepe' %}<input type="hidden" name="gateway" value="razorpay">
-                    <button class="btn-mm btn-ghost h-[42px] px-5 text-[13px]" {% if not pay.razorpay_ready %}disabled{% endif %}>Switch to Razorpay</button>
-                    {% else %}<input type="hidden" name="gateway" value="phonepe">
-                    <button class="btn-mm btn-mint h-[42px] px-5 text-[13px]" {% if not pay.phonepe_ready %}disabled title="Add the PhonePe keys in Vercel first"{% endif %}>Switch to PhonePe</button>{% endif %}
+                    <button class="btn-mm btn-ghost h-[42px] px-4 text-[13px]">Test PhonePe</button></form>{% endif %}
+                <form method="post" class="flex gap-2">{% csrf_token %}<input type="hidden" name="action" value="gateway_switch">
+                    <label class="sr-only" for="gw-pick">Payment gateway</label>
+                    <select id="gw-pick" name="gateway" class="input-mm h-[42px] text-[13px] w-auto">
+                        <option value="cashfree" {% if pay.active == 'cashfree' %}selected{% endif %} {% if not pay.cashfree_ready %}disabled{% endif %}>Cashfree (popup){% if not pay.cashfree_ready %}: keys missing{% endif %}</option>
+                        <option value="phonepe" {% if pay.active == 'phonepe' %}selected{% endif %} {% if not pay.phonepe_ready %}disabled{% endif %}>PhonePe{% if not pay.phonepe_ready %}: keys missing{% endif %}</option>
+                        <option value="razorpay" {% if pay.active == 'razorpay' %}selected{% endif %} {% if not pay.razorpay_ready %}disabled{% endif %}>Razorpay{% if not pay.razorpay_ready %}: keys missing{% endif %}</option>
+                    </select>
+                    <button class="btn-mm btn-mint h-[42px] px-4 text-[13px]">Use this</button>
                 </form>
             </div>
         </div>
         <ul class="text-[13px] space-y-1 text-[var(--text-muted)]">
+            <li>{% if pay.cashfree_ready %}{% icon "check" %} Cashfree keys set ({{ pay.cashfree_env }}){% else %}{% icon "x" %} Cashfree: add CASHFREE_PG_APP_ID, CASHFREE_PG_SECRET and CASHFREE_PG_ENV in Vercel{% endif %}. Webhook URL for the Cashfree dashboard (Payment Gateway → Webhooks): <code class="font-mono text-[12px] select-all text-[var(--text-primary)]">{{ pay.cashfree_webhook_url }}</code></li>
             <li>{% if pay.phonepe_ready %}{% icon "check" %} PhonePe keys set ({{ pay.phonepe_env }}){% else %}{% icon "x" %} PhonePe keys missing: add PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET, PHONEPE_CLIENT_VERSION and PHONEPE_ENV in Vercel{% endif %}</li>
-            <li>{% if pay.webhook_ready %}{% icon "check" %} PhonePe webhook login set{% else %}{% icon "x" %} PhonePe webhook: add PHONEPE_WEBHOOK_USERNAME and PHONEPE_WEBHOOK_PASSWORD in Vercel (payments still confirm when buyers return, the webhook is the backup){% endif %}</li>
-            <li>Webhook URL for the PhonePe dashboard: <code class="font-mono text-[12px] select-all text-[var(--text-primary)]">{{ pay.webhook_url }}</code></li>
+            <li>{% if pay.webhook_ready %}{% icon "check" %} PhonePe webhook login set{% else %}{% icon "x" %} PhonePe webhook: add PHONEPE_WEBHOOK_USERNAME and PHONEPE_WEBHOOK_PASSWORD in Vercel{% endif %}. URL: <code class="font-mono text-[12px] select-all text-[var(--text-primary)]">{{ pay.webhook_url }}</code></li>
+            <li>{% if pay.razorpay_ready %}{% icon "check" %} Razorpay keys set{% else %}{% icon "x" %} Razorpay keys missing{% endif %}</li>
         </ul>
     </section>
 

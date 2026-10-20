@@ -18,7 +18,9 @@ class Command(BaseCommand):
         base = opts["base_url"] or getattr(settings, "BASE_URL", "")
         if not base.startswith("https://"):
             raise CommandError("Give the public https address, e.g. https://mixmint.site")
-        ok, url = support.set_webhook(base)
+        from apps.admin_panel import bot
+
+        ok, url = bot.setup(base)
         if not ok:
             raise CommandError("Telegram refused the webhook. Check the bot token.")
         self.stdout.write(self.style.SUCCESS(f"Connected: Telegram now sends messages to {url}"))

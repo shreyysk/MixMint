@@ -37,6 +37,8 @@ from apps.accounts.models import DJProfile, InAppNotification, LoginHistory, Pro
 from apps.albums.models import AlbumPack
 from apps.commerce.models import Bundle, Payout, Purchase, RefundRequest, WebhookLog
 from apps.core.net import get_client_ip
+from apps.commerce import payout_gateway
+from apps.core.genres import GENRES
 from apps.tracks.models import Track
 
 from .models import AuditLog, ContentReport, CopyrightReport, FraudAlert, MaintenanceMode, SupportTicket, SystemSetting
@@ -501,6 +503,19 @@ def _catalog_rows(request):
         qs = qs.filter(is_deleted=True)
     if request.GET.get("dj"):
         qs = qs.filter(dj__slug=request.GET["dj"])
+    y, m = request.GET.get("year") or "", request.GET.get("month") or ""
+    if y.isdigit():
+        qs = qs.filter(created_at__year=int(y))
+    if m.isdigit() and 1 <= int(m) <= 12:
+        qs = qs.filter(created_at__month=int(m))
+    genre = (request.GET.get("genre") or "").strip()
+    if genre and kind == "track":
+        qs = qs.filter(genre__iexact=genre)
+    order = {"new": "-created_at", "old": "created_at", "title_az": "title", "title_za": "-title",
+             "price_high": "-price", "price_low": "price"}
+    if kind == "track":
+        order.update({"downloads": "-download_count", "bpm_high": "-bpm", "bpm_low": "bpm"})
+    qs = qs.order_by(order.get(request.GET.get("sort"), "-created_at"), "-pk")
     return kind, qs
 
 
@@ -531,6 +546,9 @@ def catalog_view(request):
     return render(request, "admin/console/catalog.html", {
         "page": page, "kind": kind, "counts": counts, "qs": _qs_without_page(request), "f": request.GET,
         "djs": DJProfile.objects.filter(status="approved").order_by("dj_name").values("slug", "dj_name"),
+        "years": sorted({d.year for d in KINDS.get(kind, Track).objects.dates("created_at", "year")}, reverse=True),
+        "months": list(enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)),
+        "genre_list": GENRES,
     })
 
 
@@ -852,6 +870,23 @@ def settings_view(request):
             SystemSetting.objects.update_or_create(key="invoice_generation_enabled", defaults={"value": on})
             _log(request, f"Invoice generation {'on' if on else 'off'}")
             messages.success(request, f"GST invoices are {'on' if on else 'off'}.")
+        elif action == "auto_payouts":
+            from apps.commerce.payout_gateway import PROVIDERS
+
+            on = bool(request.POST.get("enabled"))
+            provider = request.POST.get("provider") if request.POST.get("provider") in PROVIDERS else "cashfree"
+            try:
+                limit = max(500, min(200000, int(float(request.POST.get("auto_limit") or 10000))))
+            except ValueError:
+                limit = 10000
+            first = bool(request.POST.get("first_needs_approval"))
+            if on and not PROVIDERS[provider].configured():
+                messages.error(request, f"Add the {PROVIDERS[provider].label} keys in Vercel first (see the list on this card), then switch automatic payouts on.")
+                return redirect("admin_settings")
+            SystemSetting.objects.update_or_create(key="auto_payouts", defaults={"value": {
+                "enabled": on, "provider": provider, "auto_limit": limit, "first_needs_approval": first}})
+            _log(request, f"Automatic payouts {'on' if on else 'off'}", provider=provider, auto_limit=limit, first_needs_approval=first)
+            messages.success(request, f"Automatic payouts are on through {PROVIDERS[provider].label}." if on else "Automatic payouts are off. Payouts wait for you in Admin → Payouts.")
         elif action == "appearance":
             on = bool(request.POST.get("dark_mode"))
             SystemSetting.objects.update_or_create(key="dark_mode", defaults={"value": {"enabled": on}})
@@ -892,6 +927,25 @@ def settings_view(request):
                 return redirect("admin_settings")
             _log(request, f"Shared ad income {start}–{end}", amount=request.POST.get("amount"), djs=res["djs"], credited=str(res["credited"]))
             messages.success(request, f"₹{res['credited']} added to {res['djs']} DJ wallet(s) from {res['views']} page views.")
+        elif action in ("launch_reset_sales", "launch_delete_accounts"):
+            from . import launch_reset
+
+            if (request.POST.get("confirm") or "").strip() != "RESET":
+                messages.error(request, "Nothing deleted: type RESET (capital letters) to confirm.")
+                return redirect("/api/v1/admin/settings/#launch")
+            if action == "launch_reset_sales":
+                n = launch_reset.reset_sales()
+                _log(request, "Launch reset: cleared test sales and money", rows=n)
+                messages.success(request, f"Done: {n} test records removed and every wallet is at ₹0.")
+            else:
+                ids = [i for i in request.POST.getlist("ids") if i]
+                if not ids:
+                    messages.error(request, "Tick at least one account.")
+                    return redirect("/api/v1/admin/settings/#launch")
+                n = launch_reset.delete_accounts(ids)
+                _log(request, "Launch reset: deleted test accounts", count=n)
+                messages.success(request, f"Deleted {n} account{'s' if n != 1 else ''}.")
+            return redirect("/api/v1/admin/settings/#launch")
         elif action == "clear_cache":
             try:
                 cache.clear()
@@ -909,9 +963,34 @@ def settings_view(request):
     return render(request, "admin/console/settings.html", {
         "mode": mode, "invoices_on": bool(inv.value) if inv else True,
         "ads": (ads.value or {}) if ads else {},
+        "payout_cfg": payout_gateway.config(),
+        "payout_providers": [(k, v.label, v.configured()) for k, v in payout_gateway.PROVIDERS.items()],
+        "site_url": request.build_absolute_uri("/").rstrip("/"),
         "dark_mode_on": bool((dm.value or {}).get("enabled")) if dm and isinstance(dm.value, dict) else False,
         "ad_periods": list(reversed(((periods.value or {}).get("paid") or [])))[:12] if periods else [],
+        "launch": _launch_preview(),
+        "plans": _plans(),
     })
+
+
+def _plans():
+    try:
+        from .plan_watch import status
+
+        return status()
+    except Exception:
+        logger.exception("Plan check failed")
+        return []
+
+
+def _launch_preview():
+    try:
+        from . import launch_reset
+
+        return launch_reset.preview()
+    except Exception:
+        logger.exception("Launch preview failed")
+        return {"orders": 0, "paid_orders": 0, "records": 0, "wallets": 0, "accounts": 0, "suspects": []}
 
 
 # ─────────────────────────────── exports ───────────────────────────────

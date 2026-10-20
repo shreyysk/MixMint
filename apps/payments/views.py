@@ -78,7 +78,11 @@ def get_content_object(content_id, content_type):
 
 
 def _gateway_payload(result, order_id, amount_paise):
-    """What the browser needs to continue: a redirect (PhonePe) or checkout.js params (Razorpay)."""
+    """What the browser needs to continue: Cashfree popup, PhonePe redirect/popup, or Razorpay checkout.js."""
+    if result.get("checkout") == "cashfree":
+        return {"checkout": "cashfree", "order_id": order_id, "payment_session_id": result["payment_session_id"],
+                "mode": result.get("mode", "sandbox"),
+                "return_url": f"/api/v1/payments/callback/?order_id={order_id}"}
     if result.get("redirect_url"):
         return {"checkout": "redirect", "redirect_url": result["redirect_url"], "order_id": order_id}
     return {
@@ -106,6 +110,10 @@ def _json_body(request):
 
 
 def _gateway_error(exc):
+    from .cashfree_pg import NeedPhone
+
+    if isinstance(exc, NeedPhone):
+        return JsonResponse({"need_phone": True, "error": "Add your mobile number to pay."}, status=428)
     logger.exception("Payment gateway error")
     msg = "Payment gateway is unavailable right now. Please try again in a minute."
     if settings.DEBUG:
@@ -266,12 +274,26 @@ def _gateway_for_order(order_id):
     first = Purchase.objects.filter(gateway_order_id=order_id).first()
     if first:
         return first.payment_gateway
-    return "razorpay" if str(order_id).startswith("order_") else "phonepe"
+    if str(order_id).startswith("order_"):
+        return "razorpay"
+    for model_path, field in (("apps.commerce.models.ProSubscriptionEvent", "gateway_order_id"),):
+        try:
+            import importlib
+
+            mod, cls = model_path.rsplit(".", 1)
+            row = getattr(importlib.import_module(mod), cls).objects.filter(**{field: order_id}).exclude(gateway="").first()
+            if row:
+                return row.gateway
+        except Exception:
+            pass
+    from .utils import active_gateway_name
+
+    return active_gateway_name()
 
 
 @csrf_exempt  # read-only: only asks the gateway for the order's real status
 def payment_callback(request):
-    """Buyer lands here after the PhonePe page. The gateway's status API is the source of truth."""
+    """Buyer lands here after the PhonePe page or the Cashfree popup. The gateway's status API is the source of truth."""
     order_id = request.GET.get("order_id") or request.POST.get("transactionId") or ""
     if not order_id:
         return HttpResponseRedirect("/library/?payment=failed")
@@ -461,3 +483,19 @@ def cart_checkout(request):
     payload["description"] = f"{len(lines)} item(s)"
     payload["prefill"] = {"email": request.user.email, "name": profile.full_name}
     return JsonResponse(payload)
+
+
+@login_required
+@require_POST
+def save_checkout_phone(request):
+    """Cashfree needs the buyer's mobile number. Asked once at checkout and kept on the profile."""
+    from .cashfree_pg import clean_phone
+
+    data = _json_body(request) or {}
+    phone = clean_phone(data.get("phone"))
+    if not phone:
+        return JsonResponse({"error": "Enter a 10-digit Indian mobile number."}, status=400)
+    profile = request.user.profile
+    profile.phone = phone
+    profile.save(update_fields=["phone"])
+    return JsonResponse({"ok": True})

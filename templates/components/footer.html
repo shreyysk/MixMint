@@ -25,6 +25,7 @@
                     <li><a href="{% url 'dj_directory' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Artists</a></li>
                     <li><a href="{% url 'bundles' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Bundles</a></li>
                     <li><a href="{% url 'drops' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Limited drops</a></li>
+                    <li><a href="{% url 'sample_packs' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Sample packs</a></li>
                     <li><a href="{% url 'recover' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Recover your download</a></li>
                 </ul>
             </nav>
@@ -46,6 +47,13 @@
                 {% include 'components/waitlist_signup.html' with source="footer" %}
             </div>
         </div>
+
+        <nav aria-label="Browse by genre" class="mb-10">
+            <p class="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-[0.18em] mb-3">DJ songs by genre</p>
+            <ul class="flex flex-wrap gap-x-4 gap-y-2 font-body text-[13px]">
+                {% for slug, name in footer_genres %}<li><a href="/genre/{{ slug }}/" class="text-[var(--text-muted)] hover:text-[var(--accent-mint)] transition-colors">{{ name }} DJ songs</a></li>{% endfor %}
+            </ul>
+        </nav>
 
         <!-- Bottom bar -->
         <div class="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-5">

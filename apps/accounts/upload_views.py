@@ -22,11 +22,7 @@ from apps.core.embeds import instagram_code, youtube_id
 
 logger = logging.getLogger("mixmint")
 
-GENRES = [
-    "Techno", "House", "Tech House", "Deep House", "Afro House", "Progressive", "Trance", "Psytrance",
-    "Dubstep", "Drum & Bass", "Hardstyle", "EDM", "Hip-Hop", "Bollywood", "Bollywood Remix", "Punjabi",
-    "Tollywood", "Lo-fi", "Other",
-]
+from apps.core.genres import GENRE_GROUPS, GENRES  # noqa: E402,F401
 
 
 def _approved_dj(request):
@@ -129,12 +125,14 @@ def upload_track_view(request):
         "storage_ready": r2.configured(),
         "covers_ready": bool(r2.public_url("x")),
         "approved": dj is not None,
-        "genre_choices": GENRES,
+        "genre_choices": GENRES, "genre_groups": GENRE_GROUPS,
         "min_track_price": int(settings.MIN_TRACK_PRICE),
         "min_album_price": int(settings.MIN_ALBUM_PRICE),
-        "kind": "album" if request.GET.get("kind") == "album" else "track",
+        "kind": "album" if request.GET.get("kind") in ("album", "samples") else "track",
     }
     if request.method != "POST":
+        if request.GET.get("kind") == "samples":
+            ctx["form"] = {"pack_type": "samples"}
         return render(request, "dashboard/upload.html", ctx)
     if dj is None:
         messages.error(request, "Your DJ account isn't approved yet, so you can't upload.")
@@ -175,7 +173,10 @@ def upload_track_view(request):
             item = AlbumPack(
                 **common,
                 cover_image=cover_url or None,
-                track_count=_int_or_none(post.get("track_count"), 1, 500) or 0,
+                track_count=_int_or_none(post.get("track_count"), 1, 5000) or 0,
+                pack_type=post.get("pack_type") if post.get("pack_type") in ("album", "samples", "toolkit") else "album",
+                formats=(post.get("formats") or "").strip()[:60],
+                bpm_range=(post.get("bpm_range") or "").strip()[:30],
                 upload_method="direct_zip",
                 processing_status="completed",
             )
@@ -205,6 +206,9 @@ def upload_track_view(request):
     from apps.admin_panel.vault import archive_after_upload
 
     archive_after_upload(kind, item)
+    from apps.admin_panel.bot import post_release
+
+    post_release(item, kind)
     messages.success(request, f"“{item.title}” is live in your store. Promote it with free covers from the DJ Asset Pack (DJ dashboard → Asset pack).")
     return redirect("album_detail" if kind == "album" else "track_detail", pk=item.pk)
 

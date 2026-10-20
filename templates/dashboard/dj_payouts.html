@@ -6,12 +6,12 @@
     <div>
         <a href="{% url 'dj_dashboard' %}" class="inline-flex items-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--accent-mint)] mb-4">← DJ dashboard</a>
         <h1 class="font-display text-[34px] md:text-[44px] font-[700] text-[var(--text-primary)] tracking-tight leading-none mb-3">Payouts</h1>
-        <p class="font-body text-[14px] text-[var(--text-muted)]">Money from each sale is held for 24–48 hours (in case of refunds), then becomes ready to withdraw. You can withdraw once a week, any day, when you have {{ threshold|money }} or more. If you don't, we pay you automatically every Friday.</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">Money from each sale is held for 24–48 hours (in case of refunds), then becomes ready to receive. Tap <b>Receive payment</b> once a week, any day, when you have {{ threshold|money }} or more{% if auto_payouts %}, and it is sent straight to your UPI or bank{% endif %}. If you don't, we pay you automatically every Friday.</p>
     </div>
 
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-5">
-            <p class="font-body text-[12px] text-[var(--text-muted)]">Ready to withdraw</p>
+            <p class="font-body text-[12px] text-[var(--text-muted)]">Ready to receive</p>
             <p class="font-mono text-[26px] font-bold text-[var(--accent-mint)] mt-1">{{ wallet.available_for_payout|money }}</p>
         </div>
         <div class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] p-5">
@@ -85,32 +85,34 @@
         </form>
     </section>
 
-    <!-- 2. Withdraw -->
+    <!-- 2. Receive payment -->
     <section class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[14px] p-6 md:p-8"
              x-data="{ code: '', busy: false, sent: false, sending: false,
                        async sendCode() { this.sending = true; try { const r = await MM.api('{% url 'dj_payout_code' %}', { body: { purpose: 'withdraw' } }); this.sent = true; MM.toast('success', r.message); this.$nextTick(() => document.getElementById('code_withdraw')?.focus()) } catch (e) { MM.toast('error', e.message) } this.sending = false },
-                       async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast('success', r.message); setTimeout(() => location.reload(), 1200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
-        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">2. Withdraw</h2>
-        <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Withdraw once a week, on any day you like. We email you a 6-digit code to confirm it's you.</p>
+                       async withdraw() { this.busy = true; try { const r = await MM.api('{% url 'dj_payout_request' %}', { body: { verification_code: this.code } }); MM.toast(r.status === 'failed' ? 'error' : 'success', r.message); setTimeout(() => location.reload(), 2200) } catch (e) { MM.toast('error', e.message); this.busy = false } } }">
+        <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-2">2. Receive payment</h2>
+        <p class="font-body text-[13px] text-[var(--text-muted)] mb-4">Once a week, on any day you like. We email you a 6-digit code to confirm it's you.</p>
         {% if not has_method %}
         <p class="font-body text-[14px] text-[var(--text-muted)]">Add your UPI or bank details above first.</p>
         {% elif next_withdraw_at %}
-        <p class="font-body text-[14px] text-[var(--text-primary)] inline-flex items-center gap-2">{% icon "clock" %} Your next withdrawal opens on {{ next_withdraw_at|date:"D, d M" }} at {{ next_withdraw_at|time:"g:i A" }}.</p>
+        <p class="font-body text-[14px] text-[var(--text-primary)] inline-flex items-center gap-2">{% icon "clock" %} You can receive your next payment on {{ next_withdraw_at|date:"D, d M" }} at {{ next_withdraw_at|time:"g:i A" }}.</p>
         {% elif wallet.available_for_payout < threshold %}
-        <p class="font-body text-[14px] text-[var(--text-muted)]">You can withdraw once {{ threshold|money }} is ready. You have {{ wallet.available_for_payout|money }} so far.</p>
+        <p class="font-body text-[14px] text-[var(--text-muted)]">You can receive a payment once {{ threshold|money }} is ready. You have {{ wallet.available_for_payout|money }} so far.</p>
         {% else %}
-        <p class="font-body text-[14px] text-[var(--text-primary)] mb-4">Withdraw <strong>{{ wallet.available_for_payout|money }}</strong> to {% if method == 'upi' %}{{ dj_profile.upi_id }}{% else %}your bank account {{ masked_account }}{% endif %}. It usually arrives within 3 working days.</p>
+        <p class="font-body text-[14px] text-[var(--text-primary)] mb-4">Receive <strong>{{ wallet.available_for_payout|money }}</strong> in {% if method == 'upi' %}{{ dj_profile.upi_id }}{% else %}your bank account {{ masked_account }}{% endif %}. {% if auto_payouts %}It is sent the moment you confirm and usually lands within minutes.{% else %}It usually arrives within 1–2 working days.{% endif %}</p>
         <div class="flex flex-wrap gap-3 items-end">
             <button type="button" class="btn-mm btn-ghost h-[48px] px-5 text-[14px]" @click="sendCode()" :disabled="sending" x-text="sent ? 'Send a new code' : '1. Email me a code'">1. Email me a code</button>
             <div>
                 <label for="code_withdraw" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Code from the email</label>
                 <input id="code_withdraw" x-model="code" inputmode="numeric" maxlength="6" class="input-mm font-mono tracking-[0.3em] max-w-[160px]" placeholder="123456" autocomplete="one-time-code">
             </div>
-            <button type="button" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]" @click="withdraw()" :disabled="busy || code.length !== 6">2. Withdraw now</button>
+            <button type="button" class="btn-mm btn-mint h-[48px] px-6 text-[14px] font-[700]" @click="withdraw()" :disabled="busy || code.length !== 6">2. Receive payment</button>
         </div>
         {% endif %}
     </section>
 
+
+    {% include "partials/telegram_connect.html" with tg_for="dj" %}
 
     <section>
         <h2 class="font-display text-[20px] font-[700] text-[var(--text-primary)] mb-4">Payout history</h2>
@@ -120,7 +122,7 @@
                 <thead class="bg-[var(--bg-elevated)] text-[12px] text-[var(--text-muted)]"><tr><th class="p-3">Date</th><th class="p-3">Amount</th><th class="p-3">Status</th><th class="p-3">Reference</th></tr></thead>
                 <tbody class="divide-y divide-[var(--border)]">
                 {% for p in payouts %}
-                <tr><td class="p-3 whitespace-nowrap">{{ p.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ p.amount|money }}</td><td class="p-3">{{ p.get_status_display }}</td><td class="p-3 font-mono text-[12px] break-all">{{ p.payment_reference|default:"—" }}</td></tr>
+                <tr><td class="p-3 whitespace-nowrap">{{ p.created_at|date:"d M Y" }}</td><td class="p-3 font-mono">{{ p.amount|money }}</td><td class="p-3">{% if p.status == "processing" %}On its way{% elif p.status == "completed" %}Paid{% else %}{{ p.get_status_display }}{% endif %}</td><td class="p-3 font-mono text-[12px] break-all">{% if p.status == "failed" and p.failure_reason %}<span class="font-body text-[var(--accent-red)]">{{ p.failure_reason }}</span>{% else %}{{ p.payment_reference|default:"—" }}{% endif %}</td></tr>
                 {% endfor %}
                 </tbody>
             </table>

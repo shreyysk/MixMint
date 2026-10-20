@@ -15,8 +15,8 @@
     <meta name="description" content="{% block meta_description %}MixMint — buy exclusive DJ edits, tool kits and album packs directly from the DJs who made them. Secure, instant downloads.{% endblock %}">
 
     <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-    <meta name="twitter:card" content="{% if og_tags and og_tags|length %}summary_large_image{% else %}summary{% endif %}">
-    {% if not og_tags %}<meta property="og:site_name" content="MixMint"><meta property="og:type" content="website"><meta property="og:title" content="{% block og_title %}MixMint — Home of DJ Releases{% endblock %}">{% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    {% if not og_tags %}<meta property="og:site_name" content="MixMint"><meta property="og:type" content="website"><meta property="og:title" content="{% block og_title %}MixMint — Home of DJ Releases{% endblock %}"><meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'brand/og-default.png' %}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">{% endif %}
     {% for key, value in og_tags.items %}
     <meta property="{{ key }}" content="{{ value }}">
     {% endfor %}
@@ -76,6 +76,10 @@
         [x-cloak] { display: none !important; }
     </style>
 
+    {% if google_verify %}<meta name="google-site-verification" content="{{ google_verify }}">{% endif %}
+    {% if bing_verify %}<meta name="msvalidate.01" content="{{ bing_verify }}">{% endif %}
+    {% if ld_json %}<script type="application/ld+json">{{ ld_json|safe }}</script>{% endif %}
+    {% if site_ld_json %}<script type="application/ld+json">{{ site_ld_json|safe }}</script>{% endif %}
     {% block extra_head %}{% endblock %}
 
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
@@ -118,13 +122,6 @@
     <!-- Skip to content (a11y) -->
     <a href="#main" class="skip-to-content">Skip to main content</a>
 
-    <div class="noise-overlay"></div>
-    <div class="mesh-gradient">
-        <div class="mesh-blob" style="top:-10%; left:-10%; background:var(--accent-mint);"></div>
-        <div class="mesh-blob" style="bottom:-10%; right:-10%; background:#4B0082;"></div>
-        <div class="mesh-blob" style="top:40%; right:20%; background:var(--accent-amber); width:400px; height:400px;">
-        </div>
-    </div>
 
     {% block site_nav %}{% include 'components/navbar.html' %}{% endblock %}
 

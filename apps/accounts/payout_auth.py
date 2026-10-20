@@ -76,7 +76,7 @@ def send_payout_code(dj_profile, purpose="withdraw"):
 
     code = f"{secrets.randbelow(1_000_000):06d}"
     cache.set(_code_key(dj_profile), {"h": hashlib.sha256(code.encode()).hexdigest(), "p": purpose}, timeout=CODE_TTL)
-    what = "withdraw your MixMint earnings" if purpose == "withdraw" else "change where your MixMint earnings are paid"
+    what = "receive your MixMint earnings" if purpose == "withdraw" else "change where your MixMint earnings are paid"
     email = dj_profile.profile.user.email
     try:
         from apps.admin_panel.email_utils import send_email

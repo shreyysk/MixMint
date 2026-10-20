@@ -37,6 +37,19 @@ def _locked_wallet(dj_profile):
     return DJWallet.objects.select_for_update().get(dj=dj_profile)
 
 
+def _sale_notice(purchase_id):
+    try:
+        from apps.admin_panel import bot
+
+        from .models import Purchase
+
+        p = Purchase.objects.select_related("seller__profile__user").filter(pk=purchase_id).first()
+        if p is not None:
+            bot.notify_sale(p)
+    except Exception:
+        logger.exception("Sale notice failed for purchase %s", purchase_id)
+
+
 def credit_wallet(dj_profile, amount, description, metadata=None, escrow=True):
     """Credit a DJ. escrow=True holds the money until the release job runs."""
     amount = money(amount)
@@ -164,6 +177,7 @@ class MonetizationService:
         from .referrals import on_sale
 
         on_sale(locked.seller)
+        transaction.on_commit(lambda: _sale_notice(locked.pk))
         try:
             from apps.accounts.utils import check_verification_eligibility
 

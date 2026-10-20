@@ -35,6 +35,17 @@
         {% endfor %}
     </div>
 
+    <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mt-14 mb-2">Ready-made MixMint posts</h2>
+    <p class="text-[14px] text-[var(--text-muted)] mb-5">Share these as they are to tell your followers where to buy your music. Add your store link (mixmint.site/dj/your-name) in the caption.</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for f, label, size in brand_kit %}
+        <a href="{% static 'brand/'|add:f %}" download class="rounded-[14px] border border-[var(--border)] overflow-hidden bg-[var(--bg-surface)] hover:border-[var(--accent-mint)] transition-colors flex flex-col">
+            <div class="aspect-square bg-[var(--bg-elevated)] flex items-center justify-center p-3"><img src="{% static 'brand/'|add:f %}" alt="{{ label }}" class="max-h-full max-w-full object-contain rounded" loading="lazy" decoding="async"></div>
+            <div class="p-3"><p class="font-[700] text-[13px] text-[var(--text-primary)]">{{ label }}</p><p class="font-mono text-[11px] text-[var(--text-muted)]">{{ size }}</p></div>
+        </a>
+        {% endfor %}
+    </div>
+
     <section class="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="mm-card-section"><h2 class="font-display text-[18px] font-[700] text-[var(--text-primary)] mb-2">How to use a template</h2>
             <ol class="list-decimal list-inside space-y-1.5 text-[14px] text-[var(--text-muted)]">

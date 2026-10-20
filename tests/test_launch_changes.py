@@ -284,3 +284,65 @@ def test_admin_can_allow_dark_mode(admin_user):
     c.post("/api/v1/admin/settings/", {"action": "appearance"})
     cache.clear()
     assert 'onclick="toggleTheme()" data-theme-toggle' not in Client().get("/").content.decode()
+
+
+# ── Releases search: date, price, BPM, DJ filters and sorts; regional genres ──
+@pytest.mark.django_db
+class TestReleaseFilters:
+    @pytest.fixture
+    def catalog(self, dj_user):
+        from apps.tracks.models import Track
+
+        _, dj = dj_user
+        mk = lambda title, price, bpm, genre, when: Track.objects.create(  # noqa: E731
+            dj=dj, title=title, price=Decimal(price), file_key=f"t/{title}.wav", preview_type="youtube",
+            youtube_url="https://youtube.com/watch?v=x", genre=genre, bpm=bpm)
+        a = mk("Alpha", "49", 124, "Tulu", None)
+        b = mk("Bravo", "149", 140, "Kannada", None)
+        c = mk("Charlie", "0", 98, "Techno", None)
+        Track.objects.filter(pk=a.pk).update(created_at=timezone.make_aware(timezone.datetime(2025, 3, 10)))
+        Track.objects.filter(pk=b.pk).update(created_at=timezone.make_aware(timezone.datetime(2026, 7, 2)))
+        Track.objects.filter(pk=c.pk).update(created_at=timezone.make_aware(timezone.datetime(2026, 9, 20)))
+        return a, b, c
+
+    def titles(self, url):
+        r = Client().get(url)
+        assert r.status_code == 200
+        return [o.title for k, o in r.context["page"].object_list]
+
+    def test_year_and_month(self, catalog):
+        assert self.titles("/releases/?year=2026") == ["Charlie", "Bravo"]
+        assert self.titles("/releases/?year=2026&month=7") == ["Bravo"]
+        assert self.titles("/releases/?year=2025") == ["Alpha"]
+
+    def test_sorts(self, catalog):
+        assert self.titles("/releases/?sort=old") == ["Alpha", "Bravo", "Charlie"]
+        assert self.titles("/releases/?sort=title_za") == ["Charlie", "Bravo", "Alpha"]
+        assert self.titles("/releases/?sort=bpm_low") == ["Charlie", "Alpha", "Bravo"]
+        assert self.titles("/releases/?sort=price_high")[0] == "Bravo"
+
+    def test_price_bpm_genre(self, catalog):
+        assert self.titles("/releases/?price=free") == ["Charlie"]
+        assert self.titles("/releases/?price=u50") == ["Alpha"]
+        assert self.titles("/releases/?bpm=121-128") == ["Alpha"]
+        assert self.titles("/releases/?genre=Kannada") == ["Bravo"]
+
+    def test_month_headings_and_bad_input(self, catalog):
+        r = Client().get("/releases/?year=abc&month=99&sort=nope&price=x&bpm=y")
+        assert r.status_code == 200
+        labels = [g["label"] for g in r.context["groups"]]
+        assert labels == ["September 2026", "July 2026", "March 2025"]
+
+    def test_regional_genres_in_upload(self):
+        from apps.core.genres import GENRES
+
+        for g in ("Mangalore", "Tulu", "Kannada", "Tamil", "Telugu", "English"):
+            assert g in GENRES
+        assert GENRES[-1] == "Other"
+
+    def test_admin_catalog_filters(self, admin_user, catalog):
+        c = Client()
+        c.force_login(admin_user)
+        r = c.get("/api/v1/admin/catalog/?type=track&year=2026&month=9&sort=old")
+        assert r.status_code == 200
+        assert [o.title for o in r.context["page"]] == ["Charlie"]

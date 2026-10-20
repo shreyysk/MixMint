@@ -57,6 +57,14 @@ class AlbumPack(models.Model):
     processing_started_at = models.DateTimeField(null=True, blank=True)
     processing_completed_at = models.DateTimeField(null=True, blank=True)
     processing_error = models.TextField(null=True, blank=True)
+    PACK_TYPES = (
+        ("album", "Album pack"),
+        ("samples", "Sample pack"),
+        ("toolkit", "DJ tool kit"),
+    )
+    pack_type = models.CharField(max_length=20, choices=PACK_TYPES, default="album", db_index=True)
+    formats = models.CharField(max_length=60, blank=True, default="")  # e.g. "WAV 24-bit, MP3"
+    bpm_range = models.CharField(max_length=30, blank=True, default="")  # e.g. "120-128"
     track_count = models.IntegerField(default=0)
     total_duration = models.IntegerField(null=True, blank=True)
     file_size = models.BigIntegerField(null=True, blank=True)  # Size of the ZIP in bytes
@@ -64,6 +72,14 @@ class AlbumPack(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_samples(self):
+        return self.pack_type in ("samples", "toolkit")
+
+    @property
+    def count_label(self):
+        return "sounds" if self.is_samples else "tracks"
 
     def clean(self):
         super().clean()

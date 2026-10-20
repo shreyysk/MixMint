@@ -23,24 +23,28 @@
     <div class="notice-danger mb-8"><p class="font-body text-[14px]">File storage isn't connected yet (missing R2 keys), so uploads won't work. Please tell the MixMint admin.</p></div>
     {% endif %}
 
-    <div class="grid grid-cols-2 gap-2 p-1 rounded-[12px] bg-[var(--bg-elevated)] border border-[var(--border)] mb-10" role="radiogroup" aria-label="What are you uploading?">
+    <div class="grid grid-cols-3 gap-1.5 p-1 rounded-[12px] bg-[var(--bg-elevated)] border border-[var(--border)] mb-10" role="radiogroup" aria-label="What are you uploading?">
         <button type="button" role="radio" :aria-checked="kind === 'track'" @click="setKind('track')"
             :class="kind === 'track' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
-            class="h-[48px] rounded-[9px] font-body text-[14px] font-[600]">Single track</button>
-        <button type="button" role="radio" :aria-checked="kind === 'album'" @click="setKind('album')"
-            :class="kind === 'album' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
-            class="h-[48px] rounded-[9px] font-body text-[14px] font-[600]">Album pack (ZIP)</button>
+            class="min-h-[48px] px-1 rounded-[9px] font-body text-[13px] sm:text-[14px] font-[600] leading-tight">Single track</button>
+        <button type="button" role="radio" :aria-checked="kind === 'album' && packType === 'album'" @click="setKind('album'); packType = 'album'"
+            :class="kind === 'album' && packType === 'album' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
+            class="min-h-[48px] px-1 rounded-[9px] font-body text-[13px] sm:text-[14px] font-[600] leading-tight">Album pack <span class="hidden sm:inline">(ZIP)</span></button>
+        <button type="button" role="radio" :aria-checked="kind === 'album' && packType !== 'album'" @click="setKind('album'); if (packType === 'album') packType = 'samples'"
+            :class="kind === 'album' && packType !== 'album' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow' : 'text-[var(--text-muted)]'"
+            class="min-h-[48px] px-1 rounded-[9px] font-body text-[13px] sm:text-[14px] font-[600] leading-tight">Sample pack <span class="hidden sm:inline">(ZIP)</span></button>
     </div>
 
     <form method="post" class="space-y-12" x-ref="form" @submit.prevent="submit()" novalidate data-upload-form>
         {% csrf_token %}
         <input type="hidden" name="kind" :value="kind">
+        <input type="hidden" name="pack_type" :value="kind === 'album' ? packType : ''">
         <input type="hidden" name="file_key" :value="fileKey">
         <input type="hidden" name="cover_url" :value="coverUrl">
 
         <!-- File -->
         <section>
-            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4" x-text="kind === 'album' ? 'ZIP file with your tracks' : 'Audio file'">Audio file</h2>
+            <h2 class="font-display text-[18px] font-[600] text-[var(--text-primary)] mb-4" x-text="kind === 'album' ? (packType === 'album' ? 'ZIP file with your tracks' : 'ZIP file with your sounds') : 'Audio file'">Audio file</h2>
             <div class="relative border-2 border-dashed rounded-[12px] bg-[var(--bg-surface)] p-10 text-center transition-colors"
                  :class="file ? 'border-[var(--accent-mint)]' : 'border-[var(--border)] hover:border-[var(--accent-mint)]'">
                 <input type="file" id="main_file" x-ref="file" :accept="kind === 'album' ? '.zip' : '.mp3,.wav,.flac,.aiff,.aif'"
@@ -88,7 +92,7 @@
                     <label for="genre" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Genre</label>
                     <select name="genre" id="genre" class="input-mm cursor-pointer">
                         <option value="">Choose a genre</option>
-                        {% for g in genre_choices %}<option value="{{ g }}" {% if form.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+                        {% for label, group in genre_groups %}<optgroup label="{{ label }}">{% for g in group %}<option value="{{ g }}" {% if form.genre == g %}selected{% endif %}>{{ g }}</option>{% endfor %}</optgroup>{% endfor %}
                     </select>
                 </div>
                 <div x-show="kind === 'track'">
@@ -99,9 +103,24 @@
                     <label for="year" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Year <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
                     <input type="number" id="year" name="year" class="input-mm" placeholder="2026" min="1950" max="2100" value="{{ form.year|default:'' }}">
                 </div>
+                <div x-show="kind === 'album' && packType !== 'album'" x-cloak>
+                    <label for="pack_kind" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Type of pack</label>
+                    <select id="pack_kind" class="input-mm" x-model="packType">
+                        <option value="samples">Sample pack (loops, one-shots, drums, vocals)</option>
+                        <option value="toolkit">DJ tool kit (intros, acapellas, FX, transitions)</option>
+                    </select>
+                </div>
                 <div x-show="kind === 'album'" x-cloak>
-                    <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">Number of tracks in the ZIP</label>
-                    <input type="number" id="track_count" name="track_count" class="input-mm" placeholder="8" min="1" max="500" value="{{ form.track_count|default:'' }}">
+                    <label for="track_count" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2" x-text="packType === 'album' ? 'Number of tracks in the ZIP' : 'Number of sounds in the ZIP'">Number of tracks in the ZIP</label>
+                    <input type="number" id="track_count" name="track_count" class="input-mm" placeholder="8" min="1" max="5000" value="{{ form.track_count|default:'' }}">
+                </div>
+                <div x-show="kind === 'album' && packType !== 'album'" x-cloak>
+                    <label for="formats" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">File formats <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                    <input type="text" id="formats" name="formats" maxlength="60" class="input-mm" placeholder="WAV 24-bit, MP3" value="{{ form.formats|default:'' }}">
+                </div>
+                <div x-show="kind === 'album' && packType !== 'album'" x-cloak>
+                    <label for="bpm_range" class="block font-body text-[13px] font-[600] text-[var(--text-primary)] mb-2">BPM <span class="font-normal text-[var(--text-muted)]">(optional)</span></label>
+                    <input type="text" id="bpm_range" name="bpm_range" maxlength="30" class="input-mm" placeholder="120–128" value="{{ form.bpm_range|default:'' }}">
                 </div>
             </div>
             <div class="mt-6">
@@ -136,7 +155,7 @@
                 <input type="number" id="price" name="price" step="1" min="0" max="100000" required inputmode="numeric"
                     class="input-mm font-mono text-[20px] font-bold mb-2" placeholder="99" x-model="price" aria-describedby="price-help">
                 <p id="price-help" class="font-body text-[12px] text-[var(--text-muted)] mb-5"
-                   x-text="kind === 'album' ? 'Albums start at ₹{{ min_album_price|default:49 }}.' : 'Paid tracks start at ₹{{ min_track_price|default:29 }}. Put 0 to give it away free.'"></p>
+                   x-text="kind === 'album' ? 'Packs start at ₹{{ min_album_price|default:49 }}.' : 'Paid tracks start at ₹{{ min_track_price|default:29 }}. Put 0 to give it away free.'"></p>
                 <details class="mt-5 border-t border-[var(--border)] pt-4" {% if form.copies_limit or form.compare_at_price %}open{% endif %}>
                     <summary class="cursor-pointer text-[13px] font-[600] text-[var(--text-primary)]">Offers: discount or limited drop</summary>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -170,7 +189,7 @@
         <p x-show="error" x-cloak role="alert" class="notice-danger font-body text-[14px]" x-text="error"></p>
 
         <button type="submit" class="btn-mm btn-mint w-full h-[60px] text-[16px] font-[700] rounded-[10px]" :disabled="busy" {% if not approved or not storage_ready %}disabled{% endif %}>
-            <span x-text="busy ? status : (kind === 'album' ? 'Publish album' : 'Publish track')">Publish track</span>
+            <span x-text="busy ? status : (kind === 'album' ? (packType === 'album' ? 'Publish album' : 'Publish pack') : 'Publish track')">Publish track</span>
         </button>
     </form>
 </div>
@@ -178,7 +197,7 @@
 <script>
 function mmUpload(initialKind) {
     return {
-        kind: initialKind, file: null, cover: null, coverPreview: '', fileKey: '', coverUrl: '', keptName: false,
+        kind: initialKind, packType: '{{ form.pack_type|default:"album" }}' || 'album', file: null, cover: null, coverPreview: '', fileKey: '', coverUrl: '', keptName: false,
         busy: false, status: '', error: '', progress: { file: 0, cover: 0 },
         mb(n) { return (n / 1048576).toFixed(1) + ' MB'; },
         setKind(k) { if (this.kind === k) return; this.kind = k; this.file = null; this.fileKey = ''; this.keptName = false; this.$refs.file.value = ''; },

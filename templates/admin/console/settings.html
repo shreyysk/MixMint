@@ -23,6 +23,27 @@
                 <button class="cx-btn primary">Save</button>
             </form>
         </section>
+        <section class="cx-card" style="grid-column:1/-1" id="auto-payouts">
+            <h2>Automatic payouts</h2>
+            <p class="cx-muted" style="margin-bottom:12px">When on, a DJ's withdrawal is sent straight to their UPI ID or bank account and marked paid when the bank confirms. PhonePe can't send money out, so this uses a payouts provider funded from your bank. A failed transfer puts the money back in the DJ's balance automatically.</p>
+            <form method="post" class="cx-grid" style="gap:0 16px;align-items:end;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">{% csrf_token %}<input type="hidden" name="action" value="auto_payouts">
+                <div class="cx-field"><label class="cx-label" for="ap-provider">Provider</label>
+                    <select id="ap-provider" class="cx-input" name="provider">{% for key, label, ready in payout_providers %}<option value="{{ key }}" {% if payout_cfg.provider == key %}selected{% endif %}>{{ label }}{% if not ready %} (keys missing){% endif %}</option>{% endfor %}</select></div>
+                <div class="cx-field"><label class="cx-label" for="ap-limit">Send automatically up to (₹)</label>
+                    <input id="ap-limit" class="cx-input" type="number" name="auto_limit" min="500" max="200000" step="100" value="{{ payout_cfg.auto_limit|floatformat:0 }}"></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="first_needs_approval" {% if payout_cfg.first_needs_approval %}checked{% endif %}> Check each DJ's first payout myself</label></div>
+                <div class="cx-field"><label class="cx-check"><input type="checkbox" name="enabled" {% if payout_cfg.enabled %}checked{% endif %}> Send payouts automatically</label></div>
+                <div class="cx-field"><button class="cx-btn primary">Save</button></div>
+            </form>
+            <div class="cx-sep"></div>
+            <details><summary class="cx-label" style="cursor:pointer">Setup: keys and webhook addresses</summary>
+                <div class="cx-muted" style="margin-top:10px;line-height:1.7">
+                    <p><b>Cashfree Payouts</b> (works on Vercel; no fixed IP needed): in Vercel add <code>CASHFREE_PAYOUT_CLIENT_ID</code>, <code>CASHFREE_PAYOUT_CLIENT_SECRET</code>, <code>CASHFREE_PAYOUT_PUBLIC_KEY</code> (the 2FA public key .pem text) and <code>CASHFREE_PAYOUT_ENV=production</code>. Webhook URL: <code>{{ site_url }}/payouts/webhook/cashfree/</code> (V2 transfer events).</p>
+                    <p><b>RazorpayX</b> (needs your server IP allowlisted with Razorpay): add <code>RAZORPAYX_KEY_ID</code>, <code>RAZORPAYX_KEY_SECRET</code>, <code>RAZORPAYX_ACCOUNT_NUMBER</code>, <code>RAZORPAYX_WEBHOOK_SECRET</code>. Webhook URL: <code>{{ site_url }}/payouts/webhook/razorpayx/</code> (payout.processed, payout.failed, payout.reversed).</p>
+                    <p>Test with sandbox keys first, then switch to production keys. Keep enough balance in the payouts account for a week of withdrawals.</p>
+                </div>
+            </details>
+        </section>
         <section class="cx-card">
             <h2>Appearance</h2>
             <p class="cx-muted" style="margin-bottom:12px">The site uses the light theme. Turn dark mode on to give visitors a light/dark switch (it follows their device setting until they pick one).</p>
@@ -59,13 +80,59 @@
         <section class="cx-card" style="grid-column:1/-1">
             <h2>Other switches</h2>
             <div class="cx-grid" style="gap:10px">
-                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_support' %}#payments">Payment gateway (Razorpay / PhonePe) →</a>
+                <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_support' %}#payments">Payment gateway (Cashfree / PhonePe / Razorpay) →</a>
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_offers_pricing' %}">Commission, buyer fee, GST, DJ fee, banners →</a>
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_support' %}">Telegram bot &amp; file vault →</a>
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_security_dashboard' %}">Freeze accounts, IP bans, emergency stop →</a>
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_health' %}">System health →</a>
                 <a class="cx-btn" style="justify-content:flex-start" href="{% url 'admin_activity' %}">Activity log →</a>
             </div>
+        </section>
+        <section class="cx-card" style="grid-column:1/-1" id="plans">
+            <h2>Plans and costs</h2>
+            <p class="cx-muted" style="margin-bottom:12px">These services bill a card in their own dashboards (Cashfree can't pay them). Add one card with auto-pay once per service and renewals happen by themselves. MixMint runs on free plans for now. This tells you when each one needs upgrading. You also get it in the daily Telegram summary.</p>
+            <div style="display:grid;gap:10px">
+                {% for p in plans %}
+                <div style="display:flex;gap:10px;align-items:flex-start;min-width:0">
+                    <span style="flex-shrink:0;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;{% if p.level == 'now' %}background:#fee2e2;color:#991b1b{% elif p.level == 'soon' %}background:#fef3c7;color:#92400e{% else %}background:#dcfce7;color:#166534{% endif %}">{% if p.level == 'now' %}Upgrade now{% elif p.level == 'soon' %}Soon{% else %}Fine{% endif %}</span>
+                    <div style="min-width:0"><b>{{ p.name }}</b> · {{ p.cost }}<br><span class="cx-muted">{{ p.reason }} {{ p.why }}</span> <a href="{{ p.url }}" target="_blank" rel="noopener">Pricing</a> · <a href="{{ p.billing }}" target="_blank" rel="noopener"><b>Upgrade / pay →</b></a></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="cx-card" style="grid-column:1/-1" id="launch">
+            <h2>Launch: clear test data</h2>
+            <p class="cx-muted" style="margin-bottom:12px">Before you go live, remove the orders, payouts and accounts you made while testing. Download the CSVs below first if you want a copy. Each button needs you to type <b>RESET</b>.</p>
+            <details style="margin-bottom:14px">
+                <summary class="cx-btn" style="display:inline-flex">1. Clear test sales and money ({{ launch.orders }} order{{ launch.orders|pluralize }}, {{ launch.wallets }} wallet{{ launch.wallets|pluralize }} with money)</summary>
+                <form method="post" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">{% csrf_token %}
+                    <input type="hidden" name="action" value="launch_reset_sales">
+                    <p class="cx-muted" style="flex-basis:100%">Deletes every order, invoice, payout, refund, cart and earnings record ({{ launch.records }} rows) and sets every DJ wallet and sales counter to 0. Accounts, DJ stores and music stay.{% if launch.paid_orders %} <b>{{ launch.paid_orders }} of these orders are paid. Only continue if they were all test payments.</b>{% endif %}</p>
+                    <label class="cx-label" for="lr-1">Type RESET</label><input id="lr-1" class="cx-input" name="confirm" autocomplete="off" required style="max-width:140px">
+                    <button class="cx-btn primary">Clear sales and money</button>
+                </form>
+            </details>
+            <details>
+                <summary class="cx-btn" style="display:inline-flex">2. Delete test accounts ({{ launch.accounts }} non-admin account{{ launch.accounts|pluralize }})</summary>
+                {% if launch.suspects %}
+                <form method="post" style="margin-top:10px">{% csrf_token %}
+                    <input type="hidden" name="action" value="launch_delete_accounts">
+                    <p class="cx-muted" style="margin-bottom:8px">Ticked: accounts whose email looks like a test (example.com, test, demo…). Tick or untick as you like. A DJ account takes its store and music with it.</p>
+                    <div style="max-height:320px;overflow:auto;border:1px solid var(--cx-border, #e5e5e5);border-radius:10px;padding:6px 10px;margin-bottom:10px">
+                        {% for u in launch.suspects %}
+                        <label style="display:flex;gap:8px;align-items:center;padding:5px 0;font-size:13px;min-width:0">
+                            <input type="checkbox" name="ids" value="{{ u.id }}" {% if u.test %}checked{% endif %}>
+                            <span style="overflow-wrap:anywhere">{{ u.email }}{% if u.dj %} · DJ {{ u.dj }}{% endif %} · joined {{ u.joined|date:"d M Y" }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                        <label class="cx-label" for="lr-2">Type RESET</label><input id="lr-2" class="cx-input" name="confirm" autocomplete="off" required style="max-width:140px">
+                        <button class="cx-btn primary">Delete ticked accounts</button>
+                    </div>
+                </form>
+                {% else %}<p class="cx-muted" style="margin-top:10px">No accounts besides admins.</p>{% endif %}
+            </details>
         </section>
         <section class="cx-card" style="grid-column:1/-1">
             <h2>Downloads (CSV)</h2>

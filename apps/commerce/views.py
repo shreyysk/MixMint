@@ -109,13 +109,20 @@ def request_manual_payout(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return Response(
-        {
-            "status": "initiated",
-            "message": f"Payout of ₹{payout_amount} initiated successfully.",
-            "payout_amount": str(payout_amount),
-        }
-    )
+    latest = Payout.objects.filter(dj=dj_profile).order_by("-created_at").first()
+    st = latest.status if latest else "pending"
+    if st == "completed":
+        msg = f"Done. ₹{payout_amount} has been sent" + (f" (UTR {latest.utr})." if latest.utr else ".")
+    elif st == "processing":
+        msg = f"₹{payout_amount} is on its way to you. It usually arrives within minutes; we'll email you when it lands."
+    elif st == "failed":
+        msg = f"The transfer of ₹{payout_amount} didn't go through ({latest.failure_reason or 'declined'}). The money is back in your balance; check your payout details and try again."
+    elif latest and (latest.hold_reason or "").startswith("Waiting for admin approval"):
+        msg = f"Payout of ₹{payout_amount} requested. It needs a quick check by our team first, then it is sent automatically."
+    else:
+        msg = f"Payout of ₹{payout_amount} requested. You'll get it within 1–2 working days."
+    return Response({"status": st if st in ("completed", "processing", "failed") else "initiated",
+                     "message": msg, "payout_amount": str(payout_amount)})
 
 
 @api_view(["POST"])

@@ -43,6 +43,12 @@ class ResendEmailBackend(BaseEmailBackend):
                 )
                 resp.raise_for_status()
                 sent += 1
+                try:
+                    from apps.admin_panel.plan_watch import count_email
+
+                    count_email()
+                except Exception:
+                    pass
             except Exception:
                 logger.exception("Resend email to %s failed", payload["to"])
                 if not self.fail_silently:

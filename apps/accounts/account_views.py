@@ -58,6 +58,12 @@ def account_settings_view(request):
                     update_session_auth_hash(request, user)  # stay logged in here
                     messages.success(request, "Password changed." if has_password else "Password set. You can now log in with email too.")
 
+        elif action == "telegram_unlink":
+            from apps.admin_panel.models import TelegramLink
+
+            TelegramLink.objects.filter(profile=profile).delete()
+            messages.success(request, "Telegram disconnected.")
+
         elif action == "logout_others":
             from django.contrib.sessions.models import Session
 
@@ -80,11 +86,25 @@ def account_settings_view(request):
                 return redirect("home")
         return redirect("account_settings")
 
+    from apps.admin_panel.bot import connect_ctx
+
     return render(
         request,
         "dashboard/account_settings.html",
-        {"profile": profile, "has_password": has_password, "google": google, "other_sessions": len(_other_sessions(user, request.session.session_key))},
+        {"profile": profile, "has_password": has_password, "google": google, "other_sessions": len(_other_sessions(user, request.session.session_key)),
+         **connect_ctx(profile)},
     )
+
+
+@login_required
+def telegram_connect_view(request):
+    """Fresh 2-hour link every click, so the button never goes stale."""
+    from apps.admin_panel.bot import connect_ctx, link_url
+
+    if not connect_ctx(request.user.profile)["tg_ready"]:
+        messages.error(request, "Telegram isn't set up yet.")
+        return redirect("account_settings")
+    return redirect(link_url(request.user.profile))
 
 
 def _request_deletion(request):

@@ -32,12 +32,13 @@ JOBS = {
     "cleanup": ["cleanup_tokens", "telegram_vault", "cleanup_uploads"],
     "vault": ["telegram_vault"],
     "warm-cache": ["warm_external_cache"],
-    "weekly-sales": ["update_weekly_sales"],
-    "payout-cron": ["payout_cron"],
+    "weekly-sales": ["update_weekly_sales", "telegram_daily"],
+    "payout-cron": ["payout_cron", "payout_sync"],
+    "payout-sync": ["payout_sync"],
     "ad-floor": ["update_ad_floor_pricing"],
     "reset-quotas": ["reset_quotas"],
     "release-escrow": ["release_escrow"],
-    "payouts": ["process_payouts"],
+    "payouts": ["process_payouts", "payout_sync"],
 }
 
 

@@ -540,4 +540,4 @@ def test_unlinked_buyer_gets_telegram_link_offer(mtproto_mode, dj_user, user, se
         r = c.post(f"/api/v1/tracks/{t.id}/download-token/", {}, content_type="application/json")
     n = r.json()["notify"]
     assert r.status_code == 202 and n["telegram_linked"] is False
-    assert n["telegram_link"].startswith("https://t.me/mixmint_bot?start=dl_")
+    assert n["telegram_link"].startswith("https://t.me/mixmint_bot?start=ln_")

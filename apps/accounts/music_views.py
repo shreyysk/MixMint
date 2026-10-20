@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core import r2
 
-from .upload_views import GENRES, _first_error, _int_or_none, _offers, _previews, _price
+from .upload_views import GENRE_GROUPS, GENRES, _first_error, _int_or_none, _offers, _previews, _price
 
 SOCIAL = [
     ("instagram", "Instagram", "instagram.com"),
@@ -59,7 +59,7 @@ def edit_music_view(request, kind, pk):
         return redirect("dashboard")
     item = get_object_or_404(_model(kind), pk=pk, dj=dj, is_deleted=False)
     cover_field = "cover_image" if kind == "album" else "cover_url"
-    ctx = {"item": item, "kind": kind, "genre_choices": GENRES, "cover": getattr(item, cover_field) or ""}
+    ctx = {"item": item, "kind": kind, "genre_choices": GENRES, "genre_groups": GENRE_GROUPS, "cover": getattr(item, cover_field) or ""}
 
     if request.method == "POST":
         post = request.POST
@@ -81,7 +81,11 @@ def edit_music_view(request, kind, pk):
                 item.bpm = _int_or_none(post.get("bpm"), 40, 250)
                 item.year = _int_or_none(post.get("year"), 1950, 2100)
             else:
-                item.track_count = _int_or_none(post.get("track_count"), 1, 500) or item.track_count
+                item.track_count = _int_or_none(post.get("track_count"), 1, 5000) or item.track_count
+                if post.get("pack_type") in dict(item.PACK_TYPES):
+                    item.pack_type = post["pack_type"]
+                item.formats = (post.get("formats") or "").strip()[:60]
+                item.bpm_range = (post.get("bpm_range") or "").strip()[:30]
             item.full_clean()
             item.save()
         except r2.UploadError as exc:
