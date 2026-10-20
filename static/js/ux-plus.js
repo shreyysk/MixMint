@@ -223,6 +223,14 @@
         if (i > -1 && i < f.length - 1) { e.preventDefault(); f[i + 1].focus(); }
     });
 
+    // Mobile menu open → body.menu-open (CSS hides the floating bars and stops background scroll)
+    const menu = document.querySelector('[data-mobile-menu]');
+    if (menu) {
+        const syncMenu = () => document.body.classList.toggle('menu-open', getComputedStyle(menu).display !== 'none');
+        new MutationObserver(syncMenu).observe(menu, { attributes: true, attributeFilter: ['style', 'class'] });
+        syncMenu();
+    }
+
     // ─────────────────────────────── 5. small touches ───────────────────────────────
     function toast(msg) {
         if (window.MM && MM.toast) { MM.toast('info', msg); return; }

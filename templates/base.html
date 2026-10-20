@@ -210,7 +210,7 @@
     <nav class="mm-tabbar" aria-label="Primary">
         <a href="/" {% if p == "/" or p == "/home/" %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Home</a>
-        <a href="{% url 'explore' %}" {% if p|slice:":9" == "/explore/" %}aria-current="page"{% endif %}>
+        <a href="{% url 'explore' %}" data-open-palette {% if p|slice:":9" == "/explore/" %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</a>
         <a href="{% url 'library_page' %}" {% if p|slice:":9" == "/library/" %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V5m5 14V5m4 14l3-14 5 14"/></svg>Library</a>

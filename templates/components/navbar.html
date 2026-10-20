@@ -211,7 +211,7 @@
             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
             class="lg:hidden fixed inset-x-0 bottom-0 z-40 flex flex-col bg-[var(--bg-base)] px-6 pt-10 pb-8 overflow-y-auto overscroll-contain"
             :style="`top:${navBottom}px`" style="top:81px"
-            @keyup.escape.window="open = false" x-cloak>
+            @keyup.escape.window="open = false" data-mobile-menu x-cloak>
 
             <nav class="flex flex-col gap-6 font-body text-[18px] font-medium">
                 <a href="{% url 'releases' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_50ms_forwards]">Releases</a>
@@ -220,6 +220,7 @@
                 <a href="{% url 'drops' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_140ms_forwards]">Limited drops</a>
                 <a href="{% url 'recover' %}" class="text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_170ms_forwards]">Recover a download</a>
                 <a href="{% url 'sell' %}" class="text-[var(--accent-mint)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_200ms_forwards]">Get listed — sell your music</a>
+                <button type="button" @click="open = false; $nextTick(() => window.dispatchEvent(new CustomEvent('open-help')))" class="text-left text-[var(--text-primary)] opacity-0 animate-[staggerFadeIn_0.3s_ease-out_230ms_forwards]">Help &amp; support</button>
             </nav>
 
             <div class="h-px bg-[var(--border)] my-8"></div>

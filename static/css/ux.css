@@ -804,3 +804,22 @@ html { scroll-padding-top: 88px; -webkit-tap-highlight-color: transparent; }
 }
 .mmp-head input, .mmp-head input:focus, .mmp-head input:focus-visible { border: 0 !important; box-shadow: none !important; outline: none !important; padding: 0 !important; background: transparent !important; }
 .mmp-head input::-webkit-search-cancel-button { display: none; }
+
+/* ══════════ Phones: one floating thing at a time ══════════
+   Help moves into the menu (☰ → Help & support) and the tab bar; back-to-top isn't needed on
+   touch screens. Content gets room under the sticky Buy bar so nothing hides behind it. */
+@media (max-width: 1023px) {
+    .mm-help-btn, #ux-to-top { display: none !important; }
+    body:has(.mm-buybar:not([hidden])) { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+    body.has-tabbar:has(.mm-buybar:not([hidden])) { padding-bottom: calc(156px + env(safe-area-inset-bottom)); }
+    .mm-help-panel { bottom: calc(16px + env(safe-area-inset-bottom)) !important; }
+    body.has-tabbar .mm-help-panel { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
+}
+
+/* Toast area never blocks taps: it used to stretch over the whole screen on phones (top + bottom set),
+   catching every touch above the page. Only the toasts themselves take clicks. */
+.toast-container { top: auto !important; pointer-events: none; }
+.toast-container > * { pointer-events: auto; }
+/* Mobile menu open: nothing floats over it and the page behind doesn't scroll */
+body.menu-open { overflow: hidden; }
+body.menu-open .mm-buybar, body.menu-open .mm-tabbar, body.menu-open .mm-help { display: none !important; }
