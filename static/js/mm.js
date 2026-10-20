@@ -302,6 +302,10 @@
                     order_id: data.order_id,
                     prefill: data.prefill || {},
                     theme: { color: "#00FFB3" },
+                    // UPI and net banking only (no cards, wallets, EMI, pay later)
+                    method: { upi: true, netbanking: true, card: false, wallet: false, emi: false, paylater: false },
+                    config: { display: { hide: [{ method: "card" }, { method: "wallet" }, { method: "emi" }, { method: "paylater" }],
+                                         preferences: { show_default_blocks: true } } },
                     modal: {
                         ondismiss: function () {
                             reject(Object.assign(new Error("Payment cancelled."), { cancelled: true }));

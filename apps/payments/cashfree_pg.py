@@ -26,6 +26,7 @@ from .base import PaymentGateway
 
 logger = logging.getLogger("mixmint")
 API_VERSION = "2025-01-01"
+PAYMENT_METHODS = "upi,nb"
 TIMEOUT = 15
 PHONE_RE = re.compile(r"^[6-9]\d{9}$")
 
@@ -128,6 +129,7 @@ class CashfreeGateway(PaymentGateway):
             "order_meta": {
                 "return_url": f"{base}/api/v1/payments/callback/?order_id={order_id}",
                 "notify_url": f"{base}/payment/webhook/cashfree/",
+                "payment_methods": PAYMENT_METHODS,  # UPI and net banking only (no cards, wallets, EMI)
             },
             "order_note": str(metadata.get("description") or metadata.get("purpose") or "MixMint purchase")[:200],
             "order_tags": {"purpose": str(metadata.get("purpose", "purchase"))[:50]},

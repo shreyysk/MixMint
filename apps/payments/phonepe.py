@@ -137,6 +137,9 @@ class PhonePeGateway(PaymentGateway):
                 "type": "PG_CHECKOUT",
                 "message": str(metadata.get("description", "MixMint purchase"))[:100],
                 "merchantUrls": {"redirectUrl": f"{base}/api/v1/payments/callback/?order_id={order_id}"},
+                # UPI and net banking only (no cards)
+                "paymentModeConfig": {"enabledPaymentModes": [
+                    {"type": "UPI_INTENT"}, {"type": "UPI_COLLECT"}, {"type": "UPI_QR"}, {"type": "NET_BANKING"}]},
             },
         }
         code, data = self._call("POST", "/checkout/v2/pay", body)

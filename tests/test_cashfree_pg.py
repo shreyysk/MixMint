@@ -64,6 +64,7 @@ class TestCashfreeCheckout:
         body = call.kwargs["json"]
         assert body["order_id"] == d["order_id"] and body["customer_details"]["customer_phone"] == "9876543210"
         assert body["order_amount"] == float(track.price)
+        assert body["order_meta"]["payment_methods"] == "upi,nb"  # no cards
         assert call.kwargs["headers"]["x-client-id"] == "app_test"
         assert Purchase.objects.get(gateway_order_id=d["order_id"]).payment_gateway == "cashfree"
 
