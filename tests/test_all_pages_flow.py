@@ -205,7 +205,7 @@ class TestUXLayer:
         u, dj = dj_user
         anon = client.get("/api/v1/commerce/pro/")
         assert anon.status_code == 200
-        assert "92%" in anon.content.decode()
+        assert "88%" in anon.content.decode()
         client.force_login(u)
         dj_html = client.get("/api/v1/commerce/pro/").content.decode()
         assert "pro-trial-btn" in dj_html and "pro-pay-btn" in dj_html

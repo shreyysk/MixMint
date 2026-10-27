@@ -16,11 +16,10 @@
     </nav>
 
     <!-- ── TWO-COLUMN LAYOUT ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start" data-reveal>
+    <div class="mm-pdp" data-reveal>
 
-        <!-- LEFT: Artwork & Preview -->
-        <div class="lg:col-span-5 space-y-6 sm:space-y-8 w-full max-w-[560px] mx-auto lg:max-w-none mm-detail-media" data-reveal="left">
-            <!-- Artwork -->
+        <!-- Artwork -->
+        <div class="mm-pdp-art" data-reveal="left">
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group{% if track.cover_url %} skeleton{% endif %}">
                 {% if track.cover_url %}
@@ -31,13 +30,16 @@
                 <div class="w-full h-full flex items-center justify-center text-6xl opacity-20">{% icon "headphones" %}</div>
                 {% endif %}
             </div>
+        </div>
 
-            <!-- Preview Module -->
+        <!-- Preview (after the price on phones, under the artwork on desktop) -->
+        <div class="mm-pdp-preview">
             <div
                 class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
                 <div class="px-4 py-3 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-[0.1em]">
-                        DJ PREVIEW · PLAYS FROM ARTIST EMBED
+                    <span class="inline-flex items-center gap-2 font-body text-[13px] font-[600] text-[var(--text-primary)]">
+                        {% icon "headphones" %} Preview
+                        <span class="font-normal text-[var(--text-muted)]">· plays from the DJ's own post</span>
                     </span>
                     {% if preview_embeds|length > 1 %}
                     <div class="flex gap-2 overflow-x-auto hide-scroll" role="tablist" aria-label="Preview source">
@@ -88,15 +90,14 @@
             </div>
         </div>
 
-        <!-- RIGHT: Info & Purchase -->
-        <div class="lg:col-span-7 flex flex-col justify-between min-h-full" data-reveal="right">
+        <!-- Info & Purchase -->
+        <div class="mm-pdp-info flex flex-col" data-reveal="right">
             <div>
                 <!-- DJ Row -->
-                <div class="flex items-center gap-4 mb-6">
-                    <div
-                        class="w-8 h-8 rounded-full bg-[var(--accent-mint)] flex items-center justify-center font-display text-[14px] font-bold text-[#0A0A0F]">
-                        {{ track.dj.dj_name|slice:":1"|upper }}
-                    </div>
+                <div class="flex items-center gap-3 mb-5">
+                    <a href="{% url 'dj_profile' track.dj.slug %}" class="mm-avatar w-10 h-10 text-[14px]" aria-hidden="true" tabindex="-1">
+                        {% if track.dj.profile.avatar_url %}<img src="{{ track.dj.profile.avatar_url }}" alt="" width="40" height="40" loading="lazy">{% else %}{{ track.dj.dj_name|slice:":1"|upper }}{% endif %}
+                    </a>
                     <a href="{% url 'dj_profile' track.dj.slug %}"
                         class="font-body text-[16px] font-[600] text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">
                         {{ track.dj.dj_name }}
@@ -122,39 +123,18 @@
                     {{ track.title }}
                 </h1>
 
-                <!-- Tags -->
-                <div class="flex flex-wrap gap-2 mb-4">
-                <span
-                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-wider font-bold">
-                    {{ track.get_file_format_display|default:"WAV" }}
-                </span>
-                <span
-                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                    {{ track.genre|default:"AUDIO" }}
-                </span>
-                <span
-                    class="bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-1 rounded-full font-mono text-[11px] text-[var(--text-primary)] uppercase tracking-wider">
-                    {{ track.created_at|date:"Y" }}
-                </span>
-                </div>
-
-                <!-- Track Metadata -->
-                <div class="flex flex-wrap items-center gap-6 font-mono text-[12px] text-[var(--text-muted)] mb-8">
-                    <div class="flex items-center gap-2">
-                        <span class="opacity-50">Uploaded:</span>
-                        <span class="text-[var(--text-primary)]">{{ track.created_at|date:"M d, Y" }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="opacity-50">Platform:</span>
-                        <span class="text-[var(--text-primary)]">MixMint</span>
-                    </div>
-                </div>
-
-                <div class="h-px w-full bg-[var(--border)] mb-8"></div>
+                <!-- Release facts -->
+                <dl class="mm-specs mb-8">
+                    <div><dt>Format</dt><dd title="{{ track.get_file_format_display }}">{{ track.file_format|default:"wav"|upper }}</dd></div>
+                    {% if track.genre %}<div><dt>Genre</dt><dd><a href="/genre/{{ track.genre|slugify }}/">{{ track.genre }}</a></dd></div>{% endif %}
+                    {% if track.bpm %}<div><dt>BPM</dt><dd>{{ track.bpm }}</dd></div>{% endif %}
+                    {% if track.duration_sec %}<div><dt>Length</dt><dd>{{ track.duration_sec|duration }}</dd></div>{% endif %}
+                    <div><dt>Released</dt><dd>{{ track.created_at|date:"j M Y" }}</dd></div>
+                </dl>
 
                 <!-- Description -->
                 {% if track.description %}
-                <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.6] mb-12 max-w-[90%]">
+                <div class="font-body text-[15px] text-[var(--text-muted)] leading-[1.65] mb-8 max-w-[62ch]">
                     {{ track.description|linebreaks }}
                 </div>
                 {% endif %}
@@ -317,35 +297,14 @@
                 </div>
             </div>
 
-            <!-- Content Responsibility Disclaimer -->
-            <div class="mt-6">
-                <p class="font-body text-[12px] text-[var(--text-muted)] italic leading-relaxed">
-                    This track is uploaded and sold by {{ track.dj.dj_name }}, an independent artist on MixMint. MixMint
-                    distributes but does not verify the licensing or rights of uploaded content.
-                    <a href="/legal/terms/#content-policy"
-                        class="text-[var(--accent-mint)] hover:underline underline-offset-2">Content Policy →</a>
-                </p>
-            </div>
-
-            <!-- Security Notice -->
-            <div class="mt-4 notice-info">
-                <p class="font-body text-[12px] text-[var(--text-muted)]">
-                    {% icon "lock" %} Protected by MixMint Secure Vault — Token-locked, Device-bound, Byte-verified.
-                    <a href="/legal/transparency/"
-                        class="text-[var(--accent-mint)] hover:underline underline-offset-2 ml-1">How does this work?
-                        →</a>
-                </p>
-            </div>
+            <!-- Why it's safe to buy -->
+            <ul class="mm-trust mt-6">
+                <li>{% icon "zap" %}<span><strong>Instant download</strong> right after payment, plus a copy in your library.</span></li>
+                <li>{% icon "lock" %}<span><strong>Secure Vault</strong> · token-locked, byte-verified files. <a href="/legal/transparency/">How it works</a></span></li>
+                <li>{% icon "user" %}<span>Sold by {{ track.dj.dj_name }}, an independent DJ. They're responsible for the rights. <a href="/legal/terms/#content-policy">Content policy</a></span></li>
+            </ul>
             {% include "components/report_dialog.html" with kind="track" obj=track %}
 
-            <!-- Track Metadata Strip -->
-            <div class="mt-6 hidden sm:flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-[var(--text-muted)]">
-                <span>Uploaded: {{ track.created_at|date:"M d, Y" }}</span>
-                <span>·</span>
-                <span>Platform: MixMint</span>
-                <span>·</span>
-                <span>Anti-resale terms embedded</span>
-            </div>
         </div>
     </div>
 </div>

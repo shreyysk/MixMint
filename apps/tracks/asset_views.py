@@ -35,6 +35,22 @@ BRAND_KIT = [
 ]
 
 
+def _ad_pct():
+    from django.conf import settings as dj
+
+    from apps.admin_panel.models import SystemSetting
+
+    row = SystemSetting.objects.filter(key="ad_share_rate").first()
+    rate = float((row.value or {}).get("rate", dj.DJ_AD_REVENUE_SHARE)) if row else float(dj.DJ_AD_REVENUE_SHARE)
+    return round(rate * 100) if rate <= 1 else round(rate)
+
+
+def _rates():
+    from apps.commerce.rates import rates
+
+    return rates()
+
+
 @login_required
 def asset_handbook_pdf(request):
     """One-page-per-topic operations handbook for DJs (ReportLab)."""
@@ -69,7 +85,7 @@ def asset_handbook_pdf(request):
         ),
         (
             "4. Money & payouts",
-            "You keep 85% of every sale (92% on Pro), plus 15% of the ad income from your pages. "
+            f"You keep {100 - _rates()[0]}% of every sale ({100 - _rates()[1]}% on Pro), plus {_ad_pct()}% of the ad income from your pages. "
             "Withdraw once a week, any day, from ₹500 to UPI or bank, confirmed with a code we email you.",
         ),
         (

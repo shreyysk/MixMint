@@ -83,6 +83,7 @@
     {% block extra_head %}{% endblock %}
 
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/polish.css' %}">
 
     <!-- Theme: light only, unless the admin has switched dark mode on (Admin -> Settings -> Appearance). -->
     <script>
@@ -124,6 +125,7 @@
 
 
     {% block site_nav %}{% include 'components/navbar.html' %}{% endblock %}
+    {% if show_studio_nav %}{% include 'components/dj_studio_nav.html' %}{% endif %}
 
     {% if payments_test_mode %}
     <div role="status" class="relative z-20 w-full text-center font-mono text-[12px] py-2 px-4 bg-[var(--accent-amber)] text-black">
@@ -163,7 +165,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% block site_footer %}{% include 'components/footer.html' %}{% endblock %}
+    {% block site_footer %}{% if compact_footer %}{% include 'components/footer_compact.html' %}{% else %}{% include 'components/footer.html' %}{% endif %}{% endblock %}
     {% block help_widget %}{% include 'components/help_widget.html' %}{% endblock %}
     {% include 'components/player.html' %}
     {% if not user.is_authenticated %}{% include 'components/guest_checkout.html' %}{% endif %}

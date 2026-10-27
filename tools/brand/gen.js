@@ -50,7 +50,7 @@ const A = {
   'linkedin-banner': [1584, 396, `<div class="c dark" style="width:1584px;height:396px;padding:0 90px;justify-content:center;align-items:flex-end;text-align:right">
     <div class="glow" style="width:600px;height:500px;background:var(--mint);opacity:.25;left:-150px"></div>
     <div class="h" style="font-size:76px;position:relative">India's marketplace for <span class="m">DJ music.</span></div>
-    <div style="font-size:26px;margin-top:16px;color:#B8B8C8;position:relative">DJs keep 85% · weekly payouts · mixmint.site</div></div>`],
+    <div style="font-size:26px;margin-top:16px;color:#B8B8C8;position:relative">DJs keep 80% · weekly payouts · mixmint.site</div></div>`],
   'post-launch': [1080, 1350, `<div class="c dark" style="width:1080px;height:1350px;padding:90px">
     <div class="grid"></div><div class="glow" style="width:800px;height:800px;background:var(--mint);opacity:.3;right:-300px;bottom:-200px"></div>
     ${wm(LW, 44)}<div class="pill m" style="margin-top:110px;font-size:28px;align-self:flex-start">Now live</div>
@@ -59,7 +59,7 @@ const A = {
     <div style="margin-top:auto;font-size:34px"><span class="btn">mixmint.site</span></div></div>`],
   'post-djs': [1080, 1350, `<div class="c mintbg" style="width:1080px;height:1350px;padding:90px">
     ${wm(LB, 44)}<div class="pill" style="margin-top:100px;font-size:28px;align-self:flex-start">For DJs</div>
-    <div class="h" style="font-size:132px;margin-top:40px">Sell your edits.<br>Keep 85%.</div>
+    <div class="h" style="font-size:132px;margin-top:40px">Sell your edits.<br>Keep 80%.</div>
     <div style="font-size:38px;margin-top:50px;line-height:1.5">✓ Your own store page<br>✓ Instant, secure downloads<br>✓ Paid to UPI or bank every week<br>✓ Sample packs &amp; tool kits too</div>
     <div style="margin-top:auto;font-size:34px;font-family:Clash;font-weight:700">Apply free → mixmint.site/sell</div></div>`],
   'post-samples': [1080, 1350, `<div class="c cream" style="width:1080px;height:1350px;padding:90px">
@@ -80,7 +80,7 @@ const A = {
     <div style="position:absolute;left:90px;bottom:160px">${bars(20, 160, 2)}</div></div>`],
   'story-djs': [1080, 1920, `<div class="c mintbg" style="width:1080px;height:1920px;padding:140px 90px;justify-content:center">
     ${wm(LB, 54)}<div class="h" style="font-size:150px;margin-top:90px">DJs,<br>get paid<br>for your<br>edits.</div>
-    <div style="font-size:46px;margin-top:70px;line-height:1.5">Keep 85% of every sale.<br>Weekly payouts to UPI.<br>Apply free in 2 minutes.</div>
+    <div style="font-size:46px;margin-top:70px;line-height:1.5">Keep 80% of every sale.<br>Weekly payouts to UPI.<br>Apply free in 2 minutes.</div>
     <div style="margin-top:90px;font-size:44px;font-family:Clash;font-weight:700">mixmint.site/sell</div></div>`],
   'reel-cover': [1080, 1920, `<div class="c dark" style="width:1080px;height:1920px;padding:0 90px;justify-content:center;text-align:center;align-items:center">
     <div class="glow" style="width:900px;height:900px;background:var(--mint);opacity:.28"></div>
@@ -89,8 +89,8 @@ const A = {
   'flyer-a4': [1240, 1754, `<div class="c dark" style="width:1240px;height:1754px;padding:110px">
     <div class="grid"></div><div class="glow" style="width:1000px;height:1000px;background:var(--mint);opacity:.25;right:-400px;top:-300px"></div>
     ${wm(LW, 60)}<div class="h" style="font-size:150px;margin-top:120px;position:relative">Your edits<br>deserve a<br><span class="m">price tag.</span></div>
-    <div style="font-size:42px;margin-top:70px;line-height:1.55;color:#D0D0DA;position:relative">MixMint is India's store for DJ music. Sell edits, mashups, album packs and sample packs. Keep 85%. Get paid every week to UPI or bank.</div>
-    <div style="display:flex;gap:30px;margin-top:80px">${[['85%', 'you keep'], ['₹0', 'to join'], ['Weekly', 'payouts']].map(([a, b]) => `<div style="flex:1;border:2px solid rgba(255,255,255,.15);border-radius:28px;padding:36px"><div class="h m" style="font-size:74px">${a}</div><div style="font-size:30px;color:#B8B8C8;margin-top:10px">${b}</div></div>`).join('')}</div>
+    <div style="font-size:42px;margin-top:70px;line-height:1.55;color:#D0D0DA;position:relative">MixMint is India's store for DJ music. Sell edits, mashups, album packs and sample packs. Keep 80%. Get paid every week to UPI or bank.</div>
+    <div style="display:flex;gap:30px;margin-top:80px">${[['80%', 'you keep'], ['₹0', 'to join'], ['Weekly', 'payouts']].map(([a, b]) => `<div style="flex:1;border:2px solid rgba(255,255,255,.15);border-radius:28px;padding:36px"><div class="h m" style="font-size:74px">${a}</div><div style="font-size:30px;color:#B8B8C8;margin-top:10px">${b}</div></div>`).join('')}</div>
     <div style="margin-top:auto;font-size:52px"><span class="btn">mixmint.site/sell</span></div></div>`],
 };
 (async () => {

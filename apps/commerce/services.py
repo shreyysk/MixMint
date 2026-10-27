@@ -74,14 +74,16 @@ def credit_wallet(dj_profile, amount, description, metadata=None, escrow=True):
 class MonetizationService:
     @staticmethod
     def get_commission_rate(dj_profile):
-        """Global rate; Pro DJs pay at most 8% unless a promo sets a lower global rate."""
+        """Standard rate (Admin → Offers & pricing); Pro DJs pay the Pro rate when it's lower,
+        unless a platform promo sets the rate for everyone."""
         settings_obj = PlatformSettings.load()
         rate = Decimal(settings_obj.platform_commission_rate)
         if PromotionalOffer.objects.filter(is_active=True, dj__isnull=True).exists():
             return rate
         is_pro = bool(getattr(getattr(dj_profile, "profile", None), "is_pro_dj", False))
-        if is_pro and rate > Decimal("8.00"):
-            return Decimal("8.00")
+        pro = Decimal(settings_obj.pro_commission_rate)
+        if is_pro and rate > pro:
+            return pro
         return rate
 
     @staticmethod

@@ -122,7 +122,7 @@ def dj_earnings_overview(request):
             },
             "wallet": wallet_data,
             "pending_payout": str(pending_payout["total"] or 0),
-            "commission_rate": "8%" if request.user.profile.is_pro_dj else "15%",
+            "commission_rate": __import__("apps.commerce.rates", fromlist=["x"]).commission_label(request.user.profile.is_pro_dj),
         }
     )
 

@@ -70,7 +70,7 @@
 
 {% block content %}
 <!-- ── DJ Banner ── -->
-<div class="dj-banner mb-0">
+<div class="dj-banner mb-0{% if not dj.banner_url %} mm-banner-fallback{% endif %}">
     {% if dj.banner_url %}
     <img src="{{ dj.banner_url }}" alt="" fetchpriority="high" class="w-full h-full object-cover">
     {% endif %}
@@ -117,8 +117,8 @@
 
 <!-- ── Responsibility Banner ── -->
 <div class="max-w-[1200px] mx-auto px-4 mb-10">
-    <div class="bg-[var(--bg-elevated)] border-b border-[var(--border)] px-5 py-3 rounded-[8px]">
-        <p class="font-body text-[12px] text-[var(--text-muted)] italic">
+    <div>
+        <p class="font-body text-[12px] text-[var(--text-muted)] flex items-center gap-2">{% icon "info" %}
             All music on this page is independently uploaded by {{ dj.dj_name }}. MixMint is not responsible for content
             licensing or rights.
         </p>

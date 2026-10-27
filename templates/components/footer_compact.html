@@ -1,0 +1,14 @@
+{# Slim footer for app pages (dashboards, library, account, cart): legal links without the marketing block. #}
+<footer class="mm-footer-compact">
+    <div class="in">
+        <span>© {% now "Y" %} MixMint · Made in India</span>
+        <nav aria-label="Legal and help">
+            <a href="/legal/faq/">FAQ</a>
+            <a href="{% url 'contact' %}">Contact</a>
+            <a href="{% url 'terms' %}">Terms</a>
+            <a href="{% url 'privacy' %}">Privacy</a>
+            <a href="{% url 'refund' %}">Refunds</a>
+            {% if dark_mode_enabled %}<button type="button" onclick="toggleTheme()" data-theme-toggle class="underline-offset-4 hover:underline">Theme</button>{% endif %}
+        </nav>
+    </div>
+</footer>

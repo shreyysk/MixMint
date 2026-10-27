@@ -3,7 +3,7 @@ MixMint Ad Revenue Service [Spec P2 §8].
 
 Handles:
 - Ad impression logging per DJ content
-- 15% ad revenue share calculation for DJs
+- DJ ad revenue share calculation (default 20%)
 - DJ wallet crediting for ad revenue
 - Respects Pro DJ ad exposure reduction [Spec §3.2]
 """
@@ -92,7 +92,7 @@ def credit_ad_revenue_to_djs():
         rate_setting = SystemSetting.objects.get(key="ad_share_rate")
         ad_share_rate = Decimal(str(rate_setting.value.get("rate", str(settings.DJ_AD_REVENUE_SHARE))))
     except SystemSetting.DoesNotExist:
-        ad_share_rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))  # default 15%
+        ad_share_rate = Decimal(str(settings.DJ_AD_REVENUE_SHARE))  # default 20%
 
     # Get all DJs with ad impressions
     dj_totals = AdRevenueLog.objects.values("dj_id").annotate(total_ad_revenue=Sum("ad_impression_value"))
@@ -141,7 +141,7 @@ def distribute_ad_income(amount, start, end, admin_email=""):
     """
     Share one period's ad income with DJs. The admin enters what the ad network paid for the period
     (e.g. the AdSense monthly report). Each DJ's slice is proportional to the views their store and release
-    pages got in that period; the DJ receives DJ_AD_REVENUE_SHARE (15%) of their slice.
+    pages got in that period; the DJ receives DJ_AD_REVENUE_SHARE (20%) of their slice.
     The same period can't be paid twice. Returns {"djs": n, "credited": Decimal, "views": total_views}.
     """
     from django.db import transaction

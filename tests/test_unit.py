@@ -378,16 +378,16 @@ class TestRevenueEngine:
 
         dj = self._setup_dj(is_pro=False)
         split = calculate_revenue_split(Decimal("100.00"), dj)
-        assert split["commission"] == Decimal("15.00")
-        assert split["dj_earnings"] == Decimal("85.00")
+        assert split["commission"] == Decimal("20.00")
+        assert split["dj_earnings"] == Decimal("80.00")
 
     def test_pro_dj_8_percent_commission(self):
         from apps.commerce.revenue_engine import calculate_revenue_split
 
         dj = self._setup_dj(is_pro=True)
         split = calculate_revenue_split(Decimal("100.00"), dj)
-        assert split["commission"] == Decimal("8.00")
-        assert split["dj_earnings"] == Decimal("92.00")
+        assert split["commission"] == Decimal("12.00")
+        assert split["dj_earnings"] == Decimal("88.00")
 
     def test_insurance_fee_added_when_requested(self):
         from apps.commerce.revenue_engine import calculate_revenue_split

@@ -1,6 +1,6 @@
 """When to move each service off its free plan, and what it costs.
 
-Measured here: emails sent (counted by the Resend backend), database size, live sales.
+Measured here: emails sent (counted by apps.core.mailer, per provider and in total), database size, live sales.
 Shown in Admin → Settings → "Plans and costs" and added to the daily Telegram summary when something needs action.
 Prices checked October 2026; confirm on each provider's pricing page before paying.
 """
@@ -15,7 +15,7 @@ PLANS = {
     "supabase": {"name": "Supabase Pro", "cost": "$25/month (about ₹2,100)", "url": "https://supabase.com/pricing", "billing": "https://supabase.com/dashboard/org/_/billing",
                  "why": "Free: 500 MB database, 5 GB egress, paused after 7 days without visits, no daily backups."},
     "resend": {"name": "Resend Pro", "cost": "$20/month (about ₹1,700)", "url": "https://resend.com/pricing", "billing": "https://resend.com/settings/billing",
-               "why": "Free: 100 emails a day, 3,000 a month. Past that, receipts and download emails stop for the day."},
+               "why": "Free: 100 emails a day, 3,000 a month. Past that, mail moves to the Hostinger mailbox (SMTP_USER) if it is set, otherwise receipts and download emails stop for the day."},
     "r2": {"name": "Cloudflare R2 storage", "cost": "$0.015 per GB a month after the free 10 GB (100 GB ≈ $1.35, about ₹115); downloads are free",
            "url": "https://developers.cloudflare.com/r2/pricing/", "billing": "https://dash.cloudflare.com/?to=/:account/billing",
            "why": "Music files live here. Old files move to the Telegram vault automatically, so R2 stays small."},
@@ -26,14 +26,16 @@ PLANS = {
 EMAIL_DAY, EMAIL_MONTH, DB_MB = 100, 3000, 500
 
 
-def _keys():
+def _keys(provider=None):
     now = timezone.localtime()
-    return f"mail_day:{now:%Y%m%d}", f"mail_month:{now:%Y%m}"
+    tag = f"{provider}:" if provider else ""
+    return f"mail_day:{tag}{now:%Y%m%d}", f"mail_month:{tag}{now:%Y%m}"
 
 
-def count_email():
-    day, month = _keys()
-    for key, ttl in ((day, 2 * 86400), (month, 40 * 86400)):
+def count_email(provider=None):
+    """Count one sent email in the totals, and for its provider (resend / smtp) when given."""
+    keys = list(_keys()) + (list(_keys(provider)) if provider else [])
+    for key, ttl in zip(keys, [2 * 86400, 40 * 86400] * 2):
         if not cache.add(key, 1, ttl):
             try:
                 cache.incr(key)
@@ -41,9 +43,19 @@ def count_email():
                 cache.set(key, 1, ttl)
 
 
-def emails():
-    day, month = _keys()
+def emails(provider=None):
+    day, month = _keys(provider)
     return int(cache.get(day) or 0), int(cache.get(month) or 0)
+
+
+def email_capacity():
+    """(per day, per month) across every configured sender; the Resend free plan when none is set."""
+    from apps.core.mailer import provider_limits
+
+    lims = provider_limits()
+    if not lims:
+        return EMAIL_DAY, EMAIL_MONTH
+    return sum(d for d, _ in lims.values()), sum(m for _, m in lims.values())
 
 
 def db_mb():
@@ -106,12 +118,19 @@ def status():
         add("supabase", "ok", f"Database {size if size is not None else '?'} MB of {DB_MB} MB.")
 
     day, month = emails()
-    if day >= EMAIL_DAY * 0.8 or month >= EMAIL_MONTH * 0.8:
-        add("resend", "now", f"{day} emails today (limit {EMAIL_DAY}), {month} this month (limit {EMAIL_MONTH}).")
-    elif day >= EMAIL_DAY * 0.5 or month >= EMAIL_MONTH * 0.5:
-        add("resend", "soon", f"{day} emails today, {month} this month.")
+    cap_day, cap_month = email_capacity()
+    from apps.core.mailer import smtp_ready
+
+    backup = ""
+    if smtp_ready():
+        sd, sm = emails("smtp")
+        backup = f" Hostinger backup: {sd} today, {sm} this month."
+    if day >= cap_day * 0.8 or month >= cap_month * 0.8:
+        add("resend", "now", f"{day} emails today (limit {cap_day}), {month} this month (limit {cap_month}).{backup}")
+    elif day >= cap_day * 0.5 or month >= cap_month * 0.5:
+        add("resend", "soon", f"{day} emails today, {month} this month.{backup}")
     else:
-        add("resend", "ok", f"{day} emails today, {month} this month.")
+        add("resend", "ok", f"{day} emails today, {month} this month.{backup}")
 
     gb = storage_gb()
     if gb >= 9:

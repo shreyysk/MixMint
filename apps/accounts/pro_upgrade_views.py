@@ -4,7 +4,7 @@ Pro DJ upgrade view [Spec P3 §1.5].
 Endpoint: POST /api/v1/accounts/dj/upgrade-pro/
 - Creates a payment order for the Pro subscription fee.
 - On payment verification, sets is_pro_dj=True on the Profile,
-  unlocking 8% commission and custom domain.
+  unlocking the lower Pro commission and custom domain.
 """
 
 from rest_framework import status
@@ -29,7 +29,7 @@ def upgrade_to_pro(request):
     Creates a payment order for the annual Pro subscription.
     After verified payment:
     - Profile.is_pro_dj = True
-    - Commission drops from 15% → 8%
+    - Commission drops from the standard rate to the Pro rate (Admin → Offers & pricing)
     - Custom domain and ad reduction features unlocked
     """
     profile = request.user.profile
@@ -96,7 +96,7 @@ def upgrade_to_pro(request):
             "description": f"MixMint Pro ({plan_type})",
             "message": f"Complete ₹{amount_paise / 100:.0f} payment to activate Pro DJ.",
             "features": [
-                "8% platform commission (vs 15% standard)",
+                "{1}% platform commission (vs {0}% standard)".format(*__import__("apps.commerce.rates", fromlist=["x"]).rates()),
                 "Custom domain support (e.g. music.yourname.com)",
                 "Reduced ad exposure for your storefront",
                 "Priority support",
@@ -125,7 +125,7 @@ def admin_grant_pro(request, dj_profile_id):
     return Response(
         {
             "status": "pro_granted",
-            "message": f"{dj_profile.dj_name} is now a Pro DJ (8% commission, custom domain).",
+            "message": f"{dj_profile.dj_name} is now a Pro DJ ({__import__('apps.commerce.rates', fromlist=['x']).rates()[1]}% commission, custom domain).",
             "dj_profile_id": dj_profile.id,
         }
     )

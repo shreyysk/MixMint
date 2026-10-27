@@ -2,7 +2,7 @@
 MixMint Revenue Engine [Spec P2 §5, P3 §1].
 
 Handles:
-- Commission calculation (15% standard, 8% Pro DJ)
+- Commission calculation (standard and Pro DJ rates from PlatformSettings)
 - Revenue split for collaborative tracks
 - DJ wallet crediting
 - Invoice + tax record creation
@@ -36,8 +36,8 @@ def calculate_commission_rate(dj_profile):
         return settings_obj.platform_commission_rate
 
     if dj_profile.profile.is_pro_dj:
-        if settings_obj.platform_commission_rate > Decimal("8.00"):
-            return Decimal("8.00")
+        if settings_obj.platform_commission_rate > settings_obj.pro_commission_rate:
+            return settings_obj.pro_commission_rate
 
     return settings_obj.platform_commission_rate
 

@@ -152,16 +152,16 @@ class TestStandardDJPersona:
         wallet, _ = DJWallet.objects.get_or_create(dj=dj)
 
         # Simulate credit to wallet
-        wallet.total_earnings += Decimal('85.00')
-        wallet.available_for_payout += Decimal('85.00')
+        wallet.total_earnings += Decimal('80.00')
+        wallet.available_for_payout += Decimal('80.00')
         wallet.save()
 
         # Verify ledger entries can track it
         entry = LedgerEntry.objects.create(
-            wallet=wallet, amount=Decimal('85.00'), entry_type='credit', description='Sale'
+            wallet=wallet, amount=Decimal('80.00'), entry_type='credit', description='Sale'
         )
 
-        assert wallet.available_for_payout == Decimal('85.00')
+        assert wallet.available_for_payout == Decimal('80.00')
         assert entry.entry_type == 'credit'
 
     # 3. SYSTEM TESTING
@@ -213,8 +213,8 @@ class TestProDJPersona:
         """Unit test: Verify pro DJ receives higher revenue split (8% commission vs 15%)."""
         _, dj = pro_dj_user
         split = calculate_revenue_split(Decimal('100.00'), dj)
-        assert split['commission'] == Decimal('8.00')
-        assert split['dj_earnings'] == Decimal('92.00')
+        assert split['commission'] == Decimal('12.00')
+        assert split['dj_earnings'] == Decimal('88.00')
 
     # 2. INTEGRATION TESTING
     def test_upgrade_standard_to_pro(self, dj_user):
@@ -228,8 +228,8 @@ class TestProDJPersona:
 
         # Calculate split after upgrade
         split = calculate_revenue_split(Decimal('100.00'), dj)
-        assert split['commission'] == Decimal('8.00')
-        assert split['dj_earnings'] == Decimal('92.00')
+        assert split['commission'] == Decimal('12.00')
+        assert split['dj_earnings'] == Decimal('88.00')
 
     # 3. SYSTEM TESTING
     def test_pro_dj_e2e_split_credit(self, pro_dj_user, user, track):
@@ -251,7 +251,7 @@ class TestProDJPersona:
         credit_dj_wallets(purchase, dj, split)
         wallet = DJWallet.objects.get(dj=dj)
         # Should get 92% of 100.00 = 92.00
-        assert wallet.total_earnings == Decimal('92.00')
+        assert wallet.total_earnings == Decimal('88.00')
 
     # 4. ACCEPTANCE TESTING
     def test_pro_dashboard_acceptance(self, pro_dj_user):

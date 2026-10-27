@@ -2,8 +2,8 @@
 {% block title %}Messages — MixMint Admin{% endblock %}
 {% block admin_content %}
 <div class="cx" style="max-width:900px">
-    <div class="cx-head"><div><h1>Messages</h1><p>Tell people something: new features, downtime, a launch offer. In-app notices show in their notification bell; emails go through Resend.</p></div></div>
-    {% if not email_ready %}<p class="cx-card" style="margin-bottom:16px;font-size:14px"><span class="cx-pill warn">Email off</span> RESEND_API_KEY isn't set, so only in-app notices will go out.</p>{% endif %}
+    <div class="cx-head"><div><h1>Messages</h1><p>Tell people something: new features, downtime, a launch offer. In-app notices show in their notification bell; emails go through Resend, with the Hostinger mailbox as backup.</p></div></div>
+    {% if not email_ready %}<p class="cx-card" style="margin-bottom:16px;font-size:14px"><span class="cx-pill warn">Email off</span> No email sender is set (RESEND_API_KEY or SMTP_USER + SMTP_PASSWORD), so only in-app notices will go out.</p>{% endif %}
     <form method="post" class="cx-card" x-data="{ aud: 'buyers' }">{% csrf_token %}
         <fieldset class="cx-field"><legend class="cx-label">Send to</legend>
             <div class="cx-grid" style="gap:6px 16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">

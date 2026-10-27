@@ -32,29 +32,29 @@ class TestRevenueCalculations:
         from apps.commerce.revenue_engine import calculate_revenue_split
         _, dj = self._setup()
         split = calculate_revenue_split(Decimal('100.00'), dj)
-        assert split['commission'] == Decimal('15.00')
-        assert split['dj_earnings'] == Decimal('85.00')
+        assert split['commission'] == Decimal('20.00')
+        assert split['dj_earnings'] == Decimal('80.00')
 
     def test_pro_dj_commission_8_percent(self):
         from apps.commerce.revenue_engine import calculate_revenue_split
         _, dj = self._setup(is_pro=True)
         split = calculate_revenue_split(Decimal('100.00'), dj)
-        assert split['commission'] == Decimal('8.00')
-        assert split['dj_earnings'] == Decimal('92.00')
+        assert split['commission'] == Decimal('12.00')
+        assert split['dj_earnings'] == Decimal('88.00')
 
     def test_large_price_commission(self):
         from apps.commerce.revenue_engine import calculate_revenue_split
         _, dj = self._setup()
         split = calculate_revenue_split(Decimal('9999.00'), dj)
-        expected_commission = (Decimal('9999.00') * Decimal('0.15')).quantize(Decimal('0.01'))
+        expected_commission = (Decimal('9999.00') * Decimal('0.20')).quantize(Decimal('0.01'))
         assert split['commission'] == expected_commission
 
     def test_minimum_track_price_commission(self):
         from apps.commerce.revenue_engine import calculate_revenue_split
         _, dj = self._setup()
         split = calculate_revenue_split(Decimal('19.00'), dj)
-        assert split['commission'] == Decimal('2.85')
-        assert split['dj_earnings'] == Decimal('16.15')
+        assert split['commission'] == Decimal('3.80')
+        assert split['dj_earnings'] == Decimal('15.20')
 
 
 @pytest.mark.django_db
@@ -86,8 +86,8 @@ class TestCollaboratorSplits:
 
         split = calculate_revenue_split(Decimal('100.00'), dj1, content=track, content_type='track')
         assert len(split['collaborator_splits']) == 2
-        assert split['collaborator_splits'][0]['amount'] == Decimal('42.50')
-        assert split['collaborator_splits'][1]['amount'] == Decimal('42.50')
+        assert split['collaborator_splits'][0]['amount'] == Decimal('40.00')
+        assert split['collaborator_splits'][1]['amount'] == Decimal('40.00')
 
 
 @pytest.mark.django_db
@@ -142,7 +142,7 @@ class TestGSTCalculation:
         split = calculate_revenue_split(Decimal('100.00'), dj)
         assert split['gst_amount'] > Decimal('0.00')
         # GST = 18% of commission (15.00) = 2.70
-        assert split['gst_amount'] == Decimal('2.70')
+        assert split['gst_amount'] == Decimal('3.60')
 
     def test_no_gst_when_disabled(self):
         from apps.admin_panel.models import PlatformSettings

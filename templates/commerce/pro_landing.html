@@ -5,19 +5,19 @@
     <div class="text-center mb-12 relative">
         <div class="ux-blob" style="width:380px;height:380px;top:-120px;left:50%;margin-left:-190px;background:var(--accent-mint);"></div>
         <p class="font-mono text-[11px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4 relative">MixMint Pro</p>
-        <h1 class="font-display text-[40px] sm:text-[56px] font-[700] tracking-tight text-[var(--text-primary)] mb-4 relative">Keep <span class="grad-text">92% of every sale.</span></h1>
-        <p class="font-body text-[15px] text-[var(--text-muted)] max-w-[560px] mx-auto relative">Standard commission is 15%. Pro DJs pay 8% — plus custom domain, 20&nbsp;GB storage, reduced ads and priority support.</p>
+        <h1 class="font-display text-[40px] sm:text-[56px] font-[700] tracking-tight text-[var(--text-primary)] mb-4 relative">Keep <span class="grad-text">{{ pro_dj_share_percent|default:88 }}% of every sale.</span></h1>
+        <p class="font-body text-[15px] text-[var(--text-muted)] max-w-[560px] mx-auto relative">Standard commission is {{ commission_percent|default:20 }}%. Pro DJs pay {{ pro_commission_percent|default:12 }}% — plus custom domain, 20&nbsp;GB storage, reduced ads and priority support.</p>
     </div>
 
     <div class="grid sm:grid-cols-3 gap-6 mb-12" data-reveal>
         <div class="lift border border-[var(--border)] bg-[var(--bg-surface)] rounded-[16px] p-8 text-center" data-reveal-child>
             <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Standard</p>
-            <p class="font-display text-[36px] font-bold">15%</p>
+            <p class="font-display text-[36px] font-bold">{{ commission_percent|default:20 }}%</p>
             <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">platform commission<br>3 GB storage</p>
         </div>
         <div class="lift border border-[var(--accent-mint)]/50 bg-[var(--bg-surface)] rounded-[16px] p-8 text-center relative" data-reveal-child>
             <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-mint)] mb-2">{% icon "star" %} Most popular</p>
-            <p class="font-display text-[36px] font-bold text-[var(--accent-mint)]">8%</p>
+            <p class="font-display text-[36px] font-bold text-[var(--accent-mint)]">{{ pro_commission_percent|default:12 }}%</p>
             <p class="font-body text-[13px] text-[var(--text-muted)] mt-1">Pro commission<br>20 GB · custom domain · priority support</p>
         </div>
         <div class="lift border border-[var(--border)] bg-[var(--bg-surface)] rounded-[16px] p-8 text-center" data-reveal-child>
@@ -58,7 +58,7 @@
             });
         </script>
         {% elif user.is_authenticated and user.profile.is_pro_dj %}
-        <p class="font-body text-[15px] text-[var(--accent-mint)] font-[600]">{% icon "check" %} You're Pro — 8% commission active.</p>
+        <p class="font-body text-[15px] text-[var(--accent-mint)] font-[600]">{% icon "check" %} You're Pro — {{ pro_commission_percent|default:12 }}% commission active.</p>
         {% else %}
         <a href="{% url 'signup' %}?next={% url 'pro_landing' %}" class="btn-mm btn-mint h-[56px] px-10 text-[16px] font-[600] inline-flex items-center justify-center">Join as DJ to go Pro</a>
         {% endif %}

@@ -66,12 +66,18 @@ def global_settings(request):
     settings = PlatformSettings.load()
     # Site-wide banner = platform offers only; DJ-owned offers show on that DJ's pages.
     active_offer = PromotionalOffer.objects.filter(is_active=True, dj__isnull=True).first()
+    def _pct(v):
+        v = float(v)
+        return int(v) if v == int(v) else round(v, 1)
+
     try:
-        dj_share = max(0, 100 - float(settings.platform_commission_rate))
-        dj_share = int(dj_share) if dj_share == int(dj_share) else round(dj_share, 1)
+        commission = _pct(settings.platform_commission_rate)
+        pro_commission = _pct(min(settings.pro_commission_rate, settings.platform_commission_rate))
+        dj_share = _pct(max(0, 100 - float(settings.platform_commission_rate)))
+        pro_share = _pct(max(0, 100 - float(pro_commission)))
     except (TypeError, ValueError):
-        dj_share = None
-    ad_share = 15
+        commission = pro_commission = dj_share = pro_share = None
+    ad_share = 20
     try:
         from .models import SystemSetting
 
@@ -99,6 +105,7 @@ def global_settings(request):
     except Exception:
         pass
     ctx = {"platform_settings": settings, "active_promotional_offer": active_offer, "dj_share_percent": dj_share,
+           "commission_percent": commission, "pro_commission_percent": pro_commission, "pro_dj_share_percent": pro_share,
            "dj_ad_share_percent": ad_share, "ads": ads, "dark_mode_enabled": dark_mode}
     cache.set("global_settings_ctx", ctx, 30)
     return {**ctx, **test_mode}
@@ -127,3 +134,24 @@ def admin_nav(request):
         }
     except Exception:
         return {"admin_counts": {}}
+
+
+STUDIO_PREFIXES = ("/dashboard/dj/", "/dashboard/bundles/", "/dashboard/announcements/", "/dashboard/ambassador/",
+                   "/dashboard/promo/", "/upload/", "/tracks/asset-pack/")
+APP_PREFIXES = STUDIO_PREFIXES + ("/dashboard/", "/library/", "/account/", "/cart/", "/api/v1/admin/")
+
+
+def page_shell(request):
+    """Which chrome a page gets: the DJ studio bar on DJ pages, a slim footer on app pages."""
+    path = getattr(request, "path", "") or ""
+    user = getattr(request, "user", None)
+    out = {"compact_footer": path.startswith(APP_PREFIXES)}
+    if not (user is not None and user.is_authenticated and path.startswith(STUDIO_PREFIXES)) or path.endswith("/onboarding/"):
+        return out
+    try:
+        dj = user.profile.dj_profile
+    except Exception:
+        dj = None
+    if dj is not None and getattr(dj, "status", "") == "approved":
+        out.update(show_studio_nav=True, dj_store_slug=dj.slug)
+    return out

@@ -166,7 +166,7 @@
             if (e.pointerType !== 'mouse') return;
             x = e.clientX; y = e.clientY;
             dot.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
-            doc.classList.remove('mm-cursor-out');
+            doc.classList.remove('mm-cursor-out'); doc.classList.add('mm-cursor-live');
             const t = e.target.closest && e.target.closest(CLICKABLE);
             ring.classList.toggle('hover', !!t);
             ring.classList.toggle('text', !t && typing(e.target));

@@ -21,22 +21,21 @@
     this.success=true; this.msg=data.message; this.email='' ; } else { this.msg=data.error; } } catch (e) {
     this.msg='Something went wrong. Please try again.' ; } finally { this.loading=false; } } }" class="w-full">
     <div x-show="!success">
-        <h4 class="font-display text-xl font-bold text-white mb-4">Join the Waitlist</h4>
+        <h4 class="font-display text-xl font-bold text-[var(--text-primary)] mb-3">Get new drops by email</h4>
         <p class="font-body text-[14px] text-[var(--text-muted)] mb-6">
-            Be the first to know when we launch new features. Get early access to the pro platform.
+            Fresh edits and packs from India's DJs, at most once a week. No spam, unsubscribe anytime.
         </p>
 
         <form @submit.prevent="signup()" class="space-y-4">
             <div class="relative">
-                <input type="email" x-model="email" placeholder="Enter your email" required
-                    class="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 font-body text-[14px] text-white focus:outline-none focus:border-[var(--accent-mint)] transition-colors">
+                <input type="email" x-model="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required
+                    class="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-3 font-body text-[14px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)] transition-colors">
             </div>
 
             <label class="flex items-center gap-3 cursor-pointer group">
                 <input type="checkbox" x-model="isDj"
                     class="w-4 h-4 rounded border-[var(--border)] bg-transparent accent-[var(--accent-mint)]">
-                <span class="font-body text-[13px] text-[var(--text-muted)] group-hover:text-white transition-colors">I
-                    am a DJ / Producer</span>
+                <span class="font-body text-[13px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">I'm a DJ / producer: tell me about selling</span>
             </label>
 
             <button type="submit" :disabled="loading"
@@ -44,7 +43,7 @@
                 <template x-if="loading">
                     <span class="animate-spin text-[18px]">{% icon "hourglass" %}</span>
                 </template>
-                <span x-text="loading ? 'Joining...' : 'Join Waitlist'"></span>
+                <span x-text="loading ? 'Subscribing…' : 'Subscribe'"></span>
             </button>
             <p x-show="msg" x-text="msg" class="text-[var(--accent-red)] text-[12px] font-body mt-2"></p>
         </form>
@@ -58,7 +57,7 @@
             class="w-16 h-16 bg-[var(--accent-mint)] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
             {% icon "sparkles" %}
         </div>
-        <h3 class="font-display text-2xl font-bold text-white mb-2">You're in!</h3>
+        <h3 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-2">You're in!</h3>
         <p class="font-body text-[14px] text-[var(--text-muted)]" x-text="msg"></p>
         <button @click="success = false; msg = ''"
             class="mt-6 text-[var(--accent-mint)] font-mono text-[11px] uppercase tracking-widest hover:underline">Add

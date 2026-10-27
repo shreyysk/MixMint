@@ -206,8 +206,8 @@ class TestAdIncome:
             DJPageView.objects.create(dj=dj, page_type="storefront")
         today = date.today()
         out = distribute_ad_income(Decimal("1000"), today - timedelta(days=1), today + timedelta(days=1))
-        assert out["djs"] == 1 and out["credited"] == Decimal("150.00")
-        assert DJWallet.objects.get(dj=dj).available_for_payout == Decimal("150.00")
+        assert out["djs"] == 1 and out["credited"] == Decimal("200.00")
+        assert DJWallet.objects.get(dj=dj).available_for_payout == Decimal("200.00")
         with pytest.raises(ValueError):
             distribute_ad_income(Decimal("1000"), today - timedelta(days=1), today + timedelta(days=1))
 
@@ -346,3 +346,19 @@ class TestReleaseFilters:
         r = c.get("/api/v1/admin/catalog/?type=track&year=2026&month=9&sort=old")
         assert r.status_code == 200
         assert [o.title for o in r.context["page"]] == ["Charlie"]
+
+
+@pytest.mark.django_db
+def test_commission_20_pro_12_and_ad_share_20(dj_user, client):
+    """Owner's rates (Oct 2026): 20% standard, 12% Pro, DJs get 20% of ad income."""
+    from apps.commerce.rates import rates
+    from apps.commerce.services import MonetizationService
+
+    _, dj = dj_user
+    assert rates() == (20, 12)
+    assert MonetizationService.calculate_revenue_split(dj, Decimal("100"))["dj_amount"] == Decimal("80.00")
+    dj.profile.is_pro_dj = True
+    dj.profile.save(update_fields=["is_pro_dj"])
+    assert MonetizationService.calculate_revenue_split(dj, Decimal("100"))["dj_amount"] == Decimal("88.00")
+    page = client.get("/sell/").content.decode()
+    assert "80%" in page and "88%" in page and "20% of the ad income" in page

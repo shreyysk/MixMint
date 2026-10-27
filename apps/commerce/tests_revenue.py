@@ -43,23 +43,23 @@ class RevenueEngineTest(TestCase):
 
     def test_standard_commission(self):
         split = MonetizationService.calculate_revenue_split(self.dj, Decimal("100.00"))
-        self.assertEqual(split["platform_amount"], Decimal("15.00"))
-        self.assertEqual(split["dj_amount"], Decimal("85.00"))
+        self.assertEqual(split["platform_amount"], Decimal("20.00"))
+        self.assertEqual(split["dj_amount"], Decimal("80.00"))
 
     def test_pro_dj_commission(self):
         self.dj_profile.is_pro_dj = True
         self.dj_profile.save(update_fields=["is_pro_dj"])
         split = MonetizationService.calculate_revenue_split(self.dj, Decimal("100.00"))
-        self.assertEqual(split["platform_amount"], Decimal("8.00"))
-        self.assertEqual(split["dj_amount"], Decimal("92.00"))
+        self.assertEqual(split["platform_amount"], Decimal("12.00"))
+        self.assertEqual(split["dj_amount"], Decimal("88.00"))
 
     def test_buyer_fee_is_not_split_with_dj(self):
         purchase = self._paid_purchase(price="105.00", fee="5.00")
         MonetizationService.complete_purchase(purchase)
         purchase.refresh_from_db()
-        self.assertEqual(purchase.dj_revenue, Decimal("85.00"))
+        self.assertEqual(purchase.dj_revenue, Decimal("80.00"))
         wallet = DJWallet.objects.get(dj=self.dj)
-        self.assertEqual(wallet.escrow_amount, Decimal("85.00"))
+        self.assertEqual(wallet.escrow_amount, Decimal("80.00"))
         self.assertEqual(wallet.available_for_payout, Decimal("0.00"))
 
     def test_complete_purchase_is_idempotent(self):
@@ -67,7 +67,7 @@ class RevenueEngineTest(TestCase):
         MonetizationService.complete_purchase(purchase)
         MonetizationService.complete_purchase(purchase)
         self.assertEqual(Invoice.objects.filter(purchase=purchase).count(), 1)
-        self.assertEqual(DJWallet.objects.get(dj=self.dj).total_earnings, Decimal("85.00"))
+        self.assertEqual(DJWallet.objects.get(dj=self.dj).total_earnings, Decimal("80.00"))
 
     def test_collaborator_split(self):
         collab_user = User.objects.create_user(email="collab@example.com", password="password")
@@ -77,8 +77,8 @@ class RevenueEngineTest(TestCase):
         TrackCollaborator.objects.create(track=self.track, dj=collab_dj, revenue_percentage=Decimal("50.00"))
 
         MonetizationService.complete_purchase(self._paid_purchase())
-        self.assertEqual(DJWallet.objects.get(dj=self.dj).total_earnings, Decimal("42.50"))
-        self.assertEqual(DJWallet.objects.get(dj=collab_dj).total_earnings, Decimal("42.50"))
+        self.assertEqual(DJWallet.objects.get(dj=self.dj).total_earnings, Decimal("40.00"))
+        self.assertEqual(DJWallet.objects.get(dj=collab_dj).total_earnings, Decimal("40.00"))
 
     def test_refund_reverses_every_credit(self):
         purchase = self._paid_purchase()
@@ -100,6 +100,6 @@ class RevenueEngineTest(TestCase):
         Purchase.objects.filter(pk=purchase.pk).update(paid_at=timezone.now() - timedelta(hours=49))
         self.assertEqual(release_escrow_funds()[0], 1)
         wallet = DJWallet.objects.get(dj=self.dj)
-        self.assertEqual(wallet.available_for_payout, Decimal("85.00"))
+        self.assertEqual(wallet.available_for_payout, Decimal("80.00"))
         self.assertEqual(wallet.escrow_amount, Decimal("0.00"))
         self.assertEqual(release_escrow_funds()[0], 0)  # idempotent

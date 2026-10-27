@@ -52,7 +52,7 @@
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Ad Inventory</div>
             <div class="font-display text-[40px] font-[700] text-[#38bdf8] leading-none mb-2">₹{{ ad_revenue|default:"0.00" }}</div>
-            <div class="font-body text-[12px] text-[var(--text-muted)]">Platform Share (85%)</div>
+            <div class="font-body text-[12px] text-[var(--text-muted)]">Platform commission</div>
         </div>
         <div class="glow-card p-8">
             <div class="font-mono text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4">Effective Rate</div>
@@ -140,12 +140,12 @@
                 <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-6 text-[var(--text-primary)] font-medium">Platform Commission</td>
                     <td class="p-6 font-mono font-[700] text-lg text-[#a78bfa]">₹{{ platform_commission|default:"0.00" }}</td>
-                    <td class="p-6 text-[var(--text-muted)] text-sm">{{ std_commission_rate|default:"15" }}% Standard tier · 8% Pro DJ tier per sale</td>
+                    <td class="p-6 text-[var(--text-muted)] text-sm">{{ std_commission_rate|default:"20" }}% Standard tier · {{ pro_commission_rate|default:"12" }}% Pro DJ tier per sale</td>
                 </tr>
                 <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-6 text-[var(--text-primary)] font-medium">Programmatic Ads</td>
                     <td class="p-6 font-mono font-[700] text-lg text-[#38bdf8]">₹{{ ad_revenue|default:"0.00" }}</td>
-                    <td class="p-6 text-[var(--text-muted)] text-sm">85% platform retainment; 15% shared with DJ partners</td>
+                    <td class="p-6 text-[var(--text-muted)] text-sm">DJs keep {{ dj_share_percent|default:80 }}% ({{ pro_dj_share_percent|default:88 }}% Pro); MixMint keeps the commission</td>
                 </tr>
                 <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-6 text-[var(--text-primary)] font-medium">Service & Checkout Fees</td>

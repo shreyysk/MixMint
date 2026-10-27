@@ -182,7 +182,8 @@ class PlatformSettings(models.Model):
     """Singleton model for global pricing and platform features [Spec P3 v3]"""
 
     # Pricing controls
-    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("15.00"))
+    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("20.00"))
+    pro_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("12.00"))  # Pro DJs
 
     buyer_platform_fee_enabled = models.BooleanField(default=False)
     buyer_platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("5.00"))

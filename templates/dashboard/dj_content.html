@@ -8,7 +8,7 @@
 
 {% block content %}
 {{ revenue_chart_data|json_script:"revenue-chart-data" }}
-<div class="py-12 max-w-[1200px] mx-auto" x-data="djDashboard()">
+<div class="py-10 max-w-[1200px] mx-auto" x-data="djDashboard()">
     <!-- ── DJ HEADER ── -->
     <div class="mb-10 border-b border-[var(--border)] pb-8">
         <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -22,16 +22,10 @@
                     {% if dj_profile %}<a href="{% url 'dj_profile' dj_profile.slug %}" class="text-[var(--accent-mint)] underline underline-offset-4">View my store</a>{% endif %}
                 </p>
             </div>
-            <nav class="grid grid-cols-2 sm:flex sm:flex-wrap gap-3" aria-label="DJ tools">
-                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600] col-span-2">+ Upload music</a>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'upload_track' %}" class="btn-mm btn-mint h-11 px-5 gap-2 font-[600]">{% icon "upload" %} Upload music</a>
                 <a href="{% url 'upload_track' %}?kind=samples" class="btn-mm btn-ghost h-11 px-5 font-[600]">+ Sample pack</a>
-                <a href="{% url 'bundle_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Bundles</a>
-                <a href="{% url 'announcement_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Posts</a>
-                <a href="{% url 'ambassador_management' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Referrals</a>
-                <a href="{% url 'dj_store_profile' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Store profile</a>
-                <a href="{% url 'dj_payouts' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Payouts</a>
-                <a href="{% url 'dj_asset_pack' %}" class="btn-mm btn-ghost h-11 px-5 font-[600]">Asset pack</a>
-            </nav>
+            </div>
         </div>
     </div>
 

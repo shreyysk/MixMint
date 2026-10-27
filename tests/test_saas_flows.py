@@ -280,7 +280,7 @@ def test_admin_pages_use_admin_shell(admin_user, dj_user):
     ):
         html = c.get(path).content.decode()
         assert 'aria-label="Admin"' in html and 'aria-current="page"' in html, path
-        assert "Join the Waitlist" not in html, path  # no shop footer inside admin
+        assert "Get new drops by email" not in html, path  # no shop footer inside admin
     shop = _login(admin_user).get("/").content.decode()
     assert "/api/v1/admin/dashboard/" in shop  # admins get an Admin link in the shop navbar
     assert "/api/v1/admin/dashboard/" not in _login(dj_user[0]).get("/").content.decode()

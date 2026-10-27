@@ -13,7 +13,7 @@
         <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">What if my download fails or expires?</h3>
         <p class="text-[var(--text-muted)]">Each purchase includes 3 complete downloads within 7 days of payment. During those 7 days, downloads work only on the device and network you first downloaded on. After 3 downloads, or once the 7 days are over, you can re-download for 50% of the price (the device lock no longer applies). Failed downloads never count. Download Insurance makes re-downloads free.</p></div>
         <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do DJs get paid?</h3>
-        <p class="text-[var(--text-muted)]">15% platform commission (8% for Pro DJs). Earnings land in the DJ wallet and pay out to UPI or bank account above ₹500 with OTP confirmation.</p></div>
+        <p class="text-[var(--text-muted)]">{{ commission_percent|default:20 }}% platform commission ({{ pro_commission_percent|default:12 }}% for Pro DJs). Earnings land in the DJ wallet and pay out to UPI or bank account above ₹500 with OTP confirmation.</p></div>
         <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">I'm a DJ — where do my files live?</h3>
         <p class="text-[var(--text-muted)]">Upload the file directly from the upload page (MP3, WAV, FLAC, AIFF, or a ZIP for album packs). No Google Drive or other links: files go straight into MixMint's private storage.</p></div>
         <div><h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">How do refunds work?</h3>

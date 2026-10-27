@@ -733,23 +733,54 @@ def _send_one(email, title, body):
 
 
 def _send_batch(emails, title, body):
-    """Resend's batch endpoint takes 100 emails per call. Returns how many were accepted."""
+    """Bulk email: Resend's batch endpoint (100 per call) while Resend has room, the rest over Hostinger SMTP
+    on one connection. Returns how many were accepted."""
     import requests
     from django.conf import settings
 
-    if not getattr(settings, "RESEND_API_KEY", ""):
-        return 0
-    sent, html = 0, _email_html(title, body)
-    for i in range(0, len(emails), 100):
-        chunk = emails[i:i + 100]
+    from apps.admin_panel.plan_watch import count_email, emails as sent_counts
+    from apps.core import mailer
+
+    sent, html, left = 0, _email_html(title, body), list(emails)
+    if mailer.resend_ready() and "resend" in mailer.order():
+        day_lim, month_lim = mailer.provider_limits()["resend"]
+        while left:
+            day, month = sent_counts("resend")
+            room = min(100, day_lim - day, month_lim - month)
+            if room <= 0:
+                break
+            chunk, left = left[:room], left[room:]
+            try:
+                r = requests.post("https://api.resend.com/emails/batch", timeout=30,
+                                  headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}", "Content-Type": "application/json"},
+                                  json=[{"from": settings.FROM_EMAIL, "to": [e], "subject": title, "html": html} for e in chunk])
+            except Exception:
+                logger.exception("Admin batch email failed")
+                left = chunk + left
+                break
+            if r.status_code >= 300:
+                left = chunk + left
+                break
+            sent += len(chunk)
+            for _ in chunk:
+                count_email("resend")
+    if left and mailer.smtp_ready() and "smtp" in mailer.order():
+        day_lim = mailer.provider_limits()["smtp"][0]
+        room = max(0, day_lim - sent_counts("smtp")[0])
+        batch = left[:room]
         try:
-            r = requests.post("https://api.resend.com/emails/batch", timeout=30,
-                              headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}", "Content-Type": "application/json"},
-                              json=[{"from": settings.FROM_EMAIL, "to": [e], "subject": title, "html": html} for e in chunk])
-            if r.status_code < 300:
-                sent += len(chunk)
+            conn = mailer.smtp_connection()
+            conn.open()
+            try:
+                for e in batch:
+                    msg = mailer.smtp_message({"from": settings.FROM_EMAIL, "to": [e], "subject": title, "html": html}, connection=conn)
+                    if msg.send():
+                        sent += 1
+                        count_email("smtp")
+            finally:
+                conn.close()
         except Exception:
-            logger.exception("Admin batch email failed")
+            logger.exception("Admin SMTP batch email failed")
     return sent
 
 
@@ -815,8 +846,14 @@ def messages_view(request):
 
     return render(request, "admin/console/messages.html", {
         "audiences": [(k, label, sizes[k]) for k, label in AUDIENCES], "history": history,
-        "email_ready": bool(getattr(settings, "RESEND_API_KEY", "")),
+        "email_ready": _mail_ready(),
     })
+
+
+def _mail_ready():
+    from apps.core import mailer
+
+    return mailer.ready()
 
 
 # ─────────────────────────────── activity ───────────────────────────────

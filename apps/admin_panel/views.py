@@ -725,9 +725,9 @@ def investor_report(request):
     settings = PlatformSettings.load()
     std_rate = float(settings.platform_commission_rate)
 
-    # Calculate effective avg rate: (pro * 8 + (total-pro)*std_rate) / total
+    pro_rate = min(float(settings.pro_commission_rate), std_rate)
     if total_djs > 0:
-        eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs
+        eff_rate = (pro_djs * pro_rate + (total_djs - pro_djs) * std_rate) / total_djs
     else:
         eff_rate = std_rate
 
@@ -739,6 +739,7 @@ def investor_report(request):
         "active_djs": active_djs,
         "pro_dj_count": pro_djs,
         "std_commission_rate": std_rate,
+        "pro_commission_rate": pro_rate,
         "avg_commission_rate": round(eff_rate, 2),
     }
 
@@ -771,7 +772,8 @@ def investor_report_pdf(request):
     total_djs = DJProfile.objects.count()
     active_djs = DJProfile.objects.filter(status="approved").count()
     pro_djs = Profile.objects.filter(is_pro_dj=True, role="dj").count()
-    eff_rate = (pro_djs * 8 + (total_djs - pro_djs) * std_rate) / total_djs if total_djs > 0 else std_rate
+    pro_rate = min(float(settings.pro_commission_rate), std_rate)
+    eff_rate = (pro_djs * pro_rate + (total_djs - pro_djs) * std_rate) / total_djs if total_djs > 0 else std_rate
 
     try:
         from reportlab.lib.pagesizes import A4
@@ -803,7 +805,7 @@ def investor_report_pdf(request):
             ["Total Purchases", str(total_stats["purchase_count"] or 0)],
             ["Total DJs on Platform", str(total_djs)],
             ["Active (Approved) DJs", str(active_djs)],
-            ["Pro DJs (8% commission)", str(pro_djs)],
+            [f"Pro DJs ({pro_rate:g}% commission)", str(pro_djs)],
             ["Effective Commission Rate", f"{round(eff_rate, 2)}%"],
         ]
         kpi_table = Table(kpi_data, colWidths=[10 * cm, 7 * cm])
@@ -827,7 +829,7 @@ def investor_report_pdf(request):
         elements.append(
             Paragraph(
                 "MixMint is a DJ-first digital music distribution platform operating in India. "
-                f"Revenue is generated through track/album sales commissions ({std_rate}% standard, 8% Pro) "
+                f"Revenue is generated through track/album sales commissions ({std_rate:g}% standard, {pro_rate:g}% Pro) "
                 "and programmatic advertising. All financial data is real-time from the platform database.",
                 subtitle_style,
             )
@@ -898,11 +900,14 @@ def update_platform_settings(request):
         return v
 
     labels = {"platform_commission_rate": "Commission must be between 0 and 50%.",
+              "pro_commission_rate": "Pro commission must be between 0 and 50%.",
               "buyer_platform_fee": "Buyer fee must be between ₹0 and ₹500.",
               "dj_application_fee": "DJ fee must be between ₹0 and ₹10,000."}
     try:
         if "platform_commission_rate" in data:
             ps.platform_commission_rate = money("platform_commission_rate", 0, 50)
+        if "pro_commission_rate" in data:
+            ps.pro_commission_rate = money("pro_commission_rate", 0, 50)
         if "buyer_platform_fee" in data:
             ps.buyer_platform_fee = money("buyer_platform_fee", 0, 500)
         if "dj_application_fee" in data:

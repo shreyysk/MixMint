@@ -77,7 +77,7 @@ def dj_earnings_overview(request):
             "total_earnings": str(wallet.total_earnings),
             "ad_revenue_lifetime": str(ad_lifetime["total"] or 0),
             "ad_revenue_this_week": str(ad_weekly["total"] or 0),
-            "commission_rate": "8%" if request.user.profile.is_pro_dj else "15%",
+            "commission_rate": __import__("apps.commerce.rates", fromlist=["x"]).commission_label(request.user.profile.is_pro_dj),
         }
     )
 

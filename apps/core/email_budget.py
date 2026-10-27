@@ -1,4 +1,4 @@
-"""Make every Resend email count (free plan: 100 a day, 3,000 a month).
+"""Make every email count (Resend free plan: 100 a day, 3,000 a month; Hostinger SMTP adds its own daily quota).
 
 Every outgoing email (Django mail backend and email_utils.send_email) asks `route()` first:
 
@@ -34,6 +34,15 @@ DEDUPE_SECONDS = 15 * 60
 
 
 def limits():
+    """Daily/monthly email capacity: Resend plus the Hostinger SMTP backup when both are set."""
+    try:
+        from apps.core.mailer import provider_limits
+
+        lims = provider_limits()
+        if lims:
+            return sum(d for d, _ in lims.values()), sum(m for _, m in lims.values())
+    except Exception:
+        pass
     return int(getattr(settings, "RESEND_DAILY_LIMIT", 100) or 100), int(getattr(settings, "RESEND_MONTHLY_LIMIT", 3000) or 3000)
 
 

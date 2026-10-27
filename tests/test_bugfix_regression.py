@@ -331,7 +331,7 @@ class TestRevenueIdempotency:
         MonetizationService.complete_purchase(purchase)  # retry/race duplicate
         wallet = dj.wallet
         wallet.refresh_from_db()
-        assert wallet.total_earnings == Decimal("85.00")
+        assert wallet.total_earnings == Decimal("80.00")
         assert Invoice.objects.filter(purchase=purchase).count() == 1
         assert LedgerEntry.objects.filter(wallet=wallet).count() == 1
 

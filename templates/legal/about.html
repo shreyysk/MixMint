@@ -13,7 +13,7 @@
         <li><strong class="text-[var(--text-primary)]">DJs upload directly.</strong> WAV, MP3, FLAC, AIFF or a ZIP, straight from the browser. No Drive links. Previews play only from the DJ's own YouTube / Instagram embeds.</li>
         <li><strong class="text-[var(--text-primary)]">Fans pay one all-inclusive price.</strong> The price you see is the price you pay — fees and taxes included, no surprises at checkout.</li>
         <li><strong class="text-[var(--text-primary)]">Secure vault delivery.</strong> Files stream through MixMint's signed, expiring links.</li>
-        <li><strong class="text-[var(--text-primary)]">Artists get paid.</strong> DJs keep {{ dj_share_percent|default:85 }}% of every sale, plus {{ dj_ad_share_percent|default:15 }}% of the ad income from their pages. MixMint keeps {{ platform_settings.platform_commission_rate|floatformat:"-2"|default:"15" }}% (8% for Pro DJs) to cover operations and keeping the system running: payments, secure storage and delivery, support and upkeep. Payouts go to UPI or bank.</li>
+        <li><strong class="text-[var(--text-primary)]">Artists get paid.</strong> DJs keep {{ dj_share_percent|default:80 }}% of every sale, plus {{ dj_ad_share_percent|default:20 }}% of the ad income from their pages. MixMint keeps {{ commission_percent|default:20 }}% ({{ pro_commission_percent|default:12 }}% for Pro DJs) to cover operations and keeping the system running: payments, secure storage and delivery, support and upkeep. Payouts go to UPI or bank.</li>
     </ol>
 
     <h2 class="font-display text-2xl font-bold text-[var(--text-primary)] mb-4">Operations</h2>

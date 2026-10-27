@@ -268,7 +268,7 @@ class TestPaymentCompletion:
         p.refresh_from_db()
         assert p.status == "paid"
         assert Invoice.objects.filter(purchase=p).count() == 1
-        assert DJWallet.objects.get(dj=dj_user[1]).total_earnings == Decimal("85.00")
+        assert DJWallet.objects.get(dj=dj_user[1]).total_earnings == Decimal("80.00")
 
     def test_amount_mismatch_not_fulfilled(self, user, track, dj_user):
         from apps.payments.services import complete_order

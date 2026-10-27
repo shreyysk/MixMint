@@ -1,4 +1,8 @@
-"""Django email backend that sends through the Resend HTTP API (settings.RESEND_API_KEY)."""
+"""Django email backend for MixMint: budget check, then Resend (HTTP API) with SMTP (Hostinger Mail) as backup.
+
+The provider order and fallback live in apps.core.mailer. This module keeps the Resend HTTP call
+(post_resend) and the backend class Django uses for all mail (password reset, EmailService, receipts).
+"""
 
 import logging
 
@@ -7,57 +11,51 @@ from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 
 logger = logging.getLogger("mixmint")
+RESEND_URL = "https://api.resend.com/emails"
+
+
+def post_resend(payload):
+    """Send one email through Resend. Raises on any non-2xx (limit reached, paused account, bad key)."""
+    resp = requests.post(RESEND_URL, json=payload, headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"}, timeout=15)
+    resp.raise_for_status()
+    return resp
 
 
 class ResendEmailBackend(BaseEmailBackend):
-    api_url = "https://api.resend.com/emails"
-
     def send_messages(self, email_messages):
+        from apps.core import mailer
+
         sent = 0
         for message in email_messages or []:
             html = None
             for content, mimetype in getattr(message, "alternatives", []) or []:
                 if mimetype == "text/html":
                     html = content
-            payload = {
+            msg = {
                 "from": message.from_email or settings.DEFAULT_FROM_EMAIL,
                 "to": list(message.to),
                 "subject": message.subject,
+                "cc": list(message.cc or []),
+                "bcc": list(message.bcc or []),
+                "reply_to": list(message.reply_to or []),
+                "html": html,
+                "text": message.body or "",
             }
-            if message.cc:
-                payload["cc"] = list(message.cc)
-            if message.bcc:
-                payload["bcc"] = list(message.bcc)
-            if message.reply_to:
-                payload["reply_to"] = list(message.reply_to)
-            if html:
-                payload["html"] = html
-            if message.body:
-                payload["text"] = message.body
             try:
                 from apps.core.email_budget import route
 
-                if not route(payload["to"], payload["subject"], html or "", message.body or ""):
+                if not route(msg["to"], msg["subject"], html or "", message.body or ""):
                     continue
             except Exception:
                 logger.exception("Email budget check failed; sending anyway")
             try:
-                resp = requests.post(
-                    self.api_url,
-                    json=payload,
-                    headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
-                    timeout=15,
-                )
-                resp.raise_for_status()
-                sent += 1
-                try:
-                    from apps.admin_panel.plan_watch import count_email
-
-                    count_email()
-                except Exception:
-                    pass
+                if mailer.deliver(msg):
+                    sent += 1
             except Exception:
-                logger.exception("Resend email to %s failed", payload["to"])
+                logger.exception("Email to %s failed on every provider", msg["to"])
                 if not self.fail_silently:
                     raise
         return sent
+
+
+MailBackend = ResendEmailBackend

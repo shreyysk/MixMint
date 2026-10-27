@@ -1,0 +1,14 @@
+.git
+node_modules
+staticfiles
+db.sqlite3
+**/__pycache__
+**/*.pyc
+.venv
+venv
+tests
+tools/brand/out
+tools/promo/*.mp4
+*.log
+.env
+.env.*

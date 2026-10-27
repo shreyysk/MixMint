@@ -1,0 +1,20 @@
+{# DJ studio bar: one place to reach every DJ tool, shown on all DJ pages (see context_processors.studio_nav). #}
+{% with p=request.path %}
+<div class="mm-studio" role="navigation" aria-label="DJ studio">
+    <div class="mm-studio-in">
+        <span class="mm-studio-label">Studio</span>
+        <nav>
+            <a href="{% url 'dj_dashboard' %}" {% if p == "/dashboard/dj/" %}aria-current="page"{% endif %}>{% icon "chart-column" %}Overview</a>
+            <a href="{% url 'dj_payouts' %}" {% if p|slice:":20" == "/dashboard/dj/payout" %}aria-current="page"{% endif %}>{% icon "wallet" %}Payouts</a>
+            <a href="{% url 'dj_store_profile' %}" {% if p == "/dashboard/dj/profile/" %}aria-current="page"{% endif %}>{% icon "store" %}Store profile</a>
+            <a href="{% url 'bundle_management' %}" {% if p|slice:":19" == "/dashboard/bundles/" %}aria-current="page"{% endif %}>{% icon "layers" %}Bundles</a>
+            <a href="{% url 'announcement_management' %}" {% if p|slice:":25" == "/dashboard/announcements" %}aria-current="page"{% endif %}>{% icon "megaphone" %}Posts</a>
+            <a href="{% url 'ambassador_management' %}" {% if p|slice:":21" == "/dashboard/ambassador" %}aria-current="page"{% endif %}>{% icon "users" %}Referrals</a>
+            <a href="{% url 'dj_asset_pack' %}" {% if p|slice:":19" == "/tracks/asset-pack/" %}aria-current="page"{% endif %}>{% icon "image" %}Asset pack</a>
+            {% if dj_store_slug %}<a href="{% url 'dj_profile' dj_store_slug %}">{% icon "external-link" %}View store</a>{% endif %}
+        </nav>
+        <span class="spacer"></span>
+        <a href="{% url 'upload_track' %}" class="is-cta" {% if p == "/upload/" %}aria-current="page"{% endif %}>{% icon "upload" %}<span class="hidden sm:inline">Upload</span></a>
+    </div>
+</div>
+{% endwith %}

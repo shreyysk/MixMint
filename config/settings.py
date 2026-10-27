@@ -109,6 +109,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.admin_panel.context_processors.global_settings",
                 "apps.admin_panel.context_processors.admin_nav",
+                "apps.admin_panel.context_processors.page_shell",
                 "apps.core.context_processors.seo_context",
                 "social_django.context_processors.backends",
                 "social_django.context_processors.login_redirect",
@@ -475,8 +476,17 @@ RESEND_API_KEY = env("RESEND_API_KEY", default="")
 FROM_EMAIL = env("FROM_EMAIL", default="noreply@mixmint.site")
 DEFAULT_FROM_EMAIL = FROM_EMAIL
 SERVER_EMAIL = FROM_EMAIL
-# All Django mail (password reset, EmailService) goes through Resend when a key is set.
-if RESEND_API_KEY:
+# Backup sender: a Hostinger Mail mailbox over SMTP (smtp.hostinger.com:465). Used when Resend is
+# missing, fails or is at its limit. EMAIL_PROVIDER: auto (Resend, then SMTP) | resend | smtp.
+# Railway Free/Trial/Hobby block outbound SMTP; it works on Vercel and Railway Pro.
+EMAIL_PROVIDER = env("EMAIL_PROVIDER", default="auto")
+SMTP_HOST = env("SMTP_HOST", default="smtp.hostinger.com")
+SMTP_PORT = env.int("SMTP_PORT", default=465)
+SMTP_USER = env("SMTP_USER", default="")
+SMTP_PASSWORD = env("SMTP_PASSWORD", default="")
+SMTP_DAILY_LIMIT = env.int("SMTP_DAILY_LIMIT", default=100)  # Hostinger: 100 free/trial, 1,000 Business Starter
+# All Django mail (password reset, EmailService) goes through the MixMint mailer when a provider is set.
+if RESEND_API_KEY or (SMTP_USER and SMTP_PASSWORD):
     EMAIL_BACKEND = "apps.core.resend_backend.ResendEmailBackend"
 elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -503,13 +513,15 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Set CELERY_TASK_ALWAYS_EAGER=True on hosts like Render-free; scheduled jobs
 # are then triggered by cron-job.org hitting /cron/<job>/ instead of beat.
 # On Vercel (serverless, no workers possible) eager mode is the safe default.
-CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER", default=os.environ.get("VERCEL") == "1")
+# Railway runs one web service (no Celery worker) to keep the bill small, so it behaves like Vercel here.
+_NO_WORKER_HOST = os.environ.get("VERCEL") == "1" or bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=_NO_WORKER_HOST)
 
 # Platform Constants
 PLATFORM_LAUNCH_DATE = timezone.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
 PLATFORM_COMMISSION_RATE = 0.15  # 15% [Spec P3 §1.1]
 PRO_DJ_COMMISSION_RATE = 0.08  # 8% for Pro DJs [Spec P3 §1.5]
-DJ_AD_REVENUE_SHARE = 0.15  # 15% ad revenue to DJ [Spec P3 §1.2]
+DJ_AD_REVENUE_SHARE = 0.20  # 20% of ad income from their pages goes to the DJ (Pro and standard alike)
 CHECKOUT_FEE = 5.00  # ₹5 service fee [Spec P3 §1.3]
 MIN_PAYOUT_THRESHOLD = 500.00  # ₹500 [Spec P2 §9]
 
@@ -532,7 +544,8 @@ DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5  # [Spec §4.5]
 #   auto      - proxy small files, hand large ones (> DOWNLOAD_PROXY_MAX_MB) to a short-lived R2
 #               signed URL so serverless time/size limits (Vercel) never cut a download off.
 #   presigned - always hand off to a short-lived R2 signed URL.
-DOWNLOAD_DELIVERY = env("DOWNLOAD_DELIVERY", default="auto" if os.getenv("VERCEL") else "proxy")
+# Vercel and Railway both hand big files to R2 signed links (same R2 setup on both hosts).
+DOWNLOAD_DELIVERY = env("DOWNLOAD_DELIVERY", default="auto" if (os.getenv("VERCEL") or os.getenv("RAILWAY_ENVIRONMENT")) else "proxy")
 DOWNLOAD_PROXY_MAX_MB = env.int("DOWNLOAD_PROXY_MAX_MB", default=40)
 DOWNLOAD_PRESIGN_SECONDS = env.int("DOWNLOAD_PRESIGN_SECONDS", default=120)
 ADMIN_ALERT_EMAIL = env("ADMIN_EMAIL", default="")  # reports, DMCA notices and other alerts

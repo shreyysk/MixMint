@@ -16,7 +16,7 @@ DJs see the posts on the Asset pack page (`/tracks/asset-pack/`).
 | Body | Satoshi 500 (fontshare.com) |
 | Logo | `static/logo/MIXMINT_WHITE.png` on dark, `MIXMINT_BLACK.png` on light. Keep clear space of half the logo height. |
 
-Voice: short, confident and friendly. Talk to DJs as peers. Say "DJs keep 85%" and "weekly payouts", not jargon.
+Voice: short, confident and friendly. Talk to DJs as peers. Say "DJs keep 80%" and "weekly payouts", not jargon.
 Never promise numbers you can't show.
 
 ## Files
@@ -57,7 +57,7 @@ MixMint is live 🎧 India's home for DJ releases: private edits, remixes, album
 #DJ #DJEdits #Remix #IndianDJ #TuluDJ #KannadaDJ #Bollywood #SamplePack #MixMint
 
 **For DJs**
-Your edits deserve a price tag. Open your MixMint store in 2 minutes, keep 85% of every sale and get paid to UPI every week. No follower count needed.
+Your edits deserve a price tag. Open your MixMint store in 2 minutes, keep 80% of every sale and get paid to UPI every week. No follower count needed.
 Apply: mixmint.site/sell
 
 **Sample packs**

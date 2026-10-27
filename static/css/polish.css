@@ -1,0 +1,102 @@
+/* MixMint polish layer (loads last). Shared building blocks used across pages:
+   product page grid, release facts, trust list, avatars, DJ studio nav, compact app footer,
+   store banner fallback, and small global refinements (focus, selection, tap targets, type). */
+
+/* ── Global refinements ─────────────────────────────────────────────── */
+html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+::selection { background: color-mix(in srgb, var(--accent-mint) 22%, transparent); color: var(--text-primary); }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--border-focus, var(--accent-mint)); outline-offset: 2px; border-radius: 6px;
+}
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+img { max-width: 100%; }
+.tabular, .font-mono { font-variant-numeric: tabular-nums; }
+/* Calmer buttons: less shouting, same weight. */
+.btn-mm { letter-spacing: .04em; }
+@media (max-width: 640px) { .btn-mm { letter-spacing: .03em; } }
+/* Inputs: comfortable on phones (16px stops iOS zoom) */
+@media (max-width: 640px) { .input-mm, input[type=text], input[type=email], input[type=password], input[type=search], input[type=number], input[type=url], input[type=tel], select, textarea { font-size: 16px; } }
+
+/* ── Avatars ────────────────────────────────────────────────────────── */
+.mm-avatar { display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden;
+  border-radius: 999px; background: color-mix(in srgb, var(--accent-mint) 14%, var(--bg-elevated));
+  color: var(--accent-mint); font-family: var(--font-display, inherit); font-weight: 700;
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px color-mix(in srgb, var(--accent-mint) 35%, transparent); }
+.mm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Product page (track / album) ───────────────────────────────────── */
+.mm-pdp { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "art" "info" "preview"; align-items: start; }
+.mm-pdp-art { grid-area: art; width: 100%; max-width: 560px; margin-inline: auto; }
+.mm-pdp-info { grid-area: info; min-width: 0; }
+.mm-pdp-preview { grid-area: preview; width: 100%; max-width: 560px; margin-inline: auto; }
+@media (min-width: 1024px) {
+  .mm-pdp { grid-template-columns: 5fr 7fr; grid-template-areas: "art info" "preview info"; column-gap: 64px; row-gap: 28px; }
+  .mm-pdp-art, .mm-pdp-preview { max-width: none; }
+  .mm-pdp-info { position: sticky; top: 96px; }
+}
+
+.mm-specs { display: flex; flex-wrap: wrap; gap: 1px; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--border); }
+.mm-specs > div { flex: 1 1 96px; background: var(--bg-surface); padding: 12px 14px; min-width: 0; }
+.mm-specs dt { font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.mm-specs dd { margin: 4px 0 0; font-weight: 600; font-size: 15px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm-specs dd a { color: inherit; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
+.mm-specs dd a:hover { color: var(--accent-mint); text-decoration-color: currentColor; }
+
+.mm-trust { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 10px; margin-top: 24px; justify-items: stretch; text-align: left; }
+.mm-trust li { justify-self: stretch; width: 100%; max-width: none; margin: 0; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.mm-trust li > svg { flex: none; margin-top: 2px; color: var(--accent-mint); }
+.mm-trust li > span { display: block; min-width: 0; }
+.mm-trust strong { color: var(--text-primary); font-weight: 600; }
+.mm-trust a { color: var(--accent-mint); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+
+/* ── DJ studio nav (all DJ pages) ───────────────────────────────────── */
+.mm-studio { position: sticky; top: var(--nav-h, 81px); z-index: 30; background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--border); }
+.mm-studio-in { max-width: 1280px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 12px; }
+.mm-studio-label { flex: none; font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); padding-right: 12px; border-right: 1px solid var(--border); }
+.mm-studio nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; mask-image: linear-gradient(90deg, #000 92%, transparent); }
+.mm-studio nav::-webkit-scrollbar { display: none; }
+.mm-studio a { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 500; color: var(--text-muted); white-space: nowrap; transition: background .15s, color .15s; }
+.mm-studio a:hover { color: var(--text-primary); background: var(--bg-elevated); }
+.mm-studio a[aria-current="page"] { color: var(--text-primary); background: var(--bg-surface); box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.04); font-weight: 600; }
+.mm-studio a[aria-current="page"] svg { color: var(--accent-mint); }
+.mm-studio a.is-cta { color: var(--text-inverse, #fff); background: var(--accent-mint); font-weight: 600; }
+.mm-studio a.is-cta:hover { filter: brightness(1.08); }
+.mm-studio .spacer { flex: 1 0 8px; }
+@media (max-width: 640px) { .mm-studio-in { padding: 0 12px; } .mm-studio-label { display: none; } .mm-studio nav { mask-image: linear-gradient(90deg, #000 85%, transparent); } }
+@media (min-width: 1100px) { .mm-studio nav { mask-image: none; } }
+
+/* ── Store banner fallback (DJ profile with no cover yet) ───────────── */
+html .dj-banner.mm-banner-fallback, .mm-banner-fallback { background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent-mint) 38%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, color-mix(in srgb, var(--accent-amber) 30%, transparent) 0%, transparent 60%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-mint) 18%, var(--bg-elevated)), var(--bg-elevated)); position: relative; }
+.mm-banner-fallback::after { content: ""; position: absolute; inset: 0; opacity: .35;
+  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-primary) 9%, transparent) 0 2px, transparent 2px 14px);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%, transparent); mask-image: linear-gradient(180deg, transparent, #000 45%, transparent); }
+
+/* ── Compact footer on app pages (dashboards, library, account, cart) ── */
+.mm-footer-compact { margin-top: 64px; padding: 20px 0 28px; border-top: 1px solid var(--border); }
+.mm-footer-compact .in { max-width: 1280px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); }
+.mm-footer-compact nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.mm-footer-compact a { color: var(--text-muted); } .mm-footer-compact a:hover { color: var(--text-primary); }
+@media (max-width: 767px) { body.has-tabbar .mm-footer-compact { padding-bottom: calc(96px + env(safe-area-inset-bottom)); } }
+
+/* ── Page header used by app pages ──────────────────────────────────── */
+.mm-pagehead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 32px; }
+.mm-pagehead h1 { font-family: var(--font-display, inherit); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; font-size: clamp(30px, 4vw, 44px); color: var(--text-primary); }
+.mm-pagehead p { color: var(--text-muted); font-size: 14.5px; margin-top: 8px; max-width: 60ch; }
+
+/* ── Cards & empty states: one look everywhere ──────────────────────── */
+.glow-card, .mm-panel { border-radius: 16px; }
+.mm-empty { text-align: center; padding: 48px 20px; border: 1px dashed color-mix(in srgb, var(--text-muted) 30%, transparent); border-radius: 16px; background: color-mix(in srgb, var(--bg-surface) 60%, transparent); }
+
+/* ── Cursor: never parked at the top-left before the mouse moves ────── */
+html.mm-cursor:not(.mm-cursor-live) #mm-cursor-ring, html.mm-cursor:not(.mm-cursor-live) #mm-cursor-dot { opacity: 0; }
+
+/* ── Reduced motion: honour everywhere ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+@media print { .mm-studio, .mm-footer-compact { display: none; } }
