@@ -1,0 +1,16 @@
+{# Left-hand stage panel on the sign-in and sign-up pages (desktop only). #}
+<aside class="mm-auth-stage mm-stage" data-stage aria-hidden="true">
+    <div class="mm-stage-bg"><div class="mm-mesh"></div><div class="mm-beams"><i></i><i></i><i></i><i></i></div><div class="mm-grain"></div></div>
+    <div class="mm-auth-disc"><span></span></div>
+    <div class="mm-auth-copy">
+        <p class="mm-onair"><span class="mm-onair-dot"></span>MixMint</p>
+        <p class="mm-auth-title">{{ stage_title }}</p>
+        <p class="mm-auth-sub">{{ stage_sub }}</p>
+        <ul class="mm-stage-trust">
+            <li>{% icon "lock" %}UPI &amp; net banking</li>
+            <li>{% icon "zap" %}Instant download</li>
+            <li>{% icon "shield-check" %}Byte-verified files</li>
+        </ul>
+    </div>
+    <div class="mm-eq">{% for i in "012345678901234567890123456789012345" %}<i style="--d:{{ forloop.counter }}"></i>{% endfor %}</div>
+</aside>

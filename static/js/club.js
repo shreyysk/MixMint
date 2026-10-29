@@ -93,3 +93,18 @@
         document.querySelectorAll('.mm-shelf').forEach(function (s) { io.observe(s); });
     }
 })();
+
+/* Round 2: glass navbar on scroll, active nav link */
+(function () {
+    var root = document.documentElement, ticking = false;
+    var onScroll = function () {
+        if (ticking) return; ticking = true;
+        requestAnimationFrame(function () { root.classList.toggle('is-scrolled', window.scrollY > 8); ticking = false; });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+    var here = location.pathname;
+    document.querySelectorAll('nav.sticky a[href]').forEach(function (a) {
+        var p = a.getAttribute('href');
+        if (p && p !== '/' && p.charAt(0) === '/' && here.indexOf(p) === 0) { a.classList.add('is-active'); a.setAttribute('aria-current', 'page'); }
+    });
+})();

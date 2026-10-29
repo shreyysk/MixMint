@@ -3,7 +3,8 @@
 {% block title %}Sign Up — MixMint{% endblock %}
 
 {% block content %}
-<div class="min-h-[70vh] flex items-center justify-center py-16 relative">
+<div class="mm-auth">
+    {% include "components/auth_stage.html" with stage_title="Start your crate." stage_sub="Buy edits straight from the DJs who made them. One account, every download in your library." %}
     <!-- Background Decor -->
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent-mint)]/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
 

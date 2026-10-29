@@ -4,7 +4,9 @@
 {% block meta_description %}Sell your edits, remixes, album packs and sample packs directly to DJs and fans. Your own store, secure delivery, weekly payouts to UPI or bank. Apply in 2 minutes.{% endblock %}
 {% block content %}
 <div class="max-w-[1100px] mx-auto py-10 md:py-16">
-    <section class="text-center max-w-[760px] mx-auto">
+    <section class="mm-stage mm-stage-lite text-center" data-stage>
+        <div class="mm-stage-bg" aria-hidden="true"><div class="mm-mesh"></div><div class="mm-beams"><i></i><i></i><i></i><i></i></div><div class="mm-grain"></div></div>
+        <div class="mm-stage-in max-w-[760px]">
         <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--accent-mint)] mb-4">For DJs &amp; producers</p>
         <h1 class="font-display text-[40px] md:text-[64px] font-[800] text-[var(--text-primary)] tracking-tight leading-[0.98]">Your edits.<br>Your store.<br>Your money.</h1>
         <p class="text-[16px] md:text-[18px] text-[var(--text-muted)] mt-5">Sell private edits, remixes, album packs, sample packs and DJ tool kits straight to the DJs who play them. {% include "components/earn_line.html" %}</p>
@@ -13,6 +15,7 @@
             {% if help_telegram_url %}<a href="{{ help_telegram_url }}" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[54px] px-6 text-[15px] font-[600] inline-flex items-center justify-center">Questions? Message us on Telegram</a>{% endif %}
         </div>
         <p class="text-[13px] text-[var(--text-muted)] mt-4">{{ dj_count }} DJ{{ dj_count|pluralize }} · {{ release_count }} release{{ release_count|pluralize }} live</p>
+        </div>
     </section>
 
     <section class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-4" aria-label="How it works">

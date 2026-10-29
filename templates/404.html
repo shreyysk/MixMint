@@ -3,10 +3,10 @@
 
 {% block content %}
 <div class="min-h-[60vh] flex flex-col items-center justify-center px-6 py-16 text-center">
-    <p class="font-display text-[96px] md:text-[140px] font-black leading-none text-[var(--bg-elevated)] select-none" aria-hidden="true">404</p>
-    <h1 class="font-display text-[30px] md:text-[42px] font-bold text-[var(--text-primary)] tracking-tight mt-2 mb-4">This page doesn't exist</h1>
+    <div class="mm-404-disc" aria-hidden="true"><span>404</span></div>
+    <h1 class="font-display text-[30px] md:text-[42px] font-bold text-[var(--text-primary)] tracking-tight mt-8 mb-4">This track skipped.</h1>
     <p class="font-body text-[16px] text-[var(--text-muted)] leading-relaxed max-w-md mb-10">
-        The link may be old or mistyped, or the track may have been removed by its DJ.
+        The page you wanted doesn't exist. The link may be old or mistyped, or the DJ removed the release.
     </p>
     <form action="{% url 'releases' %}" method="get" class="mm-search w-full max-w-md mb-8" role="search">
         <label for="nf-q" class="sr-only">Search MixMint</label>
