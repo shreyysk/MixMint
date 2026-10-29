@@ -12,3 +12,5 @@ tools/promo/*.mp4
 *.log
 .env
 .env.*
+.claude
+.archify

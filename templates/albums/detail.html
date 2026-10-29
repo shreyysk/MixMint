@@ -3,7 +3,8 @@
 {% block title %}{{ album.title }} | MixMint{% endblock %}
 
 {% block content %}
-<div class="py-12 max-w-[1200px] mx-auto">
+<div class="py-12 max-w-[1200px] mx-auto relative isolate">
+    {% if album.cover_image %}<div class="mm-ambient" aria-hidden="true" style="--cover:url('{{ album.cover_image }}')"></div>{% endif %}
 
     <!-- ── BREADCRUMBS ── -->
     <nav class="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-10"
@@ -19,7 +20,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start mb-16">
 
         <!-- LEFT: Artwork -->
-        <div class="lg:col-span-5 relative w-full max-w-[min(80vw,340px)] sm:max-w-[560px] mx-auto lg:max-w-none">
+        <div class="mm-pdp-art lg:col-span-5 relative w-full max-w-[min(80vw,340px)] sm:max-w-[560px] mx-auto lg:max-w-none">
+            <span class="mm-pdp-vinyl" aria-hidden="true"></span>
             <!-- Stack effect -->
             <div
                 class="absolute inset-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] transform translate-y-3 translate-x-3 opacity-40 -z-20">
@@ -191,7 +193,7 @@
                 </div>
             </div>
 
-            <ul class="mm-trust mt-6">
+            <ul class="mm-buyfacts">
                 <li>{% icon "package" %}<span><strong>One ZIP</strong> with every track, downloaded right after payment.</span></li>
                 <li>{% icon "lock" %}<span><strong>Secure Vault</strong> · token-locked, byte-verified files. <a href="/legal/transparency/">How it works</a></span></li>
                 <li>{% icon "user" %}<span>Sold by {{ album.dj.dj_name }}, an independent DJ. They're responsible for the rights. <a href="/legal/terms/#content-policy">Content policy</a></span></li>

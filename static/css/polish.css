@@ -27,12 +27,12 @@ img { max-width: 100%; }
 
 /* ── Product page (track / album) ───────────────────────────────────── */
 .mm-pdp { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "art" "info" "preview"; align-items: start; }
-.mm-pdp-art { grid-area: art; width: 100%; max-width: 560px; margin-inline: auto; }
-.mm-pdp-info { grid-area: info; min-width: 0; }
-.mm-pdp-preview { grid-area: preview; width: 100%; max-width: 560px; margin-inline: auto; }
+.mm-pdp > .mm-pdp-art { grid-area: art; width: 100%; max-width: 560px; margin-inline: auto; }
+.mm-pdp > .mm-pdp-info { grid-area: info; min-width: 0; }
+.mm-pdp > .mm-pdp-preview { grid-area: preview; width: 100%; max-width: 560px; margin-inline: auto; }
 @media (min-width: 1024px) {
   .mm-pdp { grid-template-columns: 5fr 7fr; grid-template-areas: "art info" "preview info"; column-gap: 64px; row-gap: 28px; }
-  .mm-pdp-art, .mm-pdp-preview { max-width: none; }
+  .mm-pdp > .mm-pdp-art, .mm-pdp > .mm-pdp-preview { max-width: none; }
   .mm-pdp-info { position: sticky; top: 96px; }
 }
 
@@ -44,12 +44,12 @@ img { max-width: 100%; }
 .mm-specs dd a { color: inherit; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
 .mm-specs dd a:hover { color: var(--accent-mint); text-decoration-color: currentColor; }
 
-.mm-trust { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 10px; margin-top: 24px; justify-items: stretch; text-align: left; }
-.mm-trust li { justify-self: stretch; width: 100%; max-width: none; margin: 0; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
-.mm-trust li > svg { flex: none; margin-top: 2px; color: var(--accent-mint); }
-.mm-trust li > span { display: block; min-width: 0; }
-.mm-trust strong { color: var(--text-primary); font-weight: 600; }
-.mm-trust a { color: var(--accent-mint); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.mm-buyfacts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 10px; margin-top: 24px; justify-items: stretch; text-align: left; }
+.mm-buyfacts li { justify-self: stretch; width: 100%; max-width: none; margin: 0; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.mm-buyfacts li > svg { flex: none; margin-top: 2px; color: var(--accent-mint); }
+.mm-buyfacts li > span { display: block; min-width: 0; }
+.mm-buyfacts strong { color: var(--text-primary); font-weight: 600; }
+.mm-buyfacts a { color: var(--accent-mint); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 
 /* ── DJ studio nav (all DJ pages) ───────────────────────────────────── */
 .mm-studio { position: sticky; top: var(--nav-h, 81px); z-index: 30; background: color-mix(in srgb, var(--bg-base) 88%, transparent);

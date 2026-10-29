@@ -77,3 +77,11 @@ tailwind.config.js
 
 .vercel
 .env*
+
+# Archify working folders and receipts
+.archify/
+docs/*.finalize.json
+docs/*.finalize-summary.json
+docs/*.browser-check.json
+docs/*.delivery.json
+static/_seedcovers/

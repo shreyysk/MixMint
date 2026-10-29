@@ -3,190 +3,78 @@
 {% block title %}MixMint — DJ Songs, DJ Remix Songs &amp; Sample Packs from India's DJs{% endblock %}
 {% block meta_description %}Buy and download DJ songs, DJ remix songs, edits, album packs and sample packs straight from India's DJs: Tulu, Kannada, Hindi, Bollywood, house and more. Pay with UPI, download instantly.{% endblock %}
 
-{% block extra_head %}
-<style>
-    .mm-hero-title { font-size: clamp(44px, 11vw, 104px); line-height: .95; text-wrap: balance; }
-    .hero-section {
-        min-height: min(82dvh, 760px);
-        padding-block: 56px 40px;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
 
-    .ticker-wrap {
-        width: 100vw;
-        margin-left: calc(-50vw + 50%);
-        overflow: hidden;
-        background: var(--bg-elevated);
-        height: 40px;
-        display: flex;
-        align-items: center;
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        position: relative;
-    }
-
-    .ticker-wrap::before,
-    .ticker-wrap::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 60px;
-        z-index: 2;
-        pointer-events: none;
-    }
-
-    .ticker-wrap::before {
-        left: 0;
-        background: linear-gradient(to right, var(--bg-elevated), transparent);
-    }
-
-    .ticker-wrap::after {
-        right: 0;
-        background: linear-gradient(to left, var(--bg-elevated), transparent);
-    }
-
-    .ticker {
-        display: flex;
-        white-space: nowrap;
-        animation: ticker 30s linear infinite;
-    }
-
-    .ticker-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0 40px;
-        font-family: var(--font-mono);
-        font-size: 12px;
-        color: var(--text-muted);
-    }
-
-    @keyframes ticker {
-        0% {
-            transform: translateX(0);
-        }
-
-        100% {
-            transform: translateX(-50%);
-        }
-    }
-
-    .geo-decoration {
-        position: absolute;
-        bottom: -10%;
-        right: -5%;
-        opacity: 0.3;
-        pointer-events: none;
-        z-index: 0;
-        width: 600px;
-        height: 600px;
-    }
-
-    [data-theme="light"] .geo-decoration {
-        opacity: 0.1;
-    }
-
-    .hide-scroll::-webkit-scrollbar {
-        display: none;
-    }
-
-    .hide-scroll {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    .dj-card {
-        width: 200px;
-        height: 240px;
-        flex-shrink: 0;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-        position: relative;
-        transition: all 0.2s ease;
-    }
-
-    .dj-card:hover {
-        border-color: color-mix(in srgb, var(--accent-mint) 40%, transparent);
-        transform: translateY(-2px);
-    }
-
-    .dj-card:hover .dj-photo {
-        transform: scale(1.04);
-    }
-
-    .dj-photo {
-        height: 60%;
-        width: 100%;
-        object-fit: cover;
-        transition: transform 0.4s ease;
-    }
-</style>
-{% endblock %}
 
 {% block content %}
-<!-- ── HERO ── -->
-<section class="hero-section text-center -mt-10 mb-0 relative" data-reveal>
-    <div class="ux-blob" style="width:420px;height:420px;top:-140px;left:-120px;background:var(--accent-mint);"></div>
-    <div class="ux-blob" style="width:340px;height:340px;top:-80px;right:-100px;background:var(--accent-blue);animation-delay:-4s;"></div>
-    <div class="relative z-10 w-full max-w-5xl px-4">
-        <p class="inline-flex flex-wrap justify-center items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[12px] font-[600] text-[var(--text-muted)] mb-7 max-w-full">
-            <span class="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse" aria-hidden="true"></span>
-            Live crate · {{ crate.releases }} release{{ crate.releases|pluralize }} · {{ crate.djs }} DJ{{ crate.djs|pluralize }} · updated weekly
-        </p>
-        <h1 class="mm-hero-title font-display font-[800] tracking-[-0.035em] text-[var(--text-primary)] mb-6">
-            Home of<br><span class="text-[var(--accent-mint)]">DJ Releases.</span>
-        </h1>
-        <p class="font-body text-[17px] sm:text-[20px] text-[var(--text-muted)] max-w-2xl mx-auto leading-[1.55] mb-10">
-            Private edits, remixes and album packs straight from India's DJs. Preview it, pay with just your email and download instantly.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-            <a href="{% url 'releases' %}" class="btn-mm btn-mint w-full sm:w-auto sm:min-w-[220px] px-7 h-[54px] text-[15px] font-[700] inline-flex items-center justify-center">Browse all releases</a>
-            <a href="{% url 'dj_directory' %}" class="btn-mm btn-ghost w-full sm:w-auto sm:min-w-[200px] px-7 h-[54px] text-[15px] font-[600] inline-flex items-center justify-center">Browse artists</a>
-        </div>
-        <div class="mm-trust mt-8">
-            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Secure UPI &amp; net banking payments</span>
-            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Guest checkout · instant download</span>
-            <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/></svg><a href="{% url 'recover' %}" class="underline underline-offset-2">Recover a past download</a></span>
-        </div>
+<!-- ── STAGE (hero) ── -->
+<section class="mm-stage" data-stage aria-labelledby="stage-title">
+    <div class="mm-stage-bg" aria-hidden="true">
+        <div class="mm-mesh"></div>
+        <div class="mm-beams"><i></i><i></i><i></i><i></i></div>
+        <div class="mm-grain"></div>
     </div>
+
+    {% if featured_tracks|length >= 4 or new_albums|length >= 4 %}
+    <div class="mm-wall" aria-hidden="true">
+        {% for row in "ab" %}
+        <div class="mm-wall-row mm-wall-{{ row }}">
+            {% for pass in "12" %}
+            {% for t in featured_tracks %}{% if t.cover_url %}<img src="{{ t.cover_url }}" alt="" loading="lazy" decoding="async" width="160" height="160">{% endif %}{% endfor %}
+            {% for a in new_albums %}{% if a.cover_image %}<img src="{{ a.cover_image }}" alt="" loading="lazy" decoding="async" width="160" height="160">{% endif %}{% endfor %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mm-stage-in">
+        <p class="mm-onair"><span class="mm-onair-dot" aria-hidden="true"></span>On air
+            <span class="mm-onair-sep" aria-hidden="true"></span><b data-count="{{ crate.releases }}">{{ crate.releases }}</b> release{{ crate.releases|pluralize }}
+            <span class="mm-onair-sep" aria-hidden="true"></span><b data-count="{{ crate.djs }}">{{ crate.djs }}</b> DJ{{ crate.djs|pluralize }}</p>
+
+        <h1 id="stage-title" class="mm-stage-title">
+            <span class="mm-kin" style="--i:0">Home</span> <span class="mm-kin" style="--i:1">of</span><br>
+            <span class="mm-kin mm-glow" style="--i:2">DJ</span> <span class="mm-kin mm-glow" style="--i:3">Releases.</span>
+        </h1>
+        <p class="mm-stage-sub">Private edits, remixes and packs straight from India's DJs. Preview it, pay with UPI, download in seconds.</p>
+
+        <form action="{% url 'releases' %}" method="get" role="search" class="mm-stage-search">
+            <label for="stage-q" class="sr-only">Search MixMint</label>
+            {% icon "search" "20" %}
+            <input id="stage-q" name="q" type="search" autocomplete="off" placeholder="Search Tulu edits, Bollywood remixes, DJs…"
+                   data-rotate="Search Tulu edits…|Search Bollywood remixes…|Search Kannada DJ songs…|Search house &amp; techno packs…|Search your favourite DJ…">
+            <button type="submit" class="mm-stage-go">Search</button>
+        </form>
+
+        <div class="mm-stage-cta">
+            <a href="{% url 'releases' %}" class="mm-neon-btn" data-magnetic>Browse all releases {% icon "arrow-right" %}</a>
+            <a href="{% url 'dj_directory' %}" class="mm-ghost-btn">Meet the DJs</a>
+        </div>
+
+        <ul class="mm-stage-trust">
+            <li>{% icon "lock" %}Secure UPI &amp; net banking</li>
+            <li>{% icon "zap" %}Instant download</li>
+            <li>{% icon "refresh-cw" %}<a href="{% url 'recover' %}">Recover a past download</a></li>
+        </ul>
+    </div>
+
+    <div class="mm-eq" aria-hidden="true">{% for i in "0123456789012345678901234567890123456789012345678901234567890123" %}<i style="--d:{{ forloop.counter }}"></i>{% endfor %}</div>
 </section>
 
-<!-- ── TRUST BAR TICKER ── -->
-<div class="ticker-wrap">
-    <div class="ticker">
-        <!-- Sequence 1 -->
-        <div class="ticker-item">{% icon "lock" %} Secure Token Downloads</div>
-        <div class="ticker-item">100% earning opportunity for DJs</div>
-        <div class="ticker-item">{% icon "package" %} ZIP Album Packs</div>
-        <div class="ticker-item">{% icon "folder" %} Sample Packs &amp; DJ Tool Kits</div>
-        <div class="ticker-item">No Streaming</div>
-        <div class="ticker-item">Device-Locked Files</div>
-        <div class="ticker-item">{% icon "map-pin" %} India-First Platform</div>
-        <div class="ticker-item">No Subscriptions</div>
-        <!-- Sequence 2 (duplicate for seamless loop) -->
-        <div class="ticker-item">{% icon "lock" %} Secure Token Downloads</div>
-        <div class="ticker-item">100% earning opportunity for DJs</div>
-        <div class="ticker-item">{% icon "package" %} ZIP Album Packs</div>
-        <div class="ticker-item">{% icon "folder" %} Sample Packs &amp; DJ Tool Kits</div>
-        <div class="ticker-item">No Streaming</div>
-        <div class="ticker-item">Device-Locked Files</div>
-        <div class="ticker-item">{% icon "map-pin" %} India-First Platform</div>
-        <div class="ticker-item">No Subscriptions</div>
+<!-- ── FIND YOUR SOUND ── -->
+<nav class="mm-genres" aria-label="Browse by genre">
+    <span class="mm-genres-label">Find your sound</span>
+    <div class="mm-genres-rail">
+        {% for slug, name in footer_genres %}<a href="/genre/{{ slug }}/" class="mm-gchip" style="--h:{% widthratio forloop.counter0 1 23 %}">{{ name }}</a>{% endfor %}
     </div>
-</div>
+</nav>
 
 <!-- ── SLIDING ROWS ── -->
 <div class="mm-rows">
     {% include "components/card_row.html" with row_id="new" title="New releases" items=featured_tracks row_kind="track" more_url="/releases/" more_label="All releases" %}
     {% include "components/dj_row.html" with row_id="djs" title="DJs on MixMint" djs=featured_djs more_url="/djs/" more_label="All DJs" %}
     {% include "components/card_row.html" with row_id="popular" title="Popular this week" items=popular_tracks row_kind="track" more_url="/releases/?sort=popular" %}
+    <div class="mm-bigmarquee" aria-hidden="true"><div><span>Edits</span><span>Remixes</span><span>Album packs</span><span>Sample kits</span><span>Limited drops</span><span>Edits</span><span>Remixes</span><span>Album packs</span><span>Sample kits</span><span>Limited drops</span></div></div>
     {% include "components/ad_slot.html" %}
     {% include "components/card_row.html" with row_id="drops" title="Limited drops" sub="Numbered copies. Once they're gone, they're gone." items=drop_tracks row_kind="track" more_url="/drops/" more_label="All drops" %}
     {% include "components/card_row.html" with row_id="albums" title="Album packs" items=new_albums row_kind="album" more_url="/releases/?type=albums" %}
@@ -194,54 +82,17 @@
 </div>
 
 <!-- ── HOW IT WORKS ── -->
-<section class="py-16 md:py-24 mb-10">
-    <!-- Desktop Dashed Line connection -->
-    <div
-        class="hidden lg:block relative top-[96px] left-[16%] right-[16%] h-px border-t border-dashed border-[var(--border)] z-0 w-[68%]">
+<section class="mm-steps" aria-labelledby="steps-title" data-reveal>
+    <h2 id="steps-title" class="mm-steps-title">From drop to deck <span>in three taps.</span></h2>
+    <ol>
+        <li data-reveal-child><span class="mm-step-n">01</span><h3>Preview it</h3><p>Hear the edit from the DJ's own YouTube or Instagram post before you pay.</p></li>
+        <li data-reveal-child><span class="mm-step-n">02</span><h3>Pay with UPI</h3><p>Just your email, no account needed. One payment, no subscriptions.</p></li>
+        <li data-reveal-child><span class="mm-step-n">03</span><h3>Play it tonight</h3><p>Lossless file in seconds, byte-verified, and a copy waits in your library.</p></li>
+    </ol>
+    <div class="mm-steps-cta">
+        <a href="{% url 'sell' %}" class="mm-ghost-btn">I'm a DJ: sell my edits</a>
     </div>
-
-    <div class="grid lg:grid-cols-3 gap-8 relative z-10">
-        <div
-            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
-            <span
-                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">01</span>
-            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Browse &
-                Preview</h3>
-            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
-                Discover exclusive DJ edits and remix packs. Preview through verified media embeds before you buy.
-            </p>
-        </div>
-        <div
-            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
-            <span
-                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">02</span>
-            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Pay and download</h3>
-            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
-                Pay once with just your email. No subscriptions or recurring fees. Your downloads stay in your library.
-            </p>
-        </div>
-        <div
-            class="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[12px] text-center shadow-[var(--shadow-card)]">
-            <span
-                class="inline-flex items-center justify-center w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-mono text-[16px] text-[var(--text-muted)] mb-6">03</span>
-            <h3 class="font-display text-[24px] font-[600] text-[var(--text-primary)] tracking-tight mb-3">Secure
-                Download</h3>
-            <p class="font-body text-[16px] text-[var(--text-muted)] leading-[1.6]">
-                Receive a secure token. Files are byte-verified and device-locked to ensure maximum security.
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- ── CONTENT RESPONSIBILITY NOTICE ── -->
-<section class="pb-16">
-    <div class="notice-info">
-        <p class="font-body text-[12px] text-[var(--text-muted)] italic leading-relaxed">
-            All music on MixMint is independently uploaded and sold by DJs. MixMint is not responsible for the content,
-            licensing, or copyright of uploaded files. <a href="/legal/terms/"
-                class="text-[var(--accent-mint)] hover:underline underline-offset-2">Content Policy →</a>
-        </p>
-    </div>
+    <p class="mm-steps-note">{% icon "info" %} Music on MixMint is uploaded and sold by independent DJs, who are responsible for the rights. <a href="/legal/terms/#content-policy">Content policy</a></p>
 </section>
 
 <!-- ── FLOATING OFFER CARD ── -->

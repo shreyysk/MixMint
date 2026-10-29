@@ -3,7 +3,8 @@
 {% block title %}{{ track.title }} — MixMint{% endblock %}
 
 {% block content %}
-<div class="py-12 max-w-[1200px] mx-auto">
+<div class="py-12 max-w-[1200px] mx-auto relative isolate">
+    {% if track.cover_url %}<div class="mm-ambient" aria-hidden="true" style="--cover:url('{{ track.cover_url }}')"></div>{% endif %}
 
     <!-- ── BREADCRUMBS ── -->
     <nav class="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-10"
@@ -20,6 +21,7 @@
 
         <!-- Artwork -->
         <div class="mm-pdp-art" data-reveal="left">
+            <span class="mm-pdp-vinyl" aria-hidden="true"></span>
             <div
                 class="aspect-square bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)] relative group{% if track.cover_url %} skeleton{% endif %}">
                 {% if track.cover_url %}
@@ -298,7 +300,7 @@
             </div>
 
             <!-- Why it's safe to buy -->
-            <ul class="mm-trust mt-6">
+            <ul class="mm-buyfacts">
                 <li>{% icon "zap" %}<span><strong>Instant download</strong> right after payment, plus a copy in your library.</span></li>
                 <li>{% icon "lock" %}<span><strong>Secure Vault</strong> · token-locked, byte-verified files. <a href="/legal/transparency/">How it works</a></span></li>
                 <li>{% icon "user" %}<span>Sold by {{ track.dj.dj_name }}, an independent DJ. They're responsible for the rights. <a href="/legal/terms/#content-policy">Content policy</a></span></li>
