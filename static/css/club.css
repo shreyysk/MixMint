@@ -402,3 +402,98 @@ html .dj-banner.mm-banner-fallback { background: var(--club-ink) !important; }
 html .dj-banner.mm-banner-fallback::after { background: linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--club-ink) 60%, transparent)) !important; height: 100% !important; }
 .mm-stage-head { justify-items: stretch; place-items: normal; }
 .mm-stage-lite :is(strong, b, a) { color: #fff !important; }
+
+/* ════════════════════════ Round 3: app and reading pages ════════════════════════ */
+/* App pages (library, cart, account, DJ studio, admin-free): a soft neon aurora behind the page head */
+body[data-shell] main#main { isolation: isolate; }
+body[data-shell] main#main::before { content: ""; position: absolute; z-index: -1; left: 50%; top: -80px; width: 100vw; height: 420px; transform: translateX(-50%); pointer-events: none;
+  background:
+    radial-gradient(30% 60% at 15% 20%, color-mix(in srgb, var(--neon) 22%, transparent), transparent 70%),
+    radial-gradient(25% 55% at 85% 10%, color-mix(in srgb, var(--neon-2) 18%, transparent), transparent 70%),
+    radial-gradient(30% 50% at 55% 0%, color-mix(in srgb, var(--neon-4) 10%, transparent), transparent 70%);
+  filter: blur(10px); -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent); mask-image: linear-gradient(180deg, #000 40%, transparent); }
+body[data-shell] main#main { overflow-x: visible; }
+body[data-shell] main h1.font-display {
+  background: linear-gradient(100deg, var(--text-primary) 0%, var(--text-primary) 45%, color-mix(in srgb, var(--accent-mint) 85%, var(--text-primary)) 75%, var(--neon-2) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent !important; letter-spacing: -.035em; }
+
+/* Panels on app pages: glassy, crisp, gradient edge on hover */
+body[data-shell="app"] :is(.glow-card, .mm-card-section, .bg-\[var\(--bg-surface\)\].border) {
+  border-radius: 20px; background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 12px 30px -24px rgba(0,0,0,.35); }
+.glow-card { position: relative; }
+.glow-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: linear-gradient(135deg, var(--neon), var(--neon-2), var(--neon-4)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.glow-card:hover::after { opacity: 1; }
+.glow-card:hover { transform: translateY(-3px); }
+
+/* Big numbers (stats, totals) read like a mixer display */
+body[data-shell="app"] .glow-card :is(.text-\[36px\], .text-\[40px\], .text-\[32px\], .text-\[28px\]).font-mono,
+body[data-shell="app"] .glow-card p.font-display { font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--text-primary), color-mix(in srgb, var(--accent-mint) 75%, var(--text-primary))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Inputs: calm field, neon focus */
+.input-mm, body[data-shell] input:is([type=text],[type=email],[type=password],[type=search],[type=number],[type=url],[type=tel]), body[data-shell] textarea, body[data-shell] select {
+  transition: border-color .2s, box-shadow .2s, background-color .2s; border-radius: 12px; }
+.input-mm:focus, body[data-shell] :is(input, textarea, select):focus {
+  border-color: var(--accent-mint) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-mint) 18%, transparent) !important; outline: none; }
+.input-mm:hover:not(:focus) { border-color: color-mix(in srgb, var(--accent-mint) 35%, var(--border)); }
+
+/* Tabs: pill with sliding feel */
+[role="tablist"] { gap: 6px; }
+[role="tab"][aria-selected="true"], .tab-active { position: relative; }
+
+/* Empty states get a slowly turning record instead of a grey icon */
+body[data-shell="app"] :is(.py-24, .mm-empty) > .text-6xl, body[data-shell="app"] .text-6xl.opacity-20 { opacity: 1 !important; font-size: 0 !important; width: 96px; height: 96px; margin-inline: auto; border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-mint) 0 16%, #0b0b0b 16.5% 18%, transparent 18.5%), repeating-radial-gradient(circle, #141414 0 1.2px, #222 1.6px 2.6px), #111;
+  box-shadow: 0 16px 40px -14px rgba(0,0,0,.5); animation: mm-disc 8s linear infinite; }
+
+/* Cart rows: lift + accent, total glows */
+body[data-shell="app"] [x-data^="cartApp"] .rounded-\[12px\].border { transition: transform .3s var(--ease-out), border-color .3s, box-shadow .3s; }
+body[data-shell="app"] [x-data^="cartApp"] .rounded-\[12px\].border:hover { transform: translateX(4px); border-color: color-mix(in srgb, var(--accent-mint) 40%, var(--border)); box-shadow: -4px 0 0 0 var(--accent-mint); }
+
+/* Reading pages (legal, FAQ, contact): comfortable measure and rhythm */
+body[data-shell="doc"] main :is(p, li) { line-height: 1.75; }
+body[data-shell="doc"] main :is(h2, h3) { scroll-margin-top: 100px; }
+body[data-shell="doc"] main details { border-radius: 16px; transition: background-color .2s, border-color .2s; }
+body[data-shell="doc"] main details[open] { border-color: color-mix(in srgb, var(--accent-mint) 40%, var(--border)); }
+body[data-shell="doc"] main details summary { cursor: pointer; }
+
+/* Studio bar gets the neon underline on the active tab */
+.mm-studio a[aria-current="page"] { box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.04), inset 0 -2px 0 var(--accent-mint); }
+
+@media (prefers-reduced-motion: reduce) { body[data-shell="app"] .text-6xl.opacity-20, body[data-shell="app"] :is(.py-24, .mm-empty) > .text-6xl { animation: none; } .glow-card:hover { transform: none; } }
+
+/* App page heads become small neon stages (all app pages; no template change needed) */
+body[data-shell="app"] main :is(div, header):has(> h1.font-display):not(.mm-stage-in):not(.mm-apphead *):not(.flex > *),
+body[data-shell="app"] main .flex:has(> div > h1.font-display):not(.mm-apphead *),
+.mm-apphead {
+  position: relative; isolation: isolate; overflow: hidden; border-radius: 24px; padding: 30px 30px 40px !important; margin-bottom: 28px; border: 0 !important;
+  color: #f2fff9; background:
+    radial-gradient(40% 90% at 12% 0%, rgba(0,224,160,.45), transparent 70%),
+    radial-gradient(35% 80% at 90% 10%, rgba(124,92,255,.42), transparent 70%),
+    radial-gradient(40% 70% at 60% 120%, rgba(255,77,141,.28), transparent 70%),
+    var(--club-ink);
+  box-shadow: 0 30px 70px -40px rgba(0,40,30,.7);
+}
+body[data-shell="app"] main :is(div, header):has(> h1.font-display):not(.mm-stage-in):not(.mm-apphead *):not(.flex > *)::after,
+body[data-shell="app"] main .flex:has(> div > h1.font-display):not(.mm-apphead *)::after,
+.mm-apphead::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; z-index: -1; opacity: .55;
+  background: repeating-linear-gradient(90deg, rgba(0,224,160,.9) 0 3px, transparent 3px 7px);
+  -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent);
+  animation: mm-eqstrip 1.4s ease-in-out infinite alternate; transform-origin: bottom; }
+@keyframes mm-eqstrip { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+body[data-shell="app"] main :is(div, header):has(> h1.font-display) > h1.font-display, .mm-apphead h1 {
+  color: #fff !important; background: none; -webkit-background-clip: border-box; background-clip: border-box; }
+body[data-shell="app"] main :is(div, header):has(> h1.font-display):not(.mm-stage-in) > p, .mm-apphead p { color: rgba(242,255,249,.78) !important; }
+body[data-shell="app"] main :is(div, header):has(> h1.font-display):not(.mm-stage-in) a, .mm-apphead a:not(.btn-mm) { color: #8dffd9 !important; }
+.mm-apphead .btn-ghost { color: #fff !important; border-color: rgba(255,255,255,.35) !important; background: rgba(255,255,255,.05); }
+.mm-apphead .btn-mint { box-shadow: 0 10px 34px rgba(0,224,160,.45); }
+.mm-apphead .font-mono { color: rgba(242,255,249,.6) !important; }
+@media (max-width: 640px) { body[data-shell="app"] main :is(div, header):has(> h1.font-display):not(.mm-stage-in):not(.mm-apphead *), .mm-apphead { border-radius: 18px; padding: 22px 18px 32px !important; } }
+@media (prefers-reduced-motion: reduce) { .mm-apphead::after, body[data-shell="app"] main :is(div, header):has(> h1.font-display)::after { animation: none; } }
+
+body[data-shell="app"] main .flex:has(> div > h1.font-display) p { color: rgba(242,255,249,.78) !important; }
+body[data-shell="app"] main .flex:has(> div > h1.font-display) h1 { color: #fff !important; background: none; }
+body[data-shell="app"] main .flex:has(> div > h1.font-display) .btn-ghost { color: #fff !important; border-color: rgba(255,255,255,.35) !important; background: rgba(255,255,255,.05); }

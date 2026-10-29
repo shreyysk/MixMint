@@ -115,7 +115,7 @@
     </script>
 </head>
 
-<body {% if user.is_authenticated %}class="has-tabbar" data-role="{{ user.profile.role }}" {% endif %}x-data="{ toasts: [] }" @show-toast.window="
+<body {% if page_shell %}data-shell="{{ page_shell }}" {% endif %}{% if user.is_authenticated %}class="has-tabbar" data-role="{{ user.profile.role }}" {% endif %}x-data="{ toasts: [] }" @show-toast.window="
     if (toasts.length >= 3) toasts.shift();
     toasts.push({...$event.detail, id: Date.now()});
     let id = toasts[toasts.length - 1].id;

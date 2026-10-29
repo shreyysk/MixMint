@@ -141,11 +141,15 @@ STUDIO_PREFIXES = ("/dashboard/dj/", "/dashboard/bundles/", "/dashboard/announce
 APP_PREFIXES = STUDIO_PREFIXES + ("/dashboard/", "/library/", "/account/", "/cart/", "/api/v1/admin/")
 
 
+DOC_PREFIXES = ("/legal/", "/contact/", "/recover/", "/password-reset/", "/reset/")
+
+
 def page_shell(request):
     """Which chrome a page gets: the DJ studio bar on DJ pages, a slim footer on app pages."""
     path = getattr(request, "path", "") or ""
     user = getattr(request, "user", None)
-    out = {"compact_footer": path.startswith(APP_PREFIXES)}
+    app = path.startswith(APP_PREFIXES)
+    out = {"compact_footer": app, "page_shell": "app" if app else ("doc" if path.startswith(DOC_PREFIXES) else "")}
     if not (user is not None and user.is_authenticated and path.startswith(STUDIO_PREFIXES)) or path.endswith("/onboarding/"):
         return out
     try:
