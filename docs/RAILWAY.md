@@ -1,5 +1,30 @@
 # Moving MixMint from Vercel to Railway
 
+## Live setup (created 29 Oct 2026)
+Railway project **mixmint** (Hobby plan, region Singapore `asia-southeast1-eqsg3a`):
+
+| Service | Source | What it does |
+|---|---|---|
+| `web` | GitHub `shreyysk/MixMint`, branch `launch-prep` (Dockerfile) | The site. Test address: `web-production-238db.up.railway.app` |
+| `cron` | image `alpine:3.20`, schedule `5 1-5 * * *` | Calls `/cron/<job>/` on web with `CRON_SECRET` (same jobs and hours as `vercel.json`) |
+
+Already set on `web`: DEBUG, ENVIRONMENT, ALLOWED_HOSTS, BASE_URL, APP_URL, NUM_PROXIES, DEFAULT_PAYMENT_GATEWAY,
+EMAIL_PROVIDER, WEB_CONCURRENCY, DB_TRANSACTION_POOLER, PORT=8080. `cron` reads `CRON_SECRET` and the address from `web`.
+Still to add on `web`: the secret keys listed in Step 2 below.
+
+### DNS at Hostinger (hPanel → Domains → mixmint.site → DNS / Nameservers)
+Remove the old Vercel records first (the `@` A record and the `www` CNAME), then add:
+
+| Type | Name | Value |
+|---|---|---|
+| ALIAS | `@` | `cnbh8fzt.up.railway.app` |
+| TXT | `_railway-verify` | `railway-verify=ea0ba25dcf7c2b7bddebeaee32264777355eba361d366e9518a77f6f8049f708` |
+| CNAME | `www` | `t1119xb2.up.railway.app` |
+| TXT | `_railway-verify.www` | `railway-verify=4e909945d158a38d2d2bde5e617fdf04c852c086439c607d6d13f3a402caf35d` |
+
+Keep the email records (MX, SPF, DKIM, Resend `send` / `resend._domainkey`) as they are.
+Railway issues the HTTPS certificate on its own once the records are visible (minutes to an hour).
+
 R2 storage and the Telegram setup (bot, vault channels, public channel, webhooks) stay exactly as they are.
 Only the server that runs Django moves. Same domain, same URLs, same webhooks.
 
