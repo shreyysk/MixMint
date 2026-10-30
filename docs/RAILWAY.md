@@ -1,5 +1,15 @@
 # Moving MixMint from Vercel to Railway
 
+## Database and cache (30 Oct 2026)
+MixMint now runs entirely on Railway: the **Postgres** service is the database and the **Redis** service is the
+cache (`web` reads them through `DATABASE_URL=${{Postgres.DATABASE_URL}}` and `CACHE_URL=${{Redis.REDIS_URL}}`).
+Supabase and Upstash are no longer used; the shop started fresh with no old accounts or releases.
+Music files stay on Cloudflare R2.
+
+First admin: before each deploy `python manage.py predeploy` runs the migrations and, if
+`DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD` are set on `web`, creates that admin once
+(an existing account is never changed). Remove `DJANGO_SUPERUSER_PASSWORD` after the first deploy.
+
 ## Live setup (created 29 Oct 2026)
 Railway project **mixmint** (Hobby plan, region Singapore `asia-southeast1-eqsg3a`):
 
