@@ -351,6 +351,21 @@ h3 {
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
+    word-spacing: 0.12em;
+}
+
+/* Clash Display's tight tracking + negative letter-spacing collapses the gaps
+   between words ("Pay with UPI" -> "PaywithUPI"); restore them everywhere. */
+.font-display,
+.mm-steps-title,
+.mm-steps h3,
+.mm-step-n,
+.mm-bigmarquee span,
+.mm-auth-title,
+.mm-stage-head h1,
+body[data-shell] main h1.font-display,
+.mm-apphead h1 {
+    word-spacing: 0.14em;
 }
 
 /* ── Toasts ── */
