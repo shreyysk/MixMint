@@ -39,6 +39,18 @@ def faq_page(request):
     return render(request, "legal/faq.html")
 
 
+def tutorials_page(request):
+    return render(request, "legal/tutorials.html")
+
+
+def how_it_works_page(request):
+    return render(request, "legal/how-it-works.html")
+
+
+def sell_guide_page(request):
+    return render(request, "legal/sell-guide.html")
+
+
 urlpatterns = [
     # Mapped names for legal templates
     path("terms/", terms_page, name="legal_terms"),
@@ -50,6 +62,10 @@ urlpatterns = [
     path("anti-resale/", anti_resale_page, name="legal_anti_resale"),
     path("about/", about_page, name="legal_about"),
     path("faq/", faq_page, name="legal_faq"),
+    # Tutorials section (buyer + DJ guides)
+    path("tutorials/", tutorials_page, name="tutorials"),
+    path("how-it-works/", how_it_works_page, name="how_it_works"),
+    path("sell-guide/", sell_guide_page, name="sell_guide"),
     path("shipping/", lambda r: render(r, "legal/shipping.html"), name="shipping"),
     # Legacy flat names for the global footer component
     path("terms/", terms_page, name="terms"),

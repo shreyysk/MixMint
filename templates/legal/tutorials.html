@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Tutorials — learn MixMint{% endblock %}
+{% block meta_description %}Short tutorials for MixMint — how to buy and download as a listener, and how to sell, grow and get paid as a DJ. Everything in one place.{% endblock %}
+{% block content %}
+<div class="mm-legal max-w-[960px] mx-auto py-16 md:py-20 px-6 font-body" data-reveal>
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">Learn MixMint</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-4">Tutorials</h1>
+    <p class="text-[15px] text-[var(--text-muted)] max-w-[60ch] mb-12">Pick your path. Short, practical walkthroughs — no fluff.</p>
+
+    <!-- Two tracks -->
+    <div class="grid gap-5 md:grid-cols-2 mb-16">
+        <a href="{% url 'how_it_works' %}" class="glow-card p-8 block group">
+            <div class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.3em] mb-3">For listeners</div>
+            <h2 class="font-display text-[26px] font-[800] text-[var(--text-primary)] mb-2">Buy &amp; download</h2>
+            <p class="text-[13.5px] text-[var(--text-muted)] leading-relaxed mb-5">Preview a track, pay with UPI, and get the file in seconds. Plus your library, re-downloads and refunds.</p>
+            <span class="btn-mm btn-mint h-10 px-5 inline-flex items-center text-[13px] font-[600]">Start the listener guide →</span>
+        </a>
+        <a href="{% url 'sell_guide' %}" class="glow-card p-8 block group">
+            <div class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.3em] mb-3">For DJs &amp; producers</div>
+            <h2 class="font-display text-[26px] font-[800] text-[var(--text-primary)] mb-2">Sell &amp; get paid</h2>
+            <p class="text-[13.5px] text-[var(--text-muted)] leading-relaxed mb-5">Upload, price, bundle, build your store, run collaborations, track earnings, export GST and go Pro.</p>
+            <span class="btn-mm btn-mint h-10 px-5 inline-flex items-center text-[13px] font-[600]">Start the DJ guide →</span>
+        </a>
+    </div>
+
+    <!-- Quick jumps -->
+    <h2 class="font-display text-[20px] font-[800] text-[var(--text-primary)] mb-4">Jump straight to a task</h2>
+    <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-[13.5px]">
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'releases' %}">Find music to buy</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'recover' %}">Recover a past download</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'my_library' %}">Open my library</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'upload_track' %}">Upload a track</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'dj_earnings_overview' %}">Check my earnings</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'dj_gst_export' %}">Export GST statement</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'pro_landing' %}">Upgrade to Pro</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'legal_faq' %}">Read the FAQ</a>
+        <a class="glow-card p-4 block hover:text-[var(--accent-mint)]" href="{% url 'create_support_ticket' %}">Contact support</a>
+    </div>
+</div>
+{% endblock %}

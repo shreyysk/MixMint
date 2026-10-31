@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}How MixMint works — a guide for new listeners{% endblock %}
+{% block meta_description %}New to MixMint? Here's how to preview, buy with UPI, and download exclusive DJ edits, remixes and sample packs in seconds — plus your library, re-downloads and support.{% endblock %}
+{% block content %}
+<div class="mm-legal max-w-[860px] mx-auto py-16 md:py-20 px-6 font-body" data-reveal>
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">New here? Start in 60 seconds</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-4">How MixMint works</h1>
+    <p class="text-[15px] text-[var(--text-muted)] max-w-[60ch] mb-12">MixMint is where India's DJs sell their private edits, remixes and sample packs. No subscription, no account needed to buy — preview it, pay with UPI, and the file is yours in seconds.</p>
+
+    <!-- The three steps -->
+    <div class="grid gap-4 sm:grid-cols-3 mb-16">
+        <div class="glow-card p-6">
+            <div class="font-display text-[40px] font-[800] leading-none text-[var(--accent-mint)] mb-3">1</div>
+            <h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">Preview</h3>
+            <p class="text-[13.5px] text-[var(--text-muted)] leading-relaxed">Every release has a real preview from the DJ's own YouTube or Instagram post. Hear it before you pay.</p>
+        </div>
+        <div class="glow-card p-6">
+            <div class="font-display text-[40px] font-[800] leading-none text-[var(--accent-mint)] mb-3">2</div>
+            <h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">Pay with UPI</h3>
+            <p class="text-[13.5px] text-[var(--text-muted)] leading-relaxed">Just your email — no account to create. One all-inclusive price (tax and fees already inside), paid by UPI or net banking.</p>
+        </div>
+        <div class="glow-card p-6">
+            <div class="font-display text-[40px] font-[800] leading-none text-[var(--accent-mint)] mb-3">3</div>
+            <h3 class="font-bold text-[var(--text-primary)] text-[16px] mb-2">Download</h3>
+            <p class="text-[13.5px] text-[var(--text-muted)] leading-relaxed">A lossless file lands in seconds, byte-verified, and a copy waits in your library for re-downloads.</p>
+        </div>
+    </div>
+
+    <div class="space-y-10 text-[14px] leading-relaxed">
+        <div>
+            <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mb-3">Finding music</h2>
+            <p class="text-[var(--text-muted)] mb-3">Browse by what you need, or search titles, DJs and genres from the bar at the top of any page.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'releases' %}">All releases</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'new_releases' %}">New releases</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'drops' %}">Limited drops</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'sample_packs' %}">Sample packs</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_directory' %}">Meet the DJs</a>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mb-3">Your library &amp; re-downloads</h2>
+            <p class="text-[var(--text-muted)]">Every purchase is saved to <a class="text-[var(--accent-mint)] underline underline-offset-2" href="{% url 'my_library' %}">your library</a>. Each purchase includes <strong class="text-[var(--text-primary)]">3 downloads within 7 days</strong>. Lost the file later? You can recover a past download any time — no account needed, just the email you paid with.</p>
+            <p class="mt-3"><a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'recover' %}">Recover a past download</a></p>
+        </div>
+
+        <div>
+            <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mb-3">Good to know</h2>
+            <div class="space-y-5">
+                <div><h3 class="font-bold text-[var(--text-primary)] text-[15px] mb-1">The price is the final price</h3><p class="text-[var(--text-muted)]">Platform fee and taxes are already inside every number. Nothing extra appears at checkout.</p></div>
+                <div><h3 class="font-bold text-[var(--text-primary)] text-[15px] mb-1">Refunds</h3><p class="text-[var(--text-muted)]">Request from your library with a reason — eligible cases auto-process, the rest are reviewed with a status tracker. See the <a class="text-[var(--accent-mint)] underline underline-offset-2" href="{% url 'legal_refund' %}">refund policy</a>.</p></div>
+                <div><h3 class="font-bold text-[var(--text-primary)] text-[15px] mb-1">Real files, real rights</h3><p class="text-[var(--text-muted)]">Music is uploaded and sold by independent DJs who own the rights. Files are served straight from MixMint — never a stream or a third-party link.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="glow-card p-8 mt-16 text-center">
+        <h2 class="font-display text-[24px] font-[800] text-[var(--text-primary)] mb-2">Ready to dig in?</h2>
+        <p class="text-[14px] text-[var(--text-muted)] mb-6">Browse the crate, or make the DJs come to you.</p>
+        <div class="flex flex-wrap gap-3 justify-center">
+            <a class="btn-mm btn-mint h-11 px-6 inline-flex items-center font-[600]" href="{% url 'releases' %}">Browse all releases</a>
+            <a class="btn-mm btn-ghost h-11 px-6 inline-flex items-center" href="{% url 'sell' %}">I'm a DJ — sell my edits</a>
+        </div>
+        <p class="mt-6 text-[13px] text-[var(--text-muted)]">Still have a question? See the <a class="text-[var(--accent-mint)] underline underline-offset-2" href="{% url 'legal_faq' %}">FAQ</a> or <a class="text-[var(--accent-mint)] underline underline-offset-2" href="{% url 'create_support_ticket' %}">contact support</a>.</p>
+    </div>
+</div>
+{% endblock %}

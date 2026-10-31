@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Selling on MixMint — the complete DJ guide{% endblock %}
+{% block meta_description %}The complete guide to selling your edits, remixes and sample packs on MixMint: upload, pricing, bundles, your store, collaborations, earnings, GST exports, payouts and going Pro.{% endblock %}
+{% block content %}
+<div class="mm-legal max-w-[900px] mx-auto py-16 md:py-20 px-6 font-body" data-reveal>
+    <p class="font-mono text-[10px] text-[var(--accent-mint)] uppercase tracking-[0.4em] mb-4">For DJs &amp; producers</p>
+    <h1 class="font-display text-4xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter mb-4">Selling on MixMint</h1>
+    <p class="text-[15px] text-[var(--text-muted)] max-w-[62ch] mb-10">Everything your store can do — from your first upload to Pro payouts. Not sure where a tool lives? It's all here, with a direct link to each one.</p>
+
+    {% if not user.is_authenticated %}
+    <div class="glow-card p-6 mb-12 flex flex-wrap items-center gap-4 justify-between">
+        <p class="text-[14px] text-[var(--text-primary)] font-[600]">New here? Get your store approved first.</p>
+        <a class="btn-mm btn-mint h-11 px-6 inline-flex items-center font-[600]" href="{% url 'sell' %}">Apply to sell</a>
+    </div>
+    {% endif %}
+
+    <!-- Quick index -->
+    <nav class="grid gap-2 sm:grid-cols-2 mb-14 text-[13.5px]">
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#start">1. Get set up</a>
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#upload">2. Upload &amp; price</a>
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#store">3. Build your store</a>
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#grow">4. Grow your audience</a>
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#money">5. Earnings, GST &amp; payouts</a>
+        <a class="text-[var(--accent-mint)] hover:underline underline-offset-2" href="#pro">6. Go Pro</a>
+    </nav>
+
+    <div class="space-y-14 text-[14px] leading-relaxed">
+        <section id="start">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">1. Get set up</h2>
+            <p class="text-[var(--text-muted)] mb-4">After your store is approved, the guided setup walks you through your bio, payout details and first track — three short steps.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_onboarding' %}">Guided setup</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_dashboard' %}">Studio dashboard</a>
+            </div>
+        </section>
+
+        <section id="upload">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">2. Upload &amp; price</h2>
+            <p class="text-[var(--text-muted)] mb-2">Upload the file directly — MP3, WAV, FLAC, AIFF, or a ZIP for album packs. No Drive links; files go straight into MixMint's private storage. Set your own price; the number buyers see is all-inclusive.</p>
+            <p class="text-[var(--text-muted)] mb-4"><strong class="text-[var(--text-primary)]">Bundles</strong> let you sell several tracks together at a better price — great for album packs and genre kits.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'upload_track' %}">Upload a track</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'bundle_management' %}">Create a bundle</a>
+            </div>
+        </section>
+
+        <section id="store">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">3. Build your store</h2>
+            <p class="text-[var(--text-muted)] mb-2">Your store profile is your home on MixMint — banner, bio, links and genre. A finished profile with a cover converts far better than a blank one.</p>
+            <p class="text-[var(--text-muted)] mb-4"><strong class="text-[var(--text-primary)]">Collaborations</strong> let you credit and split a release with another DJ — add collaborators from a track's page so everyone's store gets the exposure and a share.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_store_profile' %}">Edit store profile</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_asset_pack' %}">Download asset pack</a>
+            </div>
+        </section>
+
+        <section id="grow">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">4. Grow your audience</h2>
+            <p class="text-[var(--text-muted)] mb-2"><strong class="text-[var(--text-primary)]">Posts</strong> announce new drops to your followers. <strong class="text-[var(--text-primary)]">Referrals</strong> reward you for bringing other DJs and buyers in. The <strong class="text-[var(--text-primary)]">asset pack</strong> gives you ready-made art to post on Instagram and YouTube.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'announcement_management' %}">Write a post</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'ambassador_management' %}">Referrals</a>
+            </div>
+        </section>
+
+        <section id="money">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">5. Earnings, GST &amp; payouts</h2>
+            <p class="text-[var(--text-muted)] mb-2">Track what each release and album earns, see your weekly chart and milestones, and withdraw to UPI or bank (above ₹500, with OTP). Need numbers for tax? Export a GST-ready statement any time.</p>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_earnings_overview' %}">Earnings &amp; analytics</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_payouts' %}">Payouts</a>
+                <a class="btn-mm btn-ghost h-10 px-4 inline-flex items-center text-[13px]" href="{% url 'dj_gst_export' %}">GST export</a>
+            </div>
+        </section>
+
+        <section id="pro">
+            <h2 class="font-display text-[24px] md:text-[30px] font-[800] text-[var(--text-primary)] mb-3">6. Go Pro</h2>
+            <p class="text-[var(--text-muted)] mb-4">Pro DJs keep more of every sale (lower commission) and unlock extra store tools. If you're selling steadily, it pays for itself fast.</p>
+            <a class="btn-mm btn-mint h-11 px-6 inline-flex items-center font-[600]" href="{% url 'pro_landing' %}">See MixMint Pro</a>
+        </section>
+    </div>
+
+    <div class="glow-card p-8 mt-16 text-center">
+        <h2 class="font-display text-[24px] font-[800] text-[var(--text-primary)] mb-2">Your next drop is waiting</h2>
+        <p class="text-[14px] text-[var(--text-muted)] mb-6">Open the studio and upload — most DJs make their first sale within a week of their first post.</p>
+        <a class="btn-mm btn-mint h-11 px-6 inline-flex items-center font-[600]" href="{% url 'upload_track' %}">Upload now</a>
+    </div>
+</div>
+{% endblock %}

@@ -36,6 +36,7 @@
                 <ul class="flex flex-col gap-3 font-body text-[14px]">
                     <li><a href="/legal/about/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">About</a></li>
                     <li><a href="{% url 'sell' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Get listed</a></li>
+                    <li><a href="{% url 'tutorials' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Tutorials</a></li>
                     <li><a href="/legal/faq/" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">FAQ</a></li>
                     <li><a href="{% url 'contact' %}" class="text-[var(--text-primary)] hover:text-[var(--accent-mint)] transition-colors">Contact</a></li>
                     {% if help_telegram_url %}<li><a href="{{ help_telegram_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[var(--text-primary)] hover:text-[#29A9EB] transition-colors"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.8 15.3l-.4 5.2c.6 0 .8-.2 1.1-.5l2.6-2.5 5.4 4c1 .5 1.7.3 2-.9l3.6-17c.3-1.5-.5-2.1-1.5-1.7L1.4 9.9c-1.4.6-1.4 1.4-.2 1.7l5.4 1.7L19 5.6c.6-.4 1.1-.2.7.2z"/></svg>Telegram support</a></li>{% endif %}

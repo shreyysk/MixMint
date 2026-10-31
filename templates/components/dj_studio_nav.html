@@ -11,6 +11,8 @@
             <a href="{% url 'announcement_management' %}" {% if p|slice:":25" == "/dashboard/announcements" %}aria-current="page"{% endif %}>{% icon "megaphone" %}Posts</a>
             <a href="{% url 'ambassador_management' %}" {% if p|slice:":21" == "/dashboard/ambassador" %}aria-current="page"{% endif %}>{% icon "users" %}Referrals</a>
             <a href="{% url 'dj_asset_pack' %}" {% if p|slice:":19" == "/tracks/asset-pack/" %}aria-current="page"{% endif %}>{% icon "image" %}Asset pack</a>
+            <a href="{% url 'dj_earnings_overview' %}" {% if p|slice:":19" == "/analytics/overview" %}aria-current="page"{% endif %}>{% icon "activity" %}Earnings</a>
+            <a href="{% url 'sell_guide' %}">{% icon "lightbulb" %}Guide</a>
             {% if dj_store_slug %}<a href="{% url 'dj_profile' dj_store_slug %}">{% icon "external-link" %}View store</a>{% endif %}
         </nav>
         <span class="spacer"></span>
