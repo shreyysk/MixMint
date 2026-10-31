@@ -95,7 +95,7 @@
                 var saved = null;
                 try { saved = localStorage.getItem('mm-theme'); } catch (e) { }
                 if (saved === 'light' || saved === 'dark') theme = saved;
-                else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
+                /* Light is the default; only an explicit saved choice switches to dark (no auto OS-based dark). */
             }
             root.setAttribute('data-theme', theme);
         })();
