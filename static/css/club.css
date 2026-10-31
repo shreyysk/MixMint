@@ -40,7 +40,7 @@ html, body { overflow-x: clip; }
     radial-gradient(30% 35% at 85% 25%, rgba(255, 77, 141, .45), transparent 70%),
     radial-gradient(40% 40% at 70% 90%, rgba(255, 181, 71, .35), transparent 70%),
     var(--club-ink);
-  filter: blur(40px) saturate(1.2);
+  filter: blur(22px) saturate(1.2);
   animation: mm-mesh 22s ease-in-out infinite alternate;
 }
 @keyframes mm-mesh {
@@ -48,6 +48,11 @@ html, body { overflow-x: clip; }
   50% { transform: rotate(8deg) scale(1.08); }
   100% { transform: rotate(-6deg) scale(1.03); }
 }
+/* Perf: stop the heavy stage layers animating once the hero is scrolled off
+   (club.js toggles .is-off). Keeps the page from pinning the GPU while scrolling. */
+.mm-stage.is-off .mm-mesh,
+.mm-stage.is-off .mm-beams i,
+.mm-stage.is-off .mm-wall-row { animation-play-state: paused; }
 .mm-beams { position: absolute; inset: 0; overflow: hidden; mix-blend-mode: screen; opacity: .5; }
 .mm-beams i {
   position: absolute; top: -20%; left: 50%; width: 3px; height: 140%;
@@ -240,7 +245,7 @@ html, body { overflow-x: clip; }
 /* ── Product page: ambient cover glow + record peeking from the sleeve ───────────────── */
 .mm-ambient { position: absolute; left: 50%; top: -60px; width: 100vw; height: 720px; transform: translateX(-50%); z-index: -1; pointer-events: none; overflow: hidden; }
 .mm-ambient::before { content: ""; position: absolute; inset: -10%; background-image: var(--cover); background-size: cover; background-position: center;
-  filter: blur(90px) saturate(1.6); opacity: .38; transform: scale(1.1); }
+  filter: blur(55px) saturate(1.6); opacity: .38; transform: scale(1.1); }
 .mm-ambient::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, var(--bg-base) 95%); }
 .mm-pdp-art { position: relative; }
 .mm-pdp-art > .aspect-square { position: relative; z-index: 2; }
