@@ -8,7 +8,10 @@ from django.shortcuts import render
 
 
 def asset_pack_view(request):
+    from django.conf import settings as dj_settings
+
     return render(request, "dj/asset_pack.html", {
+        "canva_url": getattr(dj_settings, "CANVA_TEMPLATE_URL", ""),
         "logos": [("mixmint-logo-white.png", "Logo for dark backgrounds", "#0B0D0B"),
                   ("mixmint-logo-black.png", "Logo for light backgrounds", "#F1EEE8")],
         "templates_list": [

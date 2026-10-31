@@ -11,7 +11,9 @@
         <div class="flex flex-wrap gap-3">
             <a href="{% static 'asset-pack/mixmint-dj-asset-pack.zip' %}" download class="btn-mm btn-mint h-[50px] px-6 text-[15px] inline-flex items-center gap-2">{% icon "download" %} Download everything (ZIP)</a>
             <a href="{% url 'dj_asset_handbook' %}" class="btn-mm btn-ghost h-[50px] px-6 text-[15px] inline-flex items-center gap-2">{% icon "file-text" %} DJ handbook (PDF)</a>
+            {% if canva_url %}<a href="{{ canva_url }}" target="_blank" rel="noopener" class="btn-mm btn-ghost h-[50px] px-6 text-[15px] inline-flex items-center gap-2">{% icon "image" %} Edit in Canva</a>{% endif %}
         </div>
+        {% if canva_url %}<p class="text-[13px] text-[var(--text-muted)] mt-3">Prefer to edit online? <a href="{{ canva_url }}" target="_blank" rel="noopener" class="text-[var(--accent-mint)] underline underline-offset-2">Open the MixMint templates in Canva</a> — it makes your own editable copy. Swap in your cover, change the title, and export.</p>{% endif %}
     </div>
 
     <h2 class="font-display text-[22px] md:text-[26px] font-[800] text-[var(--text-primary)] mt-14 mb-5">Logos</h2>

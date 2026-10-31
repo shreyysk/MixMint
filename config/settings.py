@@ -583,6 +583,9 @@ INSTAGRAM_GRAPH_BASE = env("INSTAGRAM_GRAPH_BASE", default="https://graph.facebo
 # with pages_manage_posts / pages_read_engagement. Empty = Facebook posting stays off.
 FACEBOOK_PAGE_ID = env("FACEBOOK_PAGE_ID", default="")
 FACEBOOK_PAGE_ACCESS_TOKEN = env("FACEBOOK_PAGE_ACCESS_TOKEN", default="")
+# Canva template collection link (a shareable "Use template" URL) so DJs can edit the
+# asset-pack covers directly in Canva. Empty = the asset pack just offers the PNG downloads.
+CANVA_TEMPLATE_URL = env("CANVA_TEMPLATE_URL", default="")
 YOUTUBE_CLIENT_ID = env("YOUTUBE_CLIENT_ID", default="")
 YOUTUBE_CLIENT_SECRET = env("YOUTUBE_CLIENT_SECRET", default="")
 YOUTUBE_REFRESH_TOKEN = env("YOUTUBE_REFRESH_TOKEN", default="")
