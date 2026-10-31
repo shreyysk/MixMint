@@ -579,6 +579,10 @@ MAX_PROMO_SIZE_MB = env.int("MAX_PROMO_SIZE_MB", default=300)
 INSTAGRAM_USER_ID = env("INSTAGRAM_USER_ID", default="")  # Instagram professional account id (Graph API)
 INSTAGRAM_ACCESS_TOKEN = env("INSTAGRAM_ACCESS_TOKEN", default="")  # long-lived Page token with instagram_content_publish
 INSTAGRAM_GRAPH_BASE = env("INSTAGRAM_GRAPH_BASE", default="https://graph.facebook.com/v23.0")
+# Facebook Page auto-post (same Graph API as Instagram). Page ID + a long-lived Page access token
+# with pages_manage_posts / pages_read_engagement. Empty = Facebook posting stays off.
+FACEBOOK_PAGE_ID = env("FACEBOOK_PAGE_ID", default="")
+FACEBOOK_PAGE_ACCESS_TOKEN = env("FACEBOOK_PAGE_ACCESS_TOKEN", default="")
 YOUTUBE_CLIENT_ID = env("YOUTUBE_CLIENT_ID", default="")
 YOUTUBE_CLIENT_SECRET = env("YOUTUBE_CLIENT_SECRET", default="")
 YOUTUBE_REFRESH_TOKEN = env("YOUTUBE_REFRESH_TOKEN", default="")

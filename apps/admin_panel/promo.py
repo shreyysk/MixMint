@@ -74,8 +74,12 @@ def yt_ready():
                 and getattr(settings, "YOUTUBE_REFRESH_TOKEN", ""))
 
 
+def fb_ready():
+    return bool(getattr(settings, "FACEBOOK_PAGE_ID", "") and getattr(settings, "FACEBOOK_PAGE_ACCESS_TOKEN", ""))
+
+
 def readiness():
-    return {"renderer": renderer_ready(), "instagram": ig_ready(), "youtube": yt_ready(),
+    return {"renderer": renderer_ready(), "instagram": ig_ready(), "youtube": yt_ready(), "facebook": fb_ready(),
             "telegram": bool(getattr(settings, "TELEGRAM_BOT_TOKEN", "") or getattr(settings, "TELEGRAM_BOT_USERNAME", ""))}
 
 
@@ -534,6 +538,11 @@ def publish(pv):
             results["yt"] = _post_youtube(pv, item)
         except Exception as exc:
             errors.append(f"YouTube: {str(exc)[:200]}")
+    if fb_ready():
+        try:
+            results["fb"] = _post_facebook(pv, item, url)
+        except Exception as exc:
+            errors.append(f"Facebook: {str(exc)[:200]}")
     pv.refresh_from_db()
     if results.get("ig"):
         pv.ig_media_id, pv.ig_url = results["ig"]
@@ -543,8 +552,8 @@ def publish(pv):
     pv.status = "posted" if results else "failed"
     if results:
         pv.posted_at = timezone.now()
-    if not ig_ready() and not yt_ready():
-        pv.error = "Instagram and YouTube aren't connected yet (see Admin → Settings → Promo videos)."
+    if not ig_ready() and not yt_ready() and not fb_ready():
+        pv.error = "Instagram, YouTube and Facebook aren't connected yet (see Admin → Settings → Promo videos)."
     pv.save()
     archive(pv)
     _post_channel(pv, item)
@@ -595,6 +604,30 @@ def _post_instagram(pv, item, url, wait=170):
         pv.error = collab_note[:500]
         pv.save(update_fields=["error"])
     return media_id, link
+
+
+def fb_caption(pv, item):
+    collabs = " ".join("@" + h for h in pv.ig_collabs)
+    return (f"🔥 {pv.title} by {pv.dj.dj_name}\n\n"
+            f"🎧 Preview & download on MixMint ({price_text(item)}): {item_url(pv)}\n"
+            + (f"\nWith {collabs}\n" if collabs else "")
+            + "\nMixMint — home of DJ releases from India's DJs.")[:5000]
+
+
+def _post_facebook(pv, item, url):
+    """Post the rendered promo video to the MixMint Facebook Page (Graph API). Returns (video_id, link)."""
+    page_id = settings.FACEBOOK_PAGE_ID
+    base = (getattr(settings, "INSTAGRAM_GRAPH_BASE", "") or GRAPH).rstrip("/")
+    r = requests.post(f"{base}/{page_id}/videos", timeout=120, data={
+        "file_url": url,
+        "description": fb_caption(pv, item),
+        "access_token": settings.FACEBOOK_PAGE_ACCESS_TOKEN,
+    })
+    body = r.json() if r.content else {}
+    if r.status_code >= 400 or "error" in body:
+        raise RuntimeError((body.get("error") or {}).get("message") or f"HTTP {r.status_code}")
+    vid = body.get("id", "")
+    return vid, (f"https://www.facebook.com/{vid}" if vid else "")
 
 
 def _yt_token():
